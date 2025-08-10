@@ -1,0 +1,28 @@
+
+# Mac finder artifacts
+.DS_Store
+
+# Netbeans project directory
+/nbproject/
+
+# RubyMine project files
+.idea
+
+# Textmate project files
+/*.tmproj
+
+# vim artifacts
+**.swp
+
+robots.txt
+
+html/
+
+composer.phar
+
+/vendor/
+
+cache.properties
+composer.lock
+.phpunit.result.cache
+examples/test.log

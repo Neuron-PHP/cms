@@ -1,0 +1,34 @@
+{
+    "name": "neuron-php/cms",
+    "description": "Content Management System.",
+    "type": "library",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Lee Jones",
+            "email": "lee@dragonflyrg.com"
+        }
+    ],
+    "require": {
+        "ext-curl": "*",
+        "ext-json": "*",
+        "neuron-php/mvc": "^0.6.38",
+        "ljonesfl/blahg": "0.5.*"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "9.*"
+    },
+    "autoload": {
+        "psr-4": {
+            "Neuron\\": "src/"
+        },
+        "files": [
+            "src/Bootstrap.php"
+        ]
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Tests\\": "tests/"
+        }
+    }
+}
