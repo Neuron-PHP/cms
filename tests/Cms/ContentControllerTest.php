@@ -2,8 +2,7 @@
 
 namespace Tests\Cms;
 
-use Neuron\Cms\ContentController;
-use Neuron\Data\Object\Version;
+use Neuron\Cms\Controllers\Content;
 use Neuron\Data\Setting\Source\Memory;
 use Neuron\Mvc\Responses\HttpResponseStatus;
 use Neuron\Patterns\Registry;
@@ -77,7 +76,7 @@ class ContentControllerTest extends TestCase
 	 */
 	public function testConstructor()
 	{
-		$Controller = new ContentController( $this->Router );
+		$Controller = new Content( $this->Router );
 		
 		// Check that properties were set from settings
 		$this->assertEquals( 'Test Site', $Controller->getName() );
@@ -97,7 +96,7 @@ class ContentControllerTest extends TestCase
 	 */
 	public function testSettersAndGetters()
 	{
-		$Controller = new ContentController( $this->Router );
+		$Controller = new Content( $this->Router );
 		
 		// Test Name
 		$Controller->setName( 'New Name' );
@@ -125,7 +124,7 @@ class ContentControllerTest extends TestCase
 	 */
 	public function testMethodChaining()
 	{
-		$Controller = new ContentController( $this->Router );
+		$Controller = new Content( $this->Router );
 		
 		$Result = $Controller
 			->setName( 'Chained Name' )
@@ -135,7 +134,7 @@ class ContentControllerTest extends TestCase
 			->setRssUrl( 'http://chained.com/rss' );
 		
 		// Should return the controller itself for chaining
-		$this->assertInstanceOf( ContentController::class, $Result );
+		$this->assertInstanceOf( Content::class, $Result );
 		
 		// Values should be set
 		$this->assertEquals( 'Chained Name', $Controller->getName() );
@@ -152,7 +151,7 @@ class ContentControllerTest extends TestCase
 	 */
 	public function testMarkdownMethod()
 	{
-		$Controller = $this->getMockBuilder( ContentController::class )
+		$Controller = $this->getMockBuilder( Content::class )
 			->setConstructorArgs( [ $this->Router ] )
 			->onlyMethods( [ 'renderMarkdown' ] )
 			->getMock();

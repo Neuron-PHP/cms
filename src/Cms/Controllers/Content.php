@@ -1,12 +1,12 @@
 <?php
-namespace Neuron\Cms;
+namespace Neuron\Cms\Controllers;
 
 use Neuron\Data\Object\Version;
 use Neuron\Mvc\Controllers\Base;
 use Neuron\Mvc\Responses\HttpResponseStatus;
 use Neuron\Patterns\Registry;
 
-class ContentController extends Base
+class Content extends Base
 {
 	private string $_Name = 'Blahg';
 	private string $_Title = 'Blahg';
@@ -61,9 +61,9 @@ class ContentController extends Base
 	 * Set the RSS URL for the site.
 	 *
 	 * @param string $RssUrl
-	 * @return ContentController
+	 * @return Content
 	 */
-	public function setRssUrl( string $RssUrl ): ContentController
+	public function setRssUrl( string $RssUrl ): Content
 	{
 		$this->_RssUrl = $RssUrl;
 		return $this;
@@ -81,7 +81,7 @@ class ContentController extends Base
 	 * @param string $Name
 	 * @return $this
 	 */
-	public function setName( string $Name ): ContentController
+	public function setName( string $Name ): Content
 	{
 		$this->_Name = $Name;
 		return $this;
@@ -99,7 +99,7 @@ class ContentController extends Base
 	 * @param string $Title
 	 * @return $this
 	 */
-	public function setTitle( string $Title ): ContentController
+	public function setTitle( string $Title ): Content
 	{
 		$this->_Title = $Title;
 		return $this;
@@ -117,7 +117,7 @@ class ContentController extends Base
 	 * @param string $Description
 	 * @return $this
 	 */
-	public function setDescription( string $Description ): ContentController
+	public function setDescription( string $Description ): Content
 	{
 		$this->_Description = $Description;
 		return $this;
@@ -135,9 +135,9 @@ class ContentController extends Base
 	 * Set the URL for the site.
 	 *
 	 * @param string $Url
-	 * @return ContentController
+	 * @return Content
 	 */
-	public function setUrl( string $Url ): ContentController
+	public function setUrl( string $Url ): Content
 	{
 		$this->_Url = $Url;
 		return $this;
