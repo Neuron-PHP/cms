@@ -2,12 +2,10 @@
 
 namespace Tests\Cms;
 
-use Neuron\Cms\Blog;
 use Blahg\Article;
-use Blahg\Exception\ArticleMissingBody;
 use Blahg\Exception\ArticleNotFound;
 use Blahg\Repository;
-use Neuron\Mvc\Requests\Request;
+use Neuron\Cms\Controllers\Blog;
 use Neuron\Mvc\Responses\HttpResponseStatus;
 use Neuron\Routing\Router;
 use PHPUnit\Framework\TestCase;

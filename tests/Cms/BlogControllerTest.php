@@ -6,7 +6,7 @@ use Blahg\Article;
 use Blahg\Exception\ArticleMissingBody;
 use Blahg\Exception\ArticleNotFound;
 use Blahg\Repository;
-use Neuron\Cms\Blog;
+use Neuron\Cms\Controllers\Blog;
 use Neuron\Data\Filter\Get;
 use Neuron\Data\Setting\Source\Memory;
 use Neuron\Mvc\Requests\Request;
@@ -17,7 +17,7 @@ use PHPUnit\Framework\TestCase;
 class BlogControllerTest extends TestCase
 {
 	private Blog $Blog;
-	private $MockRouter;
+	private      $MockRouter;
 	private $MockRepository;
 	private $MockGet;
 	private $OriginalRegistry;

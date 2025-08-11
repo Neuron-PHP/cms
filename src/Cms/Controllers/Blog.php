@@ -1,5 +1,5 @@
 <?php
-namespace Neuron\Cms;
+namespace Neuron\Cms\Controllers;
 
 use Blahg\Article;
 use Blahg\Exception\ArticleMissingBody;
@@ -11,7 +11,7 @@ use Neuron\Mvc\Requests\Request;
 use Neuron\Mvc\Responses\HttpResponseStatus;
 use Neuron\Routing\Router;
 
-class Blog extends ContentController
+class Blog extends Content
 {
 	private Repository $_Repo;
 
