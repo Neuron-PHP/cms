@@ -11,10 +11,13 @@ use Neuron\Mvc\Requests\Request;
 use Neuron\Mvc\Responses\HttpResponseStatus;
 use Neuron\Routing\Router;
 
-class Blog extends \App\Controllers\SiteController
+class Blog extends ContentController
 {
 	private Repository $_Repo;
 
+	/**
+	 * @param Router $Router
+	 */
 	public function __construct( Router $Router )
 	{
 		parent::__construct( $Router );
@@ -42,6 +45,12 @@ class Blog extends \App\Controllers\SiteController
 		);
 	}
 
+	/**
+	 * @param array $Parameters
+	 * @param Request|null $Request
+	 * @return string
+	 * @throws \Neuron\Core\Exceptions\NotFound
+	 */
 	public function show( array $Parameters, ?Request $Request ): string
 	{
 		try
@@ -77,6 +86,12 @@ class Blog extends \App\Controllers\SiteController
 		);
 	}
 
+	/**
+	 * @param array $Parameters
+	 * @param Request|null $Request
+	 * @return string
+	 * @throws \Neuron\Core\Exceptions\NotFound
+	 */
 	public function tag( array $Parameters, ?Request $Request ): string
 	{
 		$Tag = $Parameters[ 'tag' ];
@@ -94,6 +109,12 @@ class Blog extends \App\Controllers\SiteController
 		);
 	}
 
+	/**
+	 * @param array $Parameters
+	 * @param Request|null $Request
+	 * @return string
+	 * @throws \Neuron\Core\Exceptions\NotFound
+	 */
 	public function category( array $Parameters, ?Request $Request ): string
 	{
 		$Category = $Parameters[ 'category' ];
@@ -111,6 +132,11 @@ class Blog extends \App\Controllers\SiteController
 		);
 	}
 
+	/**
+	 * @param array $Parameters
+	 * @param Request|null $Request
+	 * @return void
+	 */
 	#[NoReturn] public function feed( array $Parameters, ?Request $Request ): void
 	{
 		// Suppress deprecation warnings for this request
