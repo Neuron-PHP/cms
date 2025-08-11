@@ -43,6 +43,24 @@ class BlogTest extends TestCase
 		$Blog = new Blog( $this->Router );
 		$this->assertInstanceOf( Blog::class, $Blog );
 	}
+
+	public function testRepository()
+	{
+		// Skip if parent class not available
+		if ( !class_exists( '\App\Controllers\SiteController' ) )
+		{
+			$this->markTestSkipped( 'SiteController class not available in test environment' );
+		}
+
+		$Blog = new Blog( $this->Router );
+
+		// Check that the repository is set correctly
+		$this->assertInstanceOf( Repository::class, $Blog->getRepository() );
+
+		// Set a mock repository and check it
+		$Blog->setRepository( $this->Repository );
+		$this->assertSame( $this->Repository, $Blog->getRepository() );
+	}
 	
 	/**
 	 * Test index method
@@ -117,7 +135,7 @@ class BlogTest extends TestCase
 		
 		// Use reflection to set the private repository property
 		$Reflection = new \ReflectionClass( $Blog );
-		$Property = $Reflection->getProperty( '_Repo' );
+		$Property = $Reflection->getProperty( 'repository' );
 		$Property->setAccessible( true );
 		
 		$MockRepo = $this->createMock( Repository::class );
@@ -178,7 +196,7 @@ class BlogTest extends TestCase
 		
 		// Use reflection to set the private repository property
 		$Reflection = new \ReflectionClass( $Blog );
-		$Property = $Reflection->getProperty( '_Repo' );
+		$Property = $Reflection->getProperty( 'repository' );
 		$Property->setAccessible( true );
 		
 		$MockRepo = $this->createMock( Repository::class );
@@ -238,7 +256,7 @@ class BlogTest extends TestCase
 		
 		// Set up mock repository
 		$Reflection = new \ReflectionClass( $Blog );
-		$Property = $Reflection->getProperty( '_Repo' );
+		$Property = $Reflection->getProperty( 'repository' );
 		$Property->setAccessible( true );
 		
 		$MockRepo = $this->createMock( Repository::class );
@@ -298,7 +316,7 @@ class BlogTest extends TestCase
 		
 		// Set up mock repository
 		$Reflection = new \ReflectionClass( $Blog );
-		$Property = $Reflection->getProperty( '_Repo' );
+		$Property = $Reflection->getProperty( 'repository' );
 		$Property->setAccessible( true );
 		
 		$MockRepo = $this->createMock( Repository::class );
@@ -358,7 +376,7 @@ class BlogTest extends TestCase
 		
 		// Set up mock repository
 		$Reflection = new \ReflectionClass( $Blog );
-		$Property = $Reflection->getProperty( '_Repo' );
+		$Property = $Reflection->getProperty( 'repository' );
 		$Property->setAccessible( true );
 		
 		$MockRepo = $this->createMock( Repository::class );

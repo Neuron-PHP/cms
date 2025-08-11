@@ -79,9 +79,9 @@ class BlogControllerTest extends TestCase
 		// We'll use reflection to inject the mock repository
 		$Blog = new Blog( $this->MockRouter );
 		
-		// Use reflection to replace the private $_Repo property
+		// Use reflection to replace the private $repository property
 		$Reflection = new \ReflectionClass( $Blog );
-		$RepoProperty = $Reflection->getProperty( '_Repo' );
+		$RepoProperty = $Reflection->getProperty( 'repository' );
 		$RepoProperty->setAccessible( true );
 		$RepoProperty->setValue( $Blog, $this->MockRepository );
 		
@@ -321,11 +321,71 @@ class BlogControllerTest extends TestCase
 	 */
 	public function testFeedGeneratesRssFeed()
 	{
-		// The feed method uses die() which we can't easily test
-		// We'll mark this test as incomplete for now
-		$this->markTestIncomplete(
-			'Feed method uses die() which cannot be properly tested without refactoring'
-		);
+		// Create a temporary directory for test articles
+		$TestDir = sys_get_temp_dir() . '/test_blog_' . uniqid();
+		mkdir( $TestDir, 0777, true );
+		
+		// Create test article files in YAML format (Repository expects .yaml files)
+		// The Repository requires 'datePublished' and 'path' fields
+		// Body content is stored in separate markdown files
+		// IMPORTANT: 'path' should be relative to the repository root, not absolute
+		
+		// Create body content files
+		file_put_contents( $TestDir . '/feed-article-1-body.md', 'This is test content.' );
+		file_put_contents( $TestDir . '/feed-article-2-body.md', 'This is test content.' );
+		
+		$Article1Content = [
+			'title' => 'Feed Article 1',
+			'slug' => 'feed-article-1',
+			'datePublished' => '2024-01-15',
+			'path' => 'feed-article-1-body.md', // Relative path from repository root
+			'tags' => ['test', 'php'],
+			'category' => 'Testing',
+			'author' => 'Test Author'
+		];
+		
+		$Article2Content = [
+			'title' => 'Feed Article 2',
+			'slug' => 'feed-article-2',
+			'datePublished' => '2024-01-15',
+			'path' => 'feed-article-2-body.md', // Relative path from repository root
+			'tags' => ['test', 'php'],
+			'category' => 'Testing',
+			'author' => 'Test Author'
+		];
+		
+		file_put_contents( $TestDir . '/feed-article-1.yaml', \Symfony\Component\Yaml\Yaml::dump( $Article1Content ) );
+		file_put_contents( $TestDir . '/feed-article-2.yaml', \Symfony\Component\Yaml\Yaml::dump( $Article2Content ) );
+		
+		// Create a Blog with a real Repository pointing to our test directory
+		$Blog = new Blog( $this->MockRouter );
+		$Repository = new Repository( $TestDir, false );
+		$Blog->setRepository( $Repository );
+
+		// Call the feed method
+		$Parameters = [];
+		$Result = $Blog->feed( $Parameters, null );
+
+		// Verify the result is a string (RSS feed)
+		$this->assertIsString( $Result );
+		
+		// Verify it's valid RSS
+		$this->assertStringContainsString( '<?xml', $Result );
+		$this->assertStringContainsString( '<rss', $Result );
+		$this->assertStringContainsString( '<channel>', $Result );
+
+		// Check if it contains expected article data
+		$this->assertStringContainsString( 'Feed Article 1', $Result );
+		$this->assertStringContainsString( 'feed-article-1', $Result );
+		$this->assertStringContainsString( 'Feed Article 2', $Result );
+		$this->assertStringContainsString( 'feed-article-2', $Result );
+		$this->assertStringContainsString( 'This is test content.', $Result );
+		// The date is formatted as RFC 2822 in RSS feeds
+		$this->assertStringContainsString( 'Mon, 15 Jan 2024', $Result );
+		
+		// Clean up test directory
+		array_map( 'unlink', glob( $TestDir . '/*' ) );
+		rmdir( $TestDir );
 	}
 	
 	/**

@@ -13,7 +13,7 @@ use Neuron\Routing\Router;
 
 class Blog extends Content
 {
-	private Repository $_Repo;
+	private Repository $repository;
 
 	/**
 	 * @param Router $Router
@@ -24,10 +24,22 @@ class Blog extends Content
 
 		$Get = new Get();
 
-		$this->_Repo = new Repository(
+		$this->setRepository( new Repository(
 			"../blog",
 			$Get->filterScalar( 'drafts' ) ? true : false
+			)
 		);
+	}
+
+	public function getRepository(): Repository
+	{
+		return $this->repository;
+	}
+
+	public function setRepository( Repository $Repository ): self
+	{
+		$this->repository = $Repository;
+		return $this;
 	}
 
 	public function index( array $Parameters, ?Request $Request ): string
@@ -35,9 +47,9 @@ class Blog extends Content
 		return $this->renderHtml(
 			HttpResponseStatus::OK,
 			[
-				'Articles'		=> $this->_Repo->getArticles(),
-				'Categories'	=> $this->_Repo->getCategories(),
-				'Tags'      	=> $this->_Repo->getTags(),
+				'Articles'		=> $this->repository->getArticles(),
+				'Categories'	=> $this->repository->getCategories(),
+				'Tags'      	=> $this->repository->getTags(),
 				'Title'    		=> $this->getTitle() . ' | ' . $this->getName(),
 				'Description' 	=> $this->getDescription(),
 			],
@@ -55,7 +67,7 @@ class Blog extends Content
 	{
 		try
 		{
-			$Article = $this->_Repo->getArticleBySlug( $Parameters['title'] );
+			$Article = $this->repository->getArticleBySlug( $Parameters[ 'title'] );
 		}
 		catch( ArticleNotFound  $Exception )
 		{
@@ -77,8 +89,8 @@ class Blog extends Content
 		return $this->renderHtml(
 			HttpResponseStatus::OK,
 			[
-				'Categories'=> $this->_Repo->getCategories(),
-				'Tags'      => $this->_Repo->getTags(),
+				'Categories'=> $this->repository->getCategories(),
+				'Tags'      => $this->repository->getTags(),
 				'Article' 	=> $Article,
 				'Title'     => $Article->getTitle() . ' | ' . $this->getName()
 			],
@@ -99,9 +111,9 @@ class Blog extends Content
 		return $this->renderHtml(
 			HttpResponseStatus::OK,
 			[
-				'Categories'=> $this->_Repo->getCategories(),
-				'Tags'      => $this->_Repo->getTags(),
-				'Articles'	=> $this->_Repo->getArticlesByTag( $Tag ),
+				'Categories'=> $this->repository->getCategories(),
+				'Tags'      => $this->repository->getTags(),
+				'Articles'	=> $this->repository->getArticlesByTag( $Tag ),
 				'Title'    	=> "Characters tagged with $Tag | " . $this->getName(),
 				'Tag'      	=> $Tag
 			],
@@ -122,9 +134,9 @@ class Blog extends Content
 		return $this->renderHtml(
 			HttpResponseStatus::OK,
 			[
-				'Categories'=> $this->_Repo->getCategories(),
-				'Tags'      => $this->_Repo->getTags(),
-				'Articles'	=> $this->_Repo->getArticlesByCategory( $Category ),
+				'Categories'=> $this->repository->getCategories(),
+				'Tags'      => $this->repository->getTags(),
+				'Articles'	=> $this->repository->getArticlesByCategory( $Category ),
 				'Title'    	=> "Characters in campaign $Category | " . $this->getName(),
 				'Category' 	=> $Category
 			],
@@ -135,22 +147,20 @@ class Blog extends Content
 	/**
 	 * @param array $Parameters
 	 * @param Request|null $Request
-	 * @return void
+	 * @return string
 	 */
-	#[NoReturn] public function feed( array $Parameters, ?Request $Request ): void
+	#[NoReturn] public function feed( array $Parameters, ?Request $Request ): string
 	{
 		// Suppress deprecation warnings for this request
 		error_reporting(E_ALL & ~E_DEPRECATED);
 
-		echo $this->_Repo
+		return $this->repository
 			->getFeed(
 				$this->getName(),
 				$this->getDescription(),
 				$this->getUrl(),
 				$this->getRssUrl(),
-				$this->_Repo->getArticles()
+				$this->repository->getArticles()
 			);
-
-		die();
 	}
 }
