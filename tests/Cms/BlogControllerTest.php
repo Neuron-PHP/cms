@@ -29,9 +29,7 @@ class BlogControllerTest extends TestCase
 		
 		// Store original working directory
 		$this->OriginalCwd = getcwd();
-		// Change to test directory so version file can be found
-		chdir( __DIR__ . '/..' );
-		
+
 		// Store original registry values
 		$this->OriginalRegistry = [
 			'Settings' => Registry::getInstance()->get( 'Settings' ),

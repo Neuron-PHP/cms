@@ -18,7 +18,7 @@ class ContentController extends Base
 	 * SiteController constructor.
 	 *
 	 * @param $Router
-	 * @throws Exception
+	 * @throws \Exception
 	 */
 	public function __construct( $Router )
 	{
@@ -32,10 +32,19 @@ class ContentController extends Base
 			  ->setUrl( $Settings->get( 'site', 'url' ) )
 			  ->setRssUrl($this->getUrl() . "/blog/rss" );
 
-		$Version = new Version();
-		$Version->loadFromFile( "../.version.json" );
 
-		Registry::getInstance()->set( 'version', 'v'.$Version->getAsString() );
+		try
+		{
+			$Version = new Version();
+			$Version->loadFromFile( "../.version.json" );
+
+			Registry::getInstance()->set( 'version', 'v'.$Version->getAsString() );
+		}
+		catch( \Exception $e )
+		{
+			Registry::getInstance()->set( 'version', 'v0.0.0' );
+		}
+
 		Registry::getInstance()->set( 'name', $this->getName() );
 		Registry::getInstance()->set( 'rss_url', $this->getRssUrl() );
 	}
