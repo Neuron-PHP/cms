@@ -13,7 +13,7 @@ use Neuron\Mvc\Application;
  * @throws \Exception
  */
 
-function Boot( string $ConfigPath ) : Application
+function boot( string $ConfigPath ) : Application
 {
-	return \Neuron\Mvc\Boot( $ConfigPath );
+	return \Neuron\Mvc\boot( $ConfigPath );
 }
