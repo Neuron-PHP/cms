@@ -104,6 +104,30 @@ class Blog extends Content
 	 * @return string
 	 * @throws \Neuron\Core\Exceptions\NotFound
 	 */
+	public function author( array $Parameters, ?Request $Request ): string
+	{
+		$Author = $Parameters[ 'author' ];
+
+		return $this->renderHtml(
+			HttpResponseStatus::OK,
+			[
+				'Categories'=> $this->repository->getCategories(),
+				'Tags'      => $this->repository->getTags(),
+				'Articles'	=> $this->repository->getArticlesByAuthor( $Author ),
+				'Title'    	=> "Articles by $Author | " . $this->getName(),
+				'Tag'      	=> $Tag
+			],
+			'index'
+		);
+	}
+
+
+	/**
+	 * @param array $Parameters
+	 * @param Request|null $Request
+	 * @return string
+	 * @throws \Neuron\Core\Exceptions\NotFound
+	 */
 	public function tag( array $Parameters, ?Request $Request ): string
 	{
 		$Tag = $Parameters[ 'tag' ];
@@ -114,7 +138,7 @@ class Blog extends Content
 				'Categories'=> $this->repository->getCategories(),
 				'Tags'      => $this->repository->getTags(),
 				'Articles'	=> $this->repository->getArticlesByTag( $Tag ),
-				'Title'    	=> "Characters tagged with $Tag | " . $this->getName(),
+				'Title'    	=> "Articles tagged with $Tag | " . $this->getName(),
 				'Tag'      	=> $Tag
 			],
 			'index'
@@ -137,7 +161,7 @@ class Blog extends Content
 				'Categories'=> $this->repository->getCategories(),
 				'Tags'      => $this->repository->getTags(),
 				'Articles'	=> $this->repository->getArticlesByCategory( $Category ),
-				'Title'    	=> "Characters in campaign $Category | " . $this->getName(),
+				'Title'    	=> "Articles in category $Category | " . $this->getName(),
 				'Category' 	=> $Category
 			],
 			'index'
