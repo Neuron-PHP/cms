@@ -2,6 +2,7 @@
 namespace Neuron\Cms\Controllers;
 
 use Neuron\Data\Object\Version;
+use Neuron\Mvc\Application;
 use Neuron\Mvc\Controllers\Base;
 use Neuron\Mvc\Responses\HttpResponseStatus;
 use Neuron\Patterns\Registry;
@@ -15,14 +16,11 @@ class Content extends Base
 	private string $_RssUrl = 'example.com/blog/rss';
 
 	/**
-	 * SiteController constructor.
-	 *
-	 * @param $Router
-	 * @throws \Exception
+	 * @param Application $app
 	 */
-	public function __construct( $Router )
+	public function __construct( ?Application $app = null )
 	{
-		parent::__construct( $Router );
+		parent::__construct( $app );
 
 		$Settings = Registry::getInstance()->get( 'Settings' );
 

@@ -1,4 +1,5 @@
 ## 0.2.1
+* Fixed constructors.
 
 ## 0.2.0 2025-08-14
 * Upgraded to mvc 0.7
