@@ -32,7 +32,6 @@ class Content extends Base
 			  ->setUrl( $Settings->get( 'site', 'url' ) )
 			  ->setRssUrl($this->getUrl() . "/blog/rss" );
 
-
 		try
 		{
 			$Version = new Version();
