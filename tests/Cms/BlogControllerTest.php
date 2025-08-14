@@ -77,7 +77,7 @@ class BlogControllerTest extends TestCase
 	private function createBlogWithMockedRepository(): Blog
 	{
 		// We'll use reflection to inject the mock repository
-		$Blog = new Blog( $this->MockRouter );
+		$Blog = new Blog();
 		
 		// Use reflection to replace the private $repository property
 		$Reflection = new \ReflectionClass( $Blog );
@@ -358,7 +358,7 @@ class BlogControllerTest extends TestCase
 		file_put_contents( $TestDir . '/feed-article-2.yaml', \Symfony\Component\Yaml\Yaml::dump( $Article2Content ) );
 		
 		// Create a Blog with a real Repository pointing to our test directory
-		$Blog = new Blog( $this->MockRouter );
+		$Blog = new Blog();
 		$Repository = new Repository( $TestDir, false );
 		$Blog->setRepository( $Repository );
 
@@ -405,7 +405,7 @@ class BlogControllerTest extends TestCase
 	 */
 	public function testBlogExtendsContentController()
 	{
-		$Blog = new Blog( $this->MockRouter );
+		$Blog = new Blog();
 		
 		// Test inherited methods from ContentController
 		$this->assertEquals( 'Test Blog', $Blog->getName() );

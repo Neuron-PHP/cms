@@ -76,7 +76,7 @@ class ContentControllerTest extends TestCase
 	 */
 	public function testConstructor()
 	{
-		$Controller = new Content( $this->Router );
+		$Controller = new Content();
 		
 		// Check that properties were set from settings
 		$this->assertEquals( 'Test Site', $Controller->getName() );
@@ -96,7 +96,7 @@ class ContentControllerTest extends TestCase
 	 */
 	public function testSettersAndGetters()
 	{
-		$Controller = new Content( $this->Router );
+		$Controller = new Content();
 		
 		// Test Name
 		$Controller->setName( 'New Name' );
@@ -124,7 +124,7 @@ class ContentControllerTest extends TestCase
 	 */
 	public function testMethodChaining()
 	{
-		$Controller = new Content( $this->Router );
+		$Controller = new Content();
 		
 		$Result = $Controller
 			->setName( 'Chained Name' )
@@ -152,7 +152,6 @@ class ContentControllerTest extends TestCase
 	public function testMarkdownMethod()
 	{
 		$Controller = $this->getMockBuilder( Content::class )
-			->setConstructorArgs( [ $this->Router ] )
 			->onlyMethods( [ 'renderMarkdown' ] )
 			->getMock();
 		

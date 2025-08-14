@@ -7,6 +7,7 @@ use Blahg\Exception\ArticleNotFound;
 use Blahg\Repository;
 use JetBrains\PhpStorm\NoReturn;
 use Neuron\Data\Filter\Get;
+use Neuron\Mvc\Application;
 use Neuron\Mvc\Requests\Request;
 use Neuron\Mvc\Responses\HttpResponseStatus;
 use Neuron\Routing\Router;
@@ -16,11 +17,11 @@ class Blog extends Content
 	private Repository $repository;
 
 	/**
-	 * @param Router $Router
+	 * @param Application $app
 	 */
-	public function __construct( Router $Router )
+	public function __construct( ?Application $app = null )
 	{
-		parent::__construct( $Router );
+		parent::__construct( $app );
 
 		$Get = new Get();
 
