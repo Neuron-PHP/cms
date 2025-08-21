@@ -1,3 +1,5 @@
+## 0.2.3
+
 ## 0.2.2 2025-08-21
 * Now requires the cli component.
 
