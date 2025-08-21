@@ -1,6 +1,55 @@
 <?php
 namespace Neuron\Cms\Controllers;
 
+/**
+ * Base content controller for the Neuron CMS framework.
+ * 
+ * This abstract controller provides foundational functionality for all CMS
+ * content types, including site configuration management, version tracking,
+ * SEO metadata handling, and common rendering operations. It serves as the
+ * base class for specialized controllers like Blog, Pages, and other content types.
+ * 
+ * Key features:
+ * - Site configuration and metadata management
+ * - Version information loading and tracking
+ * - RSS feed URL configuration and management
+ * - Registry-based settings integration
+ * - Fluent interface for property configuration
+ * - Markdown rendering support for content pages
+ * - SEO-friendly title and description handling
+ * - Base URL and canonical URL management
+ * 
+ * The controller automatically loads site settings from the registry and
+ * configures common CMS properties, making it easy for derived controllers
+ * to focus on content-specific functionality while inheriting consistent
+ * site-wide configuration and behavior.
+ * 
+ * @package Neuron\Cms
+ * @author Neuron-PHP Framework
+ * @version 3.0.0
+ * @since 1.0.0
+ * 
+ * @example
+ * ```php
+ * // Custom content controller extending base
+ * class PageController extends Content
+ * {
+ *     public function show(array $params): string
+ *     {
+ *         return $this->renderHtml(
+ *             HttpResponseStatus::OK,
+ *             [
+ *                 'Title' => $this->getTitle() . ' | ' . $this->getName(),
+ *                 'Description' => $this->getDescription(),
+ *                 'Content' => $pageContent
+ *             ],
+ *             'page'
+ *         );
+ *     }
+ * }
+ * ```
+ */
+
 use Neuron\Data\Object\Version;
 use Neuron\Mvc\Application;
 use Neuron\Mvc\Controllers\Base;

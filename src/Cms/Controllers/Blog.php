@@ -1,6 +1,54 @@
 <?php
 namespace Neuron\Cms\Controllers;
 
+/**
+ * Blog management controller for the Neuron CMS framework.
+ * 
+ * This controller provides comprehensive blog functionality including article
+ * management, categorization, tagging, author filtering, and RSS feed generation.
+ * It extends the base Content controller to leverage common CMS functionality
+ * while adding blog-specific features and content organization.
+ * 
+ * Key features:
+ * - Article listing with pagination and filtering
+ * - Category and tag-based content organization
+ * - Author-specific article filtering
+ * - SEO-friendly URL routing and slugs  
+ * - RSS/Atom feed generation for syndication
+ * - Draft mode support for content preview
+ * - Exception handling for missing articles
+ * - Responsive HTML rendering with metadata
+ * 
+ * The controller integrates with the Blahg article repository system
+ * for content storage and retrieval, supporting file-based article
+ * management with YAML frontmatter for metadata.
+ * 
+ * @package Neuron\Cms
+ * @author Neuron-PHP Framework
+ * @version 3.0.0
+ * @since 1.0.0
+ * 
+ * @example
+ * ```php
+ * // Route configuration for blog controller
+ * routes:
+ *   blog_index:
+ *     controller: Neuron\Cms\Controllers\Blog
+ *     method: index
+ *     route: /blog
+ *   
+ *   blog_article:
+ *     controller: Neuron\Cms\Controllers\Blog
+ *     method: show
+ *     route: /blog/article/:title
+ *   
+ *   blog_category:
+ *     controller: Neuron\Cms\Controllers\Blog
+ *     method: category  
+ *     route: /blog/category/:category
+ * ```
+ */
+
 use Blahg\Article;
 use Blahg\Exception\ArticleMissingBody;
 use Blahg\Exception\ArticleNotFound;
