@@ -13,6 +13,7 @@
         "ext-curl": "*",
         "ext-json": "*",
         "neuron-php/mvc": "0.7.*",
+        "neuron-php/cli": "0.1.*",
         "ljonesfl/blahg": "0.5.*"
     },
     "require-dev": {
