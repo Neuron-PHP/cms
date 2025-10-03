@@ -25,9 +25,6 @@ namespace Neuron\Cms\Controllers;
  * site-wide configuration and behavior.
  * 
  * @package Neuron\Cms
- * @author Neuron-PHP Framework
- * @version 3.0.0
- * @since 1.0.0
  * 
  * @example
  * ```php

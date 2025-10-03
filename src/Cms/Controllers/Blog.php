@@ -24,9 +24,6 @@ namespace Neuron\Cms\Controllers;
  * management with YAML frontmatter for metadata.
  * 
  * @package Neuron\Cms
- * @author Neuron-PHP Framework
- * @version 3.0.0
- * @since 1.0.0
  * 
  * @example
  * ```php

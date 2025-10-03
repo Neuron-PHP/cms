@@ -14,9 +14,6 @@ use Neuron\Mvc\Application;
  * capabilities.
  * 
  * @package Neuron\Cms
- * @author Neuron-PHP Framework
- * @version 3.0.0
- * @since 1.0.0
  */
 
 /**
