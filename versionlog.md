@@ -1,3 +1,5 @@
+## 0.8.1
+
 * Cleaned up blog controller.
 * Updated components.
 
