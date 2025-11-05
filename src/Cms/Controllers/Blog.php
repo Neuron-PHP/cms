@@ -24,9 +24,6 @@ namespace Neuron\Cms\Controllers;
  * management with YAML frontmatter for metadata.
  * 
  * @package Neuron\Cms
- * @author Neuron-PHP Framework
- * @version 3.0.0
- * @since 1.0.0
  * 
  * @example
  * ```php
@@ -121,8 +118,8 @@ class Blog extends Content
 		catch( ArticleNotFound  $Exception )
 		{
 			$Article = new Article();
-			$Article->setTitle( 'Character Not Found' );
-			$Article->setBody( 'The requested character does not exist.' );
+			$Article->setTitle( 'Article Not Found' );
+			$Article->setBody( 'The requested article does not exist.' );
 			$Article->setTags( [] );
 			$Article->setDatePublished( '1969-06-09' );
 		}
