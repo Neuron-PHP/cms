@@ -227,7 +227,7 @@ class BlogTest extends TestCase
 					return isset( $Data['Article'] ) &&
 						   $Data['Article'] instanceof Article &&
 						   isset( $Data['Title'] ) &&
-						   $Data['Title'] === 'Character Not Found | Test Blog';
+						   $Data['Title'] === 'Article Not Found | Test Blog';
 				}),
 				'show'
 			)
@@ -287,7 +287,7 @@ class BlogTest extends TestCase
 					return isset( $Data['Tag'] ) &&
 						   $Data['Tag'] === 'php' &&
 						   isset( $Data['Title'] ) &&
-						   $Data['Title'] === 'Characters tagged with php | Test Blog';
+						   $Data['Title'] === 'Articles tagged with php | Test Blog';
 				}),
 				'index'
 			)
@@ -347,7 +347,7 @@ class BlogTest extends TestCase
 					return isset( $Data['Category'] ) &&
 						   $Data['Category'] === 'tech' &&
 						   isset( $Data['Title'] ) &&
-						   $Data['Title'] === 'Characters in campaign tech | Test Blog';
+						   $Data['Title'] === 'Articles in campaign tech | Test Blog';
 				}),
 				'index'
 			)

@@ -118,8 +118,8 @@ class Blog extends Content
 		catch( ArticleNotFound  $Exception )
 		{
 			$Article = new Article();
-			$Article->setTitle( 'Character Not Found' );
-			$Article->setBody( 'The requested character does not exist.' );
+			$Article->setTitle( 'Article Not Found' );
+			$Article->setBody( 'The requested article does not exist.' );
 			$Article->setTags( [] );
 			$Article->setDatePublished( '1969-06-09' );
 		}
