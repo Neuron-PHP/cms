@@ -45,6 +45,30 @@ class LoginController extends Content
 	}
 
 	/**
+	 * Validate redirect URL to prevent open redirect vulnerabilities
+	 *
+	 * @param string $url The URL to validate
+	 * @return bool True if the URL is safe to use
+	 */
+	private function isValidRedirectUrl( string $url ): bool
+	{
+		// Only allow relative URLs or same-origin absolute URLs
+		if( empty( $url ) )
+		{
+			return false;
+		}
+		
+		// Reject URLs with schemes (http://, https://, javascript:, etc.)
+		if( preg_match( '#^[a-z][a-z0-9+.-]*:#i', $url ) )
+		{
+			return false;
+		}
+		
+		// Must start with / for internal path
+		return str_starts_with( $url, '/' );
+	}
+
+	/**
 	 * Show login form
 	 */
 	public function showLoginForm( array $Parameters ): string
@@ -56,13 +80,18 @@ class LoginController extends Content
 			exit;
 		}
 
+		$requestedRedirect = $_GET['redirect'] ?? '/admin/dashboard';
+		$redirectUrl = $this->isValidRedirectUrl( $requestedRedirect ) 
+			? $requestedRedirect 
+			: '/admin/dashboard';
+
 		$ViewData = [
 			'Title' => 'Login | ' . $this->getName(),
 			'Description' => 'Login to ' . $this->getName(),
 			'CsrfToken' => $this->_CsrfManager->getToken(),
 			'Error' => $this->_SessionManager->getFlash( 'error' ),
 			'Success' => $this->_SessionManager->getFlash( 'success' ),
-			'RedirectUrl' => $_GET['redirect'] ?? '/admin/dashboard'
+			'RedirectUrl' => $redirectUrl
 		];
 
 		return $this->renderHtml(
@@ -112,7 +141,10 @@ class LoginController extends Content
 		$this->_SessionManager->flash( 'success', 'Welcome back!' );
 
 		// Redirect to intended URL or dashboard
-		$RedirectUrl = $_POST['redirect_url'] ?? '/admin/dashboard';
+		$requestedRedirect = $_POST['redirect_url'] ?? '/admin/dashboard';
+		$RedirectUrl = $this->isValidRedirectUrl( $requestedRedirect ) 
+			? $requestedRedirect 
+			: '/admin/dashboard';
 		header( 'Location: ' . $RedirectUrl );
 		exit;
 	}
