@@ -64,6 +64,12 @@ class LoginController extends Content
 			return false;
 		}
 		
+		// Reject protocol-relative URLs (//example.com)
+		if( str_starts_with( $url, '//' ) )
+		{
+			return false;
+		}
+		
 		// Must start with / for internal path
 		return str_starts_with( $url, '/' );
 	}
