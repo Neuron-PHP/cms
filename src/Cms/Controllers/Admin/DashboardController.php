@@ -27,6 +27,11 @@ class DashboardController extends Content
 		// Get authenticated user from Registry
 		$User = Registry::getInstance()->get( 'Auth.User' );
 
+		if( !$User )
+		{
+			throw new \RuntimeException( 'Authenticated user not found in Registry' );
+		}
+
 		$ViewData = [
 			'Title' => 'Dashboard | ' . $this->getName(),
 			'Description' => 'Admin Dashboard',
