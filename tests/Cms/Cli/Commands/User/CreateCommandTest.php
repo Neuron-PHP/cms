@@ -40,7 +40,9 @@ YAML;
 		$configureMethod->setAccessible(true);
 		$configureMethod->invoke($command);
 
-		$this->assertTrue(true); // Command configured without errors
+		// Verify command metadata is set
+		$this->assertEquals('cms:user:create', $command->getName());
+		$this->assertNotEmpty($command->getDescription());
 	}
 
 	public function testGetUserRepositoryWithMissingConfig(): void
