@@ -43,7 +43,9 @@ class AuthenticationFilter extends Filter
 			$IntendedUrl = $_SERVER['REQUEST_URI'] ?? $Route->getPath();
 
 			// Redirect to login page
-			$RedirectUrl = $this->_LoginUrl . '?' . $this->_RedirectParam . '=' . urlencode( $IntendedUrl );
+			$separator = ( strpos( $this->_LoginUrl, '?' ) === false ) ? '?' : '&';
+			$query = http_build_query( [ $this->_RedirectParam => $IntendedUrl ] );
+			$RedirectUrl = $this->_LoginUrl . $separator . $query;
 
 			header( 'Location: ' . $RedirectUrl );
 			exit;
