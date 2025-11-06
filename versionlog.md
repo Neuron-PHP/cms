@@ -1,3 +1,7 @@
+* Added the maintenance mode command.
+* Added the authentication layer.
+* Added database migrations.
+
 ## 0.8.1
 
 * Cleaned up blog controller.

@@ -1,32 +1,33 @@
+# Example Routes Configuration
+# This file shows how to configure routes with authentication
+
 routes:
-  login:
+  # Public routes (no authentication required)
+  - method: GET
+    route: /blog
+    controller: Neuron\Cms\Controllers\Blog@index
+
+  - method: GET
+    route: /blog/article/:title
+    controller: Neuron\Cms\Controllers\Blog@show
+
+  # Authentication routes
+  - method: GET
     route: /login
-    method: POST
-    controller: App\Controllers\AuthController@login
-    request: login
+    controller: Neuron\Cms\Controllers\Auth\LoginController@showLoginForm
 
-  test:
-    route: /test
-    method: POST
-    controller: Mvc\TestController@test
-    request: test
+  - method: POST
+    route: /login
+    controller: Neuron\Cms\Controllers\Auth\LoginController@login
 
-  put:
-    route: /test_put
-    method: PUT
-    controller: Mvc\TestController@test
+  - method: POST
+    route: /logout
+    controller: Neuron\Cms\Controllers\Auth\LoginController@logout
 
-  delete:
-    route: /test_delete
-    method: DELETE
-    controller: Mvc\TestController@test
+  # Protected admin routes (require authentication)
+  - method: GET
+    route: /admin/dashboard
+    controller: Neuron\Cms\Controllers\Admin\DashboardController@index
+    filter: auth  # Requires authentication
 
-  no_request:
-    route: /no_request
-    method: GET
-    controller: Mvc\TestController@no_request
-
-  bad_request:
-    route: /bad_request
-    method: GET
-    controller: Mvc\TestController@bad_request
+  # Add more admin routes here...

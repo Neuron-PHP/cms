@@ -1,0 +1,28 @@
+# Maintenance Mode Configuration
+#
+# This file provides configuration defaults for the CMS maintenance mode system.
+# Copy this file to your config directory and rename to config.yaml (or merge with existing config.yaml)
+
+maintenance:
+  # Default maintenance message shown to users
+  default_message: "Site is currently under maintenance. We'll be back soon!"
+
+  # IP addresses that are allowed to access the site during maintenance
+  # These IPs will bypass maintenance mode
+  allowed_ips:
+    - 127.0.0.1        # Localhost IPv4
+    - ::1              # Localhost IPv6
+    # - 192.168.1.0/24 # Example: Allow entire local network (CIDR notation)
+    # - 203.0.113.5    # Example: Specific IP address
+
+  # Default retry-after value in seconds (used for HTTP Retry-After header)
+  # This tells search engines and clients when to check back
+  retry_after: 3600    # 1 hour
+
+  # Path to custom maintenance view (optional)
+  # If not specified, a default maintenance page will be shown
+  custom_view: null
+  # custom_view: themes/my-theme/maintenance.php
+
+  # Show countdown timer on maintenance page
+  show_countdown: false

@@ -14,7 +14,8 @@
         "ext-json": "*",
         "neuron-php/mvc": "0.8.*",
         "neuron-php/cli": "0.8.*",
-        "ljonesfl/blahg": "0.5.*"
+        "ljonesfl/blahg": "0.5.*",
+        "robmorgan/phinx": "^0.16"
     },
     "require-dev": {
         "phpunit/phpunit": "9.*",
@@ -31,6 +32,11 @@
     "autoload-dev": {
         "psr-4": {
             "Tests\\": "tests/"
+        }
+    },
+    "extra": {
+        "neuron": {
+            "cli-provider": "Neuron\\Cms\\Cli\\Provider"
         }
     }
 }
