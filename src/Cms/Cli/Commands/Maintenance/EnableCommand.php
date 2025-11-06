@@ -80,7 +80,9 @@ class EnableCommand extends Command
 		}
 
 		// Confirm action unless forced
-		if( !$this->input->hasOption( 'force' ) )
+		$skipConfirmation = (bool)$this->input->getOption( 'force' );
+
+		if( !$skipConfirmation )
 		{
 			$this->output->warning( 'This will enable maintenance mode for the site.' );
 			$this->output->info( 'Message: ' . $message );
@@ -102,7 +104,6 @@ class EnableCommand extends Command
 				return 0;
 			}
 		}
-
 		// Create manager and enable maintenance mode
 		$manager = new MaintenanceManager( $basePath );
 
