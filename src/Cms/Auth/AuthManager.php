@@ -176,7 +176,15 @@ class AuthManager
 			return null;
 		}
 
-		return $this->_UserRepository->findById( $UserId );
+		$User = $this->_UserRepository->findById( $UserId );
+		
+		if( !$User )
+		{
+			// Clear stale session if user no longer exists
+			$this->logout();
+		}
+		
+		return $User;
 	}
 
 	/**
