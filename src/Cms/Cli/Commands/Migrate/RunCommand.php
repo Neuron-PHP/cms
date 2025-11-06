@@ -87,14 +87,14 @@ class RunCommand extends Command
 		}
 
 		// Add dry-run flag
-		if( $this->input->hasOption( 'dry-run' ) )
+		if( $this->input->getOption( 'dry-run' ) )
 		{
 			$arguments['--dry-run'] = true;
 			$this->output->info( '=== DRY RUN MODE - No changes will be made ===' );
 		}
 
 		// Add fake flag
-		if( $this->input->hasOption( 'fake' ) )
+		if( $this->input->getOption( 'fake' ) )
 		{
 			$arguments['--fake'] = true;
 			$this->output->warning( 'FAKE mode - Migrations will be marked as run without executing' );
