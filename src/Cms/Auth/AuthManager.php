@@ -184,6 +184,11 @@ class AuthManager
 	 */
 	public function id(): ?int
 	{
+		if( !$this->check() )
+		{
+			return null;
+		}
+		
 		return $this->_SessionManager->get( 'user_id' );
 	}
 
