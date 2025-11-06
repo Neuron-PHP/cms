@@ -69,6 +69,7 @@
 			<span style="color: #95a5a6;">|</span>
 			<span><?= htmlspecialchars($User->getUsername() ?? 'User') ?></span>
 			<form method="POST" action="/logout" style="display: inline;">
+				<?= csrf_field() ?>
 				<button type="submit" style="background: none; border: none; color: white; cursor: pointer; padding: 0.5rem 1rem; border-radius: 4px;">
 					Logout
 				</button>
