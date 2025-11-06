@@ -144,7 +144,7 @@ class LoginController extends Content
 	private function isValidRedirectUrl( string $url ): bool
 	{
 		// Empty URLs are not valid
-		if( empty( $url ) )
+		if( $url === '' )
 		{
 			return false;
 		}
