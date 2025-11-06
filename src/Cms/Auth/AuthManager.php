@@ -42,6 +42,8 @@ class AuthManager
 
 		if( !$User )
 		{
+			// Perform dummy hash to normalize timing
+			$this->_PasswordHasher->verify( $Password, '$2y$10$dummyhashtopreventtimingattack1234567890' );
 			return false;
 		}
 
