@@ -22,6 +22,11 @@ class LoginController extends Content
 	private SessionManager $_SessionManager;
 	private CsrfTokenManager $_CsrfManager;
 
+	/**
+	 * Default redirect URL after login
+	 */
+	private const DEFAULT_REDIRECT_URL = '/admin/dashboard';
+
 	public function __construct( ?Application $app = null )
 	{
 		parent::__construct( $app );
@@ -52,14 +57,14 @@ class LoginController extends Content
 	 */
 	private function isValidRedirectUrl( string $url ): bool
 	{
-		// Only allow relative URLs or same-origin absolute URLs
+		// Only allow internal relative paths
 		if( empty( $url ) )
 		{
 			return false;
 		}
 		
 		// Reject URLs with schemes (http://, https://, javascript:, etc.)
-		if( preg_match( '#^[a-z][a-z0-9+.-]*:#i', $url ) )
+		if( preg_match( '/^[a-zA-Z][a-zA-Z0-9+.-]*:/', $url ) )
 		{
 			return false;
 		}
@@ -82,14 +87,14 @@ class LoginController extends Content
 		// If already logged in, redirect to dashboard
 		if( $this->_AuthManager->check() )
 		{
-			header( 'Location: /admin/dashboard' );
+			header( 'Location: ' . self::DEFAULT_REDIRECT_URL );
 			exit;
 		}
 
-		$requestedRedirect = $_GET['redirect'] ?? '/admin/dashboard';
+		$requestedRedirect = $_GET['redirect'] ?? self::DEFAULT_REDIRECT_URL;
 		$redirectUrl = $this->isValidRedirectUrl( $requestedRedirect ) 
 			? $requestedRedirect 
-			: '/admin/dashboard';
+			: self::DEFAULT_REDIRECT_URL;
 
 		$ViewData = [
 			'Title' => 'Login | ' . $this->getName(),
@@ -147,10 +152,10 @@ class LoginController extends Content
 		$this->_SessionManager->flash( 'success', 'Welcome back!' );
 
 		// Redirect to intended URL or dashboard
-		$requestedRedirect = $_POST['redirect_url'] ?? '/admin/dashboard';
+		$requestedRedirect = $_POST['redirect_url'] ?? self::DEFAULT_REDIRECT_URL;
 		$redirectUrl = $this->isValidRedirectUrl( $requestedRedirect ) 
 			? $requestedRedirect 
-			: '/admin/dashboard';
+			: self::DEFAULT_REDIRECT_URL;
 		header( 'Location: ' . $redirectUrl );
 		exit;
 	}
