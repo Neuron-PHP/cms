@@ -47,13 +47,13 @@ class DeleteCommand extends Command
 		{
 			$this->output( "\n❌ Error: Please provide a user ID or username.\n" );
 			$this->output( "Usage: php neuron cms:user:delete <id or username>\n" );
-			return self::FAILURE;
+			return 1;
 		}
 
 		$repository = $this->getUserRepository();
 		if( !$repository )
 		{
-			return self::FAILURE;
+			return 1;
 		}
 
 		// Find user by ID or username
@@ -71,7 +71,7 @@ class DeleteCommand extends Command
 		if( !$user )
 		{
 			$this->output( "\n❌ Error: User '$identifier' not found.\n" );
-			return self::FAILURE;
+			return 1;
 		}
 
 		// Display user info
@@ -90,7 +90,7 @@ class DeleteCommand extends Command
 		if( trim( $response ) !== 'DELETE' )
 		{
 			$this->output( "\n❌ Deletion cancelled.\n" );
-			return self::FAILURE;
+			return 1;
 		}
 
 		// Delete user
@@ -99,16 +99,16 @@ class DeleteCommand extends Command
 			if( $repository->delete( $user->getId() ) )
 			{
 				$this->output( "\n✅ User deleted successfully.\n" );
-				return self::SUCCESS;
+				return 0;
 			}
 
 			$this->output( "\n❌ Failed to delete user.\n" );
-			return self::FAILURE;
+			return 1;
 		}
 		catch( \Exception $e )
 		{
 			$this->output( "\n❌ Error: " . $e->getMessage() . "\n" );
-			return self::FAILURE;
+			return 1;
 		}
 	}
 

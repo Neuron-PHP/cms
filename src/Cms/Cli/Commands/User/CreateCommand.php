@@ -51,7 +51,7 @@ class CreateCommand extends Command
 		$repository = $this->getUserRepository();
 		if( !$repository )
 		{
-			return self::FAILURE;
+			return 1;
 		}
 
 		$hasher = new PasswordHasher();
@@ -63,14 +63,14 @@ class CreateCommand extends Command
 		if( empty( $username ) )
 		{
 			$this->output( "\n❌ Error: Username is required!\n" );
-			return self::FAILURE;
+			return 1;
 		}
 
 		// Check if user exists
 		if( $repository->findByUsername( $username ) )
 		{
 			$this->output( "\n❌ Error: User '$username' already exists!\n" );
-			return self::FAILURE;
+			return 1;
 		}
 
 		// Get email
@@ -80,14 +80,14 @@ class CreateCommand extends Command
 		if( empty( $email ) || !filter_var( $email, FILTER_VALIDATE_EMAIL ) )
 		{
 			$this->output( "\n❌ Error: Valid email is required!\n" );
-			return self::FAILURE;
+			return 1;
 		}
 
 		// Check if email exists
 		if( $repository->findByEmail( $email ) )
 		{
 			$this->output( "\n❌ Error: Email '$email' is already in use!\n" );
-			return self::FAILURE;
+			return 1;
 		}
 
 		// Get password
@@ -96,7 +96,7 @@ class CreateCommand extends Command
 		if( strlen( $password ) < 8 )
 		{
 			$this->output( "\n❌ Error: Password must be at least 8 characters long!\n" );
-			return self::FAILURE;
+			return 1;
 		}
 
 		// Validate password
@@ -110,7 +110,7 @@ class CreateCommand extends Command
 			}
 
 			$this->output( "" );
-			return self::FAILURE;
+			return 1;
 		}
 
 		// Get role
@@ -152,12 +152,12 @@ class CreateCommand extends Command
 			$this->output( "  Role: " . $user->getRole() );
 			$this->output( "" );
 
-			return self::SUCCESS;
+			return 0;
 		}
 		catch( \Exception $e )
 		{
 			$this->output( "\n❌ Error creating user: " . $e->getMessage() . "\n" );
-			return self::FAILURE;
+			return 1;
 		}
 	}
 

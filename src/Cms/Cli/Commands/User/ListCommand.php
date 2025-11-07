@@ -44,7 +44,7 @@ class ListCommand extends Command
 		$repository = $this->getUserRepository();
 		if( !$repository )
 		{
-			return self::FAILURE;
+			return 1;
 		}
 
 		$users = $repository->all();
@@ -52,14 +52,14 @@ class ListCommand extends Command
 		if( empty( $users ) )
 		{
 			$this->output( "\nℹ️  No users found.\n" );
-			return self::SUCCESS;
+			return 0;
 		}
 
 		$this->output( "\n" );
 		$this->displayUsersTable( $users );
 		$this->output( "\nTotal users: " . count( $users ) . "\n" );
 
-		return self::SUCCESS;
+		return 0;
 	}
 
 	/**

@@ -8,6 +8,7 @@ use Neuron\Cms\Repositories\DatabaseUserRepository;
 use Neuron\Cms\Auth\PasswordHasher;
 use Neuron\Data\Setting\SettingManager;
 use Neuron\Data\Setting\Source\Yaml;
+use Neuron\Patterns\Registry;
 
 /**
  * Install the CMS admin UI into the project
@@ -69,12 +70,10 @@ class InstallCommand extends Command
 			$this->output( "Resources directory exists: resources/views/admin/" );
 			$this->output( "" );
 
-			$response = $this->prompt( "Do you want to reinstall? This will overwrite existing files. (yes/no): " );
-
-			if( strtolower( trim( $response ) ) !== 'yes' )
+			if( !$this->input->confirm( "Do you want to reinstall? This will overwrite existing files", false ) )
 			{
 				$this->output( "\n❌ Installation cancelled.\n" );
-				return self::FAILURE;
+				return 1;
 			}
 		}
 
@@ -94,7 +93,7 @@ class InstallCommand extends Command
 			if( !$this->$method() )
 			{
 				$this->output( "\n❌ Installation failed!\n" );
-				return self::FAILURE;
+				return 1;
 			}
 		}
 
@@ -102,20 +101,18 @@ class InstallCommand extends Command
 		if( !$this->generateMigration() )
 		{
 			$this->output( "\n❌ Installation failed at migration generation!\n" );
-			return self::FAILURE;
+			return 1;
 		}
 
 		// Ask to run migration
 		$this->output( "\n" );
-		$response = $this->prompt( "Would you like to run the migration now? (yes/no): " );
-
-		if( strtolower( trim( $response ) ) === 'yes' )
+		if( $this->input->confirm( "Would you like to run the migration now?", true ) )
 		{
 			if( !$this->runMigration() )
 			{
 				$this->output( "\n❌ Migration failed!\n" );
 				$this->output( "ℹ️  You can run it manually with: php neuron cms:migrate\n" );
-				return self::FAILURE;
+				return 1;
 			}
 		}
 		else
@@ -129,9 +126,7 @@ class InstallCommand extends Command
 
 		// Create first admin user
 		$this->output( "\n" );
-		$response = $this->prompt( "Would you like to create an admin user now? (yes/no): " );
-
-		if( strtolower( trim( $response ) ) === 'yes' )
+		if( $this->input->confirm( "Would you like to create an admin user now?", true ) )
 		{
 			$this->createAdminUser();
 		}
@@ -140,7 +135,7 @@ class InstallCommand extends Command
 			$this->output( "\nℹ️  You can create an admin user later with: php neuron cms:user:create\n" );
 		}
 
-		return self::SUCCESS;
+		return 0;
 	}
 
 	/**
@@ -320,39 +315,124 @@ class InstallCommand extends Command
 		$this->output( "║  Database Configuration               ║" );
 		$this->output( "╚═══════════════════════════════════════╝\n" );
 
-		$this->output( "Select database adapter:" );
-		$this->output( "  1) SQLite (recommended - simple, no server required)" );
-		$this->output( "  2) MySQL" );
-		$this->output( "  3) PostgreSQL" );
-		$this->output( "" );
+		$choice = $this->input->choice(
+			"Select database adapter:",
+			[
+				'sqlite' => 'SQLite (recommended - simple, no server required)',
+				'mysql' => 'MySQL',
+				'pgsql' => 'PostgreSQL'
+			],
+			'sqlite'
+		);
 
-		$choice = $this->prompt( "Enter choice (1-3): " );
-
-		$config = [];
-
-		switch( trim( $choice ) )
+		$config = match( $choice )
 		{
-			case '1':
-				$config = $this->configureSqlite();
-				break;
-
-			case '2':
-				$config = $this->configureMysql();
-				break;
-
-			case '3':
-				$config = $this->configurePostgresql();
-				break;
-
-			default:
-				$this->output( "\n❌ Invalid choice. Using SQLite as default.\n" );
-				$config = $this->configureSqlite();
-		}
+			'sqlite' => $this->configureSqlite(),
+			'mysql' => $this->configureMysql(),
+			'pgsql' => $this->configurePostgresql(),
+			default => $this->configureSqlite()
+		};
 
 		if( !$config )
 		{
 			return false;
 		}
+
+		// Prompt for application settings
+		$appConfig = $this->configureApplication();
+
+		if( !$appConfig )
+		{
+			return false;
+		}
+
+		// Merge and save complete configuration
+		return $this->saveCompleteConfig( $config, $appConfig );
+	}
+
+	/**
+	 * Configure application settings
+	 */
+	private function configureApplication(): array
+	{
+		$this->output( "\n╔═══════════════════════════════════════╗" );
+		$this->output( "║  Application Configuration            ║" );
+		$this->output( "╚═══════════════════════════════════════╝\n" );
+
+		// System timezone
+		$defaultTimezone = date_default_timezone_get();
+		$timezone = $this->input->ask( "System timezone", $defaultTimezone );
+
+		// Site configuration
+		$this->output( "\n--- Site Information ---\n" );
+
+		$siteName = $this->input->ask( "Site name" );
+
+		if( !$siteName )
+		{
+			$this->output( "❌ Site name is required!" );
+			return [];
+		}
+
+		$siteTitle = $this->input->ask( "Site title (displayed in browser)", $siteName );
+		$siteUrl = $this->input->ask( "Site URL (e.g., https://example.com)" );
+
+		if( !$siteUrl )
+		{
+			$this->output( "❌ Site URL is required!" );
+			return [];
+		}
+
+		$siteDescription = $this->input->ask( "Site description (optional)", "" );
+
+		$this->_Messages[] = "Site: $siteName ($siteUrl)";
+		$this->_Messages[] = "Timezone: $timezone";
+
+		return [
+			'timezone' => $timezone,
+			'siteName' => $siteName,
+			'siteTitle' => $siteTitle,
+			'siteUrl' => $siteUrl,
+			'siteDescription' => $siteDescription
+		];
+	}
+
+	/**
+	 * Save complete configuration with all required sections
+	 */
+	private function saveCompleteConfig( array $DatabaseConfig, array $AppConfig ): bool
+	{
+		// Build complete configuration
+		$config = [
+			'logging' => [
+				'destination' => '\\Neuron\\Log\\Destination\\File',
+				'format' => '\\Neuron\\Log\\Format\\PlainText',
+				'file' => 'storage/app.log',
+				'level' => 'debug'
+			],
+			'views' => [
+				'path' => 'resources/views'
+			],
+			'system' => [
+				'timezone' => $AppConfig['timezone'],
+				'base_path' => $this->_ProjectPath
+			],
+			'site' => [
+				'name' => $AppConfig['siteName'],
+				'title' => $AppConfig['siteTitle'],
+				'url' => $AppConfig['siteUrl'],
+				'description' => $AppConfig['siteDescription']
+			],
+			'cache' => [
+				'enabled' => false,
+				'storage' => 'file',
+				'path' => 'cache/views',
+				'ttl' => 3600
+			]
+		];
+
+		// Merge database configuration
+		$config = array_merge( $config, $DatabaseConfig );
 
 		// Save configuration
 		return $this->saveConfig( $config );
@@ -365,8 +445,7 @@ class InstallCommand extends Command
 	{
 		$this->output( "\n--- SQLite Configuration ---\n" );
 
-		$dbPath = $this->prompt( "Database file path (storage/database.sqlite): " );
-		$dbPath = trim( $dbPath ) ?: 'storage/database.sqlite';
+		$dbPath = $this->input->ask( "Database file path", "storage/database.sqlite3" );
 
 		// Make path absolute if relative
 		if( !empty( $dbPath ) && $dbPath[0] !== '/' )
@@ -402,14 +481,9 @@ class InstallCommand extends Command
 	{
 		$this->output( "\n--- MySQL Configuration ---\n" );
 
-		$host = $this->prompt( "Host (localhost): " );
-		$host = trim( $host ) ?: 'localhost';
-
-		$port = $this->prompt( "Port (3306): " );
-		$port = trim( $port ) ?: '3306';
-
-		$name = $this->prompt( "Database name: " );
-		$name = trim( $name );
+		$host = $this->input->ask( "Host", "localhost" );
+		$port = $this->input->ask( "Port", "3306" );
+		$name = $this->input->ask( "Database name" );
 
 		if( !$name )
 		{
@@ -417,8 +491,7 @@ class InstallCommand extends Command
 			return [];
 		}
 
-		$user = $this->prompt( "Username: " );
-		$user = trim( $user );
+		$user = $this->input->ask( "Database username" );
 
 		if( !$user )
 		{
@@ -426,10 +499,8 @@ class InstallCommand extends Command
 			return [];
 		}
 
-		$pass = $this->prompt( "Password: " );
-
-		$charset = $this->prompt( "Charset (utf8mb4): " );
-		$charset = trim( $charset ) ?: 'utf8mb4';
+		$pass = $this->input->askSecret( "Database password" );
+		$charset = $this->input->ask( "Character set (utf8mb4 recommended)", "utf8mb4" );
 
 		$this->_Messages[] = "Database: MySQL ($host:$port/$name)";
 
@@ -453,14 +524,9 @@ class InstallCommand extends Command
 	{
 		$this->output( "\n--- PostgreSQL Configuration ---\n" );
 
-		$host = $this->prompt( "Host (localhost): " );
-		$host = trim( $host ) ?: 'localhost';
-
-		$port = $this->prompt( "Port (5432): " );
-		$port = trim( $port ) ?: '5432';
-
-		$name = $this->prompt( "Database name: " );
-		$name = trim( $name );
+		$host = $this->input->ask( "Host", "localhost" );
+		$port = $this->input->ask( "Port", "5432" );
+		$name = $this->input->ask( "Database name" );
 
 		if( !$name )
 		{
@@ -468,8 +534,7 @@ class InstallCommand extends Command
 			return [];
 		}
 
-		$user = $this->prompt( "Username: " );
-		$user = trim( $user );
+		$user = $this->input->ask( "Database username" );
 
 		if( !$user )
 		{
@@ -477,7 +542,7 @@ class InstallCommand extends Command
 			return [];
 		}
 
-		$pass = $this->prompt( "Password: " );
+		$pass = $this->input->askSecret( "Database password" );
 
 		$this->_Messages[] = "Database: PostgreSQL ($host:$port/$name)";
 
@@ -600,10 +665,35 @@ class InstallCommand extends Command
 		$this->output( "\nGenerating database migration..." );
 
 		$migrationName = 'CreateUsersTable';
+		$snakeCaseName = $this->camelToSnake( $migrationName );
+
+		// Use db/migrate path to match MigrationManager expectations
+		$migrationsDir = $this->_ProjectPath . '/db/migrate';
+
+		// Create migrations directory if it doesn't exist
+		if( !is_dir( $migrationsDir ) )
+		{
+			if( !mkdir( $migrationsDir, 0755, true ) )
+			{
+				$this->output( "❌ Failed to create migrations directory!" );
+				return false;
+			}
+		}
+
+		// Check if migration already exists
+		$existingFiles = glob( $migrationsDir . '/*_' . $snakeCaseName . '.php' );
+		if( !empty( $existingFiles ) )
+		{
+			$existingFile = basename( $existingFiles[0] );
+			$this->output( "ℹ️  Migration already exists: $existingFile" );
+			$this->_Messages[] = "Using existing migration: db/migrate/$existingFile";
+			return true;
+		}
+
 		$timestamp = date( 'YmdHis' );
 		$className = $migrationName;
-		$fileName = $timestamp . '_' . $this->camelToSnake( $migrationName ) . '.php';
-		$filePath = $this->_ProjectPath . '/storage/migrations/' . $fileName;
+		$fileName = $timestamp . '_' . $snakeCaseName . '.php';
+		$filePath = $migrationsDir . '/' . $fileName;
 
 		$template = $this->getMigrationTemplate( $className );
 
@@ -613,7 +703,7 @@ class InstallCommand extends Command
 			return false;
 		}
 
-		$this->_Messages[] = "Created: storage/migrations/$fileName";
+		$this->_Messages[] = "Created: db/migrate/$fileName";
 		return true;
 	}
 
@@ -678,51 +768,60 @@ PHP;
 	{
 		$this->output( "\nRunning migration...\n" );
 
-		// Load database config
-		$configFile = $this->_ProjectPath . '/config/config.yaml';
-		if( !file_exists( $configFile ) )
-		{
-			$this->output( "❌ Configuration file not found!" );
-			return false;
-		}
-
 		try
 		{
-			$yaml = new Yaml( $configFile );
-			$settings = new SettingManager( $yaml );
-			$dbConfig = $this->getDatabaseConfig( $settings );
+			// Get the CLI application from the registry
+			$app = Registry::getInstance()->get( 'cli.application' );
 
-			if( !$dbConfig )
+			if( !$app )
 			{
-				$this->output( "❌ Database configuration not found!" );
+				$this->output( "❌ CLI application not found in registry!" );
 				return false;
 			}
+
+			// Check if cms:migrate command exists
+			if( !$app->has( 'cms:migrate' ) )
+			{
+				$this->output( "❌ cms:migrate command not found!" );
+				return false;
+			}
+
+			// Get the migrate command class
+			$commandClass = $app->getRegistry()->get( 'cms:migrate' );
+
+			if( !class_exists( $commandClass ) )
+			{
+				$this->output( "❌ Migrate command class not found: {$commandClass}" );
+				return false;
+			}
+
+			// Instantiate the migrate command
+			$migrateCommand = new $commandClass();
+
+			// Set input and output on the command
+			$migrateCommand->setInput( $this->input );
+			$migrateCommand->setOutput( $this->output );
+
+			// Configure the command
+			$migrateCommand->configure();
+
+			// Execute the migrate command
+			$exitCode = $migrateCommand->execute();
+
+			if( $exitCode !== 0 )
+			{
+				$this->output( "\n❌ Migration failed with exit code: $exitCode" );
+				return false;
+			}
+
+			$this->output( "\n✅ Migration completed successfully!" );
+			return true;
 		}
 		catch( \Exception $e )
 		{
-			$this->output( "❌ Failed to load configuration: " . $e->getMessage() );
+			$this->output( "❌ Error running migration: " . $e->getMessage() );
 			return false;
 		}
-
-		// Execute migration command
-		$output = [];
-		$returnCode = 0;
-
-		exec( 'cd ' . escapeshellarg( $this->_ProjectPath ) . ' && php neuron cms:migrate 2>&1', $output, $returnCode );
-
-		foreach( $output as $line )
-		{
-			$this->output( $line );
-		}
-
-		if( $returnCode !== 0 )
-		{
-			$this->output( "\n❌ Migration failed with exit code: $returnCode" );
-			return false;
-		}
-
-		$this->output( "\n✅ Migration completed successfully!" );
-		return true;
 	}
 
 	/**
@@ -785,8 +884,7 @@ PHP;
 		$hasher = new PasswordHasher();
 
 		// Get username
-		$username = $this->prompt( "Enter username (admin): " );
-		$username = trim( $username ) ?: 'admin';
+		$username = $this->input->ask( "Username (alphanumeric, 3-50 chars)", "admin" );
 
 		// Check if user exists
 		if( $repository->findByUsername( $username ) )
@@ -796,11 +894,11 @@ PHP;
 		}
 
 		// Get email
-		$email = $this->prompt( "Enter email (admin@example.com): " );
-		$email = trim( $email ) ?: 'admin@example.com';
+		$email = $this->input->ask( "Email address", "admin@example.com" );
 
 		// Get password
-		$password = $this->prompt( "Enter password (min 8 characters): " );
+		$this->output( "Password requirements: min 8 chars, uppercase, lowercase, number, special char" );
+		$password = $this->input->askSecret( "Password" );
 
 		if( strlen( $password ) < 8 )
 		{
@@ -888,15 +986,6 @@ PHP;
 		{
 			return null;
 		}
-	}
-
-	/**
-	 * Prompt for user input
-	 */
-	private function prompt( string $Message ): string
-	{
-		echo $Message;
-		return trim( fgets( STDIN ) );
 	}
 
 	/**

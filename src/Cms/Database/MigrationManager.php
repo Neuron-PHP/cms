@@ -4,8 +4,8 @@ namespace Neuron\Cms\Database;
 
 use Neuron\Data\Setting\Source\ISettingSource;
 use Phinx\Config\Config;
-use Phinx\Console\PhinxApplication;
-use Symfony\Component\Console\Input\ArrayInput;
+use Phinx\Migration\Manager;
+use Symfony\Component\Console\Input\StringInput;
 use Symfony\Component\Console\Output\BufferedOutput;
 
 /**
@@ -92,8 +92,15 @@ class MigrationManager
 		try
 		{
 			$adapter = $this->getSetting( 'database', 'adapter', 'mysql' );
-			$host = $this->getSetting( 'database', 'host', 'localhost' );
 			$name = $this->getSetting( 'database', 'name', 'neuron_cms' );
+
+			// For SQLite, remove .sqlite3 suffix as Phinx will append it
+			if( $adapter === 'sqlite' && str_ends_with( $name, '.sqlite3' ) )
+			{
+				$name = substr( $name, 0, -8 ); // Remove .sqlite3
+			}
+
+			$host = $this->getSetting( 'database', 'host', 'localhost' );
 			$user = $this->getSetting( 'database', 'user', 'root' );
 			$pass = $this->getSetting( 'database', 'pass', '' );
 			$port = $this->getSetting( 'database', 'port', 3306 );
@@ -264,24 +271,69 @@ class MigrationManager
 	 */
 	public function execute( string $command, array $arguments = [] ): array
 	{
-		$application = new PhinxApplication();
-		$application->setAutoExit( false );
+		// Get environment name
+		$environment = $arguments['--environment'] ?? $this->getEnvironment();
 
-		// Build input array
-		$input = array_merge(
-			['command' => $command],
-			$arguments,
-			['--configuration' => null] // We provide config directly
-		);
-
-		$arrayInput = new ArrayInput( $input );
+		// Create output buffer
 		$output = new BufferedOutput();
 
-		// Set config before running command
-		$application->setConfig( $this->getPhinxConfig() );
+		// Create Phinx Manager with our config
+		$manager = new Manager(
+			$this->getPhinxConfig(),
+			new StringInput( '' ),
+			$output
+		);
 
-		$exitCode = $application->run( $arrayInput, $output );
+		try
+		{
+			switch( $command )
+			{
+				case 'migrate':
+					$target = $arguments['--target'] ?? null;
+					$date = $arguments['--date'] ?? null;
+					$fake = $arguments['--fake'] ?? false;
 
-		return [$exitCode, $output->fetch()];
+					// Run migration and capture output
+					$manager->migrate( $environment, $target, $fake );
+
+					// Get the output from the manager
+					$result = $output->fetch();
+
+					// If no output from Phinx, add a success message
+					if( empty( trim( $result ) ) )
+					{
+						$result = "All migrations have been run\n";
+					}
+
+					return [0, $result];
+
+				case 'rollback':
+					$target = $arguments['--target'] ?? null;
+					$date = $arguments['--date'] ?? null;
+					$force = $arguments['--force'] ?? false;
+					$fake = $arguments['--fake'] ?? false;
+
+					$manager->rollback( $environment, $target, $force, $fake );
+
+					$result = $output->fetch();
+					if( empty( trim( $result ) ) )
+					{
+						$result = "Rollback completed successfully\n";
+					}
+
+					return [0, $result];
+
+				case 'status':
+					$manager->printStatus( $environment );
+					return [0, $output->fetch()];
+
+				default:
+					return [1, "Unknown command: $command\n"];
+			}
+		}
+		catch( \Exception $e )
+		{
+			return [1, "Error: " . $e->getMessage() . "\n"];
+		}
 	}
 }
