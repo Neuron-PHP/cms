@@ -1,0 +1,38 @@
+<form method="POST" action="/login">
+	<input type="hidden" name="csrf_token" value="<?= htmlspecialchars($CsrfToken) ?>">
+	<input type="hidden" name="redirect_url" value="<?= htmlspecialchars($RedirectUrl ?? '/admin/dashboard') ?>">
+
+	<div class="mb-3">
+		<label for="username" class="form-label">Username</label>
+		<input
+			type="text"
+			id="username"
+			name="username"
+			class="form-control"
+			placeholder="Enter your username"
+			required
+			autofocus
+		>
+	</div>
+
+	<div class="mb-3">
+		<label for="password" class="form-label">Password</label>
+		<input
+			type="password"
+			id="password"
+			name="password"
+			class="form-control"
+			placeholder="Enter your password"
+			required
+		>
+	</div>
+
+	<div class="mb-3 form-check">
+		<input type="checkbox" id="remember" name="remember" value="1" class="form-check-input">
+		<label for="remember" class="form-check-label">Remember me for 30 days</label>
+	</div>
+
+	<button type="submit" class="btn btn-primary w-100">
+		Sign In
+	</button>
+</form>

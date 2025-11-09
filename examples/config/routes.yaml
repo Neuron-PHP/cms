@@ -1,32 +1,174 @@
+# CMS Routes Configuration
+# Admin routes with authentication
+
 routes:
-  login:
+  # Authentication routes
+  - method: GET
     route: /login
-    method: POST
-    controller: App\Controllers\AuthController@login
-    request: login
+    controller: Neuron\Cms\Controllers\Auth\LoginController@showLoginForm
 
-  test:
-    route: /test
-    method: POST
-    controller: Mvc\TestController@test
-    request: test
+  - method: POST
+    route: /login
+    controller: Neuron\Cms\Controllers\Auth\LoginController@login
 
-  put:
-    route: /test_put
-    method: PUT
-    controller: Mvc\TestController@test
+  - method: POST
+    route: /logout
+    controller: Neuron\Cms\Controllers\Auth\LoginController@logout
+    filter: auth
 
-  delete:
-    route: /test_delete
-    method: DELETE
-    controller: Mvc\TestController@test
+  # Admin Dashboard
+  - method: GET
+    route: /admin
+    controller: Neuron\Cms\Controllers\Admin\DashboardController@index
+    filter: auth
 
-  no_request:
-    route: /no_request
-    method: GET
-    controller: Mvc\TestController@no_request
+  - method: GET
+    route: /admin/dashboard
+    controller: Neuron\Cms\Controllers\Admin\DashboardController@index
+    filter: auth
 
-  bad_request:
-    route: /bad_request
-    method: GET
-    controller: Mvc\TestController@bad_request
+  # User Management
+  - method: GET
+    route: /admin/users
+    controller: Neuron\Cms\Controllers\Admin\UserController@index
+    filter: auth
+
+  - method: GET
+    route: /admin/users/create
+    controller: Neuron\Cms\Controllers\Admin\UserController@create
+    filter: auth
+
+  - method: POST
+    route: /admin/users
+    controller: Neuron\Cms\Controllers\Admin\UserController@store
+    filter: auth
+
+  - method: GET
+    route: /admin/users/:id/edit
+    controller: Neuron\Cms\Controllers\Admin\UserController@edit
+    filter: auth
+
+  - method: PUT
+    route: /admin/users/:id
+    controller: Neuron\Cms\Controllers\Admin\UserController@update
+    filter: auth
+
+  - method: DELETE
+    route: /admin/users/:id
+    controller: Neuron\Cms\Controllers\Admin\UserController@destroy
+    filter: auth
+
+  # Profile Management
+  - method: GET
+    route: /admin/profile
+    controller: Neuron\Cms\Controllers\Admin\ProfileController@edit
+    filter: auth
+
+  - method: PUT
+    route: /admin/profile
+    controller: Neuron\Cms\Controllers\Admin\ProfileController@update
+    filter: auth
+
+  # Settings
+  - method: GET
+    route: /admin/settings
+    controller: Neuron\Cms\Controllers\Admin\SettingsController@index
+    filter: auth
+
+  - method: PUT
+    route: /admin/settings
+    controller: Neuron\Cms\Controllers\Admin\SettingsController@update
+    filter: auth
+
+  # Blog Post Management
+  - method: GET
+    route: /admin/posts
+    controller: Neuron\Cms\Controllers\Admin\PostController@index
+    filter: auth
+
+  - method: GET
+    route: /admin/posts/create
+    controller: Neuron\Cms\Controllers\Admin\PostController@create
+    filter: auth
+
+  - method: POST
+    route: /admin/posts
+    controller: Neuron\Cms\Controllers\Admin\PostController@store
+    filter: auth
+
+  - method: GET
+    route: /admin/posts/:id/edit
+    controller: Neuron\Cms\Controllers\Admin\PostController@edit
+    filter: auth
+
+  - method: PUT
+    route: /admin/posts/:id
+    controller: Neuron\Cms\Controllers\Admin\PostController@update
+    filter: auth
+
+  - method: DELETE
+    route: /admin/posts/:id
+    controller: Neuron\Cms\Controllers\Admin\PostController@destroy
+    filter: auth
+
+  # Blog Category Management
+  - method: GET
+    route: /admin/categories
+    controller: Neuron\Cms\Controllers\Admin\CategoryController@index
+    filter: auth
+
+  - method: GET
+    route: /admin/categories/create
+    controller: Neuron\Cms\Controllers\Admin\CategoryController@create
+    filter: auth
+
+  - method: POST
+    route: /admin/categories
+    controller: Neuron\Cms\Controllers\Admin\CategoryController@store
+    filter: auth
+
+  - method: GET
+    route: /admin/categories/:id/edit
+    controller: Neuron\Cms\Controllers\Admin\CategoryController@edit
+    filter: auth
+
+  - method: PUT
+    route: /admin/categories/:id
+    controller: Neuron\Cms\Controllers\Admin\CategoryController@update
+    filter: auth
+
+  - method: DELETE
+    route: /admin/categories/:id
+    controller: Neuron\Cms\Controllers\Admin\CategoryController@destroy
+    filter: auth
+
+  # Blog Tag Management
+  - method: GET
+    route: /admin/tags
+    controller: Neuron\Cms\Controllers\Admin\TagController@index
+    filter: auth
+
+  - method: GET
+    route: /admin/tags/create
+    controller: Neuron\Cms\Controllers\Admin\TagController@create
+    filter: auth
+
+  - method: POST
+    route: /admin/tags
+    controller: Neuron\Cms\Controllers\Admin\TagController@store
+    filter: auth
+
+  - method: GET
+    route: /admin/tags/:id/edit
+    controller: Neuron\Cms\Controllers\Admin\TagController@edit
+    filter: auth
+
+  - method: PUT
+    route: /admin/tags/:id
+    controller: Neuron\Cms\Controllers\Admin\TagController@update
+    filter: auth
+
+  - method: DELETE
+    route: /admin/tags/:id
+    controller: Neuron\Cms\Controllers\Admin\TagController@destroy
+    filter: auth
