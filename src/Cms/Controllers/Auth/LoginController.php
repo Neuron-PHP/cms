@@ -148,8 +148,8 @@ class LoginController extends Content
 
 		// Redirect to intended URL or dashboard
 		$requestedRedirect = $_POST['redirect_url'] ?? '/admin/dashboard';
-		$RedirectUrl = $this->isValidRedirectUrl( $requestedRedirect ) 
-			? $requestedRedirect 
+		$RedirectUrl = $this->isValidRedirectUrl( $requestedRedirect )
+			? $requestedRedirect
 			: '/admin/dashboard';
 		header( 'Location: ' . $RedirectUrl );
 		exit;
@@ -167,5 +167,43 @@ class LoginController extends Content
 
 		header( 'Location: /login' );
 		exit;
+	}
+
+	/**
+	 * Validate if a redirect URL is safe to use.
+	 * Only allows relative URLs (starting with /) to prevent open redirect vulnerabilities.
+	 *
+	 * @param string $url The URL to validate
+	 * @return bool True if the URL is safe, false otherwise
+	 */
+	private function isValidRedirectUrl( string $url ): bool
+	{
+		// Empty URLs are not valid
+		if( $url === '' )
+		{
+			return false;
+		}
+
+		// Only allow relative URLs that start with /
+		if( $url[0] !== '/' )
+		{
+			return false;
+		}
+
+		// Prevent protocol-relative URLs (//example.com)
+		if( strlen( $url ) > 1 && $url[1] === '/' )
+		{
+			return false;
+		}
+
+		// Check for malicious patterns
+		// Prevent URLs with @ symbol (could be used for phishing: /path@evil.com)
+		// Prevent URLs with backslashes (could bypass filters: /\evil.com)
+		if( strpos( $url, '@' ) !== false || strpos( $url, '\\' ) !== false )
+		{
+			return false;
+		}
+
+		return true;
 	}
 }
