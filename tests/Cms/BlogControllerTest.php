@@ -64,9 +64,9 @@ class BlogControllerTest extends TestCase
 
 		Registry::getInstance()->set( 'Settings', $SettingManager );
 
-		// Set paths for views
-		Registry::getInstance()->set( 'Base.Path', __DIR__ . '/..' );
-		Registry::getInstance()->set( 'Views.Path', __DIR__ . '/../resources/views' );
+		// Set paths for views - point to CMS component's resources
+		Registry::getInstance()->set( 'Base.Path', __DIR__ . '/../..' );
+		Registry::getInstance()->set( 'Views.Path', __DIR__ . '/../../resources/views' );
 
 		// Initialize repositories with our test PDO
 		$this->initializeRepositories();
