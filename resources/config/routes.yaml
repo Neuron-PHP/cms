@@ -190,7 +190,7 @@ routes:
 
   - method: GET
     route: /blog/post/:slug
-    controller: Neuron\Cms\Controllers\Blog@post
+    controller: Neuron\Cms\Controllers\Blog@show
 
   - method: GET
     route: /blog/category/:slug
@@ -206,4 +206,4 @@ routes:
 
   - method: GET
     route: /rss
-    controller: Neuron\Cms\Controllers\Blog@rss
+    controller: Neuron\Cms\Controllers\Blog@feed

@@ -18,9 +18,11 @@ use Neuron\Patterns\Registry;
 		<?php
 	}
 	?>
+	<link rel="alternate" type="application/rss+xml" title="RSS Feed" href="/rss">
 	<meta name="application-name" content="">
 
 	<link href="https://cdn.jsdelivr.net/npm/bootswatch@5.3.7/dist/sandstone/bootstrap.min.css" rel="stylesheet">
+	<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
 	<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.min.js"></script>
 	<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
 </head>
@@ -40,6 +42,11 @@ use Neuron\Patterns\Registry;
 	<?= $Content ?>
 	<hr>
 	<footer class="footer" role="presentation">
+		<div class="text-center small mb-2">
+			<a href="/rss" class="text-decoration-none" title="Subscribe to RSS Feed">
+				<i class="bi bi-rss-fill text-warning"></i> Subscribe via RSS
+			</a>
+		</div>
 		<div class="text-center small">
 			<?= Registry::getInstance()->get( 'version' ) ?>
 		</div>
