@@ -3,8 +3,11 @@
 namespace Neuron\Cms\Controllers\Admin;
 
 use Neuron\Cms\Controllers\Content;
+use Neuron\Cms\Auth\CsrfTokenManager;
+use Neuron\Cms\Auth\SessionManager;
 use Neuron\Mvc\Application;
 use Neuron\Mvc\Responses\HttpResponseStatus;
+use Neuron\Mvc\Views\Html;
 use Neuron\Patterns\Registry;
 
 /**
@@ -32,6 +35,12 @@ class DashboardController extends Content
 			throw new \RuntimeException( 'Authenticated user not found in Registry' );
 		}
 
+		// Generate CSRF token and store in Registry for helper functions
+		$SessionManager = new SessionManager();
+		$SessionManager->start();
+		$CsrfManager = new CsrfTokenManager( $SessionManager );
+		Registry::getInstance()->set( 'Auth.CsrfToken', $CsrfManager->getToken() );
+
 		$ViewData = [
 			'Title' => 'Dashboard | ' . $this->getName(),
 			'Description' => 'Admin Dashboard',
@@ -39,11 +48,14 @@ class DashboardController extends Content
 			'WelcomeMessage' => 'Welcome back, ' . $User->getUsername() . '!'
 		];
 
-		return $this->renderHtml(
-			HttpResponseStatus::OK,
-			$ViewData,
-			'index',
-			'dashboard'
-		);
+		// Manually render with custom controller path
+		@http_response_code( HttpResponseStatus::OK->value );
+
+		$View = new Html();
+		$View->setController( 'Admin/Dashboard' )
+			 ->setLayout( 'admin' )
+			 ->setPage( 'index' );
+
+		return $View->render( $ViewData );
 	}
 }

@@ -141,8 +141,14 @@ class EnableCommand extends Command
 	 */
 	private function parseAllowedIps( ?string $IpOption, ?MaintenanceConfig $Config ): array
 	{
-		if( $IpOption )
+		// Check if option was provided (even if empty)
+		if( $IpOption !== null )
 		{
+			// Empty string means no IPs allowed
+			if( $IpOption === '' )
+			{
+				return [];
+			}
 			return array_map( 'trim', explode( ',', $IpOption ) );
 		}
 

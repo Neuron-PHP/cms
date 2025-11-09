@@ -56,30 +56,16 @@ class Provider
 			'Neuron\\Cms\\Cli\\Commands\\Maintenance\\StatusCommand'
 		);
 
-		// Database migration commands
+		// Email template generator
 		$registry->register(
-			'cms:migrate:create',
-			'Neuron\\Cms\\Cli\\Commands\\Migrate\\CreateCommand'
+			'mail:generate',
+			'Neuron\\Cms\\Cli\\Commands\\Generate\\EmailCommand'
 		);
 
+		// Queue installation
 		$registry->register(
-			'cms:migrate',
-			'Neuron\\Cms\\Cli\\Commands\\Migrate\\RunCommand'
-		);
-
-		$registry->register(
-			'cms:migrate:rollback',
-			'Neuron\\Cms\\Cli\\Commands\\Migrate\\RollbackCommand'
-		);
-
-		$registry->register(
-			'cms:migrate:status',
-			'Neuron\\Cms\\Cli\\Commands\\Migrate\\StatusCommand'
-		);
-
-		$registry->register(
-			'cms:migrate:seed',
-			'Neuron\\Cms\\Cli\\Commands\\Migrate\\SeedCommand'
+			'queue:install',
+			'Neuron\\Cms\\Cli\\Commands\\Queue\\InstallCommand'
 		);
 	}
 }

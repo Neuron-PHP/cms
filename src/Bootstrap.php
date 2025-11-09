@@ -5,6 +5,9 @@ use Neuron\Data\Object\Version;
 use Neuron\Data\Setting\Source\Yaml;
 use Neuron\Mvc\Application;
 
+// Load authentication helper functions
+require_once __DIR__ . '/Cms/Auth/helpers.php';
+
 /**
  * CMS Bootstrap Module for the Neuron Framework
  * 

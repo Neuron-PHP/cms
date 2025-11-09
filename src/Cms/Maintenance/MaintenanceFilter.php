@@ -80,9 +80,9 @@ class MaintenanceFilter extends Filter
 		// Check for custom view
 		if( $this->_CustomView && file_exists( $this->_CustomView ) )
 		{
-			ob_start();
 			$message = $this->_Manager->getMessage();
 			$retryAfter = $this->_Manager->getRetryAfter();
+			ob_start();
 			include $this->_CustomView;
 			return ob_get_clean();
 		}

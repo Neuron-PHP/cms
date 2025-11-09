@@ -1,8 +1,27 @@
+* Added `queue:install` command for installing the job queue system.
+* Queue installer generates migration for jobs and failed_jobs tables.
+* Queue installer automatically adds queue configuration to config.yaml.
+* Queue installer checks for neuron-php/jobs component availability.
+* Queue installer provides helpful usage information after installation.
+* Added comprehensive email system with PHPMailer integration.
+* Added EmailService class with fluent interface for composing and sending emails.
+* Added email helper functions: `sendEmail()`, `sendEmailTemplate()`, and `email()`.
+* Added `mail:generate` command for scaffolding email templates.
+* Added EMAIL.md documentation covering configuration, usage, and best practices.
+* Enhanced installer to create `resources/views/emails/` directory.
+* Added support for SMTP, sendmail, and PHP mail drivers.
+* Added template rendering for emails with data binding.
+* Added test mode for development (logs emails instead of sending).
+* Enhanced installer to create complete application directory structure.
+* Removed deprecated storage/migrations directory (now using db/migrate).
+* MigrationManager and all migration CLI commands now in `neuron-php/mvc` package.
+* Removed phinx dependency (now inherited from MVC component).
+
+## 0.8.1
+
 * Added the maintenance mode command.
 * Added the authentication layer.
 * Added database migrations.
-
-## 0.8.1
 
 * Cleaned up blog controller.
 * Updated components.

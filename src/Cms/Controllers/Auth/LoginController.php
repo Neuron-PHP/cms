@@ -8,6 +8,8 @@ use Neuron\Cms\Auth\SessionManager;
 use Neuron\Cms\Auth\CsrfTokenManager;
 use Neuron\Mvc\Application;
 use Neuron\Mvc\Responses\HttpResponseStatus;
+use Neuron\Mvc\Views\Html;
+use Neuron\Patterns\Registry;
 
 /**
  * Login controller.
@@ -18,7 +20,7 @@ use Neuron\Mvc\Responses\HttpResponseStatus;
  */
 class LoginController extends Content
 {
-	private AuthManager $_AuthManager;
+	private ?AuthManager $_AuthManager;
 	private SessionManager $_SessionManager;
 	private CsrfTokenManager $_CsrfManager;
 
@@ -26,20 +28,17 @@ class LoginController extends Content
 	{
 		parent::__construct( $app );
 
-		// Initialize auth components
-		$StoragePath = $this->getApp()->getBasePath() . '/storage/users';
-		$UserRepository = new \Neuron\Cms\Repositories\UserRepository( $StoragePath );
+		// Get AuthManager from Registry (set up by AuthInitializer)
+		$this->_AuthManager = Registry::getInstance()->get( 'AuthManager' );
 
+		if( !$this->_AuthManager )
+		{
+			throw new \RuntimeException( 'AuthManager not found in Registry. Ensure authentication is properly configured and that Application is set in Registry before initializers run.' );
+		}
+
+		// Initialize session and CSRF managers
 		$this->_SessionManager = new SessionManager();
 		$this->_SessionManager->start();
-
-		$PasswordHasher = new \Neuron\Cms\Auth\PasswordHasher();
-
-		$this->_AuthManager = new AuthManager(
-			$UserRepository,
-			$this->_SessionManager,
-			$PasswordHasher
-		);
 
 		$this->_CsrfManager = new CsrfTokenManager( $this->_SessionManager );
 	}
@@ -100,12 +99,15 @@ class LoginController extends Content
 			'RedirectUrl' => $redirectUrl
 		];
 
-		return $this->renderHtml(
-			HttpResponseStatus::OK,
-			$ViewData,
-			'login',
-			'auth'
-		);
+		// Manually render with custom controller path
+		@http_response_code( HttpResponseStatus::OK->value );
+
+		$View = new Html();
+		$View->setController( 'Auth' )
+			 ->setLayout( 'auth' )
+			 ->setPage( 'login' );
+
+		return $View->render( $ViewData );
 	}
 
 	/**

@@ -70,10 +70,10 @@ class Content extends Base
 
 		$Settings = Registry::getInstance()->get( 'Settings' );
 
-		$this->setName( $Settings->get( 'site', 'name' ) )
-			  ->setTitle( $Settings->get( 'site', 'title' ) )
-			  ->setDescription( $Settings->get( 'site', 'description' ) )
-			  ->setUrl( $Settings->get( 'site', 'url' ) )
+		$this->setName( $Settings->get( 'site', 'name' ) ?? 'Neuron CMS' )
+			  ->setTitle( $Settings->get( 'site', 'title' ) ?? 'Neuron CMS' )
+			  ->setDescription( $Settings->get( 'site', 'description' ) ?? '' )
+			  ->setUrl( $Settings->get( 'site', 'url' ) ?? '' )
 			  ->setRssUrl($this->getUrl() . "/blog/rss" );
 
 		try

@@ -27,7 +27,7 @@ class InstallCommand extends Command
 		$this->_ProjectPath = getcwd();
 
 		// Get component path
-		$this->_ComponentPath = dirname( dirname( dirname( dirname( __DIR__ ) ) ) );
+		$this->_ComponentPath = dirname( dirname( dirname( dirname( dirname( __DIR__ ) ) ) ) );
 	}
 
 	/**
@@ -80,9 +80,11 @@ class InstallCommand extends Command
 		// Run installation steps
 		$steps = [
 			'createDirectories' => 'Creating directories...',
-			'publishViews' => 'Publishing admin view templates...',
+			'publishViews' => 'Publishing view templates...',
+			'publishInitializers' => 'Publishing initializers...',
 			'createRouteConfig' => 'Creating route configuration...',
 			'createAuthConfig' => 'Creating auth configuration...',
+			'createPublicFiles' => 'Creating public folder and copying static assets...',
 			'setupDatabase' => 'Setting up database...',
 		];
 
@@ -111,13 +113,13 @@ class InstallCommand extends Command
 			if( !$this->runMigration() )
 			{
 				$this->output( "\n❌ Migration failed!\n" );
-				$this->output( "ℹ️  You can run it manually with: php neuron cms:migrate\n" );
+				$this->output( "ℹ️  You can run it manually with: php neuron db:migrate\n" );
 				return 1;
 			}
 		}
 		else
 		{
-			$this->output( "\nℹ️  Remember to run migration with: php neuron cms:migrate\n" );
+			$this->output( "\nℹ️  Remember to run migration with: php neuron db:migrate\n" );
 		}
 
 		// Display summary
@@ -152,13 +154,43 @@ class InstallCommand extends Command
 	private function createDirectories(): bool
 	{
 		$directories = [
+			// View directories
 			'/resources/views/admin',
-			'/resources/views/admin/layouts',
 			'/resources/views/admin/auth',
 			'/resources/views/admin/dashboard',
 			'/resources/views/admin/users',
+			'/resources/views/admin/posts',
+			'/resources/views/admin/categories',
+			'/resources/views/admin/tags',
+			'/resources/views/admin/profile',
+			'/resources/views/auth',
+			'/resources/views/blog',
+			'/resources/views/content',
+			'/resources/views/emails',
+			'/resources/views/http_codes',
+			'/resources/views/layouts',
+
+			// Application directories
+			'/app/Controllers',
+			'/app/Models',
+			'/app/Repositories',
+			'/app/Services',
+			'/app/Events',
+			'/app/Listeners',
+			'/app/Jobs',
+			'/app/Initializers',
+
+			// Storage directories
 			'/storage',
-			'/storage/migrations',
+			'/storage/logs',
+			'/storage/cache',
+
+			// Database directories
+			'/db',
+			'/db/migrate',
+			'/db/seed',
+
+			// Configuration directory
 			'/config',
 		];
 
@@ -186,31 +218,61 @@ class InstallCommand extends Command
 	 */
 	private function publishViews(): bool
 	{
-		$viewSource = $this->_ComponentPath . '/resources/views/admin';
-		$viewDest = $this->_ProjectPath . '/resources/views/admin';
+		// Copy all view directories
+		$viewDirs = [ 'admin', 'auth', 'blog', 'content', 'http_codes', 'layouts' ];
 
-		if( !is_dir( $viewSource ) )
+		foreach( $viewDirs as $dir )
 		{
-			$this->output( "  ⚠️  Warning: Source views not found at: $viewSource" );
-			return true; // Don't fail, views might not exist yet
+			$viewSource = $this->_ComponentPath . '/resources/views/' . $dir;
+			$viewDest = $this->_ProjectPath . '/resources/views/' . $dir;
+
+			if( !is_dir( $viewSource ) )
+			{
+				$this->output( "  ⚠️  Warning: Source views not found at: $viewSource" );
+				continue; // Skip if directory doesn't exist
+			}
+
+			// Copy all view files recursively
+			if( !$this->copyDirectory( $viewSource, $viewDest ) )
+			{
+				$this->output( "  ❌ Failed to copy views from: $dir" );
+				return false;
+			}
 		}
 
-		// Copy all view files recursively
-		return $this->copyDirectory( $viewSource, $viewDest );
+		return true;
 	}
 
 	/**
-	 * Create route configuration example
+	 * Publish initializers
+	 */
+	private function publishInitializers(): bool
+	{
+		$initializerSource = $this->_ComponentPath . '/resources/app/Initializers';
+		$initializerDest = $this->_ProjectPath . '/app/Initializers';
+
+		if( !is_dir( $initializerSource ) )
+		{
+			$this->output( "  ⚠️  Warning: Source initializers not found at: $initializerSource" );
+			return true; // Don't fail, initializers might not exist yet
+		}
+
+		// Copy all initializer files
+		return $this->copyDirectory( $initializerSource, $initializerDest );
+	}
+
+	/**
+	 * Create route configuration
 	 */
 	private function createRouteConfig(): bool
 	{
 		$routeFile = $this->_ProjectPath . '/config/routes.yaml';
-		$exampleFile = $this->_ComponentPath . '/examples/config/routes.yaml';
+		$resourceFile = $this->_ComponentPath . '/resources/config/routes.yaml';
 
-		// If routes.yaml doesn't exist, copy example
-		if( !file_exists( $routeFile ) && file_exists( $exampleFile ) )
+		// If routes.yaml doesn't exist, copy from resources
+		if( !file_exists( $routeFile ) && file_exists( $resourceFile ) )
 		{
-			if( copy( $exampleFile, $routeFile ) )
+			if( copy( $resourceFile, $routeFile ) )
 			{
 				$this->_Messages[] = "Created: config/routes.yaml";
 				return true;
@@ -228,7 +290,7 @@ class InstallCommand extends Command
 			if( strpos( $content, '/admin/dashboard' ) === false )
 			{
 				$this->_Messages[] = "⚠️  Please add admin routes to config/routes.yaml";
-				$this->_Messages[] = "   See examples/config/routes.yaml for reference";
+				$this->_Messages[] = "   See resources/config/routes.yaml for reference";
 			}
 		}
 
@@ -241,12 +303,12 @@ class InstallCommand extends Command
 	private function createAuthConfig(): bool
 	{
 		$authFile = $this->_ProjectPath . '/config/auth.yaml';
-		$exampleFile = $this->_ComponentPath . '/config/auth.yaml';
+		$resourceFile = $this->_ComponentPath . '/resources/config/auth.yaml';
 
-		// If auth.yaml doesn't exist, copy example
-		if( !file_exists( $authFile ) && file_exists( $exampleFile ) )
+		// If auth.yaml doesn't exist, copy from resources
+		if( !file_exists( $authFile ) && file_exists( $resourceFile ) )
 		{
-			if( copy( $exampleFile, $authFile ) )
+			if( copy( $resourceFile, $authFile ) )
 			{
 				$this->_Messages[] = "Created: config/auth.yaml";
 				return true;
@@ -254,6 +316,68 @@ class InstallCommand extends Command
 
 			$this->output( "  ❌ Failed to create auth.yaml" );
 			return false;
+		}
+
+		return true;
+	}
+
+	/**
+	 * Create public folder and copy all static assets
+	 */
+	private function createPublicFiles(): bool
+	{
+		$publicDir = $this->_ProjectPath . '/public';
+
+		// Create public directory if it doesn't exist
+		if( !is_dir( $publicDir ) )
+		{
+			if( !mkdir( $publicDir, 0755, true ) )
+			{
+				$this->output( "  ❌ Failed to create public directory" );
+				return false;
+			}
+		}
+
+		// Copy all files from resources/public
+		$sourceDir = $this->_ComponentPath . '/resources/public';
+
+		if( !is_dir( $sourceDir ) )
+		{
+			$this->output( "  ❌ Source public directory not found" );
+			return false;
+		}
+
+		$files = scandir( $sourceDir );
+
+		foreach( $files as $file )
+		{
+			if( $file === '.' || $file === '..' )
+			{
+				continue;
+			}
+
+			$sourceFile = $sourceDir . '/' . $file;
+			$destFile = $publicDir . '/' . $file;
+
+			// Skip if destination file already exists
+			if( file_exists( $destFile ) )
+			{
+				continue;
+			}
+
+			// Copy the file
+			if( is_file( $sourceFile ) )
+			{
+				if( copy( $sourceFile, $destFile ) )
+				{
+					$this->_Messages[] = "Created: public/" . $file;
+				}
+				else
+				{
+					$this->output( "  ❌ Failed to copy: " . $file );
+					return false;
+				}
+			}
 		}
 
 		return true;
@@ -708,7 +832,7 @@ class InstallCommand extends Command
 	}
 
 	/**
-	 * Get migration template with users table schema
+	 * Get migration template with users and password_reset_tokens table schema
 	 */
 	private function getMigrationTemplate( string $ClassName ): string
 	{
@@ -718,18 +842,19 @@ class InstallCommand extends Command
 use Phinx\Migration\AbstractMigration;
 
 /**
- * Create users table
+ * Create users and password_reset_tokens tables
  */
 class $ClassName extends AbstractMigration
 {
 	/**
-	 * Create users table
+	 * Create users and password_reset_tokens tables
 	 */
 	public function change()
 	{
-		\$table = \$this->table( 'users' );
+		// Create users table
+		\$usersTable = \$this->table( 'users' );
 
-		\$table->addColumn( 'username', 'string', [ 'limit' => 255 ] )
+		\$usersTable->addColumn( 'username', 'string', [ 'limit' => 255 ] )
 			->addColumn( 'email', 'string', [ 'limit' => 255 ] )
 			->addColumn( 'password_hash', 'string', [ 'limit' => 255 ] )
 			->addColumn( 'role', 'string', [ 'limit' => 50, 'default' => 'subscriber' ] )
@@ -746,6 +871,18 @@ class $ClassName extends AbstractMigration
 			->addIndex( [ 'email' ], [ 'unique' => true ] )
 			->addIndex( [ 'remember_token' ] )
 			->addIndex( [ 'status' ] )
+			->create();
+
+		// Create password_reset_tokens table
+		\$tokensTable = \$this->table( 'password_reset_tokens' );
+
+		\$tokensTable->addColumn( 'email', 'string', [ 'limit' => 255 ] )
+			->addColumn( 'token', 'string', [ 'limit' => 64 ] )
+			->addColumn( 'created_at', 'timestamp', [ 'default' => 'CURRENT_TIMESTAMP' ] )
+			->addColumn( 'expires_at', 'timestamp', [ 'null' => false ] )
+			->addIndex( [ 'email' ] )
+			->addIndex( [ 'token' ] )
+			->addIndex( [ 'expires_at' ] )
 			->create();
 	}
 }
@@ -779,15 +916,15 @@ PHP;
 				return false;
 			}
 
-			// Check if cms:migrate command exists
-			if( !$app->has( 'cms:migrate' ) )
+			// Check if db:migrate command exists
+			if( !$app->has( 'db:migrate' ) )
 			{
-				$this->output( "❌ cms:migrate command not found!" );
+				$this->output( "❌ db:migrate command not found!" );
 				return false;
 			}
 
 			// Get the migrate command class
-			$commandClass = $app->getRegistry()->get( 'cms:migrate' );
+			$commandClass = $app->getRegistry()->get( 'db:migrate' );
 
 			if( !class_exists( $commandClass ) )
 			{
@@ -889,8 +1026,9 @@ PHP;
 		// Check if user exists
 		if( $repository->findByUsername( $username ) )
 		{
-			$this->output( "\n❌ Error: User '$username' already exists!\n" );
-			return false;
+			$this->output( "\n⚠️  Warning: User '$username' already exists!" );
+			$this->output( "You can manage users with: php neuron cms:user:list\n" );
+			return true;
 		}
 
 		// Get email

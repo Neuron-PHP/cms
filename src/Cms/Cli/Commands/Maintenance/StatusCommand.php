@@ -120,7 +120,7 @@ class StatusCommand extends Command
 		if( $status )
 		{
 			// Message
-			$this->output->write( '<info>Message:</info>' );
+			$this->output->write( 'Message:' );
 			$this->output->write( '  ' . ($status['message'] ?? 'N/A') );
 			$this->output->newLine();
 
@@ -130,7 +130,7 @@ class StatusCommand extends Command
 				$enabledAt = $status['enabled_at'];
 				$duration = $this->getTimeSince( $enabledAt );
 
-				$this->output->write( '<info>Enabled at:</info>' );
+				$this->output->write( 'Enabled at:' );
 				$this->output->write( '  ' . $enabledAt . ' (' . $duration . ' ago)' );
 				$this->output->newLine();
 			}
@@ -138,7 +138,7 @@ class StatusCommand extends Command
 			// Enabled by
 			if( isset( $status['enabled_by'] ) )
 			{
-				$this->output->write( '<info>Enabled by:</info>' );
+				$this->output->write( 'Enabled by:' );
 				$this->output->write( '  ' . $status['enabled_by'] );
 				$this->output->newLine();
 			}
@@ -146,7 +146,7 @@ class StatusCommand extends Command
 			// Allowed IPs
 			if( isset( $status['allowed_ips'] ) && !empty( $status['allowed_ips'] ) )
 			{
-				$this->output->write( '<info>Allowed IPs:</info>' );
+				$this->output->write( 'Allowed IPs:' );
 				foreach( $status['allowed_ips'] as $ip )
 				{
 					$this->output->write( '  - ' . $ip );
@@ -179,7 +179,7 @@ class StatusCommand extends Command
 					$timeStr = "{$retryAfter} seconds";
 				}
 
-				$this->output->write( '<info>Estimated downtime:</info>' );
+				$this->output->write( 'Estimated downtime:' );
 				$this->output->write( '  ' . $timeStr );
 				$this->output->newLine();
 			}

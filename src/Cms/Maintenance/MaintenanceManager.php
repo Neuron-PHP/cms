@@ -40,20 +40,20 @@ class MaintenanceManager
 	 * Enable maintenance mode
 	 *
 	 * @param string $Message Custom maintenance message
-	 * @param array $AllowedIps List of allowed IP addresses
+	 * @param array|null $AllowedIps List of allowed IP addresses (null = use defaults)
 	 * @param int|null $RetryAfter Retry-After header value in seconds
 	 * @param string|null $EnabledBy User who enabled maintenance mode
 	 * @return bool Success status
 	 */
 	public function enable(
 		string $Message = 'Site is currently under maintenance. Please check back soon.',
-		array $AllowedIps = [],
+		?array $AllowedIps = null,
 		?int $RetryAfter = null,
 		?string $EnabledBy = null
 	): bool
 	{
-		// Add localhost to allowed IPs by default
-		if( empty( $AllowedIps ) )
+		// Add localhost to allowed IPs by default only if null (not provided)
+		if( $AllowedIps === null )
 		{
 			$AllowedIps = ['127.0.0.1', '::1'];
 		}
