@@ -80,10 +80,36 @@ class MaintenanceFilter extends Filter
 		// Check for custom view
 		if( $this->_CustomView && file_exists( $this->_CustomView ) )
 		{
+			// Validate path to prevent directory traversal attacks
+			$customViewPath = $this->_CustomView;
+			$realPath = realpath( $customViewPath );
+			
+			// For virtual filesystems (like vfsStream in tests), realpath may return false
+			// In such cases, perform basic validation on the original path
+			if( $realPath === false )
+			{
+				// Validate that the path doesn't contain directory traversal patterns
+				if( $this->containsDirectoryTraversal( $customViewPath ) )
+				{
+					throw new \RuntimeException( 'Invalid custom view path: directory traversal detected' );
+				}
+				$realPath = $customViewPath;
+			}
+			else
+			{
+				// For real filesystem, ensure the resolved path is within the application's resources directory
+				$basePath = realpath( __DIR__ . '/../../../resources' );
+				
+				if( $basePath !== false && strpos( $realPath, $basePath ) !== 0 )
+				{
+					throw new \RuntimeException( 'Invalid custom view path: path must be within the resources directory' );
+				}
+			}
+			
 			$message = $this->_Manager->getMessage();
 			$retryAfter = $this->_Manager->getRetryAfter();
 			ob_start();
-			include $this->_CustomView;
+			include $realPath;
 			return ob_get_clean();
 		}
 
@@ -224,6 +250,32 @@ class MaintenanceFilter extends Filter
 </body>
 </html>
 HTML;
+	}
+
+	/**
+	 * Check if a path contains directory traversal patterns
+	 *
+	 * @param string $path Path to validate
+	 * @return bool True if directory traversal detected
+	 */
+	private function containsDirectoryTraversal( string $path ): bool
+	{
+		// Normalize path separators
+		$normalized = str_replace( '\\', '/', $path );
+		
+		// Check for directory traversal pattern: .. as a directory component
+		// Split by / and check if any component is exactly '..'
+		$parts = explode( '/', $normalized );
+		
+		foreach( $parts as $part )
+		{
+			if( $part === '..' )
+			{
+				return true;
+			}
+		}
+		
+		return false;
 	}
 
 	/**
