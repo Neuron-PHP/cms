@@ -263,17 +263,13 @@ HTML;
 		// Normalize path separators
 		$normalized = str_replace( '\\', '/', $path );
 		
-		// Check for common directory traversal patterns
-		$patterns = [
-			'../',
-			'/../',
-			'/..', 
-			'..',
-		];
+		// Check for directory traversal pattern: .. as a directory component
+		// Split by / and check if any component is exactly '..'
+		$parts = explode( '/', $normalized );
 		
-		foreach( $patterns as $pattern )
+		foreach( $parts as $part )
 		{
-			if( strpos( $normalized, $pattern ) !== false )
+			if( $part === '..' )
 			{
 				return true;
 			}
