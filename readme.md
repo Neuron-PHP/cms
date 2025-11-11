@@ -205,6 +205,16 @@ All view templates are in `resources/views/` and can be customized:
 - `blog/show.php` - Individual post
 - `admin/*` - Admin panel templates
 
+### Scheduling Jobs
+
+Start the scheduler:
+
+```bash
+php neuron jobs:schedule
+```
+
+This will process scheduled jobs.
+
 ### Running Background Jobs
 
 Start the queue worker:
