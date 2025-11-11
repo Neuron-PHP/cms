@@ -134,14 +134,13 @@ class ProfileController extends Content
 			$user->setPasswordHash( $this->_hasher->hash( $newPassword ) );
 		}
 
-		try
+		if( $this->_repository->update( $user ) )
 		{
-			$this->_repository->update( $user );
 			$this->_sessionManager->flash( 'success', 'Profile updated successfully' );
 		}
-		catch( \Exception $e )
+		else
 		{
-			$this->_sessionManager->flash( 'error', 'Failed to update profile: ' . $e->getMessage() );
+			$this->_sessionManager->flash( 'error', 'Failed to update profile' );
 		}
 
 		header( 'Location: /admin/profile' );
