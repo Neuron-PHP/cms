@@ -76,7 +76,7 @@ class CreatorTest extends TestCase
 			->willReturn( [ 'Password too short', 'Missing uppercase letter' ] );
 
 		$this->expectException( \Exception::class );
-		$this->expectExceptionMessage( 'Password does not meet requirements' );
+		$this->expectExceptionMessageMatches( '/^Password does not meet requirements/' );
 
 		$this->_creator->create(
 			'testuser',
