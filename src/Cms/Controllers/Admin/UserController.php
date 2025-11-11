@@ -191,8 +191,17 @@ class UserController extends Content
 			$this->redirect( 'admin_users', [], ['error', 'User not found'] );
 		}
 
-		$username = $_POST['username'] ?? $user->getUsername();
-		$email = $_POST['email'] ?? $user->getEmail();
+		$usernameInput = $_POST['username'] ?? null;
+		$emailInput = $_POST['email'] ?? null;
+
+		$username = $usernameInput !== null ? trim( (string)$usernameInput ) : $user->getUsername();
+		$email = $emailInput !== null ? trim( (string)$emailInput ) : $user->getEmail();
+
+		if( $username === '' || $email === '' )
+		{
+			$this->redirect( 'admin_users_edit', ['id' => $id], ['error', 'Username and email are required'] );
+		}
+
 		$role = $_POST['role'] ?? $user->getRole();
 		$password = $_POST['password'] ?? null;
 
