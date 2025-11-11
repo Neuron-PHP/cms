@@ -31,7 +31,8 @@ class PublisherTest extends TestCase
 			->with( $this->callback( function( Post $p ) {
 				return $p->getStatus() === Post::STATUS_PUBLISHED
 					&& $p->getPublishedAt() instanceof DateTimeImmutable;
-			} ) );
+			} ) )
+			->willReturn( true );
 
 		$result = $this->_publisher->publish( $post );
 
@@ -68,7 +69,8 @@ class PublisherTest extends TestCase
 			->with( $this->callback( function( Post $p ) {
 				return $p->getStatus() === Post::STATUS_DRAFT
 					&& $p->getPublishedAt() === null;
-			} ) );
+			} ) )
+			->willReturn( true );
 
 		$result = $this->_publisher->unpublish( $post );
 
@@ -107,7 +109,8 @@ class PublisherTest extends TestCase
 				return $p->getStatus() === Post::STATUS_SCHEDULED
 					&& $p->getPublishedAt() instanceof DateTimeImmutable
 					&& $p->getPublishedAt()->getTimestamp() === $futureDate->getTimestamp();
-			} ) );
+			} ) )
+			->willReturn( true );
 
 		$result = $this->_publisher->schedule( $post, $futureDate );
 
@@ -159,7 +162,8 @@ class PublisherTest extends TestCase
 		$post->setStatus( Post::STATUS_DRAFT );
 
 		$this->_mockPostRepository
-			->method( 'update' );
+			->method( 'update' )
+			->willReturn( true );
 
 		$result = $this->_publisher->publish( $post );
 
@@ -174,7 +178,8 @@ class PublisherTest extends TestCase
 		$post->setPublishedAt( new DateTimeImmutable() );
 
 		$this->_mockPostRepository
-			->method( 'update' );
+			->method( 'update' )
+			->willReturn( true );
 
 		$result = $this->_publisher->unpublish( $post );
 
@@ -190,10 +195,65 @@ class PublisherTest extends TestCase
 		$futureDate = ( new DateTimeImmutable() )->modify( '+1 day' );
 
 		$this->_mockPostRepository
-			->method( 'update' );
+			->method( 'update' )
+			->willReturn( true );
 
 		$result = $this->_publisher->schedule( $post, $futureDate );
 
 		$this->assertSame( $post, $result );
+	}
+
+	public function testThrowsExceptionWhenPublishPersistenceFails(): void
+	{
+		$post = new Post();
+		$post->setId( 1 );
+		$post->setStatus( Post::STATUS_DRAFT );
+
+		$this->_mockPostRepository
+			->expects( $this->once() )
+			->method( 'update' )
+			->willReturn( false );
+
+		$this->expectException( \Exception::class );
+		$this->expectExceptionMessage( 'Failed to persist post changes' );
+
+		$this->_publisher->publish( $post );
+	}
+
+	public function testThrowsExceptionWhenUnpublishPersistenceFails(): void
+	{
+		$post = new Post();
+		$post->setId( 1 );
+		$post->setStatus( Post::STATUS_PUBLISHED );
+		$post->setPublishedAt( new DateTimeImmutable() );
+
+		$this->_mockPostRepository
+			->expects( $this->once() )
+			->method( 'update' )
+			->willReturn( false );
+
+		$this->expectException( \Exception::class );
+		$this->expectExceptionMessage( 'Failed to persist post changes' );
+
+		$this->_publisher->unpublish( $post );
+	}
+
+	public function testThrowsExceptionWhenSchedulePersistenceFails(): void
+	{
+		$post = new Post();
+		$post->setId( 1 );
+		$post->setStatus( Post::STATUS_DRAFT );
+
+		$futureDate = ( new DateTimeImmutable() )->modify( '+1 day' );
+
+		$this->_mockPostRepository
+			->expects( $this->once() )
+			->method( 'update' )
+			->willReturn( false );
+
+		$this->expectException( \Exception::class );
+		$this->expectExceptionMessage( 'Failed to persist post changes' );
+
+		$this->_publisher->schedule( $post, $futureDate );
 	}
 }
