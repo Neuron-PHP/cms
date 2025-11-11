@@ -46,6 +46,16 @@ class ConnectionFactory
 	{
 		$adapter = $config['adapter'] ?? 'sqlite';
 
+		if( empty( $config['name'] ) )
+		{
+			throw new Exception(
+				sprintf(
+					'Database "name" configuration is required for %s connections.',
+					$adapter
+				)
+			);
+		}
+
 		$dsn = match( $adapter )
 		{
 			'sqlite' => "sqlite:{$config['name']}",
