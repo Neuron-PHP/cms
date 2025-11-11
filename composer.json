@@ -14,7 +14,8 @@
         "ext-json": "*",
         "neuron-php/mvc": "0.8.*",
         "neuron-php/cli": "0.8.*",
-        "ljonesfl/blahg": "0.5.*"
+        "neuron-php/jobs": "0.2.*",
+        "phpmailer/phpmailer": "^6.9"
     },
     "require-dev": {
         "phpunit/phpunit": "9.*",
@@ -25,12 +26,20 @@
             "Neuron\\": "src/"
         },
         "files": [
-            "src/Bootstrap.php"
+            "src/Bootstrap.php",
+            "src/Cms/Auth/helpers.php",
+            "src/Cms/Email/helpers.php",
+            "src/Cms/View/helpers.php"
         ]
     },
     "autoload-dev": {
         "psr-4": {
             "Tests\\": "tests/"
+        }
+    },
+    "extra": {
+        "neuron": {
+            "cli-provider": "Neuron\\Cms\\Cli\\Provider"
         }
     }
 }

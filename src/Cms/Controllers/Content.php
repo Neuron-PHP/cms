@@ -55,11 +55,11 @@ use Neuron\Patterns\Registry;
 
 class Content extends Base
 {
-	private string $_Name = 'Blahg';
-	private string $_Title = 'Blahg';
-	private string $_Description = '';
-	private string $_Url = 'example.com/bog';
-	private string $_RssUrl = 'example.com/blog/rss';
+	private string $_name = 'Blahg';
+	private string $_title = 'Blahg';
+	private string $_description = '';
+	private string $_url = 'example.com/bog';
+	private string $_rssUrl = 'example.com/blog/rss';
 
 	/**
 	 * @param Application $app
@@ -68,20 +68,20 @@ class Content extends Base
 	{
 		parent::__construct( $app );
 
-		$Settings = Registry::getInstance()->get( 'Settings' );
+		$settings = Registry::getInstance()->get( 'Settings' );
 
-		$this->setName( $Settings->get( 'site', 'name' ) )
-			  ->setTitle( $Settings->get( 'site', 'title' ) )
-			  ->setDescription( $Settings->get( 'site', 'description' ) )
-			  ->setUrl( $Settings->get( 'site', 'url' ) )
+		$this->setName( $settings->get( 'site', 'name' ) ?? 'Neuron CMS' )
+			  ->setTitle( $settings->get( 'site', 'title' ) ?? 'Neuron CMS' )
+			  ->setDescription( $settings->get( 'site', 'description' ) ?? '' )
+			  ->setUrl( $settings->get( 'site', 'url' ) ?? '' )
 			  ->setRssUrl($this->getUrl() . "/blog/rss" );
 
 		try
 		{
-			$Version = new Version();
-			$Version->loadFromFile( "../.version.json" );
+			$version = new Version();
+			$version->loadFromFile( "../.version.json" );
 
-			Registry::getInstance()->set( 'version', 'v'.$Version->getAsString() );
+			Registry::getInstance()->set( 'version', 'v'.$version->getAsString() );
 		}
 		catch( \Exception $e )
 		{
@@ -97,18 +97,18 @@ class Content extends Base
 	 */
 	public function getRssUrl(): string
 	{
-		return $this->_RssUrl;
+		return $this->_rssUrl;
 	}
 
 	/**
 	 * Set the RSS URL for the site.
 	 *
-	 * @param string $RssUrl
+	 * @param string $rssUrl
 	 * @return Content
 	 */
-	public function setRssUrl( string $RssUrl ): Content
+	public function setRssUrl( string $rssUrl ): Content
 	{
-		$this->_RssUrl = $RssUrl;
+		$this->_rssUrl = $rssUrl;
 		return $this;
 	}
 
@@ -117,16 +117,16 @@ class Content extends Base
 	 */
 	public function getName(): string
 	{
-		return $this->_Name;
+		return $this->_name;
 	}
 
 	/**
-	 * @param string $Name
+	 * @param string $name
 	 * @return $this
 	 */
-	public function setName( string $Name ): Content
+	public function setName( string $name ): Content
 	{
-		$this->_Name = $Name;
+		$this->_name = $name;
 		return $this;
 	}
 
@@ -135,16 +135,16 @@ class Content extends Base
 	 */
 	public function getTitle(): string
 	{
-		return $this->_Title;
+		return $this->_title;
 	}
 
 	/**
-	 * @param string $Title
+	 * @param string $title
 	 * @return $this
 	 */
-	public function setTitle( string $Title ): Content
+	public function setTitle( string $title ): Content
 	{
-		$this->_Title = $Title;
+		$this->_title = $title;
 		return $this;
 	}
 
@@ -153,16 +153,16 @@ class Content extends Base
 	 */
 	public function getDescription(): string
 	{
-		return $this->_Description;
+		return $this->_description;
 	}
 
 	/**
-	 * @param string $Description
+	 * @param string $description
 	 * @return $this
 	 */
-	public function setDescription( string $Description ): Content
+	public function setDescription( string $description ): Content
 	{
-		$this->_Description = $Description;
+		$this->_description = $description;
 		return $this;
 	}
 
@@ -171,18 +171,18 @@ class Content extends Base
 	 */
 	public function getUrl(): string
 	{
-		return $this->_Url;
+		return $this->_url;
 	}
 
 	/**
 	 * Set the URL for the site.
 	 *
-	 * @param string $Url
+	 * @param string $url
 	 * @return Content
 	 */
-	public function setUrl( string $Url ): Content
+	public function setUrl( string $url ): Content
 	{
-		$this->_Url = $Url;
+		$this->_url = $url;
 		return $this;
 	}
 
@@ -190,21 +190,21 @@ class Content extends Base
 	 * @throws \Neuron\Core\Exceptions\NotFound
 	 * @throws \League\CommonMark\Exception\CommonMarkException
 	 */
-	public function markdown( array $Parameters ): string
+	public function markdown( array $parameters ): string
 	{
-		$ViewData = array();
+		$viewData = array();
 
-		$Title = $Parameters[ 'page' ];
+		$title = $parameters[ 'page' ];
 
-		$Title = str_replace( '-', ' ', $Title );
-		$Title = ucwords( $Title );
+		$title = str_replace( '-', ' ', $title );
+		$title = ucwords( $title );
 
-		$ViewData[ 'Title' ]		= $this->getName() . ' | ' . $this->getTitle();
+		$viewData[ 'Title' ]		= $this->getName() . ' | ' . $this->getTitle();
 
 		return $this->renderMarkdown(
 			HttpResponseStatus::OK,
-			$ViewData,
-			$Parameters[ 'page' ]
+			$viewData,
+			$parameters[ 'page' ]
 		);
 	}
 }

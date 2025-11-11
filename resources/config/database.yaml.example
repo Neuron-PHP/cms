@@ -1,0 +1,42 @@
+# Database Configuration
+#
+# This file provides database configuration for the CMS component.
+# Copy sections to your config/config.yaml
+
+database:
+  # Database adapter (mysql, pgsql, sqlite)
+  adapter: mysql
+
+  # Database host
+  host: localhost
+
+  # Database name
+  name: neuron_cms
+
+  # Database username
+  user: root
+
+  # Database password
+  pass: secret
+
+  # Database port (3306 for MySQL, 5432 for PostgreSQL)
+  port: 3306
+
+  # Character set
+  charset: utf8mb4
+
+# Migration Configuration
+migrations:
+  # Path to migrations directory (relative to project root)
+  path: db/migrate
+
+  # Path to seeds directory (relative to project root)
+  seeds_path: db/seed
+
+  # Migration tracking table name
+  table: phinx_log
+
+# System Configuration (optional)
+system:
+  # Environment name (development, staging, production)
+  environment: development

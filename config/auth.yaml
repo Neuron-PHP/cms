@@ -1,0 +1,40 @@
+# Authentication Configuration
+# Configuration for the Neuron CMS authentication system
+
+auth:
+  # Default authentication driver
+  default: session
+
+  # Session configuration
+  session:
+    lifetime: 120  # Session lifetime in minutes (2 hours)
+    expire_on_close: false
+    cookie_name: neuron_session
+    cookie_httponly: true
+    cookie_secure: true  # Set to true for HTTPS only
+    cookie_samesite: Lax  # Lax, Strict, or None
+
+  # Remember me configuration
+  remember:
+    enabled: true
+    lifetime: 43200  # 30 days in minutes
+
+  # Password configuration
+  passwords:
+    min_length: 8
+    require_uppercase: true
+    require_lowercase: true
+    require_numbers: true
+    require_special_chars: false
+    hash_algorithm: argon2id  # argon2id or bcrypt
+
+  # Login throttling (brute force protection)
+  throttle:
+    enabled: true
+    max_attempts: 5  # Max failed attempts before lockout
+    lockout_duration: 15  # Lockout duration in minutes
+
+  # User storage
+  storage:
+    type: file  # file or database (future)
+    path: storage/users  # Path for file-based storage

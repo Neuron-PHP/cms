@@ -1,20 +1,46 @@
 [![CI](https://github.com/Neuron-PHP/cms/actions/workflows/ci.yml/badge.svg)](https://github.com/Neuron-PHP/cms/actions)
 # Neuron-PHP CMS
 
-A lightweight Content Management System component for PHP 8.4+ built on the Neuron MVC framework. This component provides blog and content management functionality with support for articles, categories, tags, RSS feeds, and markdown rendering.
+A modern, database-backed Content Management System for PHP 8.4+ built on the Neuron framework. Provides a complete blog platform with user authentication, admin panel, and content management.
 
-## Table of Contents
+## Features
 
-- [Installation](#installation)
-- [Quick Start](#quick-start)
-- [Core Components](#core-components)
-- [Configuration](#configuration)
-- [Usage Examples](#usage-examples)
-- [Controllers](#controllers)
-- [Blog Features](#blog-features)
-- [Testing](#testing)
-- [Dependencies](#dependencies)
-- [More Information](#more-information)
+- **User Authentication & Authorization**
+  - Secure login/logout with password hashing
+  - Role-based access control (Admin, Editor, Author, Subscriber)
+  - Password reset functionality via email
+  - Account locking after failed login attempts
+  - "Remember me" functionality
+
+- **Blog System**
+  - Create, edit, and publish blog posts
+  - Category and tag organization
+  - SEO-friendly URLs with slug support
+  - RSS feed generation
+  - Draft and scheduled post support
+  - View count tracking
+
+- **Admin Panel**
+  - Dashboard with statistics
+  - Post management (CRUD operations)
+  - Category and tag management
+  - User management
+  - Profile management
+
+- **Email System**
+  - Password reset emails
+  - Configurable email templates
+  - PHPMailer integration
+
+- **Queue System**
+  - Background job processing
+  - Email queue support
+  - Extensible job framework
+
+- **Database Support**
+  - SQLite, MySQL, PostgreSQL via PDO
+  - Database migrations via Phinx
+  - Seeders for sample data
 
 ## Installation
 
@@ -22,8 +48,7 @@ A lightweight Content Management System component for PHP 8.4+ built on the Neur
 
 - PHP 8.4 or higher
 - Composer
-- Neuron MVC component (0.7.*)
-- Blahg article repository system (0.5.*)
+- PDO extension (with SQLite, MySQL, or PostgreSQL driver)
 
 ### Install via Composer
 
@@ -31,391 +56,174 @@ A lightweight Content Management System component for PHP 8.4+ built on the Neur
 composer require neuron-php/cms
 ```
 
-## Quick Start
+### Run the Installer
 
-### 1. Create Your Directory Structure
+The `cms:install` command sets up everything automatically:
 
 ```bash
-mkdir -p blog
-mkdir -p config
-mkdir -p public
-mkdir -p resources/views/blog
-mkdir -p resources/views/static_pages
-mkdir -p resources/views/layouts
-mkdir -p resources/views/http_codes
-mkdir -p storage
+php neuron cms:install
 ```
 
-### 2. Configure Your Application
+The installer will:
+1. Create the complete directory structure (app/, config/, db/, public/, resources/, storage/)
+2. Publish all view templates (admin panel, blog, auth, layouts)
+3. Publish application initializers
+4. Create configuration files (config.yaml, routes.yaml, auth.yaml, event-listeners.yaml)
+5. Generate the front controller (public/index.php)
+6. Set up database migrations
+7. Optionally run migrations to create database tables
+8. Prompt you to create an admin user
 
-Create a `config/config.yaml` file:
+That's it! The installer handles all setup automatically.
+
+## Project Structure
+
+After running `cms:install`, your project will have the following structure:
+
+```
+your-project/
+├── app/
+│   ├── Controllers/          # Your custom controllers
+│   ├── Events/              # Custom event classes
+│   ├── Initializers/        # Application initializers
+│   │   ├── AuthInitializer.php
+│   │   ├── MaintenanceInitializer.php
+│   │   └── PasswordResetInitializer.php
+│   ├── Jobs/                # Background jobs
+│   ├── Listeners/           # Event listeners
+│   ├── Models/              # Domain models
+│   ├── Repositories/        # Data repositories
+│   └── Services/            # Business logic services
+│
+├── config/
+│   ├── auth.yaml           # Authentication configuration
+│   ├── config.yaml         # Main application config
+│   ├── event-listeners.yaml # Event listener configuration
+│   └── routes.yaml         # Route definitions
+│
+├── db/
+│   ├── migrate/            # Database migrations
+│   │   ├── *_create_users_table.php
+│   │   ├── *_create_posts_table.php
+│   │   ├── *_create_categories_table.php
+│   │   ├── *_create_tags_table.php
+│   │   └── *_create_queue_tables.php
+│   └── seed/               # Database seeders
+│
+├── public/
+│   ├── index.php          # Front controller
+│   └── icon.png           # Default favicon
+│
+├── resources/
+│   └── views/
+│       ├── admin/         # Admin panel templates
+│       │   ├── dashboard/ # Dashboard views
+│       │   ├── posts/     # Post management
+│       │   ├── categories/
+│       │   ├── tags/
+│       │   ├── users/
+│       │   └── profile/
+│       ├── auth/          # Login/password reset
+│       ├── blog/          # Public blog views
+│       ├── content/       # Content pages
+│       ├── emails/        # Email templates
+│       ├── http_codes/    # Error pages
+│       └── layouts/       # Layout templates
+│
+├── storage/
+│   ├── cache/            # Cache storage
+│   ├── logs/             # Application logs
+│   └── database.sqlite3  # SQLite database (if using SQLite)
+│
+└── composer.json
+```
+
+## Quick Start
+
+After running `cms:install`, you're ready to go!
+
+### Start the Development Server
+
+```bash
+php -S localhost:8000 -t public
+```
+
+Visit:
+- Public blog: `http://localhost:8000/blog`
+- Admin panel: `http://localhost:8000/admin`
+
+Log in with the admin credentials you created during installation.
+
+### Optional Configuration
+
+If you need to customize settings, edit `config/config.yaml`:
 
 ```yaml
-system:
-  base_path: .
-  routes_path: config
-
 site:
   name: My Blog
   title: Welcome to My Blog
-  description: A blog about technology and programming
+  description: A blog about technology
   url: https://example.com
 
-views:
-  path: views
-
-cache:
-  enabled: true
-  storage: file
-  path: cache/views
-  ttl: 3600
+database:
+  adapter: sqlite  # or mysql, pgsql
+  name: storage/database.sqlite3
 ```
 
-### 3. Set Up Routes
+All routes, authentication settings, and event listeners are pre-configured by the installer.
 
-Create a `config/routes.yaml` file:
+## Usage
 
-```yaml
-routes:
-  # Blog homepage
-  blog_index:
-    route: /blog
-    method: GET
-    controller: Neuron\Cms\Controllers\Blog@index
+### Creating a Blog Post
 
-  # Individual article
-  blog_article:
-    route: /blog/article/{title}
-    method: GET
-    controller: Neuron\Cms\Controllers\Blog@show
+1. Log in to the admin panel at `/admin`
+2. Navigate to Posts → New Post
+3. Enter title, content, categories, and tags
+4. Choose status (Draft, Published, or Scheduled)
+5. Click Save
 
-  # Category listing
-  blog_category:
-    route: /blog/category/{category}
-    method: GET
-    controller: Neuron\Cms\Controllers\Blog@category
+### Managing Categories and Tags
 
-  # Tag listing
-  blog_tag:
-    route: /blog/tag/{tag}
-    method: GET
-    controller: Neuron\Cms\Controllers\Blog@tag
+- Navigate to Categories or Tags in the admin panel
+- Create, edit, or delete as needed
+- Organize your content for easy navigation
 
-  # Author articles
-  blog_author:
-    route: /blog/author/{author}
-    method: GET
-    controller: Neuron\Cms\Controllers\Blog@author
+### Managing Users
 
-  # RSS feed
-  blog_feed:
-    route: /blog/rss
-    method: GET
-    controller: Neuron\Cms\Controllers\Blog@feed
+Admin users can:
+- Create new user accounts
+- Assign roles (Admin, Editor, Author, Subscriber)
+- Activate/deactivate accounts
+- Reset passwords
 
-  # Static page (markdown)
-  page:
-    route: /page/{page}
-    method: GET
-    controller: Neuron\Cms\Controllers\Content@markdown
+### Customizing Views
+
+All view templates are in `resources/views/` and can be customized:
+
+- `layouts/main.php` - Main site layout
+- `blog/index.php` - Blog listing
+- `blog/show.php` - Individual post
+- `admin/*` - Admin panel templates
+
+### Scheduling Jobs
+
+Start the scheduler:
+
+```bash
+php neuron jobs:schedule
 ```
 
-### 4. Create the Front Controller
+This will process scheduled jobs.
 
-Create a `public/index.php` file:
+### Running Background Jobs
 
-```php
-<?php
-require_once '../vendor/autoload.php';
+Start the queue worker:
 
-use function Neuron\Mvc\Boot;
-use function Neuron\Mvc\Dispatch;
-
-// Bootstrap the application
-$app = Boot('../config');
-
-// Dispatch the current request
-Dispatch($app);
+```bash
+php neuron jobs:work
 ```
 
-### 5. Create a Sample Article
-
-Create `blog/articles/hello-world.md`:
-
-```markdown
----
-title: Hello World
-slug: hello-world
-author: John Doe
-date_published: 2025-01-01
-categories:
-  - General
-tags:
-  - introduction
-  - welcome
-excerpt: Welcome to my new blog!
----
-
-# Hello World
-
-Welcome to my new blog built with Neuron-PHP CMS!
-
-This is my first post using the CMS component.
-```
-
-## Core Components
-
-### Content Controller
-
-The base `Content` controller provides foundational CMS functionality:
-
-- **Site Configuration**: Manages site name, title, description, and URL
-- **Version Tracking**: Automatically loads and tracks version information
-- **SEO Metadata**: Handles titles and descriptions for search engines
-- **RSS Feed URLs**: Configures feed URLs for content syndication
-- **Markdown Rendering**: Support for static markdown pages
-- **Registry Integration**: Settings management through the Registry pattern
-
-### Blog Controller
-
-The `Blog` controller extends Content with blog-specific features:
-
-- **Article Management**: Full CRUD operations for blog articles
-- **Categorization**: Organize content by categories
-- **Tagging System**: Flexible content tagging
-- **Author Filtering**: Filter articles by author
-- **RSS/Atom Feeds**: Automatic feed generation
-- **Draft Mode**: Preview unpublished content with `?drafts=1`
-- **SEO-Friendly URLs**: Slug-based routing
-- **Error Handling**: Graceful handling of missing articles
-
-## Configuration
-
-### Site Settings
-
-Configure your site in `config/config.yaml`:
-
-```yaml
-site:
-  name: My Tech Blog
-  title: Technology and Programming
-  description: Articles about web development, PHP, and software engineering
-  url: https://myblog.com
-```
-
-### Blog Repository Location
-
-The blog repository path is configured in the Blog controller constructor:
-
-```php
-// Default location is ../blog
-$this->setRepository(new Repository(
-    "../blog",  // Path to your blog content
-    $drafts     // Enable draft mode
-));
-```
-
-### View Templates
-
-Create view templates in your configured views directory:
-
-#### views/blog/index.php
-```php
-<div class="blog-index">
-    <h1><?= $Title ?></h1>
-    <p><?= $Description ?></p>
-
-    <?php foreach ($Articles as $article): ?>
-        <article>
-            <h2>
-                <a href="/blog/article/<?= $article->getSlug() ?>">
-                    <?= $article->getTitle() ?>
-                </a>
-            </h2>
-            <div class="meta">
-                By <?= $article->getAuthor() ?>
-                on <?= $article->getDatePublished() ?>
-            </div>
-            <p><?= $article->getExcerpt() ?></p>
-        </article>
-    <?php endforeach; ?>
-</div>
-```
-
-#### views/blog/show.php
-```php
-<article>
-    <h1><?= $Article->getTitle() ?></h1>
-    <div class="meta">
-        By <?= $Article->getAuthor() ?>
-        on <?= $Article->getDatePublished() ?>
-    </div>
-    <div class="content">
-        <?= $Article->getBody() ?>
-    </div>
-    <div class="tags">
-        <?php foreach ($Article->getTags() as $tag): ?>
-            <a href="/blog/tag/<?= $tag ?>">#<?= $tag ?></a>
-        <?php endforeach; ?>
-    </div>
-</article>
-```
-
-## Usage Examples
-
-### Creating a Custom Content Controller
-
-```php
-namespace App\Controllers;
-
-use Neuron\Cms\Controllers\Content;
-use Neuron\Mvc\Responses\HttpResponseStatus;
-
-class PageController extends Content
-{
-    public function about(array $params): string
-    {
-        return $this->renderHtml(
-            HttpResponseStatus::OK,
-            [
-                'Title' => 'About Us | ' . $this->getName(),
-                'Description' => 'Learn more about our company',
-                'Content' => $this->loadAboutContent()
-            ],
-            'about'
-        );
-    }
-
-    public function contact(array $params): string
-    {
-        return $this->renderHtml(
-            HttpResponseStatus::OK,
-            [
-                'Title' => 'Contact | ' . $this->getName(),
-                'Description' => 'Get in touch with us',
-                'Email' => 'contact@example.com'
-            ],
-            'contact'
-        );
-    }
-}
-```
-
-### Extending the Blog Controller
-
-```php
-namespace App\Controllers;
-
-use Neuron\Cms\Controllers\Blog;
-use Blahg\Repository;
-
-class CustomBlog extends Blog
-{
-    public function __construct($app = null)
-    {
-        parent::__construct($app);
-
-        // Custom repository configuration
-        $this->setRepository(new Repository(
-            "/path/to/articles",
-            true  // Always show drafts
-        ));
-    }
-
-    public function featured(array $params): string
-    {
-        $featured = $this->getRepository()
-            ->getArticlesByTag('featured');
-
-        return $this->renderHtml(
-            HttpResponseStatus::OK,
-            [
-                'Articles' => $featured,
-                'Title' => 'Featured Articles | ' . $this->getName()
-            ],
-            'featured'
-        );
-    }
-}
-```
-
-## Blog Features
-
-### Article Structure
-
-Articles are markdown files with YAML frontmatter:
-
-```markdown
----
-title: Article Title
-slug: article-slug
-author: Author Name
-date_published: 2025-01-15
-date_updated: 2025-01-20
-categories:
-  - Technology
-  - Programming
-tags:
-  - php
-  - web-development
-excerpt: Brief description of the article
-featured_image: /images/article.jpg
-draft: false
----
-
-# Article Content
-
-Your markdown content here...
-```
-
-### Draft Mode
-
-Enable draft mode to preview unpublished articles:
-
-```
-https://example.com/blog?drafts=1
-```
-
-### Category and Tag Filtering
-
-- **By Category**: `/blog/category/technology`
-- **By Tag**: `/blog/tag/php`
-- **By Author**: `/blog/author/john-doe`
-
-### RSS Feed Generation
-
-Automatic RSS/Atom feed generation at `/blog/rss` includes:
-
-- Article title and content
-- Publication dates
-- Author information
-- Categories and tags
-- Links to full articles
-
-## Controllers
-
-### Content Controller Methods
-
-| Method | Description |
-|--------|-------------|
-| `getName()` | Get the site name |
-| `getTitle()` | Get the site title |
-| `getDescription()` | Get the site description |
-| `getUrl()` | Get the site URL |
-| `getRssUrl()` | Get the RSS feed URL |
-| `markdown($params)` | Render a markdown page |
-
-### Blog Controller Methods
-
-| Method | Description |
-|--------|-------------|
-| `index($params, $request)` | Display all articles |
-| `show($params, $request)` | Display a single article |
-| `category($params, $request)` | Display articles by category |
-| `tag($params, $request)` | Display articles by tag |
-| `author($params, $request)` | Display articles by author |
-| `feed($params, $request)` | Generate RSS feed |
-| `getRepository()` | Get the article repository |
+This will process queued jobs like sending emails in the background.
 
 ## Testing
 
@@ -426,96 +234,66 @@ Run the test suite:
 vendor/bin/phpunit tests
 
 # Run with coverage
-vendor/bin/phpunit tests --coverage-html coverage
+vendor/bin/phpunit tests --coverage-text
 
-# Run specific test file
-vendor/bin/phpunit tests/Cms/Controllers/BlogTest.php
+# Run specific test
+vendor/bin/phpunit tests/Cms/BlogControllerTest.php
 ```
 
-### Test Structure
+## Configuration
 
-```
-tests/
-├── Cms/
-│   └── Controllers/
-│       ├── BlogTest.php
-│       └── ContentTest.php
-├── bootstrap.php
-└── phpunit.xml
+### Authentication
+
+The installer creates `config/auth.yaml` with sensible defaults. You can customize:
+
+- Password requirements (min length, complexity)
+- Session timeout duration
+- Failed login attempt limits
+- Account lockout duration
+
+### Routes
+
+The installer automatically creates `config/routes.yaml` with pre-configured routes for:
+
+- Public blog pages (`/blog`, `/blog/article/{slug}`, `/blog/category/{slug}`, `/blog/tag/{slug}`)
+- Admin panel (`/admin/*`)
+- Authentication (`/login`, `/logout`)
+- Password reset (`/password/reset`, `/password/reset/confirm`)
+- RSS feed (`/blog/rss`)
+
+You can customize routes by editing `config/routes.yaml`.
+
+### Email
+
+Configure email in `config/config.yaml`:
+
+```yaml
+email:
+  driver: smtp                    # smtp, sendmail, or mail
+  host: smtp.example.com
+  port: 587
+  username: user@example.com
+  password: your_password
+  encryption: tls                 # tls or ssl
+  from_address: noreply@example.com
+  from_name: My Blog
+  test_mode: false               # optional - logs emails instead of sending
 ```
 
 ## Dependencies
 
-The CMS component requires:
-
-- **neuron-php/mvc** (0.7.*): MVC framework functionality
-- **neuron-php/cli** (0.1.*): CLI command support
-- **ljonesfl/blahg** (0.5.*): Article repository system
-- **PHP Extensions**: curl, json
-
-### Development Dependencies
-
-- **phpunit/phpunit** (9.*): Unit testing
-- **mikey179/vfsstream** (^1.6): Virtual filesystem for testing
-
-## Advanced Features
-
-### Custom Repository Configuration
-
-```php
-use Blahg\Repository;
-use Blahg\Filter\CategoryFilter;
-use Blahg\Sort\DateSort;
-
-$repository = new Repository(
-    "/path/to/articles",
-    false,  // drafts
-    new CategoryFilter(['technology']),
-    new DateSort('desc')
-);
-```
-
-### Multiple Content Sources
-
-```php
-class MultiSourceBlog extends Blog
-{
-    private array $repositories = [];
-
-    public function addRepository(string $name, Repository $repo): void
-    {
-        $this->repositories[$name] = $repo;
-    }
-
-    public function getAggregatedArticles(): array
-    {
-        $articles = [];
-        foreach ($this->repositories as $repo) {
-            $articles = array_merge($articles, $repo->getArticles());
-        }
-        return $articles;
-    }
-}
-```
-
-### Content Caching
-
-Leverage the MVC component's caching system:
-
-```yaml
-cache:
-  enabled: true
-  storage: redis
-  ttl: 3600
-  html: true
-  markdown: true
-```
+- `neuron-php/mvc` (0.8.*) - MVC framework
+- `neuron-php/cli` (0.8.*) - CLI commands
+- `neuron-php/jobs` (0.2.*) - Background jobs
+- `phpmailer/phpmailer` (^6.9) - Email sending
+- `robmorgan/phinx` (^0.16) - Database migrations
 
 ## More Information
 
-- **Neuron Framework**: [neuronphp.com](http://neuronphp.com)
+- **Framework Documentation**: [neuronphp.com](http://neuronphp.com)
 - **GitHub**: [github.com/neuron-php/cms](https://github.com/neuron-php/cms)
 - **Packagist**: [packagist.org/packages/neuron-php/cms](https://packagist.org/packages/neuron-php/cms)
+- **Issues**: [github.com/neuron-php/cms/issues](https://github.com/neuron-php/cms/issues)
 
 ## License
 

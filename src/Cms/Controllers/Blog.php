@@ -1,167 +1,150 @@
 <?php
 namespace Neuron\Cms\Controllers;
 
-/**
- * Blog management controller for the Neuron CMS framework.
- * 
- * This controller provides comprehensive blog functionality including article
- * management, categorization, tagging, author filtering, and RSS feed generation.
- * It extends the base Content controller to leverage common CMS functionality
- * while adding blog-specific features and content organization.
- * 
- * Key features:
- * - Article listing with pagination and filtering
- * - Category and tag-based content organization
- * - Author-specific article filtering
- * - SEO-friendly URL routing and slugs  
- * - RSS/Atom feed generation for syndication
- * - Draft mode support for content preview
- * - Exception handling for missing articles
- * - Responsive HTML rendering with metadata
- * 
- * The controller integrates with the Blahg article repository system
- * for content storage and retrieval, supporting file-based article
- * management with YAML frontmatter for metadata.
- * 
- * @package Neuron\Cms
- * 
- * @example
- * ```php
- * // Route configuration for blog controller
- * routes:
- *   blog_index:
- *     controller: Neuron\Cms\Controllers\Blog
- *     method: index
- *     route: /blog
- *   
- *   blog_article:
- *     controller: Neuron\Cms\Controllers\Blog
- *     method: show
- *     route: /blog/article/:title
- *   
- *   blog_category:
- *     controller: Neuron\Cms\Controllers\Blog
- *     method: category  
- *     route: /blog/category/:category
- * ```
- */
-
-use Blahg\Article;
-use Blahg\Exception\ArticleMissingBody;
-use Blahg\Exception\ArticleNotFound;
-use Blahg\Repository;
-use JetBrains\PhpStorm\NoReturn;
+use Neuron\Cms\Controllers\Content;
+use Neuron\Cms\Models\Post;
+use Neuron\Cms\Repositories\DatabasePostRepository;
+use Neuron\Cms\Repositories\DatabaseCategoryRepository;
+use Neuron\Cms\Repositories\DatabaseTagRepository;
 use Neuron\Data\Filter\Get;
+use Neuron\Data\Setting\SettingManager;
 use Neuron\Mvc\Application;
 use Neuron\Mvc\Requests\Request;
 use Neuron\Mvc\Responses\HttpResponseStatus;
-use Neuron\Routing\Router;
+use Neuron\Mvc\Views\Html;
+use Neuron\Patterns\Registry;
 
 class Blog extends Content
 {
-	private Repository $repository;
+
+	private DatabasePostRepository $_postRepository;
+	private DatabaseCategoryRepository $_categoryRepository;
+	private DatabaseTagRepository $_tagRepository;
+	private bool $_showDrafts = false;
 
 	/**
-	 * @param Application $app
+	 * @param Application|null $app
+	 * @throws \Exception
 	 */
 	public function __construct( ?Application $app = null )
 	{
 		parent::__construct( $app );
 
-		$Get = new Get();
+		// Get settings for repositories
+		$settings = Registry::getInstance()->get( 'Settings' );
 
-		$this->setRepository( new Repository(
-			"../blog",
-			$Get->filterScalar( 'drafts' ) ? true : false
-			)
-		);
+		// Initialize repositories
+		$this->_postRepository = new DatabasePostRepository( $settings );
+		$this->_categoryRepository = new DatabaseCategoryRepository( $settings );
+		$this->_tagRepository = new DatabaseTagRepository( $settings );
+
+		// Check for drafts parameter
+		$get = new Get();
+		$this->_showDrafts = $get->filterScalar( 'drafts' ) ? true : false;
 	}
 
-	public function getRepository(): Repository
+	/**
+	 * @param array $parameters
+	 * @param Request|null $request
+	 * @return string
+	 * @throws \Neuron\Core\Exceptions\NotFound
+	 */
+	public function index( array $parameters, ?Request $request ): string
 	{
-		return $this->repository;
-	}
+		// Get published posts (or all if drafts mode)
+		if( $this->_showDrafts )
+		{
+			$posts = $this->_postRepository->all();
+		}
+		else
+		{
+			$posts = $this->_postRepository->getPublished();
+		}
 
-	public function setRepository( Repository $Repository ): self
-	{
-		$this->repository = $Repository;
-		return $this;
-	}
+		$categories = $this->_categoryRepository->all();
+		$tags = $this->_tagRepository->all();
 
-	public function index( array $Parameters, ?Request $Request ): string
-	{
 		return $this->renderHtml(
 			HttpResponseStatus::OK,
 			[
-				'Articles'		=> $this->repository->getArticles(),
-				'Categories'	=> $this->repository->getCategories(),
-				'Tags'      	=> $this->repository->getTags(),
-				'Title'    		=> $this->getTitle() . ' | ' . $this->getName(),
-				'Description' 	=> $this->getDescription(),
+				'Posts'       => $posts,
+				'Categories' => $categories,
+				'Tags'        => $tags,
+				'Title'       => $this->getName() . ' | ' . $this->getTitle(),
+				'Name'        => $this->getName(),
+				'Description' => $this->getDescription(),
 			],
 			'index'
 		);
 	}
 
 	/**
-	 * @param array $Parameters
-	 * @param Request|null $Request
+	 * @param array $parameters
+	 * @param Request|null $request
 	 * @return string
 	 * @throws \Neuron\Core\Exceptions\NotFound
 	 */
-	public function show( array $Parameters, ?Request $Request ): string
+	public function show( array $parameters, ?Request $request ): string
 	{
-		try
+		$slug = $parameters['slug'] ?? '';
+		$post = $this->_postRepository->findBySlug( $slug );
+
+		if( !$post || ( !$post->isPublished() && !$this->_showDrafts ) )
 		{
-			$Article = $this->repository->getArticleBySlug( $Parameters[ 'title'] );
+			$post = new Post();
+			$post->setTitle( 'Article Not Found' );
+			$post->setBody( 'The requested article does not exist.' );
+			$post->setSlug( $slug );
 		}
-		catch( ArticleNotFound  $Exception )
+		else
 		{
-			$Article = new Article();
-			$Article->setTitle( 'Article Not Found' );
-			$Article->setBody( 'The requested article does not exist.' );
-			$Article->setTags( [] );
-			$Article->setDatePublished( '1969-06-09' );
+			// Increment view count for published posts
+			if( $post->isPublished() )
+			{
+				$this->_postRepository->incrementViewCount( $post->getId() );
+			}
 		}
-		catch( ArticleMissingBody $Exception )
-		{
-			$Article = new Article();
-			$Article->setTitle( 'Article Body Not Found' );
-			$Article->setBody( 'The requested article is missing its body text.' );
-			$Article->setTags( [] );
-			$Article->setDatePublished( '1969-06-09' );
-		}
+
+		$categories = $this->_categoryRepository->all();
+		$tags = $this->_tagRepository->all();
 
 		return $this->renderHtml(
 			HttpResponseStatus::OK,
 			[
-				'Categories'=> $this->repository->getCategories(),
-				'Tags'      => $this->repository->getTags(),
-				'Article' 	=> $Article,
-				'Title'     => $Article->getTitle() . ' | ' . $this->getName()
+				'Categories' => $categories,
+				'Tags'        => $tags,
+				'Post'        => $post,
+				'Title'       => $post->getTitle() . ' | ' . $this->getName()
 			],
 			'show'
 		);
 	}
 
 	/**
-	 * @param array $Parameters
-	 * @param Request|null $Request
+	 * @param array $parameters
+	 * @param Request|null $request
 	 * @return string
 	 * @throws \Neuron\Core\Exceptions\NotFound
 	 */
-	public function author( array $Parameters, ?Request $Request ): string
+	public function author( array $parameters, ?Request $request ): string
 	{
-		$Author = $Parameters[ 'author' ];
+		$authorName = $parameters['author'] ?? '';
+
+		// Note: This would need a user lookup by username
+		// For now, we'll just show an empty list
+		$posts = [];
+
+		$categories = $this->_categoryRepository->all();
+		$tags = $this->_tagRepository->all();
 
 		return $this->renderHtml(
 			HttpResponseStatus::OK,
 			[
-				'Categories'=> $this->repository->getCategories(),
-				'Tags'      => $this->repository->getTags(),
-				'Articles'	=> $this->repository->getArticlesByAuthor( $Author ),
-				'Title'    	=> "Articles by $Author | " . $this->getName(),
-				'Tag'      	=> $Tag
+				'Categories' => $categories,
+				'Tags'        => $tags,
+				'Posts'       => $posts,
+				'Title'       => "Articles by $authorName | " . $this->getName(),
+				'Author'      => $authorName
 			],
 			'index'
 		);
@@ -169,68 +152,132 @@ class Blog extends Content
 
 
 	/**
-	 * @param array $Parameters
-	 * @param Request|null $Request
+	 * @param array $parameters
+	 * @param Request|null $request
 	 * @return string
 	 * @throws \Neuron\Core\Exceptions\NotFound
 	 */
-	public function tag( array $Parameters, ?Request $Request ): string
+	public function tag( array $parameters, ?Request $request ): string
 	{
-		$Tag = $Parameters[ 'tag' ];
+		$tagSlug = $parameters['tag'] ?? '';
+		$tag = $this->_tagRepository->findBySlug( $tagSlug );
+
+		if( !$tag )
+		{
+			$posts = [];
+			$tagName = ucfirst( str_replace( '-', ' ', $tagSlug ) );
+		}
+		else
+		{
+			$status = $this->_showDrafts ? null : Post::STATUS_PUBLISHED;
+			$posts = $this->_postRepository->getByTag( $tag->getId(), $status );
+			$tagName = $tag->getName();
+		}
+
+		$categories = $this->_categoryRepository->all();
+		$tags = $this->_tagRepository->all();
 
 		return $this->renderHtml(
 			HttpResponseStatus::OK,
 			[
-				'Categories'=> $this->repository->getCategories(),
-				'Tags'      => $this->repository->getTags(),
-				'Articles'	=> $this->repository->getArticlesByTag( $Tag ),
-				'Title'    	=> "Articles tagged with $Tag | " . $this->getName(),
-				'Tag'      	=> $Tag
+				'Categories' => $categories,
+				'Tags'        => $tags,
+				'Posts'       => $posts,
+				'Title'       => "Articles tagged with $tagName | " . $this->getName(),
+				'Tag'         => $tagName
 			],
 			'index'
 		);
 	}
 
 	/**
-	 * @param array $Parameters
-	 * @param Request|null $Request
+	 * @param array $parameters
+	 * @param Request|null $request
 	 * @return string
 	 * @throws \Neuron\Core\Exceptions\NotFound
 	 */
-	public function category( array $Parameters, ?Request $Request ): string
+	public function category( array $parameters, ?Request $request ): string
 	{
-		$Category = $Parameters[ 'category' ];
+		$categorySlug = $parameters['category'] ?? '';
+		$category = $this->_categoryRepository->findBySlug( $categorySlug );
+
+		if( !$category )
+		{
+			$posts = [];
+			$categoryName = ucfirst( str_replace( '-', ' ', $categorySlug ) );
+		}
+		else
+		{
+			$status = $this->_showDrafts ? null : Post::STATUS_PUBLISHED;
+			$posts = $this->_postRepository->getByCategory( $category->getId(), $status );
+			$categoryName = $category->getName();
+		}
+
+		$categories = $this->_categoryRepository->all();
+		$tags = $this->_tagRepository->all();
 
 		return $this->renderHtml(
 			HttpResponseStatus::OK,
 			[
-				'Categories'=> $this->repository->getCategories(),
-				'Tags'      => $this->repository->getTags(),
-				'Articles'	=> $this->repository->getArticlesByCategory( $Category ),
-				'Title'    	=> "Articles in category $Category | " . $this->getName(),
-				'Category' 	=> $Category
+				'Categories' => $categories,
+				'Tags'        => $tags,
+				'Posts'       => $posts,
+				'Title'       => "Articles in category $categoryName | " . $this->getName(),
+				'Category'    => $categoryName
 			],
 			'index'
 		);
 	}
 
 	/**
-	 * @param array $Parameters
-	 * @param Request|null $Request
+	 * Generate RSS feed
+	 *
+	 * @param array $parameters
+	 * @param Request|null $request
 	 * @return string
 	 */
-	#[NoReturn] public function feed( array $Parameters, ?Request $Request ): string
+	public function feed( array $parameters, ?Request $request ): string
 	{
-		// Suppress deprecation warnings for this request
-		error_reporting(E_ALL & ~E_DEPRECATED);
+		$posts = $this->_postRepository->getPublished( 20 );
 
-		return $this->repository
-			->getFeed(
-				$this->getName(),
-				$this->getDescription(),
-				$this->getUrl(),
-				$this->getRssUrl(),
-				$this->repository->getArticles()
-			);
+		// Build RSS XML
+		$xml = '<?xml version="1.0" encoding="UTF-8"?>' . "\n";
+		$xml .= '<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">' . "\n";
+		$xml .= '<channel>' . "\n";
+		$xml .= '<title>' . htmlspecialchars( $this->getName() ) . '</title>' . "\n";
+		$xml .= '<link>' . htmlspecialchars( $this->getUrl() ) . '</link>' . "\n";
+		$xml .= '<description>' . htmlspecialchars( $this->getDescription() ) . '</description>' . "\n";
+		$xml .= '<atom:link href="' . htmlspecialchars( $this->getRssUrl() ) . '" rel="self" type="application/rss+xml" />' . "\n";
+
+		foreach( $posts as $post )
+		{
+			$xml .= '<item>' . "\n";
+			$xml .= '<title>' . htmlspecialchars( $post->getTitle() ) . '</title>' . "\n";
+			$xml .= '<link>' . htmlspecialchars( $this->getUrl() . '/blog/article/' . $post->getSlug() ) . '</link>' . "\n";
+			$xml .= '<description>' . htmlspecialchars( $post->getExcerpt() ?: substr( strip_tags( $post->getBody() ), 0, 200 ) ) . '</description>' . "\n";
+
+			if( $post->getPublishedAt() )
+			{
+				$xml .= '<pubDate>' . $post->getPublishedAt()->format( 'r' ) . '</pubDate>' . "\n";
+			}
+
+			$xml .= '<guid>' . htmlspecialchars( $this->getUrl() . '/blog/article/' . $post->getSlug() ) . '</guid>' . "\n";
+
+			// Add categories
+			foreach( $post->getCategories() as $category )
+			{
+				$xml .= '<category>' . htmlspecialchars( $category->getName() ) . '</category>' . "\n";
+			}
+
+			$xml .= '</item>' . "\n";
+		}
+
+		$xml .= '</channel>' . "\n";
+		$xml .= '</rss>';
+
+		// Set content type
+		header( 'Content-Type: application/rss+xml; charset=UTF-8' );
+		echo $xml;
+		exit;
 	}
 }
