@@ -113,7 +113,7 @@ class UpdaterTest extends TestCase
 			->willReturn( [ 'Password too short' ] );
 
 		$this->expectException( \Exception::class );
-		$this->expectExceptionMessage( 'Password does not meet requirements' );
+		$this->expectExceptionMessageMatches( '/^Password does not meet requirements/' );
 
 		$this->_updater->update(
 			$user,
