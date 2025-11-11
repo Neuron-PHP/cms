@@ -142,8 +142,8 @@ class PublisherTest extends TestCase
 		$post->setId( 1 );
 		$post->setStatus( Post::STATUS_DRAFT );
 
-		// Create a date that's exactly now (which is technically in the past when compared)
-		$now = new DateTimeImmutable();
+		// Use a fixed timestamp that's clearly not in the future
+		$now = new DateTimeImmutable( '-1 second' );
 
 		$this->_mockPostRepository
 			->expects( $this->never() )
