@@ -4,7 +4,7 @@
 	</p>
 </div>
 
-<form method="POST" action="/reset-password">
+<form method="POST" action="<?= route_path('reset_password_post') ?>">
 	<input type="hidden" name="csrf_token" value="<?= htmlspecialchars($CsrfToken) ?>">
 	<input type="hidden" name="token" value="<?= htmlspecialchars($Token ?? '') ?>">
 

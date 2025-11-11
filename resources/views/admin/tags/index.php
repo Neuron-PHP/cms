@@ -1,7 +1,7 @@
 <div class="container-fluid">
 	<div class="d-flex justify-content-between align-items-center mb-4">
 		<h2>Tags</h2>
-		<a href="/admin/tags/create" class="btn btn-primary">Create New Tag</a>
+		<a href="<?= route_path('admin_tags_create') ?>" class="btn btn-primary">Create New Tag</a>
 	</div>
 
 	<div class="card">
@@ -25,9 +25,9 @@
 								<td><?= htmlspecialchars( $tag->getSlug() ) ?></td>
 								<td><?= $tag->getPostCount() ?? 0 ?></td>
 								<td>
-									<a href="/blog/tag/<?= htmlspecialchars( $tag->getSlug() ) ?>" class="btn btn-sm btn-outline-secondary" target="_blank">View</a>
-									<a href="/admin/tags/<?= $tag->getId() ?>/edit" class="btn btn-sm btn-outline-primary">Edit</a>
-									<form method="POST" action="/admin/tags/<?= $tag->getId() ?>" class="d-inline">
+									<a href="<?= route_path('blog_tag', ['slug' => $tag->getSlug()]) ?>" class="btn btn-sm btn-outline-secondary" target="_blank">View</a>
+									<a href="<?= route_path('admin_tags_edit', ['id' => $tag->getId()]) ?>" class="btn btn-sm btn-outline-primary">Edit</a>
+									<form method="POST" action="<?= route_path('admin_tags_destroy', ['id' => $tag->getId()]) ?>" class="d-inline">
 										<input type="hidden" name="_method" value="DELETE">
 										<?= csrf_field() ?>
 										<button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Are you sure?')">Delete</button>

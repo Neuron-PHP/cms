@@ -5,13 +5,14 @@ namespace Neuron\Cms\Controllers\Admin;
 use Neuron\Cms\Controllers\Content;
 use Neuron\Cms\Models\User;
 use Neuron\Cms\Repositories\DatabaseUserRepository;
+use Neuron\Cms\Services\User\Creator;
+use Neuron\Cms\Services\User\Updater;
+use Neuron\Cms\Services\User\Deleter;
 use Neuron\Cms\Auth\PasswordHasher;
 use Neuron\Cms\Auth\CsrfTokenManager;
-use Neuron\Cms\Auth\SessionManager;
 use Neuron\Data\Setting\SettingManager;
 use Neuron\Mvc\Application;
 use Neuron\Mvc\Responses\HttpResponseStatus;
-use Neuron\Mvc\Views\Html;
 use Neuron\Patterns\Registry;
 
 /**
@@ -21,10 +22,10 @@ use Neuron\Patterns\Registry;
  */
 class UserController extends Content
 {
-
 	private DatabaseUserRepository $_repository;
-	private PasswordHasher $_hasher;
-	private SessionManager $_sessionManager;
+	private Creator $_userCreator;
+	private Updater $_userUpdater;
+	private Deleter $_userDeleter;
 
 	/**
 	 * @param Application|null $app
@@ -36,11 +37,13 @@ class UserController extends Content
 
 		// Get settings and initialize repository
 		$settings = Registry::getInstance()->get( 'Settings' );
-
 		$this->_repository = new DatabaseUserRepository( $settings );
-		$this->_hasher = new PasswordHasher();
-		$this->_sessionManager = new SessionManager();
-		$this->_sessionManager->start();
+
+		// Initialize services
+		$hasher = new PasswordHasher();
+		$this->_userCreator = new Creator( $this->_repository, $hasher );
+		$this->_userUpdater = new Updater( $this->_repository, $hasher );
+		$this->_userDeleter = new Deleter( $this->_repository );
 	}
 
 	/**
@@ -54,7 +57,7 @@ class UserController extends Content
 		$user = Registry::getInstance()->get( 'Auth.User' );
 
 		// Generate CSRF token
-		$csrfManager = new CsrfTokenManager( $this->_sessionManager );
+		$csrfManager = new CsrfTokenManager( $this->getSessionManager() );
 		Registry::getInstance()->set( 'Auth.CsrfToken', $csrfManager->getToken() );
 
 		$users = $this->_repository->all();
@@ -64,18 +67,16 @@ class UserController extends Content
 			'Description' => 'User Management',
 			'User' => $user,
 			'users' => $users,
-			'Success' => $this->_sessionManager->getFlash( 'success' ),
-			'Error' => $this->_sessionManager->getFlash( 'error' )
+			'Success' => $this->getSessionManager()->getFlash( 'success' ),
+			'Error' => $this->getSessionManager()->getFlash( 'error' )
 		];
 
-		@http_response_code( HttpResponseStatus::OK->value );
-
-		$view = new Html();
-		$view->setController( 'Admin/Users' )
-			 ->setLayout( 'admin' )
-			 ->setPage( 'index' );
-
-		return $view->render( $viewData );
+		return $this->renderHtml(
+			HttpResponseStatus::OK,
+			$viewData,
+			'index',
+			'admin'
+		);
 	}
 
 	/**
@@ -89,7 +90,7 @@ class UserController extends Content
 		$user = Registry::getInstance()->get( 'Auth.User' );
 
 		// Generate CSRF token
-		$csrfManager = new CsrfTokenManager( $this->_sessionManager );
+		$csrfManager = new CsrfTokenManager( $this->getSessionManager() );
 		Registry::getInstance()->set( 'Auth.CsrfToken', $csrfManager->getToken() );
 
 		$viewData = [
@@ -99,74 +100,51 @@ class UserController extends Content
 			'roles' => [User::ROLE_ADMIN, User::ROLE_EDITOR, User::ROLE_AUTHOR, User::ROLE_SUBSCRIBER]
 		];
 
-		@http_response_code( HttpResponseStatus::OK->value );
-
-		$view = new Html();
-		$view->setController( 'Admin/Users' )
-			 ->setLayout( 'admin' )
-			 ->setPage( 'create' );
-
-		return $view->render( $viewData );
+		return $this->renderHtml(
+			HttpResponseStatus::OK,
+			$viewData,
+			'create',
+			'admin'
+		);
 	}
 
 	/**
 	 * Store new user
 	 * @param array $parameters
-	 * @return string
+	 * @return never
 	 * @throws \Exception
 	 */
-	public function store( array $parameters ): string
+	public function store( array $parameters ): never
 	{
 		$username = $_POST['username'] ?? '';
 		$email = $_POST['email'] ?? '';
 		$password = $_POST['password'] ?? '';
 		$role = $_POST['role'] ?? User::ROLE_SUBSCRIBER;
 
-		// Validate
+		// Basic validation
 		if( empty( $username ) || empty( $email ) || empty( $password ) )
 		{
-			$this->_sessionManager->flash( 'error', 'All fields are required' );
-			header( 'Location: /admin/users/create' );
-			exit;
+			$this->redirect( 'admin_users_create', [], ['error', 'All fields are required'] );
 		}
-
-		if( !$this->_hasher->meetsRequirements( $password ) )
-		{
-			$this->_sessionManager->flash( 'error', 'Password does not meet requirements' );
-			header( 'Location: /admin/users/create' );
-			exit;
-		}
-
-		// Create user
-		$newUser = new User();
-		$newUser->setUsername( $username );
-		$newUser->setEmail( $email );
-		$newUser->setPasswordHash( $this->_hasher->hash( $password ) );
-		$newUser->setRole( $role );
-		$newUser->setStatus( User::STATUS_ACTIVE );
-		$newUser->setEmailVerified( true );
 
 		try
 		{
-			$this->_repository->create( $newUser );
-			$this->_sessionManager->flash( 'success', 'User created successfully' );
+			$this->_userCreator->create( $username, $email, $password, $role );
+			$this->redirect( 'admin_users', [], ['success', 'User created successfully'] );
 		}
 		catch( \Exception $e )
 		{
-			$this->_sessionManager->flash( 'error', 'Failed to create user: ' . $e->getMessage() );
+			$this->redirect( 'admin_users_create', [], ['error', $e->getMessage()] );
 		}
-
-		header( 'Location: /admin/users' );
-		exit;
 	}
 
 	/**
 	 * Show edit user form
 	 * @param array $parameters
-	 * @return string
+	 * @return string|never
 	 * @throws \Exception
 	 */
-	public function edit( array $parameters ): string
+	public function edit( array $parameters )
 	{
 		$id = (int)$parameters['id'];
 		$currentUser = Registry::getInstance()->get( 'Auth.User' );
@@ -174,13 +152,11 @@ class UserController extends Content
 
 		if( !$user )
 		{
-			$this->_sessionManager->flash( 'error', 'User not found' );
-			header( 'Location: /admin/users' );
-			exit;
+			$this->redirect( 'admin_users', [], ['error', 'User not found'] );
 		}
 
 		// Generate CSRF token
-		$csrfManager = new CsrfTokenManager( $this->_sessionManager );
+		$csrfManager = new CsrfTokenManager( $this->getSessionManager() );
 		Registry::getInstance()->set( 'Auth.CsrfToken', $csrfManager->getToken() );
 
 		$viewData = [
@@ -191,75 +167,53 @@ class UserController extends Content
 			'roles' => [User::ROLE_ADMIN, User::ROLE_EDITOR, User::ROLE_AUTHOR, User::ROLE_SUBSCRIBER]
 		];
 
-		@http_response_code( HttpResponseStatus::OK->value );
-
-		$view = new Html();
-		$view->setController( 'Admin/Users' )
-			 ->setLayout( 'admin' )
-			 ->setPage( 'edit' );
-
-		return $view->render( $viewData );
+		return $this->renderHtml(
+			HttpResponseStatus::OK,
+			$viewData,
+			'edit',
+			'admin'
+		);
 	}
 
 	/**
 	 * Update user
 	 * @param array $parameters
-	 * @return string
+	 * @return never
 	 * @throws \Exception
 	 */
-	public function update( array $parameters ): string
+	public function update( array $parameters ): never
 	{
 		$id = (int)$parameters['id'];
 		$user = $this->_repository->findById( $id );
 
 		if( !$user )
 		{
-			$this->_sessionManager->flash( 'error', 'User not found' );
-			header( 'Location: /admin/users' );
-			exit;
+			$this->redirect( 'admin_users', [], ['error', 'User not found'] );
 		}
 
-		$email = $_POST['email'] ?? '';
+		$username = $_POST['username'] ?? $user->getUsername();
+		$email = $_POST['email'] ?? $user->getEmail();
 		$role = $_POST['role'] ?? $user->getRole();
-		$password = $_POST['password'] ?? '';
-
-		$user->setEmail( $email );
-		$user->setRole( $role );
-
-		// Update password if provided
-		if( !empty( $password ) )
-		{
-			if( !$this->_hasher->meetsRequirements( $password ) )
-			{
-				$this->_sessionManager->flash( 'error', 'Password does not meet requirements' );
-				header( 'Location: /admin/users/' . $id . '/edit' );
-				exit;
-			}
-
-			$user->setPasswordHash( $this->_hasher->hash( $password ) );
-		}
+		$password = $_POST['password'] ?? null;
 
 		try
 		{
-			$this->_repository->update( $user );
-			$this->_sessionManager->flash( 'success', 'User updated successfully' );
+			$this->_userUpdater->update( $user, $username, $email, $role, $password );
+			$this->redirect( 'admin_users', [], ['success', 'User updated successfully'] );
 		}
 		catch( \Exception $e )
 		{
-			$this->_sessionManager->flash( 'error', 'Failed to update user: ' . $e->getMessage() );
+			$this->redirect( 'admin_users_edit', ['id' => $id], ['error', $e->getMessage()] );
 		}
-
-		header( 'Location: /admin/users' );
-		exit;
 	}
 
 	/**
 	 * Delete user
 	 * @param array $parameters
-	 * @return string
+	 * @return never
 	 * @throws \Exception
 	 */
-	public function destroy( array $parameters ): string
+	public function destroy( array $parameters ): never
 	{
 		$id = (int)$parameters['id'];
 		$currentUser = Registry::getInstance()->get( 'Auth.User' );
@@ -267,22 +221,17 @@ class UserController extends Content
 		// Prevent self-deletion
 		if( $currentUser && $currentUser->getId() === $id )
 		{
-			$this->_sessionManager->flash( 'error', 'Cannot delete your own account' );
-			header( 'Location: /admin/users' );
-			exit;
+			$this->redirect( 'admin_users', [], ['error', 'Cannot delete your own account'] );
 		}
 
 		try
 		{
-			$this->_repository->delete( $id );
-			$this->_sessionManager->flash( 'success', 'User deleted successfully' );
+			$this->_userDeleter->delete( $id );
+			$this->redirect( 'admin_users', [], ['success', 'User deleted successfully'] );
 		}
 		catch( \Exception $e )
 		{
-			$this->_sessionManager->flash( 'error', 'Failed to delete user: ' . $e->getMessage() );
+			$this->redirect( 'admin_users', [], ['error', $e->getMessage()] );
 		}
-
-		header( 'Location: /admin/users' );
-		exit;
 	}
 }

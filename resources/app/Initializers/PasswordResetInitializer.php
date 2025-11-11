@@ -12,7 +12,7 @@ use Neuron\Patterns\Registry;
 use Neuron\Patterns\IRunnable;
 
 /**
- * Initialize password reset system
+ * Initialize the password reset system
  *
  * Registers the PasswordResetManager in the Registry
  */
@@ -44,14 +44,12 @@ class PasswordResetInitializer implements IRunnable
 			{
 				// Get site configuration
 				$siteUrl = $settings->get( 'site', 'url' ) ?? 'http://localhost:8000';
-				$siteName = $settings->get( 'site', 'name' ) ?? 'Neuron CMS';
-
-				// Get email configuration (with fallbacks)
-				$fromEmail = $settings->get( 'mail', 'from_email' ) ?? 'noreply@localhost';
-				$fromName = $settings->get( 'mail', 'from_name' ) ?? $siteName;
 
 				// Get token expiration (default 60 minutes)
 				$tokenExpiration = $settings->get( 'auth', 'password_reset_expiration' ) ?? 60;
+
+				// Get base path from Registry
+				$basePath = Registry::getInstance()->get( 'Base.Path' ) ?? getcwd();
 
 				// Initialize components
 				$tokenRepository = new DatabasePasswordResetTokenRepository( $settings );
@@ -66,9 +64,9 @@ class PasswordResetInitializer implements IRunnable
 					$tokenRepository,
 					$userRepository,
 					$passwordHasher,
-					$resetUrl,
-					$fromEmail,
-					$fromName
+					$settings,
+					$basePath,
+					$resetUrl
 				);
 
 				// Set token expiration if configured

@@ -1,0 +1,35 @@
+events:
+  user.created:
+    class: 'Neuron\Cms\Events\UserCreatedEvent'
+    listeners:
+      - 'Neuron\Cms\Listeners\SendWelcomeEmailListener'
+      - 'Neuron\Cms\Listeners\LogUserActivityListener'
+  user.updated:
+    class: 'Neuron\Cms\Events\UserUpdatedEvent'
+    listeners:
+      - 'Neuron\Cms\Listeners\LogUserActivityListener'
+  user.deleted:
+    class: 'Neuron\Cms\Events\UserDeletedEvent'
+    listeners:
+      - 'Neuron\Cms\Listeners\LogUserActivityListener'
+  post.created:
+    class: 'Neuron\Cms\Events\PostCreatedEvent'
+    listeners: []
+  post.published:
+    class: 'Neuron\Cms\Events\PostPublishedEvent'
+    listeners:
+      - 'Neuron\Cms\Listeners\ClearCacheListener'
+  post.deleted:
+    class: 'Neuron\Cms\Events\PostDeletedEvent'
+    listeners:
+      - 'Neuron\Cms\Listeners\ClearCacheListener'
+  category.created:
+    class: 'Neuron\Cms\Events\CategoryCreatedEvent'
+    listeners: []
+  category.updated:
+    class: 'Neuron\Cms\Events\CategoryUpdatedEvent'
+    listeners:
+      - 'Neuron\Cms\Listeners\ClearCacheListener'
+  category.deleted:
+    class: 'Neuron\Cms\Events\CategoryDeletedEvent'
+    listeners: []

@@ -5,7 +5,9 @@ namespace Neuron\Cms\Auth;
 use Neuron\Cms\Models\PasswordResetToken;
 use Neuron\Cms\Repositories\IPasswordResetTokenRepository;
 use Neuron\Cms\Repositories\IUserRepository;
-use Neuron\Util\Email;
+use Neuron\Cms\Services\Email\Sender;
+use Neuron\Data\Setting\Source\ISettingSource;
+use Neuron\Log\Log;
 use Exception;
 
 /**
@@ -20,9 +22,9 @@ class PasswordResetManager
 	private IPasswordResetTokenRepository $_tokenRepository;
 	private IUserRepository $_userRepository;
 	private PasswordHasher $_passwordHasher;
+	private ISettingSource $_settings;
+	private string $_basePath;
 	private string $_resetUrl;
-	private string $_fromEmail;
-	private string $_fromName;
 	private int $_tokenExpirationMinutes = 60;
 
 	/**
@@ -31,25 +33,25 @@ class PasswordResetManager
 	 * @param IPasswordResetTokenRepository $tokenRepository Token repository
 	 * @param IUserRepository $userRepository User repository
 	 * @param PasswordHasher $passwordHasher Password hasher
+	 * @param ISettingSource $settings Settings manager with email configuration
+	 * @param string $basePath Base path for template loading
 	 * @param string $resetUrl Base URL for password reset (token will be appended)
-	 * @param string $fromEmail Email address to send from
-	 * @param string $fromName Name to send from
 	 */
 	public function __construct(
 		IPasswordResetTokenRepository $tokenRepository,
 		IUserRepository $userRepository,
 		PasswordHasher $passwordHasher,
-		string $resetUrl,
-		string $fromEmail,
-		string $fromName = 'System'
+		ISettingSource $settings,
+		string $basePath,
+		string $resetUrl
 	)
 	{
 		$this->_tokenRepository = $tokenRepository;
 		$this->_userRepository = $userRepository;
 		$this->_passwordHasher = $passwordHasher;
+		$this->_settings = $settings;
+		$this->_basePath = $basePath;
 		$this->_resetUrl = $resetUrl;
-		$this->_fromEmail = $fromEmail;
-		$this->_fromName = $fromName;
 	}
 
 	/**
@@ -187,52 +189,36 @@ class PasswordResetManager
 	{
 		$resetLink = $this->_resetUrl . '?token=' . urlencode( $plainToken );
 
-		$subject = 'Password Reset Request';
+		// Get site name from settings
+		$siteName = $this->_settings->get( 'site', 'name' ) ?? 'Neuron CMS';
 
-		$body = <<<HTML
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="utf-8">
-    <style>
-        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-        .header { background-color: #f8f9fa; padding: 20px; border-radius: 5px; margin-bottom: 20px; }
-        .content { padding: 20px 0; }
-        .button { display: inline-block; padding: 12px 24px; background-color: #007bff; color: #ffffff; text-decoration: none; border-radius: 5px; margin: 20px 0; }
-        .footer { margin-top: 30px; padding-top: 20px; border-top: 1px solid #dee2e6; font-size: 12px; color: #6c757d; }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <div class="header">
-            <h2>Password Reset Request</h2>
-        </div>
-        <div class="content">
-            <p>You have requested to reset your password. Click the button below to proceed:</p>
-            <a href="{$resetLink}" class="button">Reset Password</a>
-            <p>Or copy and paste this link into your browser:</p>
-            <p><a href="{$resetLink}">{$resetLink}</a></p>
-            <p>This link will expire in {$this->_tokenExpirationMinutes} minutes.</p>
-            <p>If you did not request a password reset, please ignore this email.</p>
-        </div>
-        <div class="footer">
-            <p>This is an automated message, please do not reply.</p>
-        </div>
-    </div>
-</body>
-</html>
-HTML;
+		// Prepare template data
+		$templateData = [
+			'ResetLink' => $resetLink,
+			'ExpirationMinutes' => $this->_tokenExpirationMinutes,
+			'SiteName' => $siteName
+		];
 
-		$mail = new Email();
-		$mail->setType( Email::EMAIL_HTML );
-		$mail->setFrom( "{$this->_fromName} <{$this->_fromEmail}>" );
-		$mail->addTo( $email );
-		$mail->setSubject( $subject );
-		$mail->setBody( $body );
-
-		if( !$mail->send() )
+		try
 		{
+			// Send email using Sender service with template
+			$sender = new Sender( $this->_settings, $this->_basePath );
+			$result = $sender
+				->to( $email )
+				->subject( "Password Reset Request - {$siteName}" )
+				->template( 'emails/password-reset', $templateData )
+				->send();
+
+			if( !$result )
+			{
+				throw new Exception( 'Failed to send password reset email' );
+			}
+
+			Log::info( "Password reset email sent to: {$email}" );
+		}
+		catch( \Exception $e )
+		{
+			Log::error( "Error sending password reset email to {$email}: " . $e->getMessage() );
 			throw new Exception( 'Failed to send password reset email' );
 		}
 	}

@@ -8,16 +8,16 @@
 		<h3 class="h5 mb-3">Quick Actions</h3>
 		<div class="row g-3 mb-4">
 			<div class="col-12 col-sm-6 col-lg-3">
-				<a href="/" class="btn btn-outline-secondary w-100">View Site</a>
+				<a href="<?= route_path('home') ?>" class="btn btn-outline-secondary w-100">View Site</a>
 			</div>
 			<div class="col-12 col-sm-6 col-lg-3">
-				<a href="/admin/posts" class="btn btn-outline-secondary w-100">Manage Posts</a>
+				<a href="<?= route_path('admin_posts') ?>" class="btn btn-outline-secondary w-100">Manage Posts</a>
 			</div>
 			<div class="col-12 col-sm-6 col-lg-3">
-				<a href="/admin/users" class="btn btn-outline-secondary w-100">Manage Users</a>
+				<a href="<?= route_path('admin_users') ?>" class="btn btn-outline-secondary w-100">Manage Users</a>
 			</div>
 			<div class="col-12 col-sm-6 col-lg-3">
-				<a href="/admin/profile" class="btn btn-outline-secondary w-100">My Profile</a>
+				<a href="<?= route_path('admin_profile') ?>" class="btn btn-outline-secondary w-100">My Profile</a>
 			</div>
 		</div>
 

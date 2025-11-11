@@ -220,7 +220,7 @@ class InstallCommand extends Command
 	private function publishViews(): bool
 	{
 		// Copy all view directories
-		$viewDirs = [ 'admin', 'auth', 'blog', 'content', 'http_codes', 'layouts' ];
+		$viewDirs = [ 'admin', 'auth', 'blog', 'content', 'emails', 'home', 'http_codes', 'layouts' ];
 
 		foreach( $viewDirs as $dir )
 		{

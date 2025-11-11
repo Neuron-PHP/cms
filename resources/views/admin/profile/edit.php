@@ -31,7 +31,7 @@
 					<h5>Account Information</h5>
 				</div>
 				<div class="card-body">
-					<form method="POST" action="/admin/profile">
+					<form method="POST" action="<?= route_path('admin_profile_update') ?>">
 						<input type="hidden" name="_method" value="PUT">
 						<?= csrf_field() ?>
 
@@ -63,7 +63,7 @@
 					<h5>Change Password</h5>
 				</div>
 				<div class="card-body">
-					<form method="POST" action="/admin/profile">
+					<form method="POST" action="<?= route_path('admin_profile_update') ?>">
 						<input type="hidden" name="_method" value="PUT">
 						<?= csrf_field() ?>
 

@@ -18,7 +18,7 @@ use Neuron\Patterns\Registry;
 		<?php
 	}
 	?>
-	<link rel="alternate" type="application/rss+xml" title="RSS Feed" href="/rss">
+	<link rel="alternate" type="application/rss+xml" title="RSS Feed" href="<?= route_path('rss') ?>">
 	<meta name="application-name" content="">
 
 	<link href="https://cdn.jsdelivr.net/npm/bootswatch@5.3.7/dist/sandstone/bootstrap.min.css" rel="stylesheet">
@@ -29,7 +29,7 @@ use Neuron\Patterns\Registry;
 <body class="pb-5">
 <nav class="navbar navbar-expand-lg navbar-dark bg-primary fixed-top" role="navigation">
 	<div class="container">
-		<a class="navbar-brand d-flex align-items-center" href="/">
+		<a class="navbar-brand d-flex align-items-center" href="<?= route_path('home') ?>">
 			<img src="/icon.png" alt="Logo" height="28" class="me-2" />
 			<span><?= Registry::getInstance()->get( 'name' ) ?></span>
 		</a>
@@ -43,7 +43,7 @@ use Neuron\Patterns\Registry;
 	<hr>
 	<footer class="footer" role="presentation">
 		<div class="text-center small mb-2">
-			<a href="/rss" class="text-decoration-none" title="Subscribe to RSS Feed">
+			<a href="<?= route_path('rss') ?>" class="text-decoration-none" title="Subscribe to RSS Feed">
 				<i class="bi bi-rss-fill text-warning"></i> Subscribe via RSS
 			</a>
 		</div>

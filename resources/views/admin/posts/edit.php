@@ -1,12 +1,12 @@
 <div class="container-fluid">
 	<div class="d-flex justify-content-between align-items-center mb-4">
 		<h2>Edit Post: <?= htmlspecialchars( $post->getTitle() ) ?></h2>
-		<a href="/admin/posts" class="btn btn-secondary">Back to Posts</a>
+		<a href="<?= route_path('admin_posts') ?>" class="btn btn-secondary">Back to Posts</a>
 	</div>
 
 	<div class="card">
 		<div class="card-body">
-			<form method="POST" action="/admin/posts/<?= $post->getId() ?>">
+			<form method="POST" action="<?= route_path('admin_posts_update', ['id' => $post->getId()]) ?>">
 				<input type="hidden" name="_method" value="PUT">
 				<?= csrf_field() ?>
 
@@ -70,7 +70,7 @@
 				</div>
 
 				<button type="submit" class="btn btn-primary">Update Post</button>
-				<a href="/admin/posts" class="btn btn-secondary">Cancel</a>
+				<a href="<?= route_path('admin_posts') ?>" class="btn btn-secondary">Cancel</a>
 			</form>
 		</div>
 	</div>
