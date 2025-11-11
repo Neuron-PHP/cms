@@ -285,4 +285,76 @@ class UpdaterTest extends TestCase
 		$this->assertSame( $post, $result );
 		$this->assertEquals( 'Updated', $result->getTitle() );
 	}
+
+	public function testSetsPublishedAtWhenChangingToPublished(): void
+	{
+		$post = new Post();
+		$post->setId( 1 );
+		$post->setTitle( 'Draft Post' );
+		$post->setStatus( Post::STATUS_DRAFT );
+		// Ensure publishedAt is not set
+		$this->assertNull( $post->getPublishedAt() );
+
+		$this->_mockCategoryRepository
+			->method( 'findByIds' )
+			->willReturn( [] );
+
+		$this->_mockTagResolver
+			->method( 'resolveFromString' )
+			->willReturn( [] );
+
+		$this->_mockPostRepository
+			->expects( $this->once() )
+			->method( 'update' )
+			->with( $this->callback( function( Post $p ) {
+				return $p->getStatus() === Post::STATUS_PUBLISHED
+					&& $p->getPublishedAt() instanceof \DateTimeImmutable;
+			} ) );
+
+		$result = $this->_updater->update(
+			$post,
+			'Published Post',
+			'Body',
+			Post::STATUS_PUBLISHED
+		);
+
+		$this->assertEquals( Post::STATUS_PUBLISHED, $result->getStatus() );
+		$this->assertInstanceOf( \DateTimeImmutable::class, $result->getPublishedAt() );
+	}
+
+	public function testDoesNotOverwriteExistingPublishedAt(): void
+	{
+		$post = new Post();
+		$post->setId( 1 );
+		$post->setTitle( 'Published Post' );
+		$post->setStatus( Post::STATUS_PUBLISHED );
+		$existingPublishedAt = new \DateTimeImmutable( '2024-01-01 12:00:00' );
+		$post->setPublishedAt( $existingPublishedAt );
+
+		$this->_mockCategoryRepository
+			->method( 'findByIds' )
+			->willReturn( [] );
+
+		$this->_mockTagResolver
+			->method( 'resolveFromString' )
+			->willReturn( [] );
+
+		$this->_mockPostRepository
+			->expects( $this->once() )
+			->method( 'update' )
+			->with( $this->callback( function( Post $p ) use ( $existingPublishedAt ) {
+				return $p->getStatus() === Post::STATUS_PUBLISHED
+					&& $p->getPublishedAt() === $existingPublishedAt;
+			} ) );
+
+		$result = $this->_updater->update(
+			$post,
+			'Updated Published Post',
+			'Body',
+			Post::STATUS_PUBLISHED
+		);
+
+		$this->assertEquals( Post::STATUS_PUBLISHED, $result->getStatus() );
+		$this->assertSame( $existingPublishedAt, $result->getPublishedAt() );
+	}
 }
