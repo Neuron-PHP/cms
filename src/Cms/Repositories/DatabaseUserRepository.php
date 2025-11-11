@@ -228,6 +228,15 @@ class DatabaseUserRepository implements IUserRepository
 	 */
 	private function mapRowToUser( array $row ): User
 	{
+		$emailVerifiedRaw = $row['email_verified'] ?? null;
+		$emailVerified = is_bool( $emailVerifiedRaw )
+			? $emailVerifiedRaw
+			: in_array(
+				strtolower( (string)$emailVerifiedRaw ),
+				[ '1', 'true', 't', 'yes', 'on' ],
+				true
+			);
+
 		$data = [
 			'id' => (int)$row['id'],
 			'username' => $row['username'],
@@ -235,7 +244,7 @@ class DatabaseUserRepository implements IUserRepository
 			'password_hash' => $row['password_hash'],
 			'role' => $row['role'],
 			'status' => $row['status'],
-			'email_verified' => (bool)$row['email_verified'],
+			'email_verified' => $emailVerified,
 			'two_factor_secret' => $row['two_factor_secret'],
 			'remember_token' => $row['remember_token'],
 			'failed_login_attempts' => (int)$row['failed_login_attempts'],
