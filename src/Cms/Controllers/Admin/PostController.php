@@ -241,7 +241,7 @@ class PostController extends Content
 		}
 
 		// Check permissions
-		if( !$user->isAdmin() && !$user->isEditor() && $post->getAuthor() !== $user->getUsername() )
+		if( !$user->isAdmin() && !$user->isEditor() && $post->getAuthorId() !== $user->getId() )
 		{
 			throw new \RuntimeException( 'Unauthorized to edit this post' );
 		}
@@ -298,7 +298,7 @@ class PostController extends Content
 		}
 
 		// Check permissions
-		if( !$user->isAdmin() && !$user->isEditor() && $post->getAuthor() !== $user->getUsername() )
+		if( !$user->isAdmin() && !$user->isEditor() && $post->getAuthorId() !== $user->getId() )
 		{
 			throw new \RuntimeException( 'Unauthorized to edit this post' );
 		}
@@ -367,7 +367,7 @@ class PostController extends Content
 		}
 
 		// Check permissions
-		if( !$user->isAdmin() && !$user->isEditor() && $post->getAuthor() !== $user->getUsername() )
+		if( !$user->isAdmin() && !$user->isEditor() && $post->getAuthorId() !== $user->getId() )
 		{
 			$sessionManager->flash( 'error', 'Unauthorized to delete this post' );
 			header( 'Location: /admin/posts' );
