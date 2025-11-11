@@ -17,7 +17,7 @@
 * MigrationManager and all migration CLI commands now in `neuron-php/mvc` package.
 * Removed phinx dependency (now inherited from MVC component).
 
-## 0.8.1
+## 0.8.1 2025-11-10
 
 * Added the maintenance mode command.
 * Added the authentication layer.
