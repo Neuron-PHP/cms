@@ -2,7 +2,9 @@
 
 namespace Neuron\Cms\Repositories;
 
+use Neuron\Cms\Database\ConnectionFactory;
 use Neuron\Cms\Models\PasswordResetToken;
+use Neuron\Data\Setting\SettingManager;
 use PDO;
 use Exception;
 use DateTimeImmutable;
@@ -16,77 +18,48 @@ use DateTimeImmutable;
  */
 class DatabasePasswordResetTokenRepository implements IPasswordResetTokenRepository
 {
-	private PDO $_PDO;
+	private PDO $_pdo;
 
 	/**
 	 * Constructor
 	 *
-	 * @param array $DatabaseConfig Database configuration
-	 * @throws Exception if adapter is not supported
+	 * @param SettingManager $settings Settings manager with database configuration
+	 * @throws Exception if database configuration is missing or adapter is unsupported
 	 */
-	public function __construct( array $DatabaseConfig )
+	public function __construct( SettingManager $settings )
 	{
-		$adapter = $DatabaseConfig['adapter'] ?? 'sqlite';
-
-		$dsn = match( $adapter )
-		{
-			'sqlite' => "sqlite:{$DatabaseConfig['name']}",
-			'mysql' => sprintf(
-				"mysql:host=%s;port=%s;dbname=%s;charset=%s",
-				$DatabaseConfig['host'] ?? 'localhost',
-				$DatabaseConfig['port'] ?? 3306,
-				$DatabaseConfig['name'],
-				$DatabaseConfig['charset'] ?? 'utf8mb4'
-			),
-			'pgsql' => sprintf(
-				"pgsql:host=%s;port=%s;dbname=%s",
-				$DatabaseConfig['host'] ?? 'localhost',
-				$DatabaseConfig['port'] ?? 5432,
-				$DatabaseConfig['name']
-			),
-			default => throw new Exception( "Unsupported database adapter: $adapter" )
-		};
-
-		$this->_PDO = new PDO(
-			$dsn,
-			$DatabaseConfig['user'] ?? null,
-			$DatabaseConfig['pass'] ?? null,
-			[
-				PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-				PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC
-			]
-		);
+		$this->_pdo = ConnectionFactory::createFromSettings( $settings );
 	}
 
 	/**
 	 * Create a new password reset token
 	 */
-	public function create( PasswordResetToken $Token ): PasswordResetToken
+	public function create( PasswordResetToken $token ): PasswordResetToken
 	{
-		$stmt = $this->_PDO->prepare(
+		$stmt = $this->_pdo->prepare(
 			"INSERT INTO password_reset_tokens (email, token, created_at, expires_at)
 			 VALUES (?, ?, ?, ?)"
 		);
 
 		$stmt->execute([
-			$Token->getEmail(),
-			$Token->getToken(),
-			$Token->getCreatedAt()->format( 'Y-m-d H:i:s' ),
-			$Token->getExpiresAt()->format( 'Y-m-d H:i:s' )
+			$token->getEmail(),
+			$token->getToken(),
+			$token->getCreatedAt()->format( 'Y-m-d H:i:s' ),
+			$token->getExpiresAt()->format( 'Y-m-d H:i:s' )
 		]);
 
-		$Token->setId( (int) $this->_PDO->lastInsertId() );
+		$token->setId( (int) $this->_pdo->lastInsertId() );
 
-		return $Token;
+		return $token;
 	}
 
 	/**
 	 * Find a token by its hashed value
 	 */
-	public function findByToken( string $Token ): ?PasswordResetToken
+	public function findByToken( string $token ): ?PasswordResetToken
 	{
-		$stmt = $this->_PDO->prepare( "SELECT * FROM password_reset_tokens WHERE token = ? LIMIT 1" );
-		$stmt->execute( [ $Token ] );
+		$stmt = $this->_pdo->prepare( "SELECT * FROM password_reset_tokens WHERE token = ? LIMIT 1" );
+		$stmt->execute( [ $token ] );
 
 		$row = $stmt->fetch();
 
@@ -96,10 +69,10 @@ class DatabasePasswordResetTokenRepository implements IPasswordResetTokenReposit
 	/**
 	 * Delete all tokens for a given email address
 	 */
-	public function deleteByEmail( string $Email ): int
+	public function deleteByEmail( string $email ): int
 	{
-		$stmt = $this->_PDO->prepare( "DELETE FROM password_reset_tokens WHERE email = ?" );
-		$stmt->execute( [ $Email ] );
+		$stmt = $this->_pdo->prepare( "DELETE FROM password_reset_tokens WHERE email = ?" );
+		$stmt->execute( [ $email ] );
 
 		return $stmt->rowCount();
 	}
@@ -107,10 +80,10 @@ class DatabasePasswordResetTokenRepository implements IPasswordResetTokenReposit
 	/**
 	 * Delete a specific token by its hashed value
 	 */
-	public function deleteByToken( string $Token ): bool
+	public function deleteByToken( string $token ): bool
 	{
-		$stmt = $this->_PDO->prepare( "DELETE FROM password_reset_tokens WHERE token = ?" );
-		$stmt->execute( [ $Token ] );
+		$stmt = $this->_pdo->prepare( "DELETE FROM password_reset_tokens WHERE token = ?" );
+		$stmt->execute( [ $token ] );
 
 		return $stmt->rowCount() > 0;
 	}
@@ -122,7 +95,7 @@ class DatabasePasswordResetTokenRepository implements IPasswordResetTokenReposit
 	{
 		$now = (new DateTimeImmutable())->format( 'Y-m-d H:i:s' );
 
-		$stmt = $this->_PDO->prepare( "DELETE FROM password_reset_tokens WHERE expires_at < ?" );
+		$stmt = $this->_pdo->prepare( "DELETE FROM password_reset_tokens WHERE expires_at < ?" );
 		$stmt->execute( [ $now ] );
 
 		return $stmt->rowCount();
@@ -131,14 +104,14 @@ class DatabasePasswordResetTokenRepository implements IPasswordResetTokenReposit
 	/**
 	 * Map database row to PasswordResetToken object
 	 */
-	private function mapRowToToken( array $Row ): PasswordResetToken
+	private function mapRowToToken( array $row ): PasswordResetToken
 	{
 		return PasswordResetToken::fromArray([
-			'id' => $Row['id'],
-			'email' => $Row['email'],
-			'token' => $Row['token'],
-			'created_at' => $Row['created_at'],
-			'expires_at' => $Row['expires_at']
+			'id' => $row['id'],
+			'email' => $row['email'],
+			'token' => $row['token'],
+			'created_at' => $row['created_at'],
+			'expires_at' => $row['expires_at']
 		]);
 	}
 }

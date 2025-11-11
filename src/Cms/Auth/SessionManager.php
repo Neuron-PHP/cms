@@ -12,18 +12,18 @@ namespace Neuron\Cms\Auth;
  */
 class SessionManager
 {
-	private bool $_Started = false;
-	private array $_Config = [];
+	private bool $_started = false;
+	private array $_config = [];
 
-	public function __construct( array $Config = [] )
+	public function __construct( array $config = [] )
 	{
-		$this->_Config = array_merge([
+		$this->_config = array_merge([
 			'lifetime' => 7200,          // 2 hours
 			'cookie_httponly' => true,
 			'cookie_secure' => true,     // HTTPS only
 			'cookie_samesite' => 'Lax',
 			'use_strict_mode' => true
-		], $Config);
+		], $config);
 	}
 
 	/**
@@ -31,36 +31,36 @@ class SessionManager
 	 */
 	public function start(): void
 	{
-		if( $this->_Started || session_status() === PHP_SESSION_ACTIVE )
+		if( $this->_started || session_status() === PHP_SESSION_ACTIVE )
 		{
 			return;
 		}
 
 		// Configure session security
-		ini_set( 'session.cookie_httponly', $this->_Config['cookie_httponly'] ? '1' : '0' );
-		ini_set( 'session.cookie_secure', $this->_Config['cookie_secure'] ? '1' : '0' );
-		ini_set( 'session.cookie_samesite', $this->_Config['cookie_samesite'] );
-		ini_set( 'session.use_strict_mode', $this->_Config['use_strict_mode'] ? '1' : '0' );
+		ini_set( 'session.cookie_httponly', $this->_config['cookie_httponly'] ? '1' : '0' );
+		ini_set( 'session.cookie_secure', $this->_config['cookie_secure'] ? '1' : '0' );
+		ini_set( 'session.cookie_samesite', $this->_config['cookie_samesite'] );
+		ini_set( 'session.use_strict_mode', $this->_config['use_strict_mode'] ? '1' : '0' );
 
 		session_set_cookie_params([
-			'lifetime' => $this->_Config['lifetime'],
+			'lifetime' => $this->_config['lifetime'],
 			'path' => '/',
-			'secure' => $this->_Config['cookie_secure'],
-			'httponly' => $this->_Config['cookie_httponly'],
-			'samesite' => $this->_Config['cookie_samesite']
+			'secure' => $this->_config['cookie_secure'],
+			'httponly' => $this->_config['cookie_httponly'],
+			'samesite' => $this->_config['cookie_samesite']
 		]);
 
 		session_start();
-		$this->_Started = true;
+		$this->_started = true;
 	}
 
 	/**
 	 * Regenerate session ID (prevent session fixation)
 	 */
-	public function regenerate( bool $DeleteOldSession = true ): bool
+	public function regenerate( bool $deleteOldSession = true ): bool
 	{
 		$this->start();
-		return session_regenerate_id( $DeleteOldSession );
+		return session_regenerate_id( $deleteOldSession );
 	}
 
 	/**
@@ -75,15 +75,15 @@ class SessionManager
 		// Delete session cookie
 		if( isset( $_COOKIE[session_name()] ) )
 		{
-			$Params = session_get_cookie_params();
+			$params = session_get_cookie_params();
 			setcookie(
 				session_name(),
 				'',
 				time() - 42000,
-				$Params['path'],
-				$Params['domain'],
-				$Params['secure'],
-				$Params['httponly']
+				$params['path'],
+				$params['domain'],
+				$params['secure'],
+				$params['httponly']
 			);
 		}
 
@@ -93,66 +93,66 @@ class SessionManager
 	/**
 	 * Set a session value
 	 */
-	public function set( string $Key, mixed $Value ): void
+	public function set( string $key, mixed $value ): void
 	{
 		$this->start();
-		$_SESSION[ $Key ] = $Value;
+		$_SESSION[ $key ] = $value;
 	}
 
 	/**
 	 * Get a session value
 	 */
-	public function get( string $Key, mixed $Default = null ): mixed
+	public function get( string $key, mixed $default = null ): mixed
 	{
 		$this->start();
-		return $_SESSION[ $Key ] ?? $Default;
+		return $_SESSION[ $key ] ?? $default;
 	}
 
 	/**
 	 * Check if session has a key
 	 */
-	public function has( string $Key ): bool
+	public function has( string $key ): bool
 	{
 		$this->start();
-		return isset( $_SESSION[ $Key ] );
+		return isset( $_SESSION[ $key ] );
 	}
 
 	/**
 	 * Remove a session value
 	 */
-	public function remove( string $Key ): void
+	public function remove( string $key ): void
 	{
 		$this->start();
-		unset( $_SESSION[ $Key ] );
+		unset( $_SESSION[ $key ] );
 	}
 
 	/**
 	 * Set a flash message (available for next request only)
 	 */
-	public function flash( string $Key, mixed $Value ): void
+	public function flash( string $key, mixed $value ): void
 	{
 		$this->start();
-		$_SESSION['_flash'][ $Key ] = $Value;
+		$_SESSION['_flash'][ $key ] = $value;
 	}
 
 	/**
 	 * Get a flash message
 	 */
-	public function getFlash( string $Key, mixed $Default = null ): mixed
+	public function getFlash( string $key, mixed $default = null ): mixed
 	{
 		$this->start();
-		$Value = $_SESSION['_flash'][ $Key ] ?? $Default;
-		unset( $_SESSION['_flash'][ $Key ] );
-		return $Value;
+		$value = $_SESSION['_flash'][ $key ] ?? $default;
+		unset( $_SESSION['_flash'][ $key ] );
+		return $value;
 	}
 
 	/**
 	 * Check if flash message exists
 	 */
-	public function hasFlash( string $Key ): bool
+	public function hasFlash( string $key ): bool
 	{
 		$this->start();
-		return isset( $_SESSION['_flash'][ $Key ] );
+		return isset( $_SESSION['_flash'][ $key ] );
 	}
 
 	/**
@@ -161,9 +161,9 @@ class SessionManager
 	public function getAllFlash(): array
 	{
 		$this->start();
-		$Flash = $_SESSION['_flash'] ?? [];
+		$flash = $_SESSION['_flash'] ?? [];
 		unset( $_SESSION['_flash'] );
-		return $Flash;
+		return $flash;
 	}
 
 	/**
@@ -180,6 +180,6 @@ class SessionManager
 	 */
 	public function isStarted(): bool
 	{
-		return $this->_Started || session_status() === PHP_SESSION_ACTIVE;
+		return $this->_started || session_status() === PHP_SESSION_ACTIVE;
 	}
 }

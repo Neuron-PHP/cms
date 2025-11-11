@@ -5,6 +5,7 @@ namespace Neuron\Cms\Controllers\Admin;
 use Neuron\Cms\Controllers\Content;
 use Neuron\Cms\Models\Category;
 use Neuron\Cms\Repositories\DatabaseCategoryRepository;
+use Neuron\Core\Exceptions\NotFound;
 use Neuron\Data\Setting\SettingManager;
 use Neuron\Mvc\Application;
 use Neuron\Mvc\Requests\Request;
@@ -18,75 +19,82 @@ use Neuron\Patterns\Registry;
  */
 class CategoryController extends Content
 {
-	private DatabaseCategoryRepository $_CategoryRepository;
 
+	private DatabaseCategoryRepository $_categoryRepository;
+
+	/**
+	 * @param Application|null $app
+	 * @throws \Exception
+	 */
 	public function __construct( ?Application $app = null )
 	{
 		parent::__construct( $app );
 
-		// Get database config from settings
-		$Settings = Registry::getInstance()->get( 'Settings' );
-		$dbConfig = $this->getDatabaseConfig( $Settings );
-
-		if( !$dbConfig )
-		{
-			throw new \RuntimeException( 'Database configuration not found' );
-		}
+		// Get settings for repositories
+		$settings = Registry::getInstance()->get( 'Settings' );
 
 		// Initialize repository
-		$this->_CategoryRepository = new DatabaseCategoryRepository( $dbConfig );
+		$this->_categoryRepository = new DatabaseCategoryRepository( $settings );
 	}
 
 	/**
-	 * List all categories
+	 * List categories
+	 * @param array $parameters
+	 * @param Request|null $request
+	 * @return string
+	 * @throws \Exception
 	 */
-	public function index( array $Parameters, ?Request $Request ): string
+	public function index( array $parameters, ?Request $request ): string
 	{
-		$User = Registry::getInstance()->get( 'Auth.User' );
+		$user = Registry::getInstance()->get( 'Auth.User' );
 
-		if( !$User )
+		if( !$user )
 		{
 			throw new \RuntimeException( 'Authenticated user not found' );
 		}
 
-		$categoriesWithCount = $this->_CategoryRepository->allWithPostCount();
+		$categoriesWithCount = $this->_categoryRepository->allWithPostCount();
 
-		$ViewData = [
+		$viewData = [
 			'Title' => 'Categories | Admin | ' . $this->getName(),
 			'Description' => 'Manage blog categories',
-			'User' => $User,
+			'User' => $user,
 			'CategoriesWithCount' => $categoriesWithCount
 		];
 
 		return $this->renderHtml(
 			HttpResponseStatus::OK,
-			$ViewData,
+			$viewData,
 			'index',
 			'categories'
 		);
 	}
 
 	/**
-	 * Show create category form
+	 * List categories
+	 * @param array $parameters
+	 * @param Request|null $request
+	 * @return string
+	 * @throws \Exception
 	 */
-	public function create( array $Parameters, ?Request $Request ): string
+	public function create( array $parameters, ?Request $request ): string
 	{
-		$User = Registry::getInstance()->get( 'Auth.User' );
+		$user = Registry::getInstance()->get( 'Auth.User' );
 
-		if( !$User )
+		if( !$user )
 		{
 			throw new \RuntimeException( 'Authenticated user not found' );
 		}
 
-		$ViewData = [
+		$viewData = [
 			'Title' => 'Create Category | Admin | ' . $this->getName(),
 			'Description' => 'Create a new blog category',
-			'User' => $User
+			'User' => $user
 		];
 
 		return $this->renderHtml(
 			HttpResponseStatus::OK,
-			$ViewData,
+			$viewData,
 			'create',
 			'categories'
 		);
@@ -94,12 +102,16 @@ class CategoryController extends Content
 
 	/**
 	 * Store new category
+	 * @param array $parameters
+	 * @param Request|null $request
+	 * @return string
+	 * @throws NotFound
 	 */
-	public function store( array $Parameters, ?Request $Request ): string
+	public function store( array $parameters, ?Request $request ): string
 	{
-		$User = Registry::getInstance()->get( 'Auth.User' );
+		$user = Registry::getInstance()->get( 'Auth.User' );
 
-		if( !$User )
+		if( !$user )
 		{
 			throw new \RuntimeException( 'Authenticated user not found' );
 		}
@@ -107,18 +119,18 @@ class CategoryController extends Content
 		try
 		{
 			// Get form data
-			$name = $Request->post( 'name' );
-			$slug = $Request->post( 'slug' );
-			$description = $Request->post( 'description' );
+			$name = $request->post( 'name' );
+			$slug = $request->post( 'slug' );
+			$description = $request->post( 'description' );
 
 			// Create category
-			$Category = new Category();
-			$Category->setName( $name );
-			$Category->setSlug( $slug ?: $this->generateSlug( $name ) );
-			$Category->setDescription( $description );
+			$category = new Category();
+			$category->setName( $name );
+			$category->setSlug( $slug ?: $this->generateSlug( $name ) );
+			$category->setDescription( $description );
 
 			// Save category
-			$this->_CategoryRepository->create( $Category );
+			$this->_categoryRepository->create( $category );
 
 			// Redirect to category list
 			header( 'Location: /admin/categories' );
@@ -126,16 +138,16 @@ class CategoryController extends Content
 		}
 		catch( \Exception $e )
 		{
-			$ViewData = [
+			$viewData = [
 				'Title' => 'Create Category | Admin | ' . $this->getName(),
 				'Description' => 'Create a new blog category',
-				'User' => $User,
+				'User' => $user,
 				'Error' => $e->getMessage()
 			];
 
 			return $this->renderHtml(
 				HttpResponseStatus::BAD_REQUEST,
-				$ViewData,
+				$viewData,
 				'create',
 				'categories'
 			);
@@ -144,34 +156,38 @@ class CategoryController extends Content
 
 	/**
 	 * Show edit category form
+	 * @param array $parameters
+	 * @param Request|null $request
+	 * @return string
+	 * @throws \Exception
 	 */
-	public function edit( array $Parameters, ?Request $Request ): string
+	public function edit( array $parameters, ?Request $request ): string
 	{
-		$User = Registry::getInstance()->get( 'Auth.User' );
+		$user = Registry::getInstance()->get( 'Auth.User' );
 
-		if( !$User )
+		if( !$user )
 		{
 			throw new \RuntimeException( 'Authenticated user not found' );
 		}
 
-		$categoryId = (int)$Parameters['id'];
-		$Category = $this->_CategoryRepository->findById( $categoryId );
+		$categoryId = (int)$parameters['id'];
+		$category = $this->_categoryRepository->findById( $categoryId );
 
-		if( !$Category )
+		if( !$category )
 		{
 			throw new \RuntimeException( 'Category not found' );
 		}
 
-		$ViewData = [
+		$viewData = [
 			'Title' => 'Edit Category | Admin | ' . $this->getName(),
 			'Description' => 'Edit blog category',
-			'User' => $User,
-			'Category' => $Category
+			'User' => $user,
+			'Category' => $category
 		];
 
 		return $this->renderHtml(
 			HttpResponseStatus::OK,
-			$ViewData,
+			$viewData,
 			'edit',
 			'categories'
 		);
@@ -179,20 +195,24 @@ class CategoryController extends Content
 
 	/**
 	 * Update category
+	 * @param array $parameters
+	 * @param Request|null $request
+	 * @return string
+	 * @throws \Exception
 	 */
-	public function update( array $Parameters, ?Request $Request ): string
+	public function update( array $parameters, ?Request $request ): string
 	{
-		$User = Registry::getInstance()->get( 'Auth.User' );
+		$user = Registry::getInstance()->get( 'Auth.User' );
 
-		if( !$User )
+		if( !$user )
 		{
 			throw new \RuntimeException( 'Authenticated user not found' );
 		}
 
-		$categoryId = (int)$Parameters['id'];
-		$Category = $this->_CategoryRepository->findById( $categoryId );
+		$categoryId = (int)$parameters['id'];
+		$category = $this->_categoryRepository->findById( $categoryId );
 
-		if( !$Category )
+		if( !$category )
 		{
 			throw new \RuntimeException( 'Category not found' );
 		}
@@ -200,17 +220,17 @@ class CategoryController extends Content
 		try
 		{
 			// Get form data
-			$name = $Request->post( 'name' );
-			$slug = $Request->post( 'slug' );
-			$description = $Request->post( 'description' );
+			$name = $request->post( 'name' );
+			$slug = $request->post( 'slug' );
+			$description = $request->post( 'description' );
 
 			// Update category
-			$Category->setName( $name );
-			$Category->setSlug( $slug ?: $this->generateSlug( $name ) );
-			$Category->setDescription( $description );
+			$category->setName( $name );
+			$category->setSlug( $slug ?: $this->generateSlug( $name ) );
+			$category->setDescription( $description );
 
 			// Save category
-			$this->_CategoryRepository->update( $Category );
+			$this->_categoryRepository->update( $category );
 
 			// Redirect to category list
 			header( 'Location: /admin/categories' );
@@ -218,17 +238,17 @@ class CategoryController extends Content
 		}
 		catch( \Exception $e )
 		{
-			$ViewData = [
+			$viewData = [
 				'Title' => 'Edit Category | Admin | ' . $this->getName(),
 				'Description' => 'Edit blog category',
-				'User' => $User,
-				'Category' => $Category,
+				'User' => $user,
+				'Category' => $category,
 				'Error' => $e->getMessage()
 			];
 
 			return $this->renderHtml(
 				HttpResponseStatus::BAD_REQUEST,
-				$ViewData,
+				$viewData,
 				'edit',
 				'categories'
 			);
@@ -237,27 +257,31 @@ class CategoryController extends Content
 
 	/**
 	 * Delete category
+	 * @param array $parameters
+	 * @param Request|null $request
+	 * @return string
+	 * @throws \Exception
 	 */
-	public function destroy( array $Parameters, ?Request $Request ): string
+	public function destroy( array $parameters, ?Request $request ): string
 	{
-		$User = Registry::getInstance()->get( 'Auth.User' );
+		$user = Registry::getInstance()->get( 'Auth.User' );
 
-		if( !$User )
+		if( !$user )
 		{
 			throw new \RuntimeException( 'Authenticated user not found' );
 		}
 
-		$categoryId = (int)$Parameters['id'];
-		$Category = $this->_CategoryRepository->findById( $categoryId );
+		$categoryId = (int)$parameters['id'];
+		$category = $this->_categoryRepository->findById( $categoryId );
 
-		if( !$Category )
+		if( !$category )
 		{
 			throw new \RuntimeException( 'Category not found' );
 		}
 
 		try
 		{
-			$this->_CategoryRepository->delete( $categoryId );
+			$this->_categoryRepository->delete( $categoryId );
 
 			// Redirect to category list
 			header( 'Location: /admin/categories' );
@@ -271,6 +295,8 @@ class CategoryController extends Content
 
 	/**
 	 * Generate slug from name
+	 * @param string $name
+	 * @return string
 	 */
 	private function generateSlug( string $name ): string
 	{
@@ -280,43 +306,4 @@ class CategoryController extends Content
 		return trim( $slug, '-' );
 	}
 
-	/**
-	 * Get database configuration from settings
-	 */
-	private function getDatabaseConfig( SettingManager $Settings ): ?array
-	{
-		try
-		{
-			$settingNames = $Settings->getSectionSettingNames( 'database' );
-
-			if( empty( $settingNames ) )
-			{
-				return null;
-			}
-
-			$config = [];
-			foreach( $settingNames as $name )
-			{
-				$value = $Settings->get( 'database', $name );
-				if( $value !== null )
-				{
-					// Convert string values to appropriate types
-					if( $name === 'port' )
-					{
-						$config[$name] = (int)$value;
-					}
-					else
-					{
-						$config[$name] = $value;
-					}
-				}
-			}
-
-			return $config;
-		}
-		catch( \Exception $e )
-		{
-			return null;
-		}
-	}
 }

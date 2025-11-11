@@ -12,72 +12,72 @@ namespace Neuron\Cms\Auth;
  */
 class PasswordHasher
 {
-	private int $_MinLength = 8;
-	private bool $_RequireUppercase = true;
-	private bool $_RequireLowercase = true;
-	private bool $_RequireNumbers = true;
-	private bool $_RequireSpecialChars = false;
+	private int $_minLength = 8;
+	private bool $_requireUppercase = true;
+	private bool $_requireLowercase = true;
+	private bool $_requireNumbers = true;
+	private bool $_requireSpecialChars = false;
 
 	/**
 	 * Hash a password using Argon2id or Bcrypt
 	 */
-	public function hash( string $Password ): string
+	public function hash( string $password ): string
 	{
 		// Use Argon2id if available, otherwise fall back to Bcrypt
 		$algorithm = defined( 'PASSWORD_ARGON2ID' ) ? PASSWORD_ARGON2ID : PASSWORD_BCRYPT;
 
-		return password_hash( $Password, $algorithm );
+		return password_hash( $password, $algorithm );
 	}
 
 	/**
 	 * Verify a password against a hash
 	 */
-	public function verify( string $Password, string $Hash ): bool
+	public function verify( string $password, string $hash ): bool
 	{
-		return password_verify( $Password, $Hash );
+		return password_verify( $password, $hash );
 	}
 
 	/**
 	 * Check if a hash needs to be rehashed (algorithm upgrade)
 	 */
-	public function needsRehash( string $Hash ): bool
+	public function needsRehash( string $hash ): bool
 	{
 		$algorithm = defined( 'PASSWORD_ARGON2ID' ) ? PASSWORD_ARGON2ID : PASSWORD_BCRYPT;
 
-		return password_needs_rehash( $Hash, $algorithm );
+		return password_needs_rehash( $hash, $algorithm );
 	}
 
 	/**
 	 * Check if password meets strength requirements
 	 */
-	public function meetsRequirements( string $Password ): bool
+	public function meetsRequirements( string $password ): bool
 	{
 		// Check minimum length
-		if( strlen( $Password ) < $this->_MinLength )
+		if( strlen( $password ) < $this->_minLength )
 		{
 			return false;
 		}
 
 		// Check for uppercase letters
-		if( $this->_RequireUppercase && !preg_match( '/[A-Z]/', $Password ) )
+		if( $this->_requireUppercase && !preg_match( '/[A-Z]/', $password ) )
 		{
 			return false;
 		}
 
 		// Check for lowercase letters
-		if( $this->_RequireLowercase && !preg_match( '/[a-z]/', $Password ) )
+		if( $this->_requireLowercase && !preg_match( '/[a-z]/', $password ) )
 		{
 			return false;
 		}
 
 		// Check for numbers
-		if( $this->_RequireNumbers && !preg_match( '/[0-9]/', $Password ) )
+		if( $this->_requireNumbers && !preg_match( '/[0-9]/', $password ) )
 		{
 			return false;
 		}
 
 		// Check for special characters
-		if( $this->_RequireSpecialChars && !preg_match( '/[^A-Za-z0-9]/', $Password ) )
+		if( $this->_requireSpecialChars && !preg_match( '/[^A-Za-z0-9]/', $password ) )
 		{
 			return false;
 		}
@@ -88,111 +88,111 @@ class PasswordHasher
 	/**
 	 * Get password validation error messages
 	 */
-	public function getValidationErrors( string $Password ): array
+	public function getValidationErrors( string $password ): array
 	{
-		$Errors = [];
+		$errors = [];
 
-		if( strlen( $Password ) < $this->_MinLength )
+		if( strlen( $password ) < $this->_minLength )
 		{
-			$Errors[] = "Password must be at least {$this->_MinLength} characters long";
+			$errors[] = "Password must be at least {$this->_minLength} characters long";
 		}
 
-		if( $this->_RequireUppercase && !preg_match( '/[A-Z]/', $Password ) )
+		if( $this->_requireUppercase && !preg_match( '/[A-Z]/', $password ) )
 		{
-			$Errors[] = 'Password must contain at least one uppercase letter';
+			$errors[] = 'Password must contain at least one uppercase letter';
 		}
 
-		if( $this->_RequireLowercase && !preg_match( '/[a-z]/', $Password ) )
+		if( $this->_requireLowercase && !preg_match( '/[a-z]/', $password ) )
 		{
-			$Errors[] = 'Password must contain at least one lowercase letter';
+			$errors[] = 'Password must contain at least one lowercase letter';
 		}
 
-		if( $this->_RequireNumbers && !preg_match( '/[0-9]/', $Password ) )
+		if( $this->_requireNumbers && !preg_match( '/[0-9]/', $password ) )
 		{
-			$Errors[] = 'Password must contain at least one number';
+			$errors[] = 'Password must contain at least one number';
 		}
 
-		if( $this->_RequireSpecialChars && !preg_match( '/[^A-Za-z0-9]/', $Password ) )
+		if( $this->_requireSpecialChars && !preg_match( '/[^A-Za-z0-9]/', $password ) )
 		{
-			$Errors[] = 'Password must contain at least one special character';
+			$errors[] = 'Password must contain at least one special character';
 		}
 
-		return $Errors;
+		return $errors;
 	}
 
 	/**
 	 * Set minimum password length
 	 */
-	public function setMinLength( int $MinLength ): self
+	public function setMinLength( int $minLength ): self
 	{
-		$this->_MinLength = $MinLength;
+		$this->_minLength = $minLength;
 		return $this;
 	}
 
 	/**
 	 * Set whether uppercase letters are required
 	 */
-	public function setRequireUppercase( bool $RequireUppercase ): self
+	public function setRequireUppercase( bool $requireUppercase ): self
 	{
-		$this->_RequireUppercase = $RequireUppercase;
+		$this->_requireUppercase = $requireUppercase;
 		return $this;
 	}
 
 	/**
 	 * Set whether lowercase letters are required
 	 */
-	public function setRequireLowercase( bool $RequireLowercase ): self
+	public function setRequireLowercase( bool $requireLowercase ): self
 	{
-		$this->_RequireLowercase = $RequireLowercase;
+		$this->_requireLowercase = $requireLowercase;
 		return $this;
 	}
 
 	/**
 	 * Set whether numbers are required
 	 */
-	public function setRequireNumbers( bool $RequireNumbers ): self
+	public function setRequireNumbers( bool $requireNumbers ): self
 	{
-		$this->_RequireNumbers = $RequireNumbers;
+		$this->_requireNumbers = $requireNumbers;
 		return $this;
 	}
 
 	/**
 	 * Set whether special characters are required
 	 */
-	public function setRequireSpecialChars( bool $RequireSpecialChars ): self
+	public function setRequireSpecialChars( bool $requireSpecialChars ): self
 	{
-		$this->_RequireSpecialChars = $RequireSpecialChars;
+		$this->_requireSpecialChars = $requireSpecialChars;
 		return $this;
 	}
 
 	/**
 	 * Configure password requirements from settings
 	 */
-	public function configure( array $Settings ): self
+	public function configure( array $settings ): self
 	{
-		if( isset( $Settings['min_length'] ) )
+		if( isset( $settings['min_length'] ) )
 		{
-			$this->setMinLength( $Settings['min_length'] );
+			$this->setMinLength( $settings['min_length'] );
 		}
 
-		if( isset( $Settings['require_uppercase'] ) )
+		if( isset( $settings['require_uppercase'] ) )
 		{
-			$this->setRequireUppercase( $Settings['require_uppercase'] );
+			$this->setRequireUppercase( $settings['require_uppercase'] );
 		}
 
-		if( isset( $Settings['require_lowercase'] ) )
+		if( isset( $settings['require_lowercase'] ) )
 		{
-			$this->setRequireLowercase( $Settings['require_lowercase'] );
+			$this->setRequireLowercase( $settings['require_lowercase'] );
 		}
 
-		if( isset( $Settings['require_numbers'] ) )
+		if( isset( $settings['require_numbers'] ) )
 		{
-			$this->setRequireNumbers( $Settings['require_numbers'] );
+			$this->setRequireNumbers( $settings['require_numbers'] );
 		}
 
-		if( isset( $Settings['require_special_chars'] ) )
+		if( isset( $settings['require_special_chars'] ) )
 		{
-			$this->setRequireSpecialChars( $Settings['require_special_chars'] );
+			$this->setRequireSpecialChars( $settings['require_special_chars'] );
 		}
 
 		return $this;

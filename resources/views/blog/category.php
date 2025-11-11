@@ -23,7 +23,7 @@
 							</h2>
 							<p class="text-muted">
 								<small>
-									By <?= htmlspecialchars( $post->getAuthor() ) ?>
+									By <?= $post->getAuthor() ? htmlspecialchars( $post->getAuthor()->getUsername() ) : 'Unknown' ?>
 									on <?= $post->getCreatedAt() ? $post->getCreatedAt()->format( 'F j, Y' ) : '' ?>
 								</small>
 							</p>

@@ -14,37 +14,37 @@ interface IUserRepository
 	/**
 	 * Find user by ID
 	 */
-	public function findById( int $Id ): ?User;
+	public function findById( int $id ): ?User;
 
 	/**
 	 * Find user by username
 	 */
-	public function findByUsername( string $Username ): ?User;
+	public function findByUsername( string $username ): ?User;
 
 	/**
 	 * Find user by email
 	 */
-	public function findByEmail( string $Email ): ?User;
+	public function findByEmail( string $email ): ?User;
 
 	/**
 	 * Find user by remember token
 	 */
-	public function findByRememberToken( string $Token ): ?User;
+	public function findByRememberToken( string $token ): ?User;
 
 	/**
 	 * Create a new user
 	 */
-	public function create( User $User ): User;
+	public function create( User $user ): User;
 
 	/**
 	 * Update an existing user
 	 */
-	public function update( User $User ): bool;
+	public function update( User $user ): bool;
 
 	/**
 	 * Delete a user
 	 */
-	public function delete( int $Id ): bool;
+	public function delete( int $id ): bool;
 
 	/**
 	 * Get all users

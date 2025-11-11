@@ -19,34 +19,37 @@ class MaintenanceInitializer implements IRunnable
 {
 	/**
 	 * Run the initializer
+	 * @param array $argv
+	 * @return mixed
+	 * @throws \Exception
 	 */
-	public function run( array $Argv = [] ): mixed
+	public function run( array $argv = [] ): mixed
 	{
 		// Get Application from Registry
-		$App = Registry::getInstance()->get( 'App' );
+		$app = Registry::getInstance()->get( 'App' );
 
-		if( !$App || !$App instanceof \Neuron\Mvc\Application )
+		if( !$app || !$app instanceof \Neuron\Mvc\Application )
 		{
 			Log::error( "Application not found in Registry, skipping maintenance initialization" );
 			return null;
 		}
 
 		// Get base path for maintenance file (use application base path, not cwd)
-		$basePath = $App->getBasePath();
+		$basePath = $app->getBasePath();
 
 		// Create maintenance manager
 		$manager = new MaintenanceManager( $basePath );
 
 		// Get configuration (if available)
 		$config = null;
-		$Settings = Registry::getInstance()->get( 'Settings' );
+		$settings = Registry::getInstance()->get( 'Settings' );
 
-		if( $Settings && $Settings instanceof \Neuron\Data\Setting\SettingManager )
+		if( $settings && $settings instanceof \Neuron\Data\Setting\SettingManager )
 		{
 			try
 			{
 				// Get the source from the SettingManager
-				$source = $Settings->getSource();
+				$source = $settings->getSource();
 				$config = MaintenanceConfig::fromSettings( $source );
 			}
 			catch( \Exception $e )
@@ -62,8 +65,8 @@ class MaintenanceInitializer implements IRunnable
 		);
 
 		// Register and apply filter globally to all routes
-		$App->getRouter()->registerFilter( 'maintenance', $filter );
-		$App->getRouter()->addFilter( 'maintenance' );
+		$app->getRouter()->registerFilter( 'maintenance', $filter );
+		$app->getRouter()->addFilter( 'maintenance' );
 
 		// Store manager in registry for CLI commands
 		Registry::getInstance()->set( 'maintenance.manager', $manager );

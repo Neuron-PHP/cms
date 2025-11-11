@@ -4,14 +4,14 @@ namespace Neuron\Cms\Cli\Commands\User;
 
 use Neuron\Cli\Commands\Command;
 use Neuron\Cms\Repositories\DatabaseUserRepository;
-use Neuron\Data\Setting\SettingManager;
-use Neuron\Data\Setting\Source\Yaml;
+use Neuron\Patterns\Registry;
 
 /**
  * Delete a user
  */
 class DeleteCommand extends Command
 {
+
 	/**
 	 * @inheritDoc
 	 */
@@ -39,14 +39,14 @@ class DeleteCommand extends Command
 	/**
 	 * Execute the command
 	 */
-	public function execute( array $Parameters = [] ): int
+	public function execute( array $parameters = [] ): int
 	{
-		$identifier = $Parameters['identifier'] ?? null;
+		$identifier = $parameters['identifier'] ?? null;
 
 		if( !$identifier )
 		{
-			$this->output( "\n❌ Error: Please provide a user ID or username.\n" );
-			$this->output( "Usage: php neuron cms:user:delete <id or username>\n" );
+			$this->output->error( "Please provide a user ID or username." );
+			$this->output->writeln( "Usage: php neuron cms:user:delete <id or username>" );
 			return 1;
 		}
 
@@ -70,26 +70,26 @@ class DeleteCommand extends Command
 
 		if( !$user )
 		{
-			$this->output( "\n❌ Error: User '$identifier' not found.\n" );
+			$this->output->error( "User '$identifier' not found." );
 			return 1;
 		}
 
 		// Display user info
-		$this->output( "\n⚠️  You are about to delete the following user:" );
-		$this->output( "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" );
-		$this->output( "  ID:       " . $user->getId() );
-		$this->output( "  Username: " . $user->getUsername() );
-		$this->output( "  Email:    " . $user->getEmail() );
-		$this->output( "  Role:     " . $user->getRole() );
-		$this->output( "  Status:   " . $user->getStatus() );
-		$this->output( "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n" );
+		$this->output->warning( "You are about to delete the following user:" );
+		$this->output->writeln( "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" );
+		$this->output->writeln( "  ID:       " . $user->getId() );
+		$this->output->writeln( "  Username: " . $user->getUsername() );
+		$this->output->writeln( "  Email:    " . $user->getEmail() );
+		$this->output->writeln( "  Role:     " . $user->getRole() );
+		$this->output->writeln( "  Status:   " . $user->getStatus() );
+		$this->output->writeln( "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" );
 
 		// Confirm deletion
 		$response = $this->prompt( "Are you sure you want to delete this user? Type 'DELETE' to confirm: " );
 
 		if( trim( $response ) !== 'DELETE' )
 		{
-			$this->output( "\n❌ Deletion cancelled.\n" );
+			$this->output->error( "Deletion cancelled." );
 			return 1;
 		}
 
@@ -98,16 +98,16 @@ class DeleteCommand extends Command
 		{
 			if( $repository->delete( $user->getId() ) )
 			{
-				$this->output( "\n✅ User deleted successfully.\n" );
+				$this->output->success( "User deleted successfully." );
 				return 0;
 			}
 
-			$this->output( "\n❌ Failed to delete user.\n" );
+			$this->output->error( "Failed to delete user." );
 			return 1;
 		}
 		catch( \Exception $e )
 		{
-			$this->output( "\n❌ Error: " . $e->getMessage() . "\n" );
+			$this->output->error( "Error: " . $e->getMessage() );
 			return 1;
 		}
 	}
@@ -117,75 +117,22 @@ class DeleteCommand extends Command
 	 */
 	private function getUserRepository(): ?DatabaseUserRepository
 	{
-		$configFile = getcwd() . '/config/config.yaml';
-
-		if( !file_exists( $configFile ) )
-		{
-			$this->output( "\n❌ Configuration file not found at: $configFile" );
-			$this->output( "Please run: php neuron cms:install\n" );
-			return null;
-		}
-
 		try
 		{
-			$yaml = new Yaml( $configFile );
-			$settings = new SettingManager( $yaml );
+			$settings = Registry::getInstance()->get( 'Settings' );
 
-			// Get database configuration
-			$dbConfig = $this->getDatabaseConfig( $settings );
-
-			if( !$dbConfig )
+			if( !$settings )
 			{
-				$this->output( "\n❌ Database configuration not found!" );
-				$this->output( "Please run: php neuron cms:install\n" );
+				$this->output->error( "Application not initialized: Settings not found in Registry" );
+				$this->output->writeln( "This is a configuration error - the application should load settings into the Registry" );
 				return null;
 			}
 
-			return new DatabaseUserRepository( $dbConfig );
+			return new DatabaseUserRepository( $settings );
 		}
 		catch( \Exception $e )
 		{
-			$this->output( "\n❌ Database connection failed: " . $e->getMessage() . "\n" );
-			return null;
-		}
-	}
-
-	/**
-	 * Get database configuration from settings
-	 */
-	private function getDatabaseConfig( SettingManager $Settings ): ?array
-	{
-		try
-		{
-			$settingNames = $Settings->getSectionSettingNames( 'database' );
-
-			if( empty( $settingNames ) )
-			{
-				return null;
-			}
-
-			$config = [];
-			foreach( $settingNames as $name )
-			{
-				$value = $Settings->get( 'database', $name );
-				if( $value !== null )
-				{
-					// Convert string values to appropriate types
-					if( $name === 'port' )
-					{
-						$config[$name] = (int)$value;
-					}
-					else
-					{
-						$config[$name] = $value;
-					}
-				}
-			}
-
-			return $config;
-		}
-		catch( \Exception $e )
-		{
+			$this->output->error( "Database connection failed: " . $e->getMessage() );
 			return null;
 		}
 	}
@@ -193,17 +140,9 @@ class DeleteCommand extends Command
 	/**
 	 * Prompt for user input
 	 */
-	private function prompt( string $Message ): string
+	private function prompt( string $message ): string
 	{
-		echo $Message;
+		$this->output->write( $message, false );
 		return trim( fgets( STDIN ) );
-	}
-
-	/**
-	 * Output message
-	 */
-	private function output( string $Message ): void
-	{
-		echo $Message . "\n";
 	}
 }

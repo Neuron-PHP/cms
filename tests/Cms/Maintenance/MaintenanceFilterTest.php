@@ -13,18 +13,18 @@ use PHPUnit\Framework\TestCase;
  */
 class MaintenanceFilterTest extends TestCase
 {
-	private $Root;
-	private $BasePath;
-	private MaintenanceManager $Manager;
+	private $root;
+	private $basePath;
+	private MaintenanceManager $manager;
 
 	protected function setUp(): void
 	{
 		parent::setUp();
 
 		// Create virtual filesystem
-		$this->Root = vfsStream::setup( 'test' );
-		$this->BasePath = vfsStream::url( 'test' );
-		$this->Manager = new MaintenanceManager( $this->BasePath );
+		$this->root = vfsStream::setup( 'test' );
+		$this->basePath = vfsStream::url( 'test' );
+		$this->manager = new MaintenanceManager( $this->basePath );
 
 		// Clear any server variables
 		$_SERVER = [];
@@ -41,7 +41,7 @@ class MaintenanceFilterTest extends TestCase
 	 */
 	public function testFilterAllowsWhenMaintenanceDisabled(): void
 	{
-		$filter = new MaintenanceFilter( $this->Manager );
+		$filter = new MaintenanceFilter( $this->manager );
 		$route = $this->createMockRoute();
 
 		$result = $filter->pre( $route );
@@ -54,11 +54,11 @@ class MaintenanceFilterTest extends TestCase
 	 */
 	public function testFilterBlocksWhenMaintenanceEnabled(): void
 	{
-		$this->Manager->enable( 'Test maintenance' );
+		$this->manager->enable( 'Test maintenance' );
 
 		$_SERVER['REMOTE_ADDR'] = '203.0.113.5'; // Not in allowed list
 
-		$filter = new MaintenanceFilter( $this->Manager );
+		$filter = new MaintenanceFilter( $this->manager );
 		$route = $this->createMockRoute();
 
 		$result = $filter->pre( $route );
@@ -74,11 +74,11 @@ class MaintenanceFilterTest extends TestCase
 	public function testFilterAllowsWhitelistedIps(): void
 	{
 		$allowedIp = '192.168.1.100';
-		$this->Manager->enable( 'Test', [$allowedIp] );
+		$this->manager->enable( 'Test', [$allowedIp] );
 
 		$_SERVER['REMOTE_ADDR'] = $allowedIp;
 
-		$filter = new MaintenanceFilter( $this->Manager );
+		$filter = new MaintenanceFilter( $this->manager );
 		$route = $this->createMockRoute();
 
 		$result = $filter->pre( $route );
@@ -91,11 +91,11 @@ class MaintenanceFilterTest extends TestCase
 	 */
 	public function testFilterAllowsLocalhost(): void
 	{
-		$this->Manager->enable( 'Test' ); // Default includes 127.0.0.1
+		$this->manager->enable( 'Test' ); // Default includes 127.0.0.1
 
 		$_SERVER['REMOTE_ADDR'] = '127.0.0.1';
 
-		$filter = new MaintenanceFilter( $this->Manager );
+		$filter = new MaintenanceFilter( $this->manager );
 		$route = $this->createMockRoute();
 
 		$result = $filter->pre( $route );
@@ -109,11 +109,11 @@ class MaintenanceFilterTest extends TestCase
 	public function testFilterMaintenancePageContainsMessage(): void
 	{
 		$customMessage = 'Custom maintenance message';
-		$this->Manager->enable( $customMessage );
+		$this->manager->enable( $customMessage );
 
 		$_SERVER['REMOTE_ADDR'] = '203.0.113.5';
 
-		$filter = new MaintenanceFilter( $this->Manager );
+		$filter = new MaintenanceFilter( $this->manager );
 		$route = $this->createMockRoute();
 
 		$result = $filter->pre( $route );
@@ -127,12 +127,12 @@ class MaintenanceFilterTest extends TestCase
 	public function testFilterRespectsXForwardedFor(): void
 	{
 		$allowedIp = '192.168.1.50';
-		$this->Manager->enable( 'Test', [$allowedIp] );
+		$this->manager->enable( 'Test', [$allowedIp] );
 
 		$_SERVER['REMOTE_ADDR'] = '10.0.0.1'; // Proxy IP
 		$_SERVER['HTTP_X_FORWARDED_FOR'] = $allowedIp; // Real client IP
 
-		$filter = new MaintenanceFilter( $this->Manager );
+		$filter = new MaintenanceFilter( $this->manager );
 		$route = $this->createMockRoute();
 
 		$result = $filter->pre( $route );
@@ -146,12 +146,12 @@ class MaintenanceFilterTest extends TestCase
 	public function testFilterRespectsXRealIp(): void
 	{
 		$allowedIp = '192.168.1.75';
-		$this->Manager->enable( 'Test', [$allowedIp] );
+		$this->manager->enable( 'Test', [$allowedIp] );
 
 		$_SERVER['REMOTE_ADDR'] = '10.0.0.1';
 		$_SERVER['HTTP_X_REAL_IP'] = $allowedIp;
 
-		$filter = new MaintenanceFilter( $this->Manager );
+		$filter = new MaintenanceFilter( $this->manager );
 		$route = $this->createMockRoute();
 
 		$result = $filter->pre( $route );
@@ -167,13 +167,13 @@ class MaintenanceFilterTest extends TestCase
 		$customViewContent = '<html><body>Custom Maintenance Page</body></html>';
 
 		$customView = vfsStream::newFile( 'custom-maintenance.php' )
-			->at( $this->Root )
+			->at( $this->root )
 			->setContent( $customViewContent );
 
-		$this->Manager->enable( 'Test' );
+		$this->manager->enable( 'Test' );
 		$_SERVER['REMOTE_ADDR'] = '203.0.113.5';
 
-		$filter = new MaintenanceFilter( $this->Manager, $customView->url() );
+		$filter = new MaintenanceFilter( $this->manager, $customView->url() );
 		$route = $this->createMockRoute();
 
 		$result = $filter->pre( $route );
@@ -186,10 +186,10 @@ class MaintenanceFilterTest extends TestCase
 	 */
 	public function testDefaultMaintenancePageStructure(): void
 	{
-		$this->Manager->enable( 'Test message', [], 3600 );
+		$this->manager->enable( 'Test message', [], 3600 );
 		$_SERVER['REMOTE_ADDR'] = '203.0.113.5';
 
-		$filter = new MaintenanceFilter( $this->Manager );
+		$filter = new MaintenanceFilter( $this->manager );
 		$route = $this->createMockRoute();
 
 		$result = $filter->pre( $route );
@@ -209,10 +209,10 @@ class MaintenanceFilterTest extends TestCase
 	 */
 	public function testMaintenancePageIncludesMetaTags(): void
 	{
-		$this->Manager->enable( 'Test' );
+		$this->manager->enable( 'Test' );
 		$_SERVER['REMOTE_ADDR'] = '203.0.113.5';
 
-		$filter = new MaintenanceFilter( $this->Manager );
+		$filter = new MaintenanceFilter( $this->manager );
 		$route = $this->createMockRoute();
 
 		$result = $filter->pre( $route );
@@ -227,10 +227,10 @@ class MaintenanceFilterTest extends TestCase
 	 */
 	public function testMaintenancePageShowsRetryEstimate(): void
 	{
-		$this->Manager->enable( 'Test', [], 3600 ); // 1 hour
+		$this->manager->enable( 'Test', [], 3600 ); // 1 hour
 		$_SERVER['REMOTE_ADDR'] = '203.0.113.5';
 
-		$filter = new MaintenanceFilter( $this->Manager );
+		$filter = new MaintenanceFilter( $this->manager );
 		$route = $this->createMockRoute();
 
 		$result = $filter->pre( $route );

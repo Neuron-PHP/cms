@@ -11,21 +11,21 @@ use DateTimeImmutable;
  */
 class User
 {
-	private ?int $_Id = null;
-	private string $_Username;
-	private string $_Email;
-	private string $_PasswordHash;
-	private string $_Role = 'subscriber';
-	private string $_Status = 'active';
-	private bool $_EmailVerified = false;
-	private ?string $_RememberToken = null;
-	private ?string $_TwoFactorSecret = null;
-	private ?array $_TwoFactorRecoveryCodes = null;
-	private int $_FailedLoginAttempts = 0;
-	private ?DateTimeImmutable $_LockedUntil = null;
-	private ?DateTimeImmutable $_CreatedAt = null;
-	private ?DateTimeImmutable $_UpdatedAt = null;
-	private ?DateTimeImmutable $_LastLoginAt = null;
+	private ?int $_id = null;
+	private string $_username;
+	private string $_email;
+	private string $_passwordHash;
+	private string $_role = 'subscriber';
+	private string $_status = 'active';
+	private bool $_emailVerified = false;
+	private ?string $_rememberToken = null;
+	private ?string $_twoFactorSecret = null;
+	private ?array $_twoFactorRecoveryCodes = null;
+	private int $_failedLoginAttempts = 0;
+	private ?DateTimeImmutable $_lockedUntil = null;
+	private ?DateTimeImmutable $_createdAt = null;
+	private ?DateTimeImmutable $_updatedAt = null;
+	private ?DateTimeImmutable $_lastLoginAt = null;
 
 	/**
 	 * User roles
@@ -44,7 +44,7 @@ class User
 
 	public function __construct()
 	{
-		$this->_CreatedAt = new DateTimeImmutable();
+		$this->_createdAt = new DateTimeImmutable();
 	}
 
 	/**
@@ -52,15 +52,15 @@ class User
 	 */
 	public function getId(): ?int
 	{
-		return $this->_Id;
+		return $this->_id;
 	}
 
 	/**
 	 * Set user ID
 	 */
-	public function setId( int $Id ): self
+	public function setId( int $id ): self
 	{
-		$this->_Id = $Id;
+		$this->_id = $id;
 		return $this;
 	}
 
@@ -69,15 +69,15 @@ class User
 	 */
 	public function getUsername(): string
 	{
-		return $this->_Username;
+		return $this->_username;
 	}
 
 	/**
 	 * Set username
 	 */
-	public function setUsername( string $Username ): self
+	public function setUsername( string $username ): self
 	{
-		$this->_Username = $Username;
+		$this->_username = $username;
 		return $this;
 	}
 
@@ -86,15 +86,15 @@ class User
 	 */
 	public function getEmail(): string
 	{
-		return $this->_Email;
+		return $this->_email;
 	}
 
 	/**
 	 * Set email
 	 */
-	public function setEmail( string $Email ): self
+	public function setEmail( string $email ): self
 	{
-		$this->_Email = $Email;
+		$this->_email = $email;
 		return $this;
 	}
 
@@ -103,15 +103,15 @@ class User
 	 */
 	public function getPasswordHash(): string
 	{
-		return $this->_PasswordHash;
+		return $this->_passwordHash;
 	}
 
 	/**
 	 * Set password hash
 	 */
-	public function setPasswordHash( string $PasswordHash ): self
+	public function setPasswordHash( string $passwordHash ): self
 	{
-		$this->_PasswordHash = $PasswordHash;
+		$this->_passwordHash = $passwordHash;
 		return $this;
 	}
 
@@ -120,15 +120,15 @@ class User
 	 */
 	public function getRole(): string
 	{
-		return $this->_Role;
+		return $this->_role;
 	}
 
 	/**
 	 * Set user role
 	 */
-	public function setRole( string $Role ): self
+	public function setRole( string $role ): self
 	{
-		$this->_Role = $Role;
+		$this->_role = $role;
 		return $this;
 	}
 
@@ -137,7 +137,7 @@ class User
 	 */
 	public function isAdmin(): bool
 	{
-		return $this->_Role === self::ROLE_ADMIN;
+		return $this->_role === self::ROLE_ADMIN;
 	}
 
 	/**
@@ -145,7 +145,7 @@ class User
 	 */
 	public function isEditor(): bool
 	{
-		return $this->_Role === self::ROLE_EDITOR;
+		return $this->_role === self::ROLE_EDITOR;
 	}
 
 	/**
@@ -153,7 +153,7 @@ class User
 	 */
 	public function isAuthor(): bool
 	{
-		return $this->_Role === self::ROLE_AUTHOR;
+		return $this->_role === self::ROLE_AUTHOR;
 	}
 
 	/**
@@ -161,15 +161,15 @@ class User
 	 */
 	public function getStatus(): string
 	{
-		return $this->_Status;
+		return $this->_status;
 	}
 
 	/**
 	 * Set user status
 	 */
-	public function setStatus( string $Status ): self
+	public function setStatus( string $status ): self
 	{
-		$this->_Status = $Status;
+		$this->_status = $status;
 		return $this;
 	}
 
@@ -178,7 +178,7 @@ class User
 	 */
 	public function isActive(): bool
 	{
-		return $this->_Status === self::STATUS_ACTIVE;
+		return $this->_status === self::STATUS_ACTIVE;
 	}
 
 	/**
@@ -186,7 +186,7 @@ class User
 	 */
 	public function isSuspended(): bool
 	{
-		return $this->_Status === self::STATUS_SUSPENDED;
+		return $this->_status === self::STATUS_SUSPENDED;
 	}
 
 	/**
@@ -194,15 +194,15 @@ class User
 	 */
 	public function isEmailVerified(): bool
 	{
-		return $this->_EmailVerified;
+		return $this->_emailVerified;
 	}
 
 	/**
 	 * Set email verified status
 	 */
-	public function setEmailVerified( bool $EmailVerified ): self
+	public function setEmailVerified( bool $emailVerified ): self
 	{
-		$this->_EmailVerified = $EmailVerified;
+		$this->_emailVerified = $emailVerified;
 		return $this;
 	}
 
@@ -211,15 +211,15 @@ class User
 	 */
 	public function getRememberToken(): ?string
 	{
-		return $this->_RememberToken;
+		return $this->_rememberToken;
 	}
 
 	/**
 	 * Set remember token
 	 */
-	public function setRememberToken( ?string $RememberToken ): self
+	public function setRememberToken( ?string $rememberToken ): self
 	{
-		$this->_RememberToken = $RememberToken;
+		$this->_rememberToken = $rememberToken;
 		return $this;
 	}
 
@@ -228,15 +228,15 @@ class User
 	 */
 	public function getTwoFactorSecret(): ?string
 	{
-		return $this->_TwoFactorSecret;
+		return $this->_twoFactorSecret;
 	}
 
 	/**
 	 * Set two-factor secret
 	 */
-	public function setTwoFactorSecret( ?string $TwoFactorSecret ): self
+	public function setTwoFactorSecret( ?string $twoFactorSecret ): self
 	{
-		$this->_TwoFactorSecret = $TwoFactorSecret;
+		$this->_twoFactorSecret = $twoFactorSecret;
 		return $this;
 	}
 
@@ -245,7 +245,7 @@ class User
 	 */
 	public function hasTwoFactorEnabled(): bool
 	{
-		return $this->_TwoFactorSecret !== null;
+		return $this->_twoFactorSecret !== null;
 	}
 
 	/**
@@ -253,15 +253,15 @@ class User
 	 */
 	public function getTwoFactorRecoveryCodes(): ?array
 	{
-		return $this->_TwoFactorRecoveryCodes;
+		return $this->_twoFactorRecoveryCodes;
 	}
 
 	/**
 	 * Set two-factor recovery codes
 	 */
-	public function setTwoFactorRecoveryCodes( ?array $TwoFactorRecoveryCodes ): self
+	public function setTwoFactorRecoveryCodes( ?array $twoFactorRecoveryCodes ): self
 	{
-		$this->_TwoFactorRecoveryCodes = $TwoFactorRecoveryCodes;
+		$this->_twoFactorRecoveryCodes = $twoFactorRecoveryCodes;
 		return $this;
 	}
 
@@ -270,15 +270,15 @@ class User
 	 */
 	public function getFailedLoginAttempts(): int
 	{
-		return $this->_FailedLoginAttempts;
+		return $this->_failedLoginAttempts;
 	}
 
 	/**
 	 * Set failed login attempts count
 	 */
-	public function setFailedLoginAttempts( int $FailedLoginAttempts ): self
+	public function setFailedLoginAttempts( int $failedLoginAttempts ): self
 	{
-		$this->_FailedLoginAttempts = $FailedLoginAttempts;
+		$this->_failedLoginAttempts = $failedLoginAttempts;
 		return $this;
 	}
 
@@ -287,7 +287,7 @@ class User
 	 */
 	public function incrementFailedLoginAttempts(): self
 	{
-		$this->_FailedLoginAttempts++;
+		$this->_failedLoginAttempts++;
 		return $this;
 	}
 
@@ -296,8 +296,8 @@ class User
 	 */
 	public function resetFailedLoginAttempts(): self
 	{
-		$this->_FailedLoginAttempts = 0;
-		$this->_LockedUntil = null;
+		$this->_failedLoginAttempts = 0;
+		$this->_lockedUntil = null;
 		return $this;
 	}
 
@@ -306,15 +306,15 @@ class User
 	 */
 	public function getLockedUntil(): ?DateTimeImmutable
 	{
-		return $this->_LockedUntil;
+		return $this->_lockedUntil;
 	}
 
 	/**
 	 * Set locked until timestamp
 	 */
-	public function setLockedUntil( ?DateTimeImmutable $LockedUntil ): self
+	public function setLockedUntil( ?DateTimeImmutable $lockedUntil ): self
 	{
-		$this->_LockedUntil = $LockedUntil;
+		$this->_lockedUntil = $lockedUntil;
 		return $this;
 	}
 
@@ -323,12 +323,12 @@ class User
 	 */
 	public function isLockedOut(): bool
 	{
-		if( $this->_LockedUntil === null )
+		if( $this->_lockedUntil === null )
 		{
 			return false;
 		}
 
-		return $this->_LockedUntil > new DateTimeImmutable();
+		return $this->_lockedUntil > new DateTimeImmutable();
 	}
 
 	/**
@@ -336,15 +336,15 @@ class User
 	 */
 	public function getCreatedAt(): ?DateTimeImmutable
 	{
-		return $this->_CreatedAt;
+		return $this->_createdAt;
 	}
 
 	/**
 	 * Set created at timestamp
 	 */
-	public function setCreatedAt( DateTimeImmutable $CreatedAt ): self
+	public function setCreatedAt( DateTimeImmutable $createdAt ): self
 	{
-		$this->_CreatedAt = $CreatedAt;
+		$this->_createdAt = $createdAt;
 		return $this;
 	}
 
@@ -353,15 +353,15 @@ class User
 	 */
 	public function getUpdatedAt(): ?DateTimeImmutable
 	{
-		return $this->_UpdatedAt;
+		return $this->_updatedAt;
 	}
 
 	/**
 	 * Set updated at timestamp
 	 */
-	public function setUpdatedAt( ?DateTimeImmutable $UpdatedAt ): self
+	public function setUpdatedAt( ?DateTimeImmutable $updatedAt ): self
 	{
-		$this->_UpdatedAt = $UpdatedAt;
+		$this->_updatedAt = $updatedAt;
 		return $this;
 	}
 
@@ -370,15 +370,15 @@ class User
 	 */
 	public function getLastLoginAt(): ?DateTimeImmutable
 	{
-		return $this->_LastLoginAt;
+		return $this->_lastLoginAt;
 	}
 
 	/**
 	 * Set last login at timestamp
 	 */
-	public function setLastLoginAt( ?DateTimeImmutable $LastLoginAt ): self
+	public function setLastLoginAt( ?DateTimeImmutable $lastLoginAt ): self
 	{
-		$this->_LastLoginAt = $LastLoginAt;
+		$this->_lastLoginAt = $lastLoginAt;
 		return $this;
 	}
 
@@ -388,72 +388,72 @@ class User
 	public function toArray(): array
 	{
 		return [
-			'id' => $this->_Id,
-			'username' => $this->_Username,
-			'email' => $this->_Email,
-			'password_hash' => $this->_PasswordHash,
-			'role' => $this->_Role,
-			'status' => $this->_Status,
-			'email_verified' => $this->_EmailVerified,
-			'remember_token' => $this->_RememberToken,
-			'two_factor_secret' => $this->_TwoFactorSecret,
-			'two_factor_recovery_codes' => $this->_TwoFactorRecoveryCodes ? json_encode( $this->_TwoFactorRecoveryCodes ) : null,
-			'failed_login_attempts' => $this->_FailedLoginAttempts,
-			'locked_until' => $this->_LockedUntil?->format( 'Y-m-d H:i:s' ),
-			'created_at' => $this->_CreatedAt?->format( 'Y-m-d H:i:s' ),
-			'updated_at' => $this->_UpdatedAt?->format( 'Y-m-d H:i:s' ),
-			'last_login_at' => $this->_LastLoginAt?->format( 'Y-m-d H:i:s' )
+			'id' => $this->_id,
+			'username' => $this->_username,
+			'email' => $this->_email,
+			'password_hash' => $this->_passwordHash,
+			'role' => $this->_role,
+			'status' => $this->_status,
+			'email_verified' => $this->_emailVerified,
+			'remember_token' => $this->_rememberToken,
+			'two_factor_secret' => $this->_twoFactorSecret,
+			'two_factor_recovery_codes' => $this->_twoFactorRecoveryCodes ? json_encode( $this->_twoFactorRecoveryCodes ) : null,
+			'failed_login_attempts' => $this->_failedLoginAttempts,
+			'locked_until' => $this->_lockedUntil?->format( 'Y-m-d H:i:s' ),
+			'created_at' => $this->_createdAt?->format( 'Y-m-d H:i:s' ),
+			'updated_at' => $this->_updatedAt?->format( 'Y-m-d H:i:s' ),
+			'last_login_at' => $this->_lastLoginAt?->format( 'Y-m-d H:i:s' )
 		];
 	}
 
 	/**
 	 * Create user from array
 	 */
-	public static function fromArray( array $Data ): self
+	public static function fromArray( array $data ): self
 	{
-		$User = new self();
+		$user = new self();
 
-		if( isset( $Data['id'] ) )
+		if( isset( $data['id'] ) )
 		{
-			$User->setId( $Data['id'] );
+			$user->setId( $data['id'] );
 		}
 
-		$User->setUsername( $Data['username'] );
-		$User->setEmail( $Data['email'] );
-		$User->setPasswordHash( $Data['password_hash'] );
-		$User->setRole( $Data['role'] ?? self::ROLE_SUBSCRIBER );
-		$User->setStatus( $Data['status'] ?? self::STATUS_ACTIVE );
-		$User->setEmailVerified( $Data['email_verified'] ?? false );
-		$User->setRememberToken( $Data['remember_token'] ?? null );
-		$User->setTwoFactorSecret( $Data['two_factor_secret'] ?? null );
+		$user->setUsername( $data['username'] );
+		$user->setEmail( $data['email'] );
+		$user->setPasswordHash( $data['password_hash'] );
+		$user->setRole( $data['role'] ?? self::ROLE_SUBSCRIBER );
+		$user->setStatus( $data['status'] ?? self::STATUS_ACTIVE );
+		$user->setEmailVerified( $data['email_verified'] ?? false );
+		$user->setRememberToken( $data['remember_token'] ?? null );
+		$user->setTwoFactorSecret( $data['two_factor_secret'] ?? null );
 
-		if( isset( $Data['two_factor_recovery_codes'] ) && $Data['two_factor_recovery_codes'] )
+		if( isset( $data['two_factor_recovery_codes'] ) && $data['two_factor_recovery_codes'] )
 		{
-			$User->setTwoFactorRecoveryCodes( json_decode( $Data['two_factor_recovery_codes'], true ) );
+			$user->setTwoFactorRecoveryCodes( json_decode( $data['two_factor_recovery_codes'], true ) );
 		}
 
-		$User->setFailedLoginAttempts( $Data['failed_login_attempts'] ?? 0 );
+		$user->setFailedLoginAttempts( $data['failed_login_attempts'] ?? 0 );
 
-		if( isset( $Data['locked_until'] ) && $Data['locked_until'] )
+		if( isset( $data['locked_until'] ) && $data['locked_until'] )
 		{
-			$User->setLockedUntil( new DateTimeImmutable( $Data['locked_until'] ) );
+			$user->setLockedUntil( new DateTimeImmutable( $data['locked_until'] ) );
 		}
 
-		if( isset( $Data['created_at'] ) && $Data['created_at'] )
+		if( isset( $data['created_at'] ) && $data['created_at'] )
 		{
-			$User->setCreatedAt( new DateTimeImmutable( $Data['created_at'] ) );
+			$user->setCreatedAt( new DateTimeImmutable( $data['created_at'] ) );
 		}
 
-		if( isset( $Data['updated_at'] ) && $Data['updated_at'] )
+		if( isset( $data['updated_at'] ) && $data['updated_at'] )
 		{
-			$User->setUpdatedAt( new DateTimeImmutable( $Data['updated_at'] ) );
+			$user->setUpdatedAt( new DateTimeImmutable( $data['updated_at'] ) );
 		}
 
-		if( isset( $Data['last_login_at'] ) && $Data['last_login_at'] )
+		if( isset( $data['last_login_at'] ) && $data['last_login_at'] )
 		{
-			$User->setLastLoginAt( new DateTimeImmutable( $Data['last_login_at'] ) );
+			$user->setLastLoginAt( new DateTimeImmutable( $data['last_login_at'] ) );
 		}
 
-		return $User;
+		return $user;
 	}
 }

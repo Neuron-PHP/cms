@@ -5,7 +5,6 @@ namespace Neuron\Cms\Controllers\Admin;
 use Neuron\Cms\Controllers\Content;
 use Neuron\Cms\Models\Tag;
 use Neuron\Cms\Repositories\DatabaseTagRepository;
-use Neuron\Data\Setting\SettingManager;
 use Neuron\Mvc\Application;
 use Neuron\Mvc\Requests\Request;
 use Neuron\Mvc\Responses\HttpResponseStatus;
@@ -18,49 +17,52 @@ use Neuron\Patterns\Registry;
  */
 class TagController extends Content
 {
-	private DatabaseTagRepository $_TagRepository;
 
+	private DatabaseTagRepository $_tagRepository;
+
+	/**
+	 * @param Application|null $app
+	 * @throws \Exception
+	 */
 	public function __construct( ?Application $app = null )
 	{
 		parent::__construct( $app );
 
-		// Get database config from settings
-		$Settings = Registry::getInstance()->get( 'Settings' );
-		$dbConfig = $this->getDatabaseConfig( $Settings );
-
-		if( !$dbConfig )
-		{
-			throw new \RuntimeException( 'Database configuration not found' );
-		}
+		// Get settings for repositories
+		$settings = Registry::getInstance()->get( 'Settings' );
 
 		// Initialize repository
-		$this->_TagRepository = new DatabaseTagRepository( $dbConfig );
+		$this->_tagRepository = new DatabaseTagRepository( $settings );
 	}
 
 	/**
 	 * List all tags
+	 * @param array $parameters
+	 * @param Request|null $request
+	 * @return string
+	 * @throws \Exception
 	 */
-	public function index( array $Parameters, ?Request $Request ): string
+	public function index( array $parameters, ?Request $request ): string
 	{
-		$User = Registry::getInstance()->get( 'Auth.User' );
+		$user = Registry::getInstance()->get( 'Auth.User' );
 
-		if( !$User )
+		if( !$user )
 		{
 			throw new \RuntimeException( 'Authenticated user not found' );
 		}
 
-		$tagsWithCount = $this->_TagRepository->allWithPostCount();
+		$tagsWithCount = $this->_tagRepository->allWithPostCount();
 
-		$ViewData = [
+		$viewData = [
 			'Title' => 'Tags | Admin | ' . $this->getName(),
 			'Description' => 'Manage blog tags',
-			'User' => $User,
+			'User' => $user,
 			'TagsWithCount' => $tagsWithCount
 		];
 
 		return $this->renderHtml(
 			HttpResponseStatus::OK,
-			$ViewData,
+			$viewData,
 			'index',
 			'tags'
 		);
@@ -68,25 +70,29 @@ class TagController extends Content
 
 	/**
 	 * Show create tag form
+	 * @param array $parameters
+	 * @param Request|null $request
+	 * @return string
+	 * @throws \Exception
 	 */
-	public function create( array $Parameters, ?Request $Request ): string
+	public function create( array $parameters, ?Request $request ): string
 	{
-		$User = Registry::getInstance()->get( 'Auth.User' );
+		$user = Registry::getInstance()->get( 'Auth.User' );
 
-		if( !$User )
+		if( !$user )
 		{
 			throw new \RuntimeException( 'Authenticated user not found' );
 		}
 
-		$ViewData = [
+		$viewData = [
 			'Title' => 'Create Tag | Admin | ' . $this->getName(),
 			'Description' => 'Create a new blog tag',
-			'User' => $User
+			'User' => $user
 		];
 
 		return $this->renderHtml(
 			HttpResponseStatus::OK,
-			$ViewData,
+			$viewData,
 			'create',
 			'tags'
 		);
@@ -94,12 +100,16 @@ class TagController extends Content
 
 	/**
 	 * Store new tag
+	 * @param array $parameters
+	 * @param Request|null $request
+	 * @return string
+	 * @throws \Exception
 	 */
-	public function store( array $Parameters, ?Request $Request ): string
+	public function store( array $parameters, ?Request $request ): string
 	{
-		$User = Registry::getInstance()->get( 'Auth.User' );
+		$user = Registry::getInstance()->get( 'Auth.User' );
 
-		if( !$User )
+		if( !$user )
 		{
 			throw new \RuntimeException( 'Authenticated user not found' );
 		}
@@ -107,16 +117,16 @@ class TagController extends Content
 		try
 		{
 			// Get form data
-			$name = $Request->post( 'name' );
-			$slug = $Request->post( 'slug' );
+			$name = $request->post( 'name' );
+			$slug = $request->post( 'slug' );
 
 			// Create tag
-			$Tag = new Tag();
-			$Tag->setName( $name );
-			$Tag->setSlug( $slug ?: $this->generateSlug( $name ) );
+			$tag = new Tag();
+			$tag->setName( $name );
+			$tag->setSlug( $slug ?: $this->generateSlug( $name ) );
 
 			// Save tag
-			$this->_TagRepository->create( $Tag );
+			$this->_tagRepository->create( $tag );
 
 			// Redirect to tag list
 			header( 'Location: /admin/tags' );
@@ -124,16 +134,16 @@ class TagController extends Content
 		}
 		catch( \Exception $e )
 		{
-			$ViewData = [
+			$viewData = [
 				'Title' => 'Create Tag | Admin | ' . $this->getName(),
 				'Description' => 'Create a new blog tag',
-				'User' => $User,
+				'User' => $user,
 				'Error' => $e->getMessage()
 			];
 
 			return $this->renderHtml(
 				HttpResponseStatus::BAD_REQUEST,
-				$ViewData,
+				$viewData,
 				'create',
 				'tags'
 			);
@@ -142,34 +152,38 @@ class TagController extends Content
 
 	/**
 	 * Show edit tag form
+	 * @param array $parameters
+	 * @param Request|null $request
+	 * @return string
+	 * @throws \Exception
 	 */
-	public function edit( array $Parameters, ?Request $Request ): string
+	public function edit( array $parameters, ?Request $request ): string
 	{
-		$User = Registry::getInstance()->get( 'Auth.User' );
+		$user = Registry::getInstance()->get( 'Auth.User' );
 
-		if( !$User )
+		if( !$user )
 		{
 			throw new \RuntimeException( 'Authenticated user not found' );
 		}
 
-		$tagId = (int)$Parameters['id'];
-		$Tag = $this->_TagRepository->findById( $tagId );
+		$tagId = (int)$parameters['id'];
+		$tag = $this->_tagRepository->findById( $tagId );
 
-		if( !$Tag )
+		if( !$tag )
 		{
 			throw new \RuntimeException( 'Tag not found' );
 		}
 
-		$ViewData = [
+		$viewData = [
 			'Title' => 'Edit Tag | Admin | ' . $this->getName(),
 			'Description' => 'Edit blog tag',
-			'User' => $User,
-			'Tag' => $Tag
+			'User' => $user,
+			'Tag' => $tag
 		];
 
 		return $this->renderHtml(
 			HttpResponseStatus::OK,
-			$ViewData,
+			$viewData,
 			'edit',
 			'tags'
 		);
@@ -177,20 +191,24 @@ class TagController extends Content
 
 	/**
 	 * Update tag
+	 * @param array $parameters
+	 * @param Request|null $request
+	 * @return string
+	 * @throws \Exception
 	 */
-	public function update( array $Parameters, ?Request $Request ): string
+	public function update( array $parameters, ?Request $request ): string
 	{
-		$User = Registry::getInstance()->get( 'Auth.User' );
+		$user = Registry::getInstance()->get( 'Auth.User' );
 
-		if( !$User )
+		if( !$user )
 		{
 			throw new \RuntimeException( 'Authenticated user not found' );
 		}
 
-		$tagId = (int)$Parameters['id'];
-		$Tag = $this->_TagRepository->findById( $tagId );
+		$tagId = (int)$parameters['id'];
+		$tag = $this->_tagRepository->findById( $tagId );
 
-		if( !$Tag )
+		if( !$tag )
 		{
 			throw new \RuntimeException( 'Tag not found' );
 		}
@@ -198,15 +216,15 @@ class TagController extends Content
 		try
 		{
 			// Get form data
-			$name = $Request->post( 'name' );
-			$slug = $Request->post( 'slug' );
+			$name = $request->post( 'name' );
+			$slug = $request->post( 'slug' );
 
 			// Update tag
-			$Tag->setName( $name );
-			$Tag->setSlug( $slug ?: $this->generateSlug( $name ) );
+			$tag->setName( $name );
+			$tag->setSlug( $slug ?: $this->generateSlug( $name ) );
 
 			// Save tag
-			$this->_TagRepository->update( $Tag );
+			$this->_tagRepository->update( $tag );
 
 			// Redirect to tag list
 			header( 'Location: /admin/tags' );
@@ -214,17 +232,17 @@ class TagController extends Content
 		}
 		catch( \Exception $e )
 		{
-			$ViewData = [
+			$viewData = [
 				'Title' => 'Edit Tag | Admin | ' . $this->getName(),
 				'Description' => 'Edit blog tag',
-				'User' => $User,
-				'Tag' => $Tag,
+				'User' => $user,
+				'Tag' => $tag,
 				'Error' => $e->getMessage()
 			];
 
 			return $this->renderHtml(
 				HttpResponseStatus::BAD_REQUEST,
-				$ViewData,
+				$viewData,
 				'edit',
 				'tags'
 			);
@@ -233,27 +251,31 @@ class TagController extends Content
 
 	/**
 	 * Delete tag
+	 * @param array $parameters
+	 * @param Request|null $request
+	 * @return string
+	 * @throws \Exception
 	 */
-	public function destroy( array $Parameters, ?Request $Request ): string
+	public function destroy( array $parameters, ?Request $request ): string
 	{
-		$User = Registry::getInstance()->get( 'Auth.User' );
+		$user = Registry::getInstance()->get( 'Auth.User' );
 
-		if( !$User )
+		if( !$user )
 		{
 			throw new \RuntimeException( 'Authenticated user not found' );
 		}
 
-		$tagId = (int)$Parameters['id'];
-		$Tag = $this->_TagRepository->findById( $tagId );
+		$tagId = (int)$parameters['id'];
+		$tag = $this->_tagRepository->findById( $tagId );
 
-		if( !$Tag )
+		if( !$tag )
 		{
 			throw new \RuntimeException( 'Tag not found' );
 		}
 
 		try
 		{
-			$this->_TagRepository->delete( $tagId );
+			$this->_tagRepository->delete( $tagId );
 
 			// Redirect to tag list
 			header( 'Location: /admin/tags' );
@@ -267,6 +289,9 @@ class TagController extends Content
 
 	/**
 	 * Generate slug from name
+	 * @param string $name
+	 * @return string
+	 * @throws \Exception
 	 */
 	private function generateSlug( string $name ): string
 	{
@@ -274,45 +299,5 @@ class TagController extends Content
 		$slug = preg_replace( '/[^a-z0-9-]/', '-', $slug );
 		$slug = preg_replace( '/-+/', '-', $slug );
 		return trim( $slug, '-' );
-	}
-
-	/**
-	 * Get database configuration from settings
-	 */
-	private function getDatabaseConfig( SettingManager $Settings ): ?array
-	{
-		try
-		{
-			$settingNames = $Settings->getSectionSettingNames( 'database' );
-
-			if( empty( $settingNames ) )
-			{
-				return null;
-			}
-
-			$config = [];
-			foreach( $settingNames as $name )
-			{
-				$value = $Settings->get( 'database', $name );
-				if( $value !== null )
-				{
-					// Convert string values to appropriate types
-					if( $name === 'port' )
-					{
-						$config[$name] = (int)$value;
-					}
-					else
-					{
-						$config[$name] = $value;
-					}
-				}
-			}
-
-			return $config;
-		}
-		catch( \Exception $e )
-		{
-			return null;
-		}
 	}
 }

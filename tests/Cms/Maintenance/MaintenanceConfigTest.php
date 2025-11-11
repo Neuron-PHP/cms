@@ -12,12 +12,12 @@ use PHPUnit\Framework\TestCase;
  */
 class MaintenanceConfigTest extends TestCase
 {
-	private $Root;
+	private $root;
 
 	protected function setUp(): void
 	{
 		parent::setUp();
-		$this->Root = vfsStream::setup( 'test' );
+		$this->root = vfsStream::setup( 'test' );
 	}
 
 	/**
@@ -56,7 +56,7 @@ maintenance:
 YAML;
 
 		vfsStream::newFile( 'config.yaml' )
-			->at( $this->Root )
+			->at( $this->root )
 			->setContent( $configContent );
 
 		$settings = new Yaml( vfsStream::url( 'test/config.yaml' ) );
@@ -83,7 +83,7 @@ maintenance:
 YAML;
 
 		vfsStream::newFile( 'config.yaml' )
-			->at( $this->Root )
+			->at( $this->root )
 			->setContent( $configContent );
 
 		$settings = new Yaml( vfsStream::url( 'test/config.yaml' ) );
@@ -105,7 +105,7 @@ maintenance:
 YAML;
 
 		vfsStream::newFile( 'config.yaml' )
-			->at( $this->Root )
+			->at( $this->root )
 			->setContent( $configContent );
 
 		$settings = new Yaml( vfsStream::url( 'test/config.yaml' ) );
@@ -129,7 +129,7 @@ maintenance:
 YAML;
 
 		vfsStream::newFile( 'config.yaml' )
-			->at( $this->Root )
+			->at( $this->root )
 			->setContent( $configContent );
 
 		$settings = new Yaml( vfsStream::url( 'test/config.yaml' ) );
@@ -153,7 +153,7 @@ site:
 YAML;
 
 		vfsStream::newFile( 'config.yaml' )
-			->at( $this->Root )
+			->at( $this->root )
 			->setContent( $configContent );
 
 		$settings = new Yaml( vfsStream::url( 'test/config.yaml' ) );

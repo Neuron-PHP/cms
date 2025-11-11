@@ -2,14 +2,15 @@
 
 namespace Neuron\Cms\Controllers\Admin;
 
-use DateTimeImmutable;
 use Neuron\Cms\Controllers\Content;
 use Neuron\Cms\Models\Post;
-use Neuron\Cms\Models\Category;
-use Neuron\Cms\Models\Tag;
 use Neuron\Cms\Repositories\DatabasePostRepository;
 use Neuron\Cms\Repositories\DatabaseCategoryRepository;
 use Neuron\Cms\Repositories\DatabaseTagRepository;
+use Neuron\Cms\Services\Post\Creator;
+use Neuron\Cms\Services\Post\Updater;
+use Neuron\Cms\Services\Post\Deleter;
+use Neuron\Cms\Services\Tag\Resolver as TagResolver;
 use Neuron\Cms\Auth\CsrfTokenManager;
 use Neuron\Cms\Auth\SessionManager;
 use Neuron\Data\Setting\SettingManager;
@@ -25,121 +26,152 @@ use Neuron\Patterns\Registry;
  */
 class PostController extends Content
 {
-	private DatabasePostRepository $_PostRepository;
-	private DatabaseCategoryRepository $_CategoryRepository;
-	private DatabaseTagRepository $_TagRepository;
 
+	private DatabasePostRepository $_postRepository;
+	private DatabaseCategoryRepository $_categoryRepository;
+	private DatabaseTagRepository $_tagRepository;
+	private Creator $_postCreator;
+	private Updater $_postUpdater;
+	private Deleter $_postDeleter;
+
+	/**
+	 * @param Application|null $app
+	 * @throws \Exception
+	 */
 	public function __construct( ?Application $app = null )
 	{
 		parent::__construct( $app );
 
-		// Get database config from settings
-		$Settings = Registry::getInstance()->get( 'Settings' );
-		$dbConfig = $this->getDatabaseConfig( $Settings );
-
-		if( !$dbConfig )
-		{
-			throw new \RuntimeException( 'Database configuration not found' );
-		}
+		// Get settings for repositories
+		$settings = Registry::getInstance()->get( 'Settings' );
 
 		// Initialize repositories
-		$this->_PostRepository = new DatabasePostRepository( $dbConfig );
-		$this->_CategoryRepository = new DatabaseCategoryRepository( $dbConfig );
-		$this->_TagRepository = new DatabaseTagRepository( $dbConfig );
+		$this->_postRepository = new DatabasePostRepository( $settings );
+		$this->_categoryRepository = new DatabaseCategoryRepository( $settings );
+		$this->_tagRepository = new DatabaseTagRepository( $settings );
+
+		// Initialize services
+		$tagResolver = new TagResolver(
+			$this->_tagRepository,
+			new \Neuron\Cms\Services\Tag\Creator( $this->_tagRepository )
+		);
+
+		$this->_postCreator = new Creator(
+			$this->_postRepository,
+			$this->_categoryRepository,
+			$tagResolver
+		);
+
+		$this->_postUpdater = new Updater(
+			$this->_postRepository,
+			$this->_categoryRepository,
+			$tagResolver
+		);
+
+		$this->_postDeleter = new Deleter( $this->_postRepository );
 	}
 
 	/**
 	 * List all posts
+	 * @param array $parameters
+	 * @return string
+	 * @throws \Exception
 	 */
-	public function index( array $Parameters ): string
+	public function index( array $parameters ): string
 	{
-		$User = Registry::getInstance()->get( 'Auth.User' );
+		$user = Registry::getInstance()->get( 'Auth.User' );
 
-		if( !$User )
+		if( !$user )
 		{
 			throw new \RuntimeException( 'Authenticated user not found' );
 		}
 
 		// Generate CSRF token
-		$SessionManager = new SessionManager();
-		$SessionManager->start();
-		$CsrfManager = new CsrfTokenManager( $SessionManager );
-		Registry::getInstance()->set( 'Auth.CsrfToken', $CsrfManager->getToken() );
+		$sessionManager = new SessionManager();
+		$sessionManager->start();
+		$csrfManager = new CsrfTokenManager( $sessionManager );
+		Registry::getInstance()->set( 'Auth.CsrfToken', $csrfManager->getToken() );
 
 		// Get all posts or filter by author if not admin
-		if( $User->isAdmin() || $User->isEditor() )
+		if( $user->isAdmin() || $user->isEditor() )
 		{
-			$posts = $this->_PostRepository->all();
+			$posts = $this->_postRepository->all();
 		}
 		else
 		{
-			$posts = $this->_PostRepository->getByAuthor( $User->getUsername() );
+			$posts = $this->_postRepository->getByAuthor( $user->getUsername() );
 		}
 
-		$ViewData = [
+		$viewData = [
 			'Title' => 'Posts | ' . $this->getName(),
 			'Description' => 'Manage blog posts',
-			'User' => $User,
+			'User' => $user,
 			'posts' => $posts,
-			'Success' => $SessionManager->getFlash( 'success' ),
-			'Error' => $SessionManager->getFlash( 'error' )
+			'Success' => $sessionManager->getFlash( 'success' ),
+			'Error' => $sessionManager->getFlash( 'error' )
 		];
 
 		@http_response_code( HttpResponseStatus::OK->value );
 
-		$View = new Html();
-		$View->setController( 'Admin/Posts' )
+		$view = new Html();
+		$view->setController( 'Admin/Posts' )
 			 ->setLayout( 'admin' )
 			 ->setPage( 'index' );
 
-		return $View->render( $ViewData );
+		return $view->render( $viewData );
 	}
 
 	/**
 	 * Show create post form
+	 * @param array $parameters
+	 * @return string
+	 * @throws \Exception
 	 */
-	public function create( array $Parameters ): string
+	public function create( array $parameters ): string
 	{
-		$User = Registry::getInstance()->get( 'Auth.User' );
+		$user = Registry::getInstance()->get( 'Auth.User' );
 
-		if( !$User )
+		if( !$user )
 		{
 			throw new \RuntimeException( 'Authenticated user not found' );
 		}
 
 		// Generate CSRF token
-		$SessionManager = new SessionManager();
-		$SessionManager->start();
-		$CsrfManager = new CsrfTokenManager( $SessionManager );
-		Registry::getInstance()->set( 'Auth.CsrfToken', $CsrfManager->getToken() );
+		$sessionManager = new SessionManager();
+		$sessionManager->start();
+		$csrfManager = new CsrfTokenManager( $sessionManager );
+		Registry::getInstance()->set( 'Auth.CsrfToken', $csrfManager->getToken() );
 
-		$ViewData = [
+		$viewData = [
 			'Title' => 'Create Post | ' . $this->getName(),
 			'Description' => 'Create a new blog post',
-			'User' => $User,
-			'categories' => $this->_CategoryRepository->all()
+			'User' => $user,
+			'categories' => $this->_categoryRepository->all()
 		];
 
 		@http_response_code( HttpResponseStatus::OK->value );
 
-		$View = new Html();
-		$View->setController( 'Admin/Posts' )
+		$view = new Html();
+		$view->setController( 'Admin/Posts' )
 			 ->setLayout( 'admin' )
 			 ->setPage( 'create' );
 
-		return $View->render( $ViewData );
+		return $view->render( $viewData );
 	}
 
 	/**
 	 * Store new post
+	 * @param array $parameters
+	 * @return string
+	 * @throws \Exception
 	 */
-	public function store( array $Parameters ): string
+	public function store( array $parameters ): string
 	{
-		$User = Registry::getInstance()->get( 'Auth.User' );
-		$SessionManager = new SessionManager();
-		$SessionManager->start();
+		$user = Registry::getInstance()->get( 'Auth.User' );
+		$sessionManager = new SessionManager();
+		$sessionManager->start();
 
-		if( !$User )
+		if( !$user )
 		{
 			throw new \RuntimeException( 'Authenticated user not found' );
 		}
@@ -156,67 +188,26 @@ class PostController extends Content
 			$categoryIds = $_POST['categories'] ?? [];
 			$tagNames = $_POST['tags'] ?? '';
 
-			// Create post
-			$Post = new Post();
-			$Post->setTitle( $title );
-			$Post->setSlug( $slug ?: $this->generateSlug( $title ) );
-			$Post->setContent( $content );
-			$Post->setExcerpt( $excerpt );
-			$Post->setFeaturedImage( $featuredImage );
-			$Post->setAuthor( $User->getUsername() );
-			$Post->setStatus( $status );
-			$Post->setCreatedAt( new DateTimeImmutable() );
+			// Create post using service
+			$this->_postCreator->create(
+				$title,
+				$content,
+				$user->getId(),
+				$status,
+				$slug ?: null,
+				$excerpt ?: null,
+				$featuredImage ?: null,
+				$categoryIds,
+				$tagNames
+			);
 
-			// Set published date if status is published
-			if( $status === Post::STATUS_PUBLISHED )
-			{
-				$Post->setPublishedAt( new DateTimeImmutable() );
-			}
-
-			// Load categories
-			$categories = [];
-			foreach( $categoryIds as $categoryId )
-			{
-				$category = $this->_CategoryRepository->findById( (int)$categoryId );
-				if( $category )
-				{
-					$categories[] = $category;
-				}
-			}
-			$Post->setCategories( $categories );
-
-			// Parse and create/load tags
-			$tags = [];
-			if( !empty( $tagNames ) )
-			{
-				$tagArray = array_map( 'trim', explode( ',', $tagNames ) );
-				foreach( $tagArray as $tagName )
-				{
-					if( empty( $tagName ) ) continue;
-
-					$tag = $this->_TagRepository->findByName( $tagName );
-					if( !$tag )
-					{
-						$tag = new Tag();
-						$tag->setName( $tagName );
-						$tag->setSlug( $this->generateSlug( $tagName ) );
-						$this->_TagRepository->create( $tag );
-					}
-					$tags[] = $tag;
-				}
-			}
-			$Post->setTags( $tags );
-
-			// Save post
-			$this->_PostRepository->create( $Post );
-
-			$SessionManager->flash( 'success', 'Post created successfully' );
+			$sessionManager->flash( 'success', 'Post created successfully' );
 			header( 'Location: /admin/posts' );
 			exit;
 		}
 		catch( \Exception $e )
 		{
-			$SessionManager->flash( 'error', 'Failed to create post: ' . $e->getMessage() );
+			$sessionManager->flash( 'error', 'Failed to create post: ' . $e->getMessage() );
 			header( 'Location: /admin/posts/create' );
 			exit;
 		}
@@ -224,84 +215,90 @@ class PostController extends Content
 
 	/**
 	 * Show edit post form
+	 * @param array $parameters
+	 * @return string
+	 * @throws \Exception
 	 */
-	public function edit( array $Parameters ): string
+	public function edit( array $parameters ): string
 	{
-		$User = Registry::getInstance()->get( 'Auth.User' );
+		$user = Registry::getInstance()->get( 'Auth.User' );
 
-		if( !$User )
+		if( !$user )
 		{
 			throw new \RuntimeException( 'Authenticated user not found' );
 		}
 
-		$postId = (int)$Parameters['id'];
-		$post = $this->_PostRepository->findById( $postId );
+		$postId = (int)$parameters['id'];
+		$post = $this->_postRepository->findById( $postId );
 
 		if( !$post )
 		{
-			$SessionManager = new SessionManager();
-			$SessionManager->start();
-			$SessionManager->flash( 'error', 'Post not found' );
+			$sessionManager = new SessionManager();
+			$sessionManager->start();
+			$sessionManager->flash( 'error', 'Post not found' );
 			header( 'Location: /admin/posts' );
 			exit;
 		}
 
 		// Check permissions
-		if( !$User->isAdmin() && !$User->isEditor() && $post->getAuthor() !== $User->getUsername() )
+		if( !$user->isAdmin() && !$user->isEditor() && $post->getAuthor() !== $user->getUsername() )
 		{
 			throw new \RuntimeException( 'Unauthorized to edit this post' );
 		}
 
 		// Generate CSRF token
-		$SessionManager = new SessionManager();
-		$SessionManager->start();
-		$CsrfManager = new CsrfTokenManager( $SessionManager );
-		Registry::getInstance()->set( 'Auth.CsrfToken', $CsrfManager->getToken() );
+		$sessionManager = new SessionManager();
+		$sessionManager->start();
+		$csrfManager = new CsrfTokenManager( $sessionManager );
+		Registry::getInstance()->set( 'Auth.CsrfToken', $csrfManager->getToken() );
 
-		$ViewData = [
+		$viewData = [
 			'Title' => 'Edit Post | ' . $this->getName(),
 			'Description' => 'Edit blog post',
-			'User' => $User,
+			'User' => $user,
 			'post' => $post,
-			'categories' => $this->_CategoryRepository->all()
+			'categories' => $this->_categoryRepository->all()
 		];
 
 		@http_response_code( HttpResponseStatus::OK->value );
 
-		$View = new Html();
-		$View->setController( 'Admin/Posts' )
+		$view = new Html();
+		$view->setController( 'Admin/Posts' )
 			 ->setLayout( 'admin' )
 			 ->setPage( 'edit' );
 
-		return $View->render( $ViewData );
+		return $view->render( $viewData );
 	}
 
 	/**
 	 * Update post
+	 * @param array $parameters
+	 * @return string
+	 * @throws \Exception
 	 */
-	public function update( array $Parameters ): string
+	public function update( array $parameters ): string
 	{
-		$User = Registry::getInstance()->get( 'Auth.User' );
-		$SessionManager = new SessionManager();
-		$SessionManager->start();
+		$user = Registry::getInstance()->get( 'Auth.User' );
+		$sessionManager = new SessionManager();
+		$sessionManager->start();
 
-		if( !$User )
+		if( !$user )
 		{
 			throw new \RuntimeException( 'Authenticated user not found' );
 		}
 
-		$postId = (int)$Parameters['id'];
-		$Post = $this->_PostRepository->findById( $postId );
+		$postId = (int)$parameters['id'];
+		$post = $this->_postRepository->findById( $postId );
 
-		if( !$Post )
+		if( !$post )
 		{
-			$SessionManager->flash( 'error', 'Post not found' );
+			$sessionManager->flash( 'error', 'Post not found' );
 			header( 'Location: /admin/posts' );
 			exit;
 		}
 
 		// Check permissions
-		if( !$User->isAdmin() && !$User->isEditor() && $Post->getAuthor() !== $User->getUsername() )
+		if( !$user->isAdmin() && !$user->isEditor() && $post->getAuthor() !== $user->getUsername() )
 		{
 			throw new \RuntimeException( 'Unauthorized to edit this post' );
 		}
@@ -318,64 +315,26 @@ class PostController extends Content
 			$categoryIds = $_POST['categories'] ?? [];
 			$tagNames = $_POST['tags'] ?? '';
 
-			// Update post
-			$Post->setTitle( $title );
-			$Post->setSlug( $slug ?: $this->generateSlug( $title ) );
-			$Post->setContent( $content );
-			$Post->setExcerpt( $excerpt );
-			$Post->setFeaturedImage( $featuredImage );
-			$Post->setStatus( $status );
+			// Update post using service
+			$this->_postUpdater->update(
+				$post,
+				$title,
+				$content,
+				$status,
+				$slug ?: null,
+				$excerpt ?: null,
+				$featuredImage ?: null,
+				$categoryIds,
+				$tagNames
+			);
 
-			// Set published date if status changed to published
-			if( $status === Post::STATUS_PUBLISHED && !$Post->getPublishedAt() )
-			{
-				$Post->setPublishedAt( new DateTimeImmutable() );
-			}
-
-			// Load categories
-			$categories = [];
-			foreach( $categoryIds as $categoryId )
-			{
-				$category = $this->_CategoryRepository->findById( (int)$categoryId );
-				if( $category )
-				{
-					$categories[] = $category;
-				}
-			}
-			$Post->setCategories( $categories );
-
-			// Parse and create/load tags
-			$tags = [];
-			if( !empty( $tagNames ) )
-			{
-				$tagArray = array_map( 'trim', explode( ',', $tagNames ) );
-				foreach( $tagArray as $tagName )
-				{
-					if( empty( $tagName ) ) continue;
-
-					$tag = $this->_TagRepository->findByName( $tagName );
-					if( !$tag )
-					{
-						$tag = new Tag();
-						$tag->setName( $tagName );
-						$tag->setSlug( $this->generateSlug( $tagName ) );
-						$this->_TagRepository->create( $tag );
-					}
-					$tags[] = $tag;
-				}
-			}
-			$Post->setTags( $tags );
-
-			// Save post
-			$this->_PostRepository->update( $Post );
-
-			$SessionManager->flash( 'success', 'Post updated successfully' );
+			$sessionManager->flash( 'success', 'Post updated successfully' );
 			header( 'Location: /admin/posts' );
 			exit;
 		}
 		catch( \Exception $e )
 		{
-			$SessionManager->flash( 'error', 'Failed to update post: ' . $e->getMessage() );
+			$sessionManager->flash( 'error', 'Failed to update post: ' . $e->getMessage() );
 			header( 'Location: /admin/posts/' . $postId . '/edit' );
 			exit;
 		}
@@ -383,98 +342,49 @@ class PostController extends Content
 
 	/**
 	 * Delete post
+	 * @param array $parameters
+	 * @return string
 	 */
-	public function destroy( array $Parameters ): string
+	public function destroy( array $parameters ): string
 	{
-		$User = Registry::getInstance()->get( 'Auth.User' );
-		$SessionManager = new SessionManager();
-		$SessionManager->start();
+		$user = Registry::getInstance()->get( 'Auth.User' );
+		$sessionManager = new SessionManager();
+		$sessionManager->start();
 
-		if( !$User )
+		if( !$user )
 		{
 			throw new \RuntimeException( 'Authenticated user not found' );
 		}
 
-		$postId = (int)$Parameters['id'];
-		$Post = $this->_PostRepository->findById( $postId );
+		$postId = (int)$parameters['id'];
+		$post = $this->_postRepository->findById( $postId );
 
-		if( !$Post )
+		if( !$post )
 		{
-			$SessionManager->flash( 'error', 'Post not found' );
+			$sessionManager->flash( 'error', 'Post not found' );
 			header( 'Location: /admin/posts' );
 			exit;
 		}
 
 		// Check permissions
-		if( !$User->isAdmin() && !$User->isEditor() && $Post->getAuthor() !== $User->getUsername() )
+		if( !$user->isAdmin() && !$user->isEditor() && $post->getAuthor() !== $user->getUsername() )
 		{
-			$SessionManager->flash( 'error', 'Unauthorized to delete this post' );
+			$sessionManager->flash( 'error', 'Unauthorized to delete this post' );
 			header( 'Location: /admin/posts' );
 			exit;
 		}
 
 		try
 		{
-			$this->_PostRepository->delete( $postId );
-			$SessionManager->flash( 'success', 'Post deleted successfully' );
+			$this->_postDeleter->delete( $post );
+			$sessionManager->flash( 'success', 'Post deleted successfully' );
 		}
 		catch( \Exception $e )
 		{
-			$SessionManager->flash( 'error', 'Failed to delete post: ' . $e->getMessage() );
+			$sessionManager->flash( 'error', 'Failed to delete post: ' . $e->getMessage() );
 		}
 
 		header( 'Location: /admin/posts' );
 		exit;
-	}
-
-	/**
-	 * Generate slug from title
-	 */
-	private function generateSlug( string $title ): string
-	{
-		$slug = strtolower( trim( $title ) );
-		$slug = preg_replace( '/[^a-z0-9-]/', '-', $slug );
-		$slug = preg_replace( '/-+/', '-', $slug );
-		return trim( $slug, '-' );
-	}
-
-	/**
-	 * Get database configuration from settings
-	 */
-	private function getDatabaseConfig( SettingManager $Settings ): ?array
-	{
-		try
-		{
-			$settingNames = $Settings->getSectionSettingNames( 'database' );
-
-			if( empty( $settingNames ) )
-			{
-				return null;
-			}
-
-			$config = [];
-			foreach( $settingNames as $name )
-			{
-				$value = $Settings->get( 'database', $name );
-				if( $value !== null )
-				{
-					// Convert string values to appropriate types
-					if( $name === 'port' )
-					{
-						$config[$name] = (int)$value;
-					}
-					else
-					{
-						$config[$name] = $value;
-					}
-				}
-			}
-
-			return $config;
-		}
-		catch( \Exception $e )
-		{
-			return null;
-		}
 	}
 }

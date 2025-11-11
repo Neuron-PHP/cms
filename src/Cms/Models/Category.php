@@ -12,16 +12,16 @@ use Exception;
  */
 class Category
 {
-	private ?int $_Id = null;
-	private string $_Name;
-	private string $_Slug;
-	private ?string $_Description = null;
-	private ?DateTimeImmutable $_CreatedAt = null;
-	private ?DateTimeImmutable $_UpdatedAt = null;
+	private ?int $_id = null;
+	private string $_name;
+	private string $_slug;
+	private ?string $_description = null;
+	private ?DateTimeImmutable $_createdAt = null;
+	private ?DateTimeImmutable $_updatedAt = null;
 
 	public function __construct()
 	{
-		$this->_CreatedAt = new DateTimeImmutable();
+		$this->_createdAt = new DateTimeImmutable();
 	}
 
 	/**
@@ -29,15 +29,15 @@ class Category
 	 */
 	public function getId(): ?int
 	{
-		return $this->_Id;
+		return $this->_id;
 	}
 
 	/**
 	 * Set category ID
 	 */
-	public function setId( int $Id ): self
+	public function setId( int $id ): self
 	{
-		$this->_Id = $Id;
+		$this->_id = $id;
 		return $this;
 	}
 
@@ -46,15 +46,15 @@ class Category
 	 */
 	public function getName(): string
 	{
-		return $this->_Name;
+		return $this->_name;
 	}
 
 	/**
 	 * Set name
 	 */
-	public function setName( string $Name ): self
+	public function setName( string $name ): self
 	{
-		$this->_Name = $Name;
+		$this->_name = $name;
 		return $this;
 	}
 
@@ -63,15 +63,15 @@ class Category
 	 */
 	public function getSlug(): string
 	{
-		return $this->_Slug;
+		return $this->_slug;
 	}
 
 	/**
 	 * Set slug
 	 */
-	public function setSlug( string $Slug ): self
+	public function setSlug( string $slug ): self
 	{
-		$this->_Slug = $Slug;
+		$this->_slug = $slug;
 		return $this;
 	}
 
@@ -80,15 +80,15 @@ class Category
 	 */
 	public function getDescription(): ?string
 	{
-		return $this->_Description;
+		return $this->_description;
 	}
 
 	/**
 	 * Set description
 	 */
-	public function setDescription( ?string $Description ): self
+	public function setDescription( ?string $description ): self
 	{
-		$this->_Description = $Description;
+		$this->_description = $description;
 		return $this;
 	}
 
@@ -97,15 +97,15 @@ class Category
 	 */
 	public function getCreatedAt(): ?DateTimeImmutable
 	{
-		return $this->_CreatedAt;
+		return $this->_createdAt;
 	}
 
 	/**
 	 * Set created timestamp
 	 */
-	public function setCreatedAt( DateTimeImmutable $CreatedAt ): self
+	public function setCreatedAt( DateTimeImmutable $createdAt ): self
 	{
-		$this->_CreatedAt = $CreatedAt;
+		$this->_createdAt = $createdAt;
 		return $this;
 	}
 
@@ -114,57 +114,57 @@ class Category
 	 */
 	public function getUpdatedAt(): ?DateTimeImmutable
 	{
-		return $this->_UpdatedAt;
+		return $this->_updatedAt;
 	}
 
 	/**
 	 * Set updated timestamp
 	 */
-	public function setUpdatedAt( ?DateTimeImmutable $UpdatedAt ): self
+	public function setUpdatedAt( ?DateTimeImmutable $updatedAt ): self
 	{
-		$this->_UpdatedAt = $UpdatedAt;
+		$this->_updatedAt = $updatedAt;
 		return $this;
 	}
 
 	/**
 	 * Create Category from array data
 	 *
-	 * @param array $Data Associative array of category data
+	 * @param array $data Associative array of category data
 	 * @return Category
 	 * @throws Exception
 	 */
-	public static function fromArray( array $Data ): Category
+	public static function fromArray( array $data ): Category
 	{
-		$Category = new self();
+		$category = new self();
 
-		if( isset( $Data['id'] ) )
+		if( isset( $data['id'] ) )
 		{
-			$Category->setId( (int)$Data['id'] );
+			$category->setId( (int)$data['id'] );
 		}
 
-		$Category->setName( $Data['name'] ?? '' );
-		$Category->setSlug( $Data['slug'] ?? '' );
-		$Category->setDescription( $Data['description'] ?? null );
+		$category->setName( $data['name'] ?? '' );
+		$category->setSlug( $data['slug'] ?? '' );
+		$category->setDescription( $data['description'] ?? null );
 
-		if( isset( $Data['created_at'] ) && $Data['created_at'] )
+		if( isset( $data['created_at'] ) && $data['created_at'] )
 		{
-			$Category->setCreatedAt(
-				is_string( $Data['created_at'] )
-					? new DateTimeImmutable( $Data['created_at'] )
-					: $Data['created_at']
+			$category->setCreatedAt(
+				is_string( $data['created_at'] )
+					? new DateTimeImmutable( $data['created_at'] )
+					: $data['created_at']
 			);
 		}
 
-		if( isset( $Data['updated_at'] ) && $Data['updated_at'] )
+		if( isset( $data['updated_at'] ) && $data['updated_at'] )
 		{
-			$Category->setUpdatedAt(
-				is_string( $Data['updated_at'] )
-					? new DateTimeImmutable( $Data['updated_at'] )
-					: $Data['updated_at']
+			$category->setUpdatedAt(
+				is_string( $data['updated_at'] )
+					? new DateTimeImmutable( $data['updated_at'] )
+					: $data['updated_at']
 			);
 		}
 
-		return $Category;
+		return $category;
 	}
 
 	/**
@@ -175,12 +175,12 @@ class Category
 	public function toArray(): array
 	{
 		return [
-			'id' => $this->_Id,
-			'name' => $this->_Name,
-			'slug' => $this->_Slug,
-			'description' => $this->_Description,
-			'created_at' => $this->_CreatedAt?->format( 'Y-m-d H:i:s' ),
-			'updated_at' => $this->_UpdatedAt?->format( 'Y-m-d H:i:s' ),
+			'id' => $this->_id,
+			'name' => $this->_name,
+			'slug' => $this->_slug,
+			'description' => $this->_description,
+			'created_at' => $this->_createdAt?->format( 'Y-m-d H:i:s' ),
+			'updated_at' => $this->_updatedAt?->format( 'Y-m-d H:i:s' ),
 		];
 	}
 }

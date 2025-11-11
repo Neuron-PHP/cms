@@ -17,17 +17,17 @@ use Neuron\Patterns\Registry;
  */
 class AuthenticationFilter extends Filter
 {
-	private AuthManager $_AuthManager;
-	private string $_LoginUrl = '/login';
-	private string $_RedirectParam = 'redirect';
+	private AuthManager $_authManager;
+	private string $_loginUrl = '/login';
+	private string $_redirectParam = 'redirect';
 
-	public function __construct( AuthManager $AuthManager, string $LoginUrl = '/login' )
+	public function __construct( AuthManager $authManager, string $loginUrl = '/login' )
 	{
-		$this->_AuthManager = $AuthManager;
-		$this->_LoginUrl = $LoginUrl;
+		$this->_authManager = $authManager;
+		$this->_loginUrl = $loginUrl;
 
 		parent::__construct(
-			function( RouteMap $Route ) { $this->checkAuthentication( $Route ); },
+			function( RouteMap $route ) { $this->checkAuthentication( $route ); },
 			null
 		);
 	}
@@ -35,38 +35,38 @@ class AuthenticationFilter extends Filter
 	/**
 	 * Check if user is authenticated
 	 */
-	protected function checkAuthentication( RouteMap $Route ): void
+	protected function checkAuthentication( RouteMap $route ): void
 	{
-		if( !$this->_AuthManager->check() )
+		if( !$this->_authManager->check() )
 		{
 			// Store intended URL for post-login redirect
-			$IntendedUrl = $_SERVER['REQUEST_URI'] ?? $Route->getPath();
+			$intendedUrl = $_SERVER['REQUEST_URI'] ?? $route->getPath();
 
 			// Redirect to login page
-			$separator = ( strpos( $this->_LoginUrl, '?' ) === false ) ? '?' : '&';
-			$query = http_build_query( [ $this->_RedirectParam => $IntendedUrl ] );
-			$RedirectUrl = $this->_LoginUrl . $separator . $query;
+			$separator = ( strpos( $this->_loginUrl, '?' ) === false ) ? '?' : '&';
+			$query = http_build_query( [ $this->_redirectParam => $intendedUrl ] );
+			$redirectUrl = $this->_loginUrl . $separator . $query;
 
-			header( 'Location: ' . $RedirectUrl );
+			header( 'Location: ' . $redirectUrl );
 			exit;
 		}
 
 		// Store authenticated user in Registry for easy access
-		$User = $this->_AuthManager->user();
-		if( $User )
+		$user = $this->_authManager->user();
+		if( $user )
 		{
-			Registry::getInstance()->set( 'Auth.User', $User );
-			Registry::getInstance()->set( 'Auth.UserId', $User->getId() );
-			Registry::getInstance()->set( 'Auth.UserRole', $User->getRole() );
+			Registry::getInstance()->set( 'Auth.User', $user );
+			Registry::getInstance()->set( 'Auth.UserId', $user->getId() );
+			Registry::getInstance()->set( 'Auth.UserRole', $user->getRole() );
 		}
 	}
 
 	/**
 	 * Set login URL
 	 */
-	public function setLoginUrl( string $LoginUrl ): self
+	public function setLoginUrl( string $loginUrl ): self
 	{
-		$this->_LoginUrl = $LoginUrl;
+		$this->_loginUrl = $loginUrl;
 		return $this;
 	}
 }

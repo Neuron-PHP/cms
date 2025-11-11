@@ -12,15 +12,15 @@ use Exception;
  */
 class Tag
 {
-	private ?int $_Id = null;
-	private string $_Name;
-	private string $_Slug;
-	private ?DateTimeImmutable $_CreatedAt = null;
-	private ?DateTimeImmutable $_UpdatedAt = null;
+	private ?int $_id = null;
+	private string $_name;
+	private string $_slug;
+	private ?DateTimeImmutable $_createdAt = null;
+	private ?DateTimeImmutable $_updatedAt = null;
 
 	public function __construct()
 	{
-		$this->_CreatedAt = new DateTimeImmutable();
+		$this->_createdAt = new DateTimeImmutable();
 	}
 
 	/**
@@ -28,15 +28,15 @@ class Tag
 	 */
 	public function getId(): ?int
 	{
-		return $this->_Id;
+		return $this->_id;
 	}
 
 	/**
 	 * Set tag ID
 	 */
-	public function setId( int $Id ): self
+	public function setId( int $id ): self
 	{
-		$this->_Id = $Id;
+		$this->_id = $id;
 		return $this;
 	}
 
@@ -45,15 +45,15 @@ class Tag
 	 */
 	public function getName(): string
 	{
-		return $this->_Name;
+		return $this->_name;
 	}
 
 	/**
 	 * Set name
 	 */
-	public function setName( string $Name ): self
+	public function setName( string $name ): self
 	{
-		$this->_Name = $Name;
+		$this->_name = $name;
 		return $this;
 	}
 
@@ -62,15 +62,15 @@ class Tag
 	 */
 	public function getSlug(): string
 	{
-		return $this->_Slug;
+		return $this->_slug;
 	}
 
 	/**
 	 * Set slug
 	 */
-	public function setSlug( string $Slug ): self
+	public function setSlug( string $slug ): self
 	{
-		$this->_Slug = $Slug;
+		$this->_slug = $slug;
 		return $this;
 	}
 
@@ -79,15 +79,15 @@ class Tag
 	 */
 	public function getCreatedAt(): ?DateTimeImmutable
 	{
-		return $this->_CreatedAt;
+		return $this->_createdAt;
 	}
 
 	/**
 	 * Set created timestamp
 	 */
-	public function setCreatedAt( DateTimeImmutable $CreatedAt ): self
+	public function setCreatedAt( DateTimeImmutable $createdAt ): self
 	{
-		$this->_CreatedAt = $CreatedAt;
+		$this->_createdAt = $createdAt;
 		return $this;
 	}
 
@@ -96,56 +96,56 @@ class Tag
 	 */
 	public function getUpdatedAt(): ?DateTimeImmutable
 	{
-		return $this->_UpdatedAt;
+		return $this->_updatedAt;
 	}
 
 	/**
 	 * Set updated timestamp
 	 */
-	public function setUpdatedAt( ?DateTimeImmutable $UpdatedAt ): self
+	public function setUpdatedAt( ?DateTimeImmutable $updatedAt ): self
 	{
-		$this->_UpdatedAt = $UpdatedAt;
+		$this->_updatedAt = $updatedAt;
 		return $this;
 	}
 
 	/**
 	 * Create Tag from array data
 	 *
-	 * @param array $Data Associative array of tag data
+	 * @param array $data Associative array of tag data
 	 * @return Tag
 	 * @throws Exception
 	 */
-	public static function fromArray( array $Data ): Tag
+	public static function fromArray( array $data ): Tag
 	{
-		$Tag = new self();
+		$tag = new self();
 
-		if( isset( $Data['id'] ) )
+		if( isset( $data['id'] ) )
 		{
-			$Tag->setId( (int)$Data['id'] );
+			$tag->setId( (int)$data['id'] );
 		}
 
-		$Tag->setName( $Data['name'] ?? '' );
-		$Tag->setSlug( $Data['slug'] ?? '' );
+		$tag->setName( $data['name'] ?? '' );
+		$tag->setSlug( $data['slug'] ?? '' );
 
-		if( isset( $Data['created_at'] ) && $Data['created_at'] )
+		if( isset( $data['created_at'] ) && $data['created_at'] )
 		{
-			$Tag->setCreatedAt(
-				is_string( $Data['created_at'] )
-					? new DateTimeImmutable( $Data['created_at'] )
-					: $Data['created_at']
+			$tag->setCreatedAt(
+				is_string( $data['created_at'] )
+					? new DateTimeImmutable( $data['created_at'] )
+					: $data['created_at']
 			);
 		}
 
-		if( isset( $Data['updated_at'] ) && $Data['updated_at'] )
+		if( isset( $data['updated_at'] ) && $data['updated_at'] )
 		{
-			$Tag->setUpdatedAt(
-				is_string( $Data['updated_at'] )
-					? new DateTimeImmutable( $Data['updated_at'] )
-					: $Data['updated_at']
+			$tag->setUpdatedAt(
+				is_string( $data['updated_at'] )
+					? new DateTimeImmutable( $data['updated_at'] )
+					: $data['updated_at']
 			);
 		}
 
-		return $Tag;
+		return $tag;
 	}
 
 	/**
@@ -156,11 +156,11 @@ class Tag
 	public function toArray(): array
 	{
 		return [
-			'id' => $this->_Id,
-			'name' => $this->_Name,
-			'slug' => $this->_Slug,
-			'created_at' => $this->_CreatedAt?->format( 'Y-m-d H:i:s' ),
-			'updated_at' => $this->_UpdatedAt?->format( 'Y-m-d H:i:s' ),
+			'id' => $this->_id,
+			'name' => $this->_name,
+			'slug' => $this->_slug,
+			'created_at' => $this->_createdAt?->format( 'Y-m-d H:i:s' ),
+			'updated_at' => $this->_updatedAt?->format( 'Y-m-d H:i:s' ),
 		];
 	}
 }

@@ -20,58 +20,39 @@ class AuthInitializer implements IRunnable
 {
 	/**
 	 * Run the initializer
+	 * @param array $argv
+	 * @return mixed
+	 * @throws \Exception
 	 */
-	public function run( array $Argv = [] ): mixed
+	public function run( array $argv = [] ): mixed
 	{
 		// Get Settings from Registry
-		$Settings = Registry::getInstance()->get( 'Settings' );
+		$settings = Registry::getInstance()->get( 'Settings' );
 
-		if( !$Settings || !$Settings instanceof \Neuron\Data\Setting\SettingManager )
+		if( !$settings || !$settings instanceof \Neuron\Data\Setting\SettingManager )
 		{
 			Log::error( "Settings not found in Registry, skipping auth initialization" );
 			return null;
 		}
 
 		// Get Application from Registry
-		$App = Registry::getInstance()->get( 'App' );
+		$app = Registry::getInstance()->get( 'App' );
 
-		if( !$App || !$App instanceof \Neuron\Mvc\Application )
+		if( !$app || !$app instanceof \Neuron\Mvc\Application )
 		{
 			Log::error( "Application not found in Registry, skipping auth initialization" );
 			return null;
 		}
 
-		// Get database configuration
-		$dbConfig = [];
+		// Check if database is configured
 		try
 		{
-			$settingNames = $Settings->getSectionSettingNames( 'database' );
+			$settingNames = $settings->getSectionSettingNames( 'database' );
 
 			if( !empty( $settingNames ) )
 			{
-				foreach( $settingNames as $name )
-				{
-					$value = $Settings->get( 'database', $name );
-					if( $value !== null )
-					{
-						// Convert string values to appropriate types
-						$dbConfig[$name] = ( $name === 'port' ) ? (int)$value : $value;
-					}
-				}
-			}
-		}
-		catch( \Exception $e )
-		{
-			Log::error( "Failed to load database config: " . $e->getMessage() );
-		}
-
-		// Only register auth filter if database is configured
-		if( !empty( $dbConfig ) )
-		{
-			try
-			{
 				// Initialize authentication components
-				$userRepository = new DatabaseUserRepository( $dbConfig );
+				$userRepository = new DatabaseUserRepository( $settings );
 				$sessionManager = new SessionManager();
 				$passwordHasher = new PasswordHasher();
 				$authManager = new AuthManager( $userRepository, $sessionManager, $passwordHasher );
@@ -80,15 +61,15 @@ class AuthInitializer implements IRunnable
 				$authFilter = new AuthenticationFilter( $authManager, '/login' );
 
 				// Register the auth filter with the Router
-				$App->getRouter()->registerFilter( 'auth', $authFilter );
+				$app->getRouter()->registerFilter( 'auth', $authFilter );
 
 				// Store AuthManager in Registry for easy access
 				Registry::getInstance()->set( 'AuthManager', $authManager );
 			}
-			catch( \Exception $e )
-			{
-				Log::error( "Failed to register auth filter: " . $e->getMessage() );
-			}
+		}
+		catch( \Exception $e )
+		{
+			Log::error( "Failed to register auth filter: " . $e->getMessage() );
 		}
 
 		return null;

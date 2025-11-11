@@ -13,25 +13,25 @@ use DateTimeImmutable;
  */
 class PasswordResetToken
 {
-	private ?int $_Id = null;
-	private string $_Email;
-	private string $_Token;
-	private DateTimeImmutable $_CreatedAt;
-	private DateTimeImmutable $_ExpiresAt;
+	private ?int $_id = null;
+	private string $_email;
+	private string $_token;
+	private DateTimeImmutable $_createdAt;
+	private DateTimeImmutable $_expiresAt;
 
 	/**
 	 * Create a new password reset token
 	 *
-	 * @param string $Email User's email address
-	 * @param string $Token Hashed token
-	 * @param int $ExpirationMinutes Token expiration in minutes (default: 60)
+	 * @param string $email User's email address
+	 * @param string $token Hashed token
+	 * @param int $expirationMinutes Token expiration in minutes (default: 60)
 	 */
-	public function __construct( string $Email = '', string $Token = '', int $ExpirationMinutes = 60 )
+	public function __construct( string $email = '', string $token = '', int $expirationMinutes = 60 )
 	{
-		$this->_Email = $Email;
-		$this->_Token = $Token;
-		$this->_CreatedAt = new DateTimeImmutable();
-		$this->_ExpiresAt = $this->_CreatedAt->modify( "+{$ExpirationMinutes} minutes" );
+		$this->_email = $email;
+		$this->_token = $token;
+		$this->_createdAt = new DateTimeImmutable();
+		$this->_expiresAt = $this->_createdAt->modify( "+{$expirationMinutes} minutes" );
 	}
 
 	/**
@@ -39,15 +39,15 @@ class PasswordResetToken
 	 */
 	public function getId(): ?int
 	{
-		return $this->_Id;
+		return $this->_id;
 	}
 
 	/**
 	 * Set token ID
 	 */
-	public function setId( int $Id ): self
+	public function setId( int $id ): self
 	{
-		$this->_Id = $Id;
+		$this->_id = $id;
 		return $this;
 	}
 
@@ -56,15 +56,15 @@ class PasswordResetToken
 	 */
 	public function getEmail(): string
 	{
-		return $this->_Email;
+		return $this->_email;
 	}
 
 	/**
 	 * Set email address
 	 */
-	public function setEmail( string $Email ): self
+	public function setEmail( string $email ): self
 	{
-		$this->_Email = $Email;
+		$this->_email = $email;
 		return $this;
 	}
 
@@ -73,15 +73,15 @@ class PasswordResetToken
 	 */
 	public function getToken(): string
 	{
-		return $this->_Token;
+		return $this->_token;
 	}
 
 	/**
 	 * Set token (should be hashed before setting)
 	 */
-	public function setToken( string $Token ): self
+	public function setToken( string $token ): self
 	{
-		$this->_Token = $Token;
+		$this->_token = $token;
 		return $this;
 	}
 
@@ -90,15 +90,15 @@ class PasswordResetToken
 	 */
 	public function getCreatedAt(): DateTimeImmutable
 	{
-		return $this->_CreatedAt;
+		return $this->_createdAt;
 	}
 
 	/**
 	 * Set created timestamp
 	 */
-	public function setCreatedAt( DateTimeImmutable $CreatedAt ): self
+	public function setCreatedAt( DateTimeImmutable $createdAt ): self
 	{
-		$this->_CreatedAt = $CreatedAt;
+		$this->_createdAt = $createdAt;
 		return $this;
 	}
 
@@ -107,15 +107,15 @@ class PasswordResetToken
 	 */
 	public function getExpiresAt(): DateTimeImmutable
 	{
-		return $this->_ExpiresAt;
+		return $this->_expiresAt;
 	}
 
 	/**
 	 * Set expiration timestamp
 	 */
-	public function setExpiresAt( DateTimeImmutable $ExpiresAt ): self
+	public function setExpiresAt( DateTimeImmutable $expiresAt ): self
 	{
-		$this->_ExpiresAt = $ExpiresAt;
+		$this->_expiresAt = $expiresAt;
 		return $this;
 	}
 
@@ -124,42 +124,42 @@ class PasswordResetToken
 	 */
 	public function isExpired(): bool
 	{
-		return new DateTimeImmutable() > $this->_ExpiresAt;
+		return new DateTimeImmutable() > $this->_expiresAt;
 	}
 
 	/**
 	 * Create token from array data
 	 */
-	public static function fromArray( array $Data ): self
+	public static function fromArray( array $data ): self
 	{
-		$Token = new self();
+		$token = new self();
 
-		if( isset( $Data['id'] ) )
+		if( isset( $data['id'] ) )
 		{
-			$Token->setId( (int) $Data['id'] );
+			$token->setId( (int) $data['id'] );
 		}
 
-		if( isset( $Data['email'] ) )
+		if( isset( $data['email'] ) )
 		{
-			$Token->setEmail( $Data['email'] );
+			$token->setEmail( $data['email'] );
 		}
 
-		if( isset( $Data['token'] ) )
+		if( isset( $data['token'] ) )
 		{
-			$Token->setToken( $Data['token'] );
+			$token->setToken( $data['token'] );
 		}
 
-		if( isset( $Data['created_at'] ) )
+		if( isset( $data['created_at'] ) )
 		{
-			$Token->setCreatedAt( new DateTimeImmutable( $Data['created_at'] ) );
+			$token->setCreatedAt( new DateTimeImmutable( $data['created_at'] ) );
 		}
 
-		if( isset( $Data['expires_at'] ) )
+		if( isset( $data['expires_at'] ) )
 		{
-			$Token->setExpiresAt( new DateTimeImmutable( $Data['expires_at'] ) );
+			$token->setExpiresAt( new DateTimeImmutable( $data['expires_at'] ) );
 		}
 
-		return $Token;
+		return $token;
 	}
 
 	/**
@@ -168,11 +168,11 @@ class PasswordResetToken
 	public function toArray(): array
 	{
 		return [
-			'id' => $this->_Id,
-			'email' => $this->_Email,
-			'token' => $this->_Token,
-			'created_at' => $this->_CreatedAt->format( 'Y-m-d H:i:s' ),
-			'expires_at' => $this->_ExpiresAt->format( 'Y-m-d H:i:s' )
+			'id' => $this->_id,
+			'email' => $this->_email,
+			'token' => $this->_token,
+			'created_at' => $this->_createdAt->format( 'Y-m-d H:i:s' ),
+			'expires_at' => $this->_expiresAt->format( 'Y-m-d H:i:s' )
 		];
 	}
 }

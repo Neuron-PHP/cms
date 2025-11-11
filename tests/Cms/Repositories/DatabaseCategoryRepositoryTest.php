@@ -38,7 +38,7 @@ class DatabaseCategoryRepositoryTest extends TestCase
 			{
 				// Skip parent constructor and directly assign PDO
 				$reflection = new \ReflectionClass( DatabaseCategoryRepository::class );
-				$property = $reflection->getProperty( '_PDO' );
+				$property = $reflection->getProperty( '_pdo' );
 				$property->setAccessible( true );
 				$property->setValue( $this, $PDO );
 			}

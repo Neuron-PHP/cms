@@ -24,9 +24,9 @@
 							<tr>
 								<td><?= $post->getId() ?></td>
 								<td><?= htmlspecialchars( $post->getTitle() ) ?></td>
-								<td><?= htmlspecialchars( $post->getAuthor() ) ?></td>
+								<td><?= $post->getAuthor() ? htmlspecialchars( $post->getAuthor()->getUsername() ) : 'Unknown' ?></td>
 								<td><span class="badge bg-<?= $post->getStatus() === 'published' ? 'success' : 'secondary' ?>"><?= htmlspecialchars( $post->getStatus() ) ?></span></td>
-								<td><?= $post->getViews() ?></td>
+								<td><?= $post->getViewCount() ?></td>
 								<td><?= $post->getCreatedAt() ? $post->getCreatedAt()->format( 'Y-m-d H:i' ) : 'N/A' ?></td>
 								<td>
 									<a href="/blog/post/<?= htmlspecialchars( $post->getSlug() ) ?>" class="btn btn-sm btn-outline-secondary" target="_blank">View</a>

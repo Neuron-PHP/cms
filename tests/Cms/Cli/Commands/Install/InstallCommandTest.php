@@ -141,65 +141,6 @@ class InstallCommandTest extends TestCase
 		$this->assertStringContainsString('->addIndex( [ \'username\' ]', $result);
 	}
 
-	public function testGetDatabaseConfigReturnsValidArray(): void
-	{
-		// Create test YAML config
-		$configContent = <<<YAML
-database:
-  adapter: sqlite
-  name: test.db
-  port: 3306
-YAML;
-
-		vfsStream::newFile('config.yaml')
-			->at($this->root)
-			->setContent($configContent);
-
-		$yaml = new Yaml(vfsStream::url('test/config.yaml'));
-		$settings = new SettingManager($yaml);
-
-		$command = new InstallCommand();
-
-		// Use reflection to call private method
-		$reflection = new \ReflectionClass($command);
-		$method = $reflection->getMethod('getDatabaseConfig');
-		$method->setAccessible(true);
-
-		$result = $method->invoke($command, $settings);
-
-		$this->assertIsArray($result);
-		$this->assertEquals('sqlite', $result['adapter']);
-		$this->assertEquals('test.db', $result['name']);
-		$this->assertEquals(3306, $result['port']); // Should be integer
-		$this->assertIsInt($result['port']);
-	}
-
-	public function testGetDatabaseConfigWithEmptySection(): void
-	{
-		// Create test YAML config without database section
-		$configContent = <<<YAML
-other:
-  setting: value
-YAML;
-
-		vfsStream::newFile('config.yaml')
-			->at($this->root)
-			->setContent($configContent);
-
-		$yaml = new Yaml(vfsStream::url('test/config.yaml'));
-		$settings = new SettingManager($yaml);
-
-		$command = new InstallCommand();
-
-		// Use reflection to call private method
-		$reflection = new \ReflectionClass($command);
-		$method = $reflection->getMethod('getDatabaseConfig');
-		$method->setAccessible(true);
-
-		$result = $method->invoke($command, $settings);
-
-		$this->assertNull($result);
-	}
 
 	/**
 	 * Helper to set stdin input for testing

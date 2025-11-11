@@ -11,6 +11,6 @@ require '../vendor/autoload.php';
 
 error_reporting( E_ALL );
 
-$App = boot( '../config' );
+$app = boot( '../config' );
 
-dispatch( $App );
+dispatch( $app );

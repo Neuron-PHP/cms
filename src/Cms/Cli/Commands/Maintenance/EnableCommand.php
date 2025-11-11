@@ -135,26 +135,26 @@ class EnableCommand extends Command
 	/**
 	 * Parse allowed IPs from option or config
 	 *
-	 * @param string|null $IpOption
-	 * @param MaintenanceConfig|null $Config
+	 * @param string|null $ipOption
+	 * @param MaintenanceConfig|null $config
 	 * @return array
 	 */
-	private function parseAllowedIps( ?string $IpOption, ?MaintenanceConfig $Config ): array
+	private function parseAllowedIps( ?string $ipOption, ?MaintenanceConfig $config ): array
 	{
 		// Check if option was provided (even if empty)
-		if( $IpOption !== null )
+		if( $ipOption !== null )
 		{
 			// Empty string means no IPs allowed
-			if( $IpOption === '' )
+			if( $ipOption === '' )
 			{
 				return [];
 			}
-			return array_map( 'trim', explode( ',', $IpOption ) );
+			return array_map( 'trim', explode( ',', $ipOption ) );
 		}
 
-		if( $Config )
+		if( $config )
 		{
-			return $Config->getAllowedIps();
+			return $config->getAllowedIps();
 		}
 
 		return ['127.0.0.1', '::1'];

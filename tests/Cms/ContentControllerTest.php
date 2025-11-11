@@ -12,47 +12,47 @@ use PHPUnit\Framework\TestCase;
 
 class ContentControllerTest extends TestCase
 {
-	private $Root;
-	private $Router;
-	private $Settings;
+	private $root;
+	private $router;
+	private $settings;
 	
 	protected function setUp(): void
 	{
 		parent::setUp();
 		
 		// Create virtual filesystem
-		$this->Root = vfsStream::setup( 'test' );
-		
+		$this->root = vfsStream::setup( 'test' );
+
 		// Create mock router
-		$this->Router = $this->createMock( Router::class );
-		
+		$this->router = $this->createMock( Router::class );
+
 		// Create mock settings
-		$this->Settings = new Memory();
-		$this->Settings->set( 'site', 'name', 'Test Site' );
-		$this->Settings->set( 'site', 'title', 'Test Title' );
-		$this->Settings->set( 'site', 'description', 'Test Description' );
-		$this->Settings->set( 'site', 'url', 'http://test.com' );
-		
+		$this->settings = new Memory();
+		$this->settings->set( 'site', 'name', 'Test Site' );
+		$this->settings->set( 'site', 'title', 'Test Title' );
+		$this->settings->set( 'site', 'description', 'Test Description' );
+		$this->settings->set( 'site', 'url', 'http://test.com' );
+
 		// Store settings in registry
-		Registry::getInstance()->set( 'Settings', $this->Settings );
-		
+		Registry::getInstance()->set( 'Settings', $this->settings );
+
 		// Create version file
-		$VersionContent = json_encode([
+		$versionContent = json_encode([
 			'major' => 1,
 			'minor' => 2,
 			'patch' => 3
 		]);
-		
+
 		vfsStream::newFile( '.version.json' )
-			->at( $this->Root )
-			->setContent( $VersionContent );
-		
+			->at( $this->root )
+			->setContent( $versionContent );
+
 		// Create a real version file in parent directory for the controller
 		// ContentController loads from "../.version.json"
-		$ParentDir = dirname( getcwd() );
-		if ( !file_exists( $ParentDir . '/.version.json' ) )
+		$parentDir = dirname( getcwd() );
+		if ( !file_exists( $parentDir . '/.version.json' ) )
 		{
-			file_put_contents( $ParentDir . '/.version.json', $VersionContent );
+			file_put_contents( $parentDir . '/.version.json', $versionContent );
 		}
 	}
 	
@@ -65,8 +65,8 @@ class ContentControllerTest extends TestCase
 		Registry::getInstance()->set( 'rss_url', null );
 		
 		// Clean up temp version file
-		$ParentDir = dirname( getcwd() );
-		@unlink( $ParentDir . '/.version.json' );
+		$parentDir = dirname( getcwd() );
+		@unlink( $parentDir . '/.version.json' );
 		
 		parent::tearDown();
 	}
@@ -76,15 +76,15 @@ class ContentControllerTest extends TestCase
 	 */
 	public function testConstructor()
 	{
-		$Controller = new Content();
-		
+		$controller = new Content();
+
 		// Check that properties were set from settings
-		$this->assertEquals( 'Test Site', $Controller->getName() );
-		$this->assertEquals( 'Test Title', $Controller->getTitle() );
-		$this->assertEquals( 'Test Description', $Controller->getDescription() );
-		$this->assertEquals( 'http://test.com', $Controller->getUrl() );
-		$this->assertEquals( 'http://test.com/blog/rss', $Controller->getRssUrl() );
-		
+		$this->assertEquals( 'Test Site', $controller->getName() );
+		$this->assertEquals( 'Test Title', $controller->getTitle() );
+		$this->assertEquals( 'Test Description', $controller->getDescription() );
+		$this->assertEquals( 'http://test.com', $controller->getUrl() );
+		$this->assertEquals( 'http://test.com/blog/rss', $controller->getRssUrl() );
+
 		// Check registry values were set
 		$this->assertEquals( 'v1.2.3', Registry::getInstance()->get( 'version' ) );
 		$this->assertEquals( 'Test Site', Registry::getInstance()->get( 'name' ) );
@@ -96,27 +96,27 @@ class ContentControllerTest extends TestCase
 	 */
 	public function testSettersAndGetters()
 	{
-		$Controller = new Content();
-		
+		$controller = new Content();
+
 		// Test Name
-		$Controller->setName( 'New Name' );
-		$this->assertEquals( 'New Name', $Controller->getName() );
-		
+		$controller->setName( 'New Name' );
+		$this->assertEquals( 'New Name', $controller->getName() );
+
 		// Test Title
-		$Controller->setTitle( 'New Title' );
-		$this->assertEquals( 'New Title', $Controller->getTitle() );
-		
+		$controller->setTitle( 'New Title' );
+		$this->assertEquals( 'New Title', $controller->getTitle() );
+
 		// Test Description
-		$Controller->setDescription( 'New Description' );
-		$this->assertEquals( 'New Description', $Controller->getDescription() );
-		
+		$controller->setDescription( 'New Description' );
+		$this->assertEquals( 'New Description', $controller->getDescription() );
+
 		// Test URL
-		$Controller->setUrl( 'http://newurl.com' );
-		$this->assertEquals( 'http://newurl.com', $Controller->getUrl() );
-		
+		$controller->setUrl( 'http://newurl.com' );
+		$this->assertEquals( 'http://newurl.com', $controller->getUrl() );
+
 		// Test RSS URL
-		$Controller->setRssUrl( 'http://newurl.com/rss' );
-		$this->assertEquals( 'http://newurl.com/rss', $Controller->getRssUrl() );
+		$controller->setRssUrl( 'http://newurl.com/rss' );
+		$this->assertEquals( 'http://newurl.com/rss', $controller->getRssUrl() );
 	}
 	
 	/**
@@ -124,24 +124,24 @@ class ContentControllerTest extends TestCase
 	 */
 	public function testMethodChaining()
 	{
-		$Controller = new Content();
-		
-		$Result = $Controller
+		$controller = new Content();
+
+		$result = $controller
 			->setName( 'Chained Name' )
 			->setTitle( 'Chained Title' )
 			->setDescription( 'Chained Description' )
 			->setUrl( 'http://chained.com' )
 			->setRssUrl( 'http://chained.com/rss' );
-		
+
 		// Should return the controller itself for chaining
-		$this->assertInstanceOf( Content::class, $Result );
-		
+		$this->assertInstanceOf( Content::class, $result );
+
 		// Values should be set
-		$this->assertEquals( 'Chained Name', $Controller->getName() );
-		$this->assertEquals( 'Chained Title', $Controller->getTitle() );
-		$this->assertEquals( 'Chained Description', $Controller->getDescription() );
-		$this->assertEquals( 'http://chained.com', $Controller->getUrl() );
-		$this->assertEquals( 'http://chained.com/rss', $Controller->getRssUrl() );
+		$this->assertEquals( 'Chained Name', $controller->getName() );
+		$this->assertEquals( 'Chained Title', $controller->getTitle() );
+		$this->assertEquals( 'Chained Description', $controller->getDescription() );
+		$this->assertEquals( 'http://chained.com', $controller->getUrl() );
+		$this->assertEquals( 'http://chained.com/rss', $controller->getRssUrl() );
 	}
 	
 	/**
@@ -151,11 +151,11 @@ class ContentControllerTest extends TestCase
 	 */
 	public function testMarkdownMethod()
 	{
-		$Controller = $this->getMockBuilder( Content::class )
+		$controller = $this->getMockBuilder( Content::class )
 			->onlyMethods( [ 'renderMarkdown' ] )
 			->getMock();
-		
-		$Controller->expects( $this->once() )
+
+		$controller->expects( $this->once() )
 			->method( 'renderMarkdown' )
 			->with(
 				HttpResponseStatus::OK,
@@ -163,10 +163,10 @@ class ContentControllerTest extends TestCase
 				'test-page'
 			)
 			->willReturn( '<html>Test Content</html>' );
-		
-		$Parameters = [ 'page' => 'test-page' ];
-		$Result = $Controller->markdown( $Parameters );
-		
-		$this->assertEquals( '<html>Test Content</html>', $Result );
+
+		$parameters = [ 'page' => 'test-page' ];
+		$result = $controller->markdown( $parameters );
+
+		$this->assertEquals( '<html>Test Content</html>', $result );
 	}
 }

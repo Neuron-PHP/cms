@@ -11,18 +11,18 @@ use PHPUnit\Framework\TestCase;
  */
 class MaintenanceManagerTest extends TestCase
 {
-	private $Root;
-	private $BasePath;
-	private MaintenanceManager $Manager;
+	private $root;
+	private $basePath;
+	private MaintenanceManager $manager;
 
 	protected function setUp(): void
 	{
 		parent::setUp();
 
 		// Create virtual filesystem
-		$this->Root = vfsStream::setup( 'test' );
-		$this->BasePath = vfsStream::url( 'test' );
-		$this->Manager = new MaintenanceManager( $this->BasePath );
+		$this->root = vfsStream::setup( 'test' );
+		$this->basePath = vfsStream::url( 'test' );
+		$this->manager = new MaintenanceManager( $this->basePath );
 	}
 
 	protected function tearDown(): void
@@ -35,8 +35,8 @@ class MaintenanceManagerTest extends TestCase
 	 */
 	public function testMaintenanceModeDisabledByDefault(): void
 	{
-		$this->assertFalse( $this->Manager->isEnabled() );
-		$this->assertNull( $this->Manager->getStatus() );
+		$this->assertFalse( $this->manager->isEnabled() );
+		$this->assertNull( $this->manager->getStatus() );
 	}
 
 	/**
@@ -48,12 +48,12 @@ class MaintenanceManagerTest extends TestCase
 		$allowedIps = ['192.168.1.1', '10.0.0.0/8'];
 		$retryAfter = 3600;
 
-		$result = $this->Manager->enable( $message, $allowedIps, $retryAfter, 'testuser' );
+		$result = $this->manager->enable( $message, $allowedIps, $retryAfter, 'testuser' );
 
 		$this->assertTrue( $result );
-		$this->assertTrue( $this->Manager->isEnabled() );
+		$this->assertTrue( $this->manager->isEnabled() );
 
-		$status = $this->Manager->getStatus();
+		$status = $this->manager->getStatus();
 		$this->assertIsArray( $status );
 		$this->assertEquals( $message, $status['message'] );
 		$this->assertEquals( $allowedIps, $status['allowed_ips'] );
@@ -67,9 +67,9 @@ class MaintenanceManagerTest extends TestCase
 	 */
 	public function testEnableWithDefaultAllowedIps(): void
 	{
-		$this->Manager->enable( 'Test message' );
+		$this->manager->enable( 'Test message' );
 
-		$status = $this->Manager->getStatus();
+		$status = $this->manager->getStatus();
 		$this->assertContains( '127.0.0.1', $status['allowed_ips'] );
 		$this->assertContains( '::1', $status['allowed_ips'] );
 	}
@@ -80,15 +80,15 @@ class MaintenanceManagerTest extends TestCase
 	public function testDisableMaintenanceMode(): void
 	{
 		// First enable
-		$this->Manager->enable( 'Test' );
-		$this->assertTrue( $this->Manager->isEnabled() );
+		$this->manager->enable( 'Test' );
+		$this->assertTrue( $this->manager->isEnabled() );
 
 		// Then disable
-		$result = $this->Manager->disable();
+		$result = $this->manager->disable();
 
 		$this->assertTrue( $result );
-		$this->assertFalse( $this->Manager->isEnabled() );
-		$this->assertNull( $this->Manager->getStatus() );
+		$this->assertFalse( $this->manager->isEnabled() );
+		$this->assertNull( $this->manager->getStatus() );
 	}
 
 	/**
@@ -96,7 +96,7 @@ class MaintenanceManagerTest extends TestCase
 	 */
 	public function testDisableWhenAlreadyDisabled(): void
 	{
-		$result = $this->Manager->disable();
+		$result = $this->manager->disable();
 		$this->assertTrue( $result );
 	}
 
@@ -106,9 +106,9 @@ class MaintenanceManagerTest extends TestCase
 	public function testGetMessage(): void
 	{
 		$message = 'Custom maintenance message';
-		$this->Manager->enable( $message );
+		$this->manager->enable( $message );
 
-		$this->assertEquals( $message, $this->Manager->getMessage() );
+		$this->assertEquals( $message, $this->manager->getMessage() );
 	}
 
 	/**
@@ -116,7 +116,7 @@ class MaintenanceManagerTest extends TestCase
 	 */
 	public function testGetMessageWhenDisabled(): void
 	{
-		$message = $this->Manager->getMessage();
+		$message = $this->manager->getMessage();
 		$this->assertIsString( $message );
 		$this->assertStringContainsString( 'maintenance', strtolower( $message ) );
 	}
@@ -127,9 +127,9 @@ class MaintenanceManagerTest extends TestCase
 	public function testGetRetryAfter(): void
 	{
 		$retryAfter = 7200;
-		$this->Manager->enable( 'Test', [], $retryAfter );
+		$this->manager->enable( 'Test', [], $retryAfter );
 
-		$this->assertEquals( $retryAfter, $this->Manager->getRetryAfter() );
+		$this->assertEquals( $retryAfter, $this->manager->getRetryAfter() );
 	}
 
 	/**
@@ -137,7 +137,7 @@ class MaintenanceManagerTest extends TestCase
 	 */
 	public function testGetRetryAfterWhenDisabled(): void
 	{
-		$this->assertNull( $this->Manager->getRetryAfter() );
+		$this->assertNull( $this->manager->getRetryAfter() );
 	}
 
 	/**
@@ -146,11 +146,11 @@ class MaintenanceManagerTest extends TestCase
 	public function testIsIpAllowedExactMatch(): void
 	{
 		$allowedIps = ['192.168.1.100', '10.0.0.5'];
-		$this->Manager->enable( 'Test', $allowedIps );
+		$this->manager->enable( 'Test', $allowedIps );
 
-		$this->assertTrue( $this->Manager->isIpAllowed( '192.168.1.100' ) );
-		$this->assertTrue( $this->Manager->isIpAllowed( '10.0.0.5' ) );
-		$this->assertFalse( $this->Manager->isIpAllowed( '192.168.1.101' ) );
+		$this->assertTrue( $this->manager->isIpAllowed( '192.168.1.100' ) );
+		$this->assertTrue( $this->manager->isIpAllowed( '10.0.0.5' ) );
+		$this->assertFalse( $this->manager->isIpAllowed( '192.168.1.101' ) );
 	}
 
 	/**
@@ -159,16 +159,16 @@ class MaintenanceManagerTest extends TestCase
 	public function testIsIpAllowedCidr(): void
 	{
 		$allowedIps = ['192.168.1.0/24'];
-		$this->Manager->enable( 'Test', $allowedIps );
+		$this->manager->enable( 'Test', $allowedIps );
 
 		// Should allow entire subnet
-		$this->assertTrue( $this->Manager->isIpAllowed( '192.168.1.1' ) );
-		$this->assertTrue( $this->Manager->isIpAllowed( '192.168.1.100' ) );
-		$this->assertTrue( $this->Manager->isIpAllowed( '192.168.1.254' ) );
+		$this->assertTrue( $this->manager->isIpAllowed( '192.168.1.1' ) );
+		$this->assertTrue( $this->manager->isIpAllowed( '192.168.1.100' ) );
+		$this->assertTrue( $this->manager->isIpAllowed( '192.168.1.254' ) );
 
 		// Should not allow outside subnet
-		$this->assertFalse( $this->Manager->isIpAllowed( '192.168.2.1' ) );
-		$this->assertFalse( $this->Manager->isIpAllowed( '10.0.0.1' ) );
+		$this->assertFalse( $this->manager->isIpAllowed( '192.168.2.1' ) );
+		$this->assertFalse( $this->manager->isIpAllowed( '10.0.0.1' ) );
 	}
 
 	/**
@@ -177,8 +177,8 @@ class MaintenanceManagerTest extends TestCase
 	public function testIsIpAllowedWhenDisabled(): void
 	{
 		// All IPs should be allowed when maintenance is disabled
-		$this->assertTrue( $this->Manager->isIpAllowed( '192.168.1.1' ) );
-		$this->assertTrue( $this->Manager->isIpAllowed( '10.0.0.1' ) );
+		$this->assertTrue( $this->manager->isIpAllowed( '192.168.1.1' ) );
+		$this->assertTrue( $this->manager->isIpAllowed( '10.0.0.1' ) );
 	}
 
 	/**
@@ -186,10 +186,10 @@ class MaintenanceManagerTest extends TestCase
 	 */
 	public function testLocalhostAllowedByDefault(): void
 	{
-		$this->Manager->enable( 'Test' ); // No explicit IPs
+		$this->manager->enable( 'Test' ); // No explicit IPs
 
-		$this->assertTrue( $this->Manager->isIpAllowed( '127.0.0.1' ) );
-		$this->assertTrue( $this->Manager->isIpAllowed( '::1' ) );
+		$this->assertTrue( $this->manager->isIpAllowed( '127.0.0.1' ) );
+		$this->assertTrue( $this->manager->isIpAllowed( '::1' ) );
 	}
 
 	/**
@@ -198,11 +198,11 @@ class MaintenanceManagerTest extends TestCase
 	public function testCidrSlash8Network(): void
 	{
 		$allowedIps = ['10.0.0.0/8'];
-		$this->Manager->enable( 'Test', $allowedIps );
+		$this->manager->enable( 'Test', $allowedIps );
 
-		$this->assertTrue( $this->Manager->isIpAllowed( '10.0.0.1' ) );
-		$this->assertTrue( $this->Manager->isIpAllowed( '10.255.255.254' ) );
-		$this->assertFalse( $this->Manager->isIpAllowed( '11.0.0.1' ) );
+		$this->assertTrue( $this->manager->isIpAllowed( '10.0.0.1' ) );
+		$this->assertTrue( $this->manager->isIpAllowed( '10.255.255.254' ) );
+		$this->assertFalse( $this->manager->isIpAllowed( '11.0.0.1' ) );
 	}
 
 	/**
@@ -211,11 +211,11 @@ class MaintenanceManagerTest extends TestCase
 	public function testCidrSlash16Network(): void
 	{
 		$allowedIps = ['172.16.0.0/16'];
-		$this->Manager->enable( 'Test', $allowedIps );
+		$this->manager->enable( 'Test', $allowedIps );
 
-		$this->assertTrue( $this->Manager->isIpAllowed( '172.16.0.1' ) );
-		$this->assertTrue( $this->Manager->isIpAllowed( '172.16.255.254' ) );
-		$this->assertFalse( $this->Manager->isIpAllowed( '172.17.0.1' ) );
+		$this->assertTrue( $this->manager->isIpAllowed( '172.16.0.1' ) );
+		$this->assertTrue( $this->manager->isIpAllowed( '172.16.255.254' ) );
+		$this->assertFalse( $this->manager->isIpAllowed( '172.17.0.1' ) );
 	}
 
 	/**
@@ -223,9 +223,9 @@ class MaintenanceManagerTest extends TestCase
 	 */
 	public function testMaintenanceFileCreated(): void
 	{
-		$this->Manager->enable( 'Test' );
+		$this->manager->enable( 'Test' );
 
-		$filePath = $this->BasePath . '/.maintenance.json';
+		$filePath = $this->basePath . '/.maintenance.json';
 		$this->assertTrue( file_exists( $filePath ) );
 
 		$contents = file_get_contents( $filePath );
@@ -240,11 +240,11 @@ class MaintenanceManagerTest extends TestCase
 	 */
 	public function testMaintenanceFileDeletedWhenDisabled(): void
 	{
-		$this->Manager->enable( 'Test' );
-		$filePath = $this->BasePath . '/.maintenance.json';
+		$this->manager->enable( 'Test' );
+		$filePath = $this->basePath . '/.maintenance.json';
 		$this->assertTrue( file_exists( $filePath ) );
 
-		$this->Manager->disable();
+		$this->manager->disable();
 		$this->assertFalse( file_exists( $filePath ) );
 	}
 
@@ -257,9 +257,9 @@ class MaintenanceManagerTest extends TestCase
 		$allowedIps = ['192.168.1.1'];
 		$retryAfter = 1800;
 
-		$this->Manager->enable( $message, $allowedIps, $retryAfter, 'admin' );
+		$this->manager->enable( $message, $allowedIps, $retryAfter, 'admin' );
 
-		$filePath = $this->BasePath . '/.maintenance.json';
+		$filePath = $this->basePath . '/.maintenance.json';
 		$contents = file_get_contents( $filePath );
 		$data = json_decode( $contents, true );
 

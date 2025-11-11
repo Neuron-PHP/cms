@@ -10,22 +10,22 @@ use Neuron\Routing\RouteMap;
  */
 class MaintenanceFilter extends Filter
 {
-	private MaintenanceManager $_Manager;
-	private ?string $_CustomView;
+	private MaintenanceManager $_manager;
+	private ?string $_customView;
 
 	/**
-	 * @param MaintenanceManager $Manager
-	 * @param string|null $CustomView Path to custom maintenance view
+	 * @param MaintenanceManager $manager
+	 * @param string|null $customView Path to custom maintenance view
 	 */
-	public function __construct( MaintenanceManager $Manager, ?string $CustomView = null )
+	public function __construct( MaintenanceManager $manager, ?string $customView = null )
 	{
-		$this->_Manager = $Manager;
-		$this->_CustomView = $CustomView;
+		$this->_manager = $manager;
+		$this->_customView = $customView;
 
 		// Create filter with pre-execution check
 		parent::__construct(
-			function( RouteMap $Route ) {
-				return $this->checkMaintenance( $Route );
+			function( RouteMap $route ) {
+				return $this->checkMaintenance( $route );
 			},
 			null
 		);
@@ -34,13 +34,13 @@ class MaintenanceFilter extends Filter
 	/**
 	 * Check if site is in maintenance mode and handle accordingly
 	 *
-	 * @param RouteMap $Route
+	 * @param RouteMap $route
 	 * @return mixed|null Returns maintenance page or null to continue
 	 */
-	private function checkMaintenance( RouteMap $Route )
+	private function checkMaintenance( RouteMap $route )
 	{
 		// If maintenance mode is not enabled, continue normal execution
-		if( !$this->_Manager->isEnabled() )
+		if( !$this->_manager->isEnabled() )
 		{
 			return null;
 		}
@@ -48,7 +48,7 @@ class MaintenanceFilter extends Filter
 		// Check if current IP is allowed
 		$clientIp = $this->getClientIp();
 
-		if( $this->_Manager->isIpAllowed( $clientIp ) )
+		if( $this->_manager->isIpAllowed( $clientIp ) )
 		{
 			return null;
 		}
@@ -68,7 +68,7 @@ class MaintenanceFilter extends Filter
 		@http_response_code( 503 );
 
 		// Set Retry-After header if configured
-		$retryAfter = $this->_Manager->getRetryAfter();
+		$retryAfter = $this->_manager->getRetryAfter();
 		if( $retryAfter )
 		{
 			@header( "Retry-After: $retryAfter" );
@@ -78,10 +78,10 @@ class MaintenanceFilter extends Filter
 		@header( 'Content-Type: text/html; charset=utf-8' );
 
 		// Check for custom view
-		if( $this->_CustomView && file_exists( $this->_CustomView ) )
+		if( $this->_customView && file_exists( $this->_customView ) )
 		{
 			// Validate path to prevent directory traversal attacks
-			$customViewPath = $this->_CustomView;
+			$customViewPath = $this->_customView;
 			$realPath = realpath( $customViewPath );
 			
 			// For virtual filesystems (like vfsStream in tests), realpath may return false
@@ -105,9 +105,9 @@ class MaintenanceFilter extends Filter
 					throw new \RuntimeException( 'Invalid custom view path: path must be within the resources directory' );
 				}
 			}
-			
-			$message = $this->_Manager->getMessage();
-			$retryAfter = $this->_Manager->getRetryAfter();
+
+			$message = $this->_manager->getMessage();
+			$retryAfter = $this->_manager->getRetryAfter();
 			ob_start();
 			include $realPath;
 			return ob_get_clean();
@@ -124,8 +124,8 @@ class MaintenanceFilter extends Filter
 	 */
 	private function getDefaultMaintenancePage(): string
 	{
-		$message = htmlspecialchars( $this->_Manager->getMessage(), ENT_QUOTES, 'UTF-8' );
-		$retryAfter = $this->_Manager->getRetryAfter();
+		$message = htmlspecialchars( $this->_manager->getMessage(), ENT_QUOTES, 'UTF-8' );
+		$retryAfter = $this->_manager->getRetryAfter();
 
 		$estimatedTime = '';
 		if( $retryAfter )

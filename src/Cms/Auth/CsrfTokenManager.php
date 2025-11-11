@@ -12,12 +12,12 @@ namespace Neuron\Cms\Auth;
  */
 class CsrfTokenManager
 {
-	private SessionManager $_SessionManager;
-	private string $_TokenKey = 'csrf_token';
+	private SessionManager $_sessionManager;
+	private string $_tokenKey = 'csrf_token';
 
-	public function __construct( SessionManager $SessionManager )
+	public function __construct( SessionManager $sessionManager )
 	{
-		$this->_SessionManager = $SessionManager;
+		$this->_sessionManager = $sessionManager;
 	}
 
 	/**
@@ -25,9 +25,9 @@ class CsrfTokenManager
 	 */
 	public function generate(): string
 	{
-		$Token = bin2hex( random_bytes( 32 ) );
-		$this->_SessionManager->set( $this->_TokenKey, $Token );
-		return $Token;
+		$token = bin2hex( random_bytes( 32 ) );
+		$this->_sessionManager->set( $this->_tokenKey, $token );
+		return $token;
 	}
 
 	/**
@@ -35,28 +35,28 @@ class CsrfTokenManager
 	 */
 	public function getToken(): string
 	{
-		if( !$this->_SessionManager->has( $this->_TokenKey ) )
+		if( !$this->_sessionManager->has( $this->_tokenKey ) )
 		{
 			return $this->generate();
 		}
 
-		return $this->_SessionManager->get( $this->_TokenKey );
+		return $this->_sessionManager->get( $this->_tokenKey );
 	}
 
 	/**
 	 * Validate a CSRF token
 	 */
-	public function validate( string $Token ): bool
+	public function validate( string $token ): bool
 	{
-		$StoredToken = $this->_SessionManager->get( $this->_TokenKey );
+		$storedToken = $this->_sessionManager->get( $this->_tokenKey );
 
-		if( !$StoredToken )
+		if( !$storedToken )
 		{
 			return false;
 		}
 
 		// Use hash_equals to prevent timing attacks
-		return hash_equals( $StoredToken, $Token );
+		return hash_equals( $storedToken, $token );
 	}
 
 	/**
