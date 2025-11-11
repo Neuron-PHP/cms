@@ -14,32 +14,40 @@ interface ICategoryRepository
 	/**
 	 * Find category by ID
 	 */
-	public function findById( int $Id ): ?Category;
+	public function findById( int $id ): ?Category;
 
 	/**
 	 * Find category by slug
 	 */
-	public function findBySlug( string $Slug ): ?Category;
+	public function findBySlug( string $slug ): ?Category;
 
 	/**
 	 * Find category by name
 	 */
-	public function findByName( string $Name ): ?Category;
+	public function findByName( string $name ): ?Category;
+
+	/**
+	 * Find multiple categories by IDs
+	 *
+	 * @param array $ids Array of category IDs
+	 * @return Category[]
+	 */
+	public function findByIds( array $ids ): array;
 
 	/**
 	 * Create a new category
 	 */
-	public function create( Category $Category ): Category;
+	public function create( Category $category ): Category;
 
 	/**
 	 * Update an existing category
 	 */
-	public function update( Category $Category ): bool;
+	public function update( Category $category ): bool;
 
 	/**
 	 * Delete a category
 	 */
-	public function delete( int $Id ): bool;
+	public function delete( int $id ): bool;
 
 	/**
 	 * Get all categories

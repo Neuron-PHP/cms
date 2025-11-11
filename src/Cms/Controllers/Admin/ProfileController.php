@@ -20,66 +20,76 @@ use Neuron\Patterns\Registry;
  */
 class ProfileController extends Content
 {
-	private DatabaseUserRepository $_Repository;
-	private PasswordHasher $_Hasher;
-	private SessionManager $_SessionManager;
 
+	private DatabaseUserRepository $_repository;
+	private PasswordHasher $_hasher;
+	private SessionManager $_sessionManager;
+
+	/**
+	 * @param Application|null $app
+	 * @throws \Exception
+	 */
 	public function __construct( ?Application $app = null )
 	{
 		parent::__construct( $app );
 
-		// Get database config and initialize repository
-		$Settings = Registry::getInstance()->get( 'Settings' );
-		$dbConfig = $this->getDatabaseConfig( $Settings );
+		// Get settings and initialize repository
+		$settings = Registry::getInstance()->get( 'Settings' );
 
-		$this->_Repository = new DatabaseUserRepository( $dbConfig );
-		$this->_Hasher = new PasswordHasher();
-		$this->_SessionManager = new SessionManager();
-		$this->_SessionManager->start();
+		$this->_repository = new DatabaseUserRepository( $settings );
+		$this->_hasher = new PasswordHasher();
+		$this->_sessionManager = new SessionManager();
+		$this->_sessionManager->start();
 	}
 
 	/**
 	 * Show profile edit form
+	 * @param array $parameters
+	 * @return string
+	 * @throws \Exception
 	 */
-	public function edit( array $Parameters ): string
+	public function edit( array $parameters ): string
 	{
-		$User = Registry::getInstance()->get( 'Auth.User' );
+		$user = Registry::getInstance()->get( 'Auth.User' );
 
-		if( !$User )
+		if( !$user )
 		{
 			throw new \RuntimeException( 'Authenticated user not found' );
 		}
 
 		// Generate CSRF token
-		$CsrfManager = new CsrfTokenManager( $this->_SessionManager );
-		Registry::getInstance()->set( 'Auth.CsrfToken', $CsrfManager->getToken() );
+		$csrfManager = new CsrfTokenManager( $this->_sessionManager );
+		Registry::getInstance()->set( 'Auth.CsrfToken', $csrfManager->getToken() );
 
-		$ViewData = [
+		$viewData = [
 			'Title' => 'Profile | ' . $this->getName(),
 			'Description' => 'Edit Your Profile',
-			'User' => $User,
-			'success' => $this->_SessionManager->getFlash( 'success' ),
-			'error' => $this->_SessionManager->getFlash( 'error' )
+			'User' => $user,
+			'success' => $this->_sessionManager->getFlash( 'success' ),
+			'error' => $this->_sessionManager->getFlash( 'error' )
 		];
 
 		@http_response_code( HttpResponseStatus::OK->value );
 
-		$View = new Html();
-		$View->setController( 'Admin/Profile' )
+		$view = new Html();
+		$view->setController( 'Admin/Profile' )
 			 ->setLayout( 'admin' )
 			 ->setPage( 'edit' );
 
-		return $View->render( $ViewData );
+		return $view->render( $viewData );
 	}
 
 	/**
 	 * Update profile
+	 * @param array $parameters
+	 * @return string
+	 * @throws \Exception
 	 */
-	public function update( array $Parameters ): string
+	public function update( array $parameters ): string
 	{
-		$User = Registry::getInstance()->get( 'Auth.User' );
+		$user = Registry::getInstance()->get( 'Auth.User' );
 
-		if( !$User )
+		if( !$user )
 		{
 			throw new \RuntimeException( 'Authenticated user not found' );
 		}
@@ -90,18 +100,18 @@ class ProfileController extends Content
 		$confirmPassword = $_POST['confirm_password'] ?? '';
 
 		// Update email
-		if( !empty( $email ) && $email !== $User->getEmail() )
+		if( !empty( $email ) && $email !== $user->getEmail() )
 		{
-			$User->setEmail( $email );
+			$user->setEmail( $email );
 		}
 
 		// Update password if provided
 		if( !empty( $newPassword ) )
 		{
 			// Verify current password
-			if( empty( $currentPassword ) || !$this->_Hasher->verify( $currentPassword, $User->getPasswordHash() ) )
+			if( empty( $currentPassword ) || !$this->_hasher->verify( $currentPassword, $user->getPasswordHash() ) )
 			{
-				$this->_SessionManager->flash( 'error', 'Current password is incorrect' );
+				$this->_sessionManager->flash( 'error', 'Current password is incorrect' );
 				header( 'Location: /admin/profile' );
 				exit;
 			}
@@ -109,52 +119,31 @@ class ProfileController extends Content
 			// Validate new password
 			if( $newPassword !== $confirmPassword )
 			{
-				$this->_SessionManager->flash( 'error', 'New passwords do not match' );
+				$this->_sessionManager->flash( 'error', 'New passwords do not match' );
 				header( 'Location: /admin/profile' );
 				exit;
 			}
 
-			if( !$this->_Hasher->meetsRequirements( $newPassword ) )
+			if( !$this->_hasher->meetsRequirements( $newPassword ) )
 			{
-				$this->_SessionManager->flash( 'error', 'Password does not meet requirements' );
+				$this->_sessionManager->flash( 'error', 'Password does not meet requirements' );
 				header( 'Location: /admin/profile' );
 				exit;
 			}
 
-			$User->setPasswordHash( $this->_Hasher->hash( $newPassword ) );
+			$user->setPasswordHash( $this->_hasher->hash( $newPassword ) );
 		}
 
-		try
+		if( $this->_repository->update( $user ) )
 		{
-			$this->_Repository->update( $User );
-			$this->_SessionManager->flash( 'success', 'Profile updated successfully' );
+			$this->_sessionManager->flash( 'success', 'Profile updated successfully' );
 		}
-		catch( \Exception $e )
+		else
 		{
-			$this->_SessionManager->flash( 'error', 'Failed to update profile: ' . $e->getMessage() );
+			$this->_sessionManager->flash( 'error', 'Failed to update profile' );
 		}
 
 		header( 'Location: /admin/profile' );
 		exit;
-	}
-
-	/**
-	 * Get database configuration from settings
-	 */
-	private function getDatabaseConfig( SettingManager $Settings ): array
-	{
-		$config = [];
-		$settingNames = $Settings->getSectionSettingNames( 'database' );
-
-		foreach( $settingNames as $name )
-		{
-			$value = $Settings->get( 'database', $name );
-			if( $value !== null )
-			{
-				$config[$name] = ( $name === 'port' ) ? (int)$value : $value;
-			}
-		}
-
-		return $config;
 	}
 }

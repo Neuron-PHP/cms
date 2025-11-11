@@ -1,6 +1,6 @@
 <?php
 
-use Neuron\Cms\Services\EmailService;
+use Neuron\Cms\Services\Email\Sender;
 use Neuron\Data\Setting\ISettingSource;
 
 if( !function_exists( 'sendEmail' ) )
@@ -22,7 +22,7 @@ if( !function_exists( 'sendEmail' ) )
 	{
 		try
 		{
-			$email = new EmailService( $settings );
+			$email = new Sender( $settings );
 
 			return $email
 				->to( $to )
@@ -62,7 +62,7 @@ if( !function_exists( 'sendEmailTemplate' ) )
 	{
 		try
 		{
-			$email = new EmailService( $settings, $basePath );
+			$email = new Sender( $settings, $basePath );
 
 			return $email
 				->to( $to )
@@ -80,11 +80,11 @@ if( !function_exists( 'sendEmailTemplate' ) )
 if( !function_exists( 'email' ) )
 {
 	/**
-	 * Create a new EmailService instance with fluent interface
+	 * Create a new email Sender instance with fluent interface
 	 *
 	 * @param ISettingSource|null $settings Optional settings source for email configuration
 	 * @param string $basePath Base path for template resolution (default: current directory)
-	 * @return EmailService
+	 * @return Sender
 	 *
 	 * @example
 	 * email()
@@ -95,8 +95,8 @@ if( !function_exists( 'email' ) )
 	 *     ->attach('/path/to/invoice.pdf', 'invoice.pdf')
 	 *     ->send();
 	 */
-	function email( ?ISettingSource $settings = null, string $basePath = '' ): EmailService
+	function email( ?ISettingSource $settings = null, string $basePath = '' ): Sender
 	{
-		return new EmailService( $settings, $basePath );
+		return new Sender( $settings, $basePath );
 	}
 }

@@ -21,88 +21,101 @@ use Neuron\Patterns\Registry;
  */
 class UserController extends Content
 {
-	private DatabaseUserRepository $_Repository;
-	private PasswordHasher $_Hasher;
-	private SessionManager $_SessionManager;
 
+	private DatabaseUserRepository $_repository;
+	private PasswordHasher $_hasher;
+	private SessionManager $_sessionManager;
+
+	/**
+	 * @param Application|null $app
+	 * @throws \Exception
+	 */
 	public function __construct( ?Application $app = null )
 	{
 		parent::__construct( $app );
 
-		// Get database config and initialize repository
-		$Settings = Registry::getInstance()->get( 'Settings' );
-		$dbConfig = $this->getDatabaseConfig( $Settings );
+		// Get settings and initialize repository
+		$settings = Registry::getInstance()->get( 'Settings' );
 
-		$this->_Repository = new DatabaseUserRepository( $dbConfig );
-		$this->_Hasher = new PasswordHasher();
-		$this->_SessionManager = new SessionManager();
-		$this->_SessionManager->start();
+		$this->_repository = new DatabaseUserRepository( $settings );
+		$this->_hasher = new PasswordHasher();
+		$this->_sessionManager = new SessionManager();
+		$this->_sessionManager->start();
 	}
 
 	/**
 	 * List all users
+	 * @param array $parameters
+	 * @return string
+	 * @throws \Exception
 	 */
-	public function index( array $Parameters ): string
+	public function index( array $parameters ): string
 	{
-		$User = Registry::getInstance()->get( 'Auth.User' );
+		$user = Registry::getInstance()->get( 'Auth.User' );
 
 		// Generate CSRF token
-		$CsrfManager = new CsrfTokenManager( $this->_SessionManager );
-		Registry::getInstance()->set( 'Auth.CsrfToken', $CsrfManager->getToken() );
+		$csrfManager = new CsrfTokenManager( $this->_sessionManager );
+		Registry::getInstance()->set( 'Auth.CsrfToken', $csrfManager->getToken() );
 
-		$users = $this->_Repository->all();
+		$users = $this->_repository->all();
 
-		$ViewData = [
+		$viewData = [
 			'Title' => 'Users | ' . $this->getName(),
 			'Description' => 'User Management',
-			'User' => $User,
+			'User' => $user,
 			'users' => $users,
-			'Success' => $this->_SessionManager->getFlash( 'success' ),
-			'Error' => $this->_SessionManager->getFlash( 'error' )
+			'Success' => $this->_sessionManager->getFlash( 'success' ),
+			'Error' => $this->_sessionManager->getFlash( 'error' )
 		];
 
 		@http_response_code( HttpResponseStatus::OK->value );
 
-		$View = new Html();
-		$View->setController( 'Admin/Users' )
+		$view = new Html();
+		$view->setController( 'Admin/Users' )
 			 ->setLayout( 'admin' )
 			 ->setPage( 'index' );
 
-		return $View->render( $ViewData );
+		return $view->render( $viewData );
 	}
 
 	/**
 	 * Show create user form
+	 * @param array $parameters
+	 * @return string
+	 * @throws \Exception
 	 */
-	public function create( array $Parameters ): string
+	public function create( array $parameters ): string
 	{
-		$User = Registry::getInstance()->get( 'Auth.User' );
+		$user = Registry::getInstance()->get( 'Auth.User' );
 
 		// Generate CSRF token
-		$CsrfManager = new CsrfTokenManager( $this->_SessionManager );
-		Registry::getInstance()->set( 'Auth.CsrfToken', $CsrfManager->getToken() );
+		$csrfManager = new CsrfTokenManager( $this->_sessionManager );
+		Registry::getInstance()->set( 'Auth.CsrfToken', $csrfManager->getToken() );
 
-		$ViewData = [
+		$viewData = [
 			'Title' => 'Create User | ' . $this->getName(),
 			'Description' => 'Create New User',
-			'User' => $User,
+			'User' => $user,
 			'roles' => [User::ROLE_ADMIN, User::ROLE_EDITOR, User::ROLE_AUTHOR, User::ROLE_SUBSCRIBER]
 		];
 
 		@http_response_code( HttpResponseStatus::OK->value );
 
-		$View = new Html();
-		$View->setController( 'Admin/Users' )
+		$view = new Html();
+		$view->setController( 'Admin/Users' )
 			 ->setLayout( 'admin' )
 			 ->setPage( 'create' );
 
-		return $View->render( $ViewData );
+		return $view->render( $viewData );
 	}
 
 	/**
 	 * Store new user
+	 * @param array $parameters
+	 * @return string
+	 * @throws \Exception
 	 */
-	public function store( array $Parameters ): string
+	public function store( array $parameters ): string
 	{
 		$username = $_POST['username'] ?? '';
 		$email = $_POST['email'] ?? '';
@@ -112,35 +125,35 @@ class UserController extends Content
 		// Validate
 		if( empty( $username ) || empty( $email ) || empty( $password ) )
 		{
-			$this->_SessionManager->flash( 'error', 'All fields are required' );
+			$this->_sessionManager->flash( 'error', 'All fields are required' );
 			header( 'Location: /admin/users/create' );
 			exit;
 		}
 
-		if( !$this->_Hasher->meetsRequirements( $password ) )
+		if( !$this->_hasher->meetsRequirements( $password ) )
 		{
-			$this->_SessionManager->flash( 'error', 'Password does not meet requirements' );
+			$this->_sessionManager->flash( 'error', 'Password does not meet requirements' );
 			header( 'Location: /admin/users/create' );
 			exit;
 		}
 
 		// Create user
-		$user = new User();
-		$user->setUsername( $username );
-		$user->setEmail( $email );
-		$user->setPasswordHash( $this->_Hasher->hash( $password ) );
-		$user->setRole( $role );
-		$user->setStatus( User::STATUS_ACTIVE );
-		$user->setEmailVerified( true );
+		$newUser = new User();
+		$newUser->setUsername( $username );
+		$newUser->setEmail( $email );
+		$newUser->setPasswordHash( $this->_hasher->hash( $password ) );
+		$newUser->setRole( $role );
+		$newUser->setStatus( User::STATUS_ACTIVE );
+		$newUser->setEmailVerified( true );
 
 		try
 		{
-			$this->_Repository->create( $user );
-			$this->_SessionManager->flash( 'success', 'User created successfully' );
+			$this->_repository->create( $newUser );
+			$this->_sessionManager->flash( 'success', 'User created successfully' );
 		}
 		catch( \Exception $e )
 		{
-			$this->_SessionManager->flash( 'error', 'Failed to create user: ' . $e->getMessage() );
+			$this->_sessionManager->flash( 'error', 'Failed to create user: ' . $e->getMessage() );
 		}
 
 		header( 'Location: /admin/users' );
@@ -149,53 +162,59 @@ class UserController extends Content
 
 	/**
 	 * Show edit user form
+	 * @param array $parameters
+	 * @return string
+	 * @throws \Exception
 	 */
-	public function edit( array $Parameters ): string
+	public function edit( array $parameters ): string
 	{
-		$id = (int)$Parameters['id'];
-		$User = Registry::getInstance()->get( 'Auth.User' );
-		$user = $this->_Repository->findById( $id );
+		$id = (int)$parameters['id'];
+		$currentUser = Registry::getInstance()->get( 'Auth.User' );
+		$user = $this->_repository->findById( $id );
 
 		if( !$user )
 		{
-			$this->_SessionManager->flash( 'error', 'User not found' );
+			$this->_sessionManager->flash( 'error', 'User not found' );
 			header( 'Location: /admin/users' );
 			exit;
 		}
 
 		// Generate CSRF token
-		$CsrfManager = new CsrfTokenManager( $this->_SessionManager );
-		Registry::getInstance()->set( 'Auth.CsrfToken', $CsrfManager->getToken() );
+		$csrfManager = new CsrfTokenManager( $this->_sessionManager );
+		Registry::getInstance()->set( 'Auth.CsrfToken', $csrfManager->getToken() );
 
-		$ViewData = [
+		$viewData = [
 			'Title' => 'Edit User | ' . $this->getName(),
 			'Description' => 'Edit User',
-			'User' => $User,
+			'User' => $currentUser,
 			'user' => $user,
 			'roles' => [User::ROLE_ADMIN, User::ROLE_EDITOR, User::ROLE_AUTHOR, User::ROLE_SUBSCRIBER]
 		];
 
 		@http_response_code( HttpResponseStatus::OK->value );
 
-		$View = new Html();
-		$View->setController( 'Admin/Users' )
+		$view = new Html();
+		$view->setController( 'Admin/Users' )
 			 ->setLayout( 'admin' )
 			 ->setPage( 'edit' );
 
-		return $View->render( $ViewData );
+		return $view->render( $viewData );
 	}
 
 	/**
 	 * Update user
+	 * @param array $parameters
+	 * @return string
+	 * @throws \Exception
 	 */
-	public function update( array $Parameters ): string
+	public function update( array $parameters ): string
 	{
-		$id = (int)$Parameters['id'];
-		$user = $this->_Repository->findById( $id );
+		$id = (int)$parameters['id'];
+		$user = $this->_repository->findById( $id );
 
 		if( !$user )
 		{
-			$this->_SessionManager->flash( 'error', 'User not found' );
+			$this->_sessionManager->flash( 'error', 'User not found' );
 			header( 'Location: /admin/users' );
 			exit;
 		}
@@ -210,24 +229,24 @@ class UserController extends Content
 		// Update password if provided
 		if( !empty( $password ) )
 		{
-			if( !$this->_Hasher->meetsRequirements( $password ) )
+			if( !$this->_hasher->meetsRequirements( $password ) )
 			{
-				$this->_SessionManager->flash( 'error', 'Password does not meet requirements' );
+				$this->_sessionManager->flash( 'error', 'Password does not meet requirements' );
 				header( 'Location: /admin/users/' . $id . '/edit' );
 				exit;
 			}
 
-			$user->setPasswordHash( $this->_Hasher->hash( $password ) );
+			$user->setPasswordHash( $this->_hasher->hash( $password ) );
 		}
 
 		try
 		{
-			$this->_Repository->update( $user );
-			$this->_SessionManager->flash( 'success', 'User updated successfully' );
+			$this->_repository->update( $user );
+			$this->_sessionManager->flash( 'success', 'User updated successfully' );
 		}
 		catch( \Exception $e )
 		{
-			$this->_SessionManager->flash( 'error', 'Failed to update user: ' . $e->getMessage() );
+			$this->_sessionManager->flash( 'error', 'Failed to update user: ' . $e->getMessage() );
 		}
 
 		header( 'Location: /admin/users' );
@@ -236,51 +255,34 @@ class UserController extends Content
 
 	/**
 	 * Delete user
+	 * @param array $parameters
+	 * @return string
+	 * @throws \Exception
 	 */
-	public function destroy( array $Parameters ): string
+	public function destroy( array $parameters ): string
 	{
-		$id = (int)$Parameters['id'];
-		$CurrentUser = Registry::getInstance()->get( 'Auth.User' );
+		$id = (int)$parameters['id'];
+		$currentUser = Registry::getInstance()->get( 'Auth.User' );
 
 		// Prevent self-deletion
-		if( $CurrentUser && $CurrentUser->getId() === $id )
+		if( $currentUser && $currentUser->getId() === $id )
 		{
-			$this->_SessionManager->flash( 'error', 'Cannot delete your own account' );
+			$this->_sessionManager->flash( 'error', 'Cannot delete your own account' );
 			header( 'Location: /admin/users' );
 			exit;
 		}
 
 		try
 		{
-			$this->_Repository->delete( $id );
-			$this->_SessionManager->flash( 'success', 'User deleted successfully' );
+			$this->_repository->delete( $id );
+			$this->_sessionManager->flash( 'success', 'User deleted successfully' );
 		}
 		catch( \Exception $e )
 		{
-			$this->_SessionManager->flash( 'error', 'Failed to delete user: ' . $e->getMessage() );
+			$this->_sessionManager->flash( 'error', 'Failed to delete user: ' . $e->getMessage() );
 		}
 
 		header( 'Location: /admin/users' );
 		exit;
-	}
-
-	/**
-	 * Get database configuration from settings
-	 */
-	private function getDatabaseConfig( SettingManager $Settings ): array
-	{
-		$config = [];
-		$settingNames = $Settings->getSectionSettingNames( 'database' );
-
-		foreach( $settingNames as $name )
-		{
-			$value = $Settings->get( 'database', $name );
-			if( $value !== null )
-			{
-				$config[$name] = ( $name === 'port' ) ? (int)$value : $value;
-			}
-		}
-
-		return $config;
 	}
 }

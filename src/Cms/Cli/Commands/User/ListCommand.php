@@ -4,14 +4,14 @@ namespace Neuron\Cms\Cli\Commands\User;
 
 use Neuron\Cli\Commands\Command;
 use Neuron\Cms\Repositories\DatabaseUserRepository;
-use Neuron\Data\Setting\SettingManager;
-use Neuron\Data\Setting\Source\Yaml;
+use Neuron\Patterns\Registry;
 
 /**
  * List all users
  */
 class ListCommand extends Command
 {
+
 	/**
 	 * @inheritDoc
 	 */
@@ -39,7 +39,7 @@ class ListCommand extends Command
 	/**
 	 * Execute the command
 	 */
-	public function execute( array $Parameters = [] ): int
+	public function execute( array $parameters = [] ): int
 	{
 		$repository = $this->getUserRepository();
 		if( !$repository )
@@ -51,13 +51,13 @@ class ListCommand extends Command
 
 		if( empty( $users ) )
 		{
-			$this->output( "\nℹ️  No users found.\n" );
+			$this->output->info( "No users found." );
 			return 0;
 		}
 
-		$this->output( "\n" );
+		$this->output->writeln( "" );
 		$this->displayUsersTable( $users );
-		$this->output( "\nTotal users: " . count( $users ) . "\n" );
+		$this->output->writeln( "\nTotal users: " . count( $users ) );
 
 		return 0;
 	}
@@ -65,7 +65,7 @@ class ListCommand extends Command
 	/**
 	 * Display users in a formatted table
 	 */
-	private function displayUsersTable( array $Users ): void
+	private function displayUsersTable( array $users ): void
 	{
 		// Calculate column widths
 		$idWidth = 4;
@@ -76,8 +76,8 @@ class ListCommand extends Command
 		$createdWidth = 19;
 
 		// Header
-		$this->output( str_repeat( '─', $idWidth + $usernameWidth + $emailWidth + $roleWidth + $statusWidth + $createdWidth + 17 ) );
-		$this->output(
+		$this->output->writeln( str_repeat( '─', $idWidth + $usernameWidth + $emailWidth + $roleWidth + $statusWidth + $createdWidth + 17 ) );
+		$this->output->writeln(
 			$this->pad( 'ID', $idWidth ) . ' │ ' .
 			$this->pad( 'Username', $usernameWidth ) . ' │ ' .
 			$this->pad( 'Email', $emailWidth ) . ' │ ' .
@@ -85,12 +85,12 @@ class ListCommand extends Command
 			$this->pad( 'Status', $statusWidth ) . ' │ ' .
 			$this->pad( 'Created', $createdWidth )
 		);
-		$this->output( str_repeat( '─', $idWidth + $usernameWidth + $emailWidth + $roleWidth + $statusWidth + $createdWidth + 17 ) );
+		$this->output->writeln( str_repeat( '─', $idWidth + $usernameWidth + $emailWidth + $roleWidth + $statusWidth + $createdWidth + 17 ) );
 
 		// Rows
-		foreach( $Users as $user )
+		foreach( $users as $user )
 		{
-			$this->output(
+			$this->output->writeln(
 				$this->pad( (string)$user->getId(), $idWidth ) . ' │ ' .
 				$this->pad( $this->truncate( $user->getUsername(), $usernameWidth ), $usernameWidth ) . ' │ ' .
 				$this->pad( $this->truncate( $user->getEmail(), $emailWidth ), $emailWidth ) . ' │ ' .
@@ -100,41 +100,41 @@ class ListCommand extends Command
 			);
 		}
 
-		$this->output( str_repeat( '─', $idWidth + $usernameWidth + $emailWidth + $roleWidth + $statusWidth + $createdWidth + 17 ) );
+		$this->output->writeln( str_repeat( '─', $idWidth + $usernameWidth + $emailWidth + $roleWidth + $statusWidth + $createdWidth + 17 ) );
 	}
 
 	/**
 	 * Format user status
 	 */
-	private function formatStatus( $User ): string
+	private function formatStatus( $user ): string
 	{
-		if( $User->isLockedOut() )
+		if( $user->isLockedOut() )
 		{
 			return '🔒 Locked';
 		}
 
-		return $User->getStatus();
+		return $user->getStatus();
 	}
 
 	/**
 	 * Pad string to width
 	 */
-	private function pad( string $Text, int $Width ): string
+	private function pad( string $text, int $width ): string
 	{
-		return str_pad( $Text, $Width );
+		return str_pad( $text, $width );
 	}
 
 	/**
 	 * Truncate string to width
 	 */
-	private function truncate( string $Text, int $Width ): string
+	private function truncate( string $text, int $width ): string
 	{
-		if( strlen( $Text ) <= $Width )
+		if( strlen( $text ) <= $width )
 		{
-			return $Text;
+			return $text;
 		}
 
-		return substr( $Text, 0, $Width - 3 ) . '...';
+		return substr( $text, 0, $width - 3 ) . '...';
 	}
 
 	/**
@@ -142,84 +142,24 @@ class ListCommand extends Command
 	 */
 	private function getUserRepository(): ?DatabaseUserRepository
 	{
-		$configFile = getcwd() . '/config/config.yaml';
-
-		if( !file_exists( $configFile ) )
-		{
-			$this->output( "\n❌ Configuration file not found at: $configFile" );
-			$this->output( "Please run: php neuron cms:install\n" );
-			return null;
-		}
-
 		try
 		{
-			$yaml = new Yaml( $configFile );
-			$settings = new SettingManager( $yaml );
+			$settings = Registry::getInstance()->get( 'Settings' );
 
-			// Get database configuration
-			$dbConfig = $this->getDatabaseConfig( $settings );
-
-			if( !$dbConfig )
+			if( !$settings )
 			{
-				$this->output( "\n❌ Database configuration not found!" );
-				$this->output( "Please run: php neuron cms:install\n" );
+				$this->output->error( "Application not initialized: Settings not found in Registry" );
+				$this->output->writeln( "This is a configuration error - the application should load settings into the Registry" );
 				return null;
 			}
 
-			return new DatabaseUserRepository( $dbConfig );
+			return new DatabaseUserRepository( $settings );
 		}
 		catch( \Exception $e )
 		{
-			$this->output( "\n❌ Database connection failed: " . $e->getMessage() . "\n" );
+			$this->output->error( "Database connection failed: " . $e->getMessage() );
 			return null;
 		}
 	}
 
-	/**
-	 * Get database configuration from settings
-	 */
-	private function getDatabaseConfig( SettingManager $Settings ): ?array
-	{
-		try
-		{
-			$settingNames = $Settings->getSectionSettingNames( 'database' );
-
-			if( empty( $settingNames ) )
-			{
-				return null;
-			}
-
-			$config = [];
-			foreach( $settingNames as $name )
-			{
-				$value = $Settings->get( 'database', $name );
-				if( $value !== null )
-				{
-					// Convert string values to appropriate types
-					if( $name === 'port' )
-					{
-						$config[$name] = (int)$value;
-					}
-					else
-					{
-						$config[$name] = $value;
-					}
-				}
-			}
-
-			return $config;
-		}
-		catch( \Exception $e )
-		{
-			return null;
-		}
-	}
-
-	/**
-	 * Output message
-	 */
-	private function output( string $Message ): void
-	{
-		echo $Message . "\n";
-	}
 }

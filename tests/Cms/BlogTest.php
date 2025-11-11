@@ -47,8 +47,8 @@ class BlogTest extends TestCase
 			$this->markTestSkipped( 'SiteController class not available in test environment' );
 		}
 		
-		$Blog = new Blog( $this->Router );
-		$this->assertInstanceOf( Blog::class, $Blog );
+		$blog = new Blog( $this->Router );
+		$this->assertInstanceOf( Blog::class, $blog );
 	}
 
 	public function testRepository()
@@ -59,14 +59,14 @@ class BlogTest extends TestCase
 			$this->markTestSkipped( 'SiteController class not available in test environment' );
 		}
 
-		$Blog = new Blog( $this->Router );
+		$blog = new Blog( $this->Router );
 
 		// Check that the repository is set correctly
-		$this->assertInstanceOf( Repository::class, $Blog->getRepository() );
+		$this->assertInstanceOf( Repository::class, $blog->getRepository() );
 
 		// Set a mock repository and check it
-		$Blog->setRepository( $this->Repository );
-		$this->assertSame( $this->Repository, $Blog->getRepository() );
+		$blog->setRepository( $this->Repository );
+		$this->assertSame( $this->Repository, $blog->getRepository() );
 	}
 	
 	/**
@@ -81,40 +81,40 @@ class BlogTest extends TestCase
 		}
 		
 		// Create a partial mock that only mocks specific methods
-		$Blog = $this->getMockBuilder( Blog::class )
+		$blog = $this->getMockBuilder( Blog::class )
 			->setConstructorArgs( [ $this->Router ] )
 			->onlyMethods( [ 'renderHtml', 'getName', 'getTitle', 'getDescription' ] )
 			->getMock();
-		
-		$Blog->expects( $this->once() )
+
+		$blog->expects( $this->once() )
 			->method( 'getName' )
 			->willReturn( 'Test Blog' );
-		
-		$Blog->expects( $this->once() )
+
+		$blog->expects( $this->once() )
 			->method( 'getTitle' )
 			->willReturn( 'Blog Title' );
-		
-		$Blog->expects( $this->once() )
+
+		$blog->expects( $this->once() )
 			->method( 'getDescription' )
 			->willReturn( 'Blog Description' );
-		
-		$Blog->expects( $this->once() )
+
+		$blog->expects( $this->once() )
 			->method( 'renderHtml' )
 			->with(
 				HttpResponseStatus::OK,
-				$this->callback( function( $Data ) {
-					return isset( $Data['Title'] ) &&
-						   isset( $Data['Description'] ) &&
-						   array_key_exists( 'Articles', $Data ) &&
-						   array_key_exists( 'Categories', $Data ) &&
-						   array_key_exists( 'Tags', $Data );
+				$this->callback( function( $data ) {
+					return isset( $data['Title'] ) &&
+						   isset( $data['Description'] ) &&
+						   array_key_exists( 'Articles', $data ) &&
+						   array_key_exists( 'Categories', $data ) &&
+						   array_key_exists( 'Tags', $data );
 				}),
 				'index'
 			)
 			->willReturn( '<html>Index Page</html>' );
-		
-		$Result = $Blog->index( [], null );
-		$this->assertEquals( '<html>Index Page</html>', $Result );
+
+		$result = $blog->index( [], null );
+		$this->assertEquals( '<html>Index Page</html>', $result );
 	}
 	
 	/**
@@ -129,59 +129,59 @@ class BlogTest extends TestCase
 		}
 		
 		// Create mock article
-		$Article = $this->createMock( Article::class );
-		$Article->expects( $this->any() )
+		$article = $this->createMock( Article::class );
+		$article->expects( $this->any() )
 			->method( 'getTitle' )
 			->willReturn( 'Test Article' );
-		
+
 		// Create Blog mock with repository that returns the article
-		$Blog = $this->getMockBuilder( Blog::class )
+		$blog = $this->getMockBuilder( Blog::class )
 			->setConstructorArgs( [ $this->Router ] )
 			->onlyMethods( [ 'renderHtml', 'getName' ] )
 			->getMock();
-		
+
 		// Use reflection to set the private repository property
-		$Reflection = new \ReflectionClass( $Blog );
-		$Property = $Reflection->getProperty( 'repository' );
-		$Property->setAccessible( true );
-		
-		$MockRepo = $this->createMock( Repository::class );
-		$MockRepo->expects( $this->once() )
+		$reflection = new \ReflectionClass( $blog );
+		$property = $reflection->getProperty( 'repository' );
+		$property->setAccessible( true );
+
+		$mockRepo = $this->createMock( Repository::class );
+		$mockRepo->expects( $this->once() )
 			->method( 'getArticleBySlug' )
 			->with( 'test-article' )
-			->willReturn( $Article );
-		
-		$MockRepo->expects( $this->any() )
+			->willReturn( $article );
+
+		$mockRepo->expects( $this->any() )
 			->method( 'getCategories' )
 			->willReturn( [] );
-		
-		$MockRepo->expects( $this->any() )
+
+		$mockRepo->expects( $this->any() )
 			->method( 'getTags' )
 			->willReturn( [] );
-		
-		$Property->setValue( $Blog, $MockRepo );
-		
-		$Blog->expects( $this->once() )
+
+		$property->setValue( $blog, $mockRepo );
+
+		$blog->expects( $this->once() )
 			->method( 'getName' )
 			->willReturn( 'Test Blog' );
-		
-		$Blog->expects( $this->once() )
+
+		$blog->expects( $this->once() )
 			->method( 'renderHtml' )
 			->with(
 				HttpResponseStatus::OK,
-				$this->callback( function( $Data ) use ( $Article ) {
-					return isset( $Data['Article'] ) &&
-						   $Data['Article'] === $Article &&
-						   isset( $Data['Title'] ) &&
-						   $Data['Title'] === 'Test Article | Test Blog';
+				$this->callback( function( $data ) use ( $article ) {
+					return isset( $data['Article'] ) &&
+						   $data['Article'] === $article &&
+						   isset( $data['Title'] ) &&
+						   $data['Title'] === 'Test Article | Test Blog';
 				}),
 				'show'
 			)
 			->willReturn( '<html>Article Page</html>' );
-		
-		$Parameters = [ 'title' => 'test-article' ];
-		$Result = $Blog->show( $Parameters, null );
-		$this->assertEquals( '<html>Article Page</html>', $Result );
+
+		$parameters = [ 'title' => 'test-article' ];
+		$result = $blog->show( $parameters, null );
+		$this->assertEquals( '<html>Article Page</html>', $result );
 	}
 	
 	/**
@@ -196,53 +196,53 @@ class BlogTest extends TestCase
 		}
 		
 		// Create Blog mock
-		$Blog = $this->getMockBuilder( Blog::class )
+		$blog = $this->getMockBuilder( Blog::class )
 			->setConstructorArgs( [ $this->Router ] )
 			->onlyMethods( [ 'renderHtml', 'getName' ] )
 			->getMock();
-		
+
 		// Use reflection to set the private repository property
-		$Reflection = new \ReflectionClass( $Blog );
-		$Property = $Reflection->getProperty( 'repository' );
-		$Property->setAccessible( true );
-		
-		$MockRepo = $this->createMock( Repository::class );
-		$MockRepo->expects( $this->once() )
+		$reflection = new \ReflectionClass( $blog );
+		$property = $reflection->getProperty( 'repository' );
+		$property->setAccessible( true );
+
+		$mockRepo = $this->createMock( Repository::class );
+		$mockRepo->expects( $this->once() )
 			->method( 'getArticleBySlug' )
 			->with( 'missing-article' )
 			->willThrowException( new ArticleNotFound( 'Not found' ) );
-		
-		$MockRepo->expects( $this->any() )
+
+		$mockRepo->expects( $this->any() )
 			->method( 'getCategories' )
 			->willReturn( [] );
-		
-		$MockRepo->expects( $this->any() )
+
+		$mockRepo->expects( $this->any() )
 			->method( 'getTags' )
 			->willReturn( [] );
-		
-		$Property->setValue( $Blog, $MockRepo );
-		
-		$Blog->expects( $this->once() )
+
+		$property->setValue( $blog, $mockRepo );
+
+		$blog->expects( $this->once() )
 			->method( 'getName' )
 			->willReturn( 'Test Blog' );
-		
-		$Blog->expects( $this->once() )
+
+		$blog->expects( $this->once() )
 			->method( 'renderHtml' )
 			->with(
 				HttpResponseStatus::OK,
-				$this->callback( function( $Data ) {
-					return isset( $Data['Article'] ) &&
-						   $Data['Article'] instanceof Article &&
-						   isset( $Data['Title'] ) &&
-						   $Data['Title'] === 'Article Not Found | Test Blog';
+				$this->callback( function( $data ) {
+					return isset( $data['Article'] ) &&
+						   $data['Article'] instanceof Article &&
+						   isset( $data['Title'] ) &&
+						   $data['Title'] === 'Article Not Found | Test Blog';
 				}),
 				'show'
 			)
 			->willReturn( '<html>Not Found Page</html>' );
-		
-		$Parameters = [ 'title' => 'missing-article' ];
-		$Result = $Blog->show( $Parameters, null );
-		$this->assertEquals( '<html>Not Found Page</html>', $Result );
+
+		$parameters = [ 'title' => 'missing-article' ];
+		$result = $blog->show( $parameters, null );
+		$this->assertEquals( '<html>Not Found Page</html>', $result );
 	}
 	
 	/**
@@ -256,53 +256,53 @@ class BlogTest extends TestCase
 			$this->markTestSkipped( 'SiteController class not available in test environment' );
 		}
 		
-		$Blog = $this->getMockBuilder( Blog::class )
+		$blog = $this->getMockBuilder( Blog::class )
 			->setConstructorArgs( [ $this->Router ] )
 			->onlyMethods( [ 'renderHtml', 'getName' ] )
 			->getMock();
-		
+
 		// Set up mock repository
-		$Reflection = new \ReflectionClass( $Blog );
-		$Property = $Reflection->getProperty( 'repository' );
-		$Property->setAccessible( true );
-		
-		$MockRepo = $this->createMock( Repository::class );
-		$MockRepo->expects( $this->once() )
+		$reflection = new \ReflectionClass( $blog );
+		$property = $reflection->getProperty( 'repository' );
+		$property->setAccessible( true );
+
+		$mockRepo = $this->createMock( Repository::class );
+		$mockRepo->expects( $this->once() )
 			->method( 'getArticlesByTag' )
 			->with( 'php' )
 			->willReturn( [] );
-		
-		$MockRepo->expects( $this->any() )
+
+		$mockRepo->expects( $this->any() )
 			->method( 'getCategories' )
 			->willReturn( [] );
-		
-		$MockRepo->expects( $this->any() )
+
+		$mockRepo->expects( $this->any() )
 			->method( 'getTags' )
 			->willReturn( [ 'php', 'javascript' ] );
-		
-		$Property->setValue( $Blog, $MockRepo );
-		
-		$Blog->expects( $this->once() )
+
+		$property->setValue( $blog, $mockRepo );
+
+		$blog->expects( $this->once() )
 			->method( 'getName' )
 			->willReturn( 'Test Blog' );
-		
-		$Blog->expects( $this->once() )
+
+		$blog->expects( $this->once() )
 			->method( 'renderHtml' )
 			->with(
 				HttpResponseStatus::OK,
-				$this->callback( function( $Data ) {
-					return isset( $Data['Tag'] ) &&
-						   $Data['Tag'] === 'php' &&
-						   isset( $Data['Title'] ) &&
-						   $Data['Title'] === 'Articles tagged with php | Test Blog';
+				$this->callback( function( $data ) {
+					return isset( $data['Tag'] ) &&
+						   $data['Tag'] === 'php' &&
+						   isset( $data['Title'] ) &&
+						   $data['Title'] === 'Articles tagged with php | Test Blog';
 				}),
 				'index'
 			)
 			->willReturn( '<html>Tag Page</html>' );
-		
-		$Parameters = [ 'tag' => 'php' ];
-		$Result = $Blog->tag( $Parameters, null );
-		$this->assertEquals( '<html>Tag Page</html>', $Result );
+
+		$parameters = [ 'tag' => 'php' ];
+		$result = $blog->tag( $parameters, null );
+		$this->assertEquals( '<html>Tag Page</html>', $result );
 	}
 	
 	/**
@@ -316,53 +316,53 @@ class BlogTest extends TestCase
 			$this->markTestSkipped( 'SiteController class not available in test environment' );
 		}
 		
-		$Blog = $this->getMockBuilder( Blog::class )
+		$blog = $this->getMockBuilder( Blog::class )
 			->setConstructorArgs( [ $this->Router ] )
 			->onlyMethods( [ 'renderHtml', 'getName' ] )
 			->getMock();
-		
+
 		// Set up mock repository
-		$Reflection = new \ReflectionClass( $Blog );
-		$Property = $Reflection->getProperty( 'repository' );
-		$Property->setAccessible( true );
-		
-		$MockRepo = $this->createMock( Repository::class );
-		$MockRepo->expects( $this->once() )
+		$reflection = new \ReflectionClass( $blog );
+		$property = $reflection->getProperty( 'repository' );
+		$property->setAccessible( true );
+
+		$mockRepo = $this->createMock( Repository::class );
+		$mockRepo->expects( $this->once() )
 			->method( 'getArticlesByCategory' )
 			->with( 'tech' )
 			->willReturn( [] );
-		
-		$MockRepo->expects( $this->any() )
+
+		$mockRepo->expects( $this->any() )
 			->method( 'getCategories' )
 			->willReturn( [ 'tech', 'news' ] );
-		
-		$MockRepo->expects( $this->any() )
+
+		$mockRepo->expects( $this->any() )
 			->method( 'getTags' )
 			->willReturn( [] );
-		
-		$Property->setValue( $Blog, $MockRepo );
-		
-		$Blog->expects( $this->once() )
+
+		$property->setValue( $blog, $mockRepo );
+
+		$blog->expects( $this->once() )
 			->method( 'getName' )
 			->willReturn( 'Test Blog' );
-		
-		$Blog->expects( $this->once() )
+
+		$blog->expects( $this->once() )
 			->method( 'renderHtml' )
 			->with(
 				HttpResponseStatus::OK,
-				$this->callback( function( $Data ) {
-					return isset( $Data['Category'] ) &&
-						   $Data['Category'] === 'tech' &&
-						   isset( $Data['Title'] ) &&
-						   $Data['Title'] === 'Articles in campaign tech | Test Blog';
+				$this->callback( function( $data ) {
+					return isset( $data['Category'] ) &&
+						   $data['Category'] === 'tech' &&
+						   isset( $data['Title'] ) &&
+						   $data['Title'] === 'Articles in campaign tech | Test Blog';
 				}),
 				'index'
 			)
 			->willReturn( '<html>Category Page</html>' );
-		
-		$Parameters = [ 'category' => 'tech' ];
-		$Result = $Blog->category( $Parameters, null );
-		$this->assertEquals( '<html>Category Page</html>', $Result );
+
+		$parameters = [ 'category' => 'tech' ];
+		$result = $blog->category( $parameters, null );
+		$this->assertEquals( '<html>Category Page</html>', $result );
 	}
 	
 	/**
@@ -376,22 +376,22 @@ class BlogTest extends TestCase
 			$this->markTestSkipped( 'SiteController class not available in test environment' );
 		}
 		
-		$Blog = $this->getMockBuilder( Blog::class )
+		$blog = $this->getMockBuilder( Blog::class )
 			->setConstructorArgs( [ $this->Router ] )
 			->onlyMethods( [ 'getName', 'getDescription', 'getUrl', 'getRssUrl' ] )
 			->getMock();
-		
+
 		// Set up mock repository
-		$Reflection = new \ReflectionClass( $Blog );
-		$Property = $Reflection->getProperty( 'repository' );
-		$Property->setAccessible( true );
-		
-		$MockRepo = $this->createMock( Repository::class );
-		$MockRepo->expects( $this->once() )
+		$reflection = new \ReflectionClass( $blog );
+		$property = $reflection->getProperty( 'repository' );
+		$property->setAccessible( true );
+
+		$mockRepo = $this->createMock( Repository::class );
+		$mockRepo->expects( $this->once() )
 			->method( 'getArticles' )
 			->willReturn( [] );
-		
-		$MockRepo->expects( $this->once() )
+
+		$mockRepo->expects( $this->once() )
 			->method( 'getFeed' )
 			->with(
 				'Test Blog',
@@ -401,33 +401,33 @@ class BlogTest extends TestCase
 				[]
 			)
 			->willReturn( '<?xml version="1.0"?><rss>Feed Content</rss>' );
-		
-		$Property->setValue( $Blog, $MockRepo );
-		
-		$Blog->expects( $this->once() )
+
+		$property->setValue( $blog, $mockRepo );
+
+		$blog->expects( $this->once() )
 			->method( 'getName' )
 			->willReturn( 'Test Blog' );
-		
-		$Blog->expects( $this->once() )
+
+		$blog->expects( $this->once() )
 			->method( 'getDescription' )
 			->willReturn( 'Test Description' );
-		
-		$Blog->expects( $this->once() )
+
+		$blog->expects( $this->once() )
 			->method( 'getUrl' )
 			->willReturn( 'http://test.com' );
-		
-		$Blog->expects( $this->once() )
+
+		$blog->expects( $this->once() )
 			->method( 'getRssUrl' )
 			->willReturn( 'http://test.com/rss' );
-		
+
 		// The feed method calls die(), so we can't test it fully
 		// We'll test that it doesn't throw an exception before die()
 		$this->expectOutputString( '<?xml version="1.0"?><rss>Feed Content</rss>' );
-		
+
 		// Suppress the exit/die
 		try
 		{
-			$Blog->feed( [], null );
+			$blog->feed( [], null );
 		}
 		catch ( \Exception $e )
 		{

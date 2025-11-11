@@ -67,8 +67,8 @@ if (!function_exists('is_admin')) {
 	 */
 	function is_admin(): bool
 	{
-		$User = auth();
-		return $User && $User->isAdmin();
+		$user = auth();
+		return $user && $user->isAdmin();
 	}
 }
 
@@ -78,8 +78,8 @@ if (!function_exists('is_editor')) {
 	 */
 	function is_editor(): bool
 	{
-		$User = auth();
-		return $User && $User->isEditor();
+		$user = auth();
+		return $user && $user->isEditor();
 	}
 }
 
@@ -89,8 +89,8 @@ if (!function_exists('is_author')) {
 	 */
 	function is_author(): bool
 	{
-		$User = auth();
-		return $User && $User->isAuthor();
+		$user = auth();
+		return $user && $user->isAuthor();
 	}
 }
 
@@ -98,10 +98,10 @@ if (!function_exists('has_role')) {
 	/**
 	 * Check if user has a specific role
 	 */
-	function has_role(string $Role): bool
+	function has_role(string $role): bool
 	{
-		$User = auth();
-		return $User && $User->getRole() === $Role;
+		$user = auth();
+		return $user && $user->getRole() === $role;
 	}
 }
 
@@ -121,7 +121,7 @@ if (!function_exists('csrf_field')) {
 	 */
 	function csrf_field(): string
 	{
-		$Token = csrf_token();
-		return '<input type="hidden" name="csrf_token" value="' . htmlspecialchars($Token) . '">';
+		$token = csrf_token();
+		return '<input type="hidden" name="csrf_token" value="' . htmlspecialchars($token) . '">';
 	}
 }

@@ -22,82 +22,90 @@ use Exception;
  */
 class PasswordResetController extends Content
 {
-	private ?PasswordResetManager $_ResetManager;
-	private SessionManager $_SessionManager;
-	private CsrfTokenManager $_CsrfManager;
+	private ?PasswordResetManager $_resetManager;
+	private SessionManager $_sessionManager;
+	private CsrfTokenManager $_csrfManager;
 
+	/**
+	 * @param Application|null $app
+	 * @throws \Exception
+	 */
 	public function __construct( ?Application $app = null )
 	{
 		parent::__construct( $app );
 
 		// Get PasswordResetManager from Registry
-		$this->_ResetManager = Registry::getInstance()->get( 'PasswordResetManager' );
+		$this->_resetManager = Registry::getInstance()->get( 'PasswordResetManager' );
 
-		if( !$this->_ResetManager )
+		if( !$this->_resetManager )
 		{
 			throw new \RuntimeException( 'PasswordResetManager not found in Registry. Ensure password reset is properly configured.' );
 		}
 
 		// Initialize session and CSRF managers
-		$this->_SessionManager = new SessionManager();
-		$this->_SessionManager->start();
+		$this->_sessionManager = new SessionManager();
+		$this->_sessionManager->start();
 
-		$this->_CsrfManager = new CsrfTokenManager( $this->_SessionManager );
+		$this->_csrfManager = new CsrfTokenManager( $this->_sessionManager );
 	}
 
 	/**
 	 * Show forgot password form
+	 * @param array $parameters
+	 * @return string
 	 */
-	public function showForgotPasswordForm( array $Parameters ): string
+	public function showForgotPasswordForm( array $parameters ): string
 	{
-		$ViewData = [
+		$viewData = [
 			'Title' => 'Forgot Password | ' . $this->getName(),
 			'Description' => 'Reset your password',
 			'PageSubtitle' => 'Reset Password',
-			'CsrfToken' => $this->_CsrfManager->getToken(),
-			'Error' => $this->_SessionManager->getFlash( 'error' ),
-			'Success' => $this->_SessionManager->getFlash( 'success' )
+			'CsrfToken' => $this->_csrfManager->getToken(),
+			'Error' => $this->_sessionManager->getFlash( 'error' ),
+			'Success' => $this->_sessionManager->getFlash( 'success' )
 		];
 
 		@http_response_code( HttpResponseStatus::OK->value );
 
-		$View = new Html();
-		$View->setController( 'Auth' )
+		$view = new Html();
+		$view->setController( 'Auth' )
 			 ->setLayout( 'auth' )
 			 ->setPage( 'forgot-password' );
 
-		return $View->render( $ViewData );
+		return $view->render( $viewData );
 	}
 
 	/**
 	 * Process forgot password request
+	 * @param array $parameters
+	 * @return string
 	 */
-	public function requestReset( array $Parameters ): string
+	public function requestReset( array $parameters ): string
 	{
 		// Validate CSRF token
-		$Token = $_POST['csrf_token'] ?? '';
-		if( !$this->_CsrfManager->validate( $Token ) )
+		$token = $_POST['csrf_token'] ?? '';
+		if( !$this->_csrfManager->validate( $token ) )
 		{
-			$this->_SessionManager->flash( 'error', 'Invalid CSRF token. Please try again.' );
+			$this->_sessionManager->flash( 'error', 'Invalid CSRF token. Please try again.' );
 			header( 'Location: /forgot-password' );
 			exit;
 		}
 
 		// Get email
-		$Email = $_POST['email'] ?? '';
+		$email = $_POST['email'] ?? '';
 
 		// Validate input
-		if( empty( $Email ) )
+		if( empty( $email ) )
 		{
-			$this->_SessionManager->flash( 'error', 'Please enter your email address.' );
+			$this->_sessionManager->flash( 'error', 'Please enter your email address.' );
 			header( 'Location: /forgot-password' );
 			exit;
 		}
 
 		// Validate email format
-		if( !filter_var( $Email, FILTER_VALIDATE_EMAIL ) )
+		if( !filter_var( $email, FILTER_VALIDATE_EMAIL ) )
 		{
-			$this->_SessionManager->flash( 'error', 'Please enter a valid email address.' );
+			$this->_sessionManager->flash( 'error', 'Please enter a valid email address.' );
 			header( 'Location: /forgot-password' );
 			exit;
 		}
@@ -105,10 +113,10 @@ class PasswordResetController extends Content
 		try
 		{
 			// Request password reset
-			$this->_ResetManager->requestReset( $Email );
+			$this->_resetManager->requestReset( $email );
 
 			// Always show success message (don't reveal if email exists)
-			$this->_SessionManager->flash(
+			$this->_sessionManager->flash(
 				'success',
 				'If an account exists with that email address, you will receive password reset instructions shortly.'
 			);
@@ -117,7 +125,7 @@ class PasswordResetController extends Content
 		{
 			// Log error but show generic message to user
 			Log::error('Password reset request failed: ' . $e->getMessage() );
-			$this->_SessionManager->flash(
+			$this->_sessionManager->flash(
 				'error',
 				'Unable to process password reset request. Please try again later.'
 			);
@@ -129,107 +137,111 @@ class PasswordResetController extends Content
 
 	/**
 	 * Show reset password form (with token)
+	 * @param array $parameters
+	 * @return string
 	 */
-	public function showResetForm( array $Parameters ): string
+	public function showResetForm( array $parameters ): string
 	{
 		// Get token from query string
-		$Token = $_GET['token'] ?? '';
+		$token = $_GET['token'] ?? '';
 
-		if( empty( $Token ) )
+		if( empty( $token ) )
 		{
-			$this->_SessionManager->flash( 'error', 'Invalid or missing reset token.' );
+			$this->_sessionManager->flash( 'error', 'Invalid or missing reset token.' );
 			header( 'Location: /forgot-password' );
 			exit;
 		}
 
 		// Validate token
-		$TokenObj = $this->_ResetManager->validateToken( $Token );
+		$tokenObj = $this->_resetManager->validateToken( $token );
 
-		if( !$TokenObj )
+		if( !$tokenObj )
 		{
-			$this->_SessionManager->flash( 'error', 'This password reset link is invalid or has expired.' );
+			$this->_sessionManager->flash( 'error', 'This password reset link is invalid or has expired.' );
 			header( 'Location: /forgot-password' );
 			exit;
 		}
 
-		$ViewData = [
+		$viewData = [
 			'Title' => 'Reset Password | ' . $this->getName(),
 			'Description' => 'Enter your new password',
 			'PageSubtitle' => 'Create New Password',
-			'CsrfToken' => $this->_CsrfManager->getToken(),
-			'Error' => $this->_SessionManager->getFlash( 'error' ),
-			'Success' => $this->_SessionManager->getFlash( 'success' ),
-			'Token' => $Token,
-			'Email' => $TokenObj->getEmail()
+			'CsrfToken' => $this->_csrfManager->getToken(),
+			'Error' => $this->_sessionManager->getFlash( 'error' ),
+			'Success' => $this->_sessionManager->getFlash( 'success' ),
+			'Token' => $token,
+			'Email' => $tokenObj->getEmail()
 		];
 
 		@http_response_code( HttpResponseStatus::OK->value );
 
-		$View = new Html();
-		$View->setController( 'Auth' )
+		$view = new Html();
+		$view->setController( 'Auth' )
 			 ->setLayout( 'auth' )
 			 ->setPage( 'reset-password' );
 
-		return $View->render( $ViewData );
+		return $view->render( $viewData );
 	}
 
 	/**
 	 * Process password reset
+	 * @param array $parameters
+	 * @return string
 	 */
-	public function resetPassword( array $Parameters ): string
+	public function resetPassword( array $parameters ): string
 	{
 		// Validate CSRF token
-		$CsrfToken = $_POST['csrf_token'] ?? '';
-		if( !$this->_CsrfManager->validate( $CsrfToken ) )
+		$csrfToken = $_POST['csrf_token'] ?? '';
+		if( !$this->_csrfManager->validate( $csrfToken ) )
 		{
-			$this->_SessionManager->flash( 'error', 'Invalid CSRF token. Please try again.' );
+			$this->_sessionManager->flash( 'error', 'Invalid CSRF token. Please try again.' );
 			header( 'Location: /forgot-password' );
 			exit;
 		}
 
 		// Get form data
-		$Token = $_POST['token'] ?? '';
-		$Password = $_POST['password'] ?? '';
-		$PasswordConfirmation = $_POST['password_confirmation'] ?? '';
+		$token = $_POST['token'] ?? '';
+		$password = $_POST['password'] ?? '';
+		$passwordConfirmation = $_POST['password_confirmation'] ?? '';
 
 		// Validate input
-		if( empty( $Token ) || empty( $Password ) || empty( $PasswordConfirmation ) )
+		if( empty( $token ) || empty( $password ) || empty( $passwordConfirmation ) )
 		{
-			$this->_SessionManager->flash( 'error', 'All fields are required.' );
-			header( 'Location: /reset-password?token=' . urlencode( $Token ) );
+			$this->_sessionManager->flash( 'error', 'All fields are required.' );
+			header( 'Location: /reset-password?token=' . urlencode( $token ) );
 			exit;
 		}
 
 		// Validate passwords match
-		if( $Password !== $PasswordConfirmation )
+		if( $password !== $passwordConfirmation )
 		{
-			$this->_SessionManager->flash( 'error', 'Passwords do not match.' );
-			header( 'Location: /reset-password?token=' . urlencode( $Token ) );
+			$this->_sessionManager->flash( 'error', 'Passwords do not match.' );
+			header( 'Location: /reset-password?token=' . urlencode( $token ) );
 			exit;
 		}
 
 		try
 		{
 			// Attempt password reset
-			$Success = $this->_ResetManager->resetPassword( $Token, $Password );
+			$success = $this->_resetManager->resetPassword( $token, $password );
 
-			if( !$Success )
+			if( !$success )
 			{
-				$this->_SessionManager->flash( 'error', 'This password reset link is invalid or has expired.' );
+				$this->_sessionManager->flash( 'error', 'This password reset link is invalid or has expired.' );
 				header( 'Location: /forgot-password' );
 				exit;
 			}
 
 			// Success
-			$this->_SessionManager->flash( 'success', 'Your password has been reset successfully. You can now log in.' );
+			$this->_sessionManager->flash( 'success', 'Your password has been reset successfully. You can now log in.' );
 			header( 'Location: /login' );
 			exit;
 		}
 		catch( Exception $e )
 		{
 			// Show validation or other errors
-			$this->_SessionManager->flash( 'error', $e->getMessage() );
-			header( 'Location: /reset-password?token=' . urlencode( $Token ) );
+			$this->_sessionManager->flash( 'error', $e->getMessage() );
+			header( 'Location: /reset-password?token=' . urlencode( $token ) );
 			exit;
 		}
 	}

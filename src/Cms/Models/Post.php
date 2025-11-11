@@ -12,23 +12,23 @@ use Exception;
  */
 class Post
 {
-	private ?int $_Id = null;
-	private string $_Title;
-	private string $_Slug;
-	private string $_Body;
-	private ?string $_Excerpt = null;
-	private ?string $_FeaturedImage = null;
-	private int $_AuthorId;
-	private string $_Status = 'draft';
-	private ?DateTimeImmutable $_PublishedAt = null;
-	private int $_ViewCount = 0;
-	private ?DateTimeImmutable $_CreatedAt = null;
-	private ?DateTimeImmutable $_UpdatedAt = null;
+	private ?int $_id = null;
+	private string $_title;
+	private string $_slug;
+	private string $_body;
+	private ?string $_excerpt = null;
+	private ?string $_featuredImage = null;
+	private int $_authorId;
+	private string $_status = 'draft';
+	private ?DateTimeImmutable $_publishedAt = null;
+	private int $_viewCount = 0;
+	private ?DateTimeImmutable $_createdAt = null;
+	private ?DateTimeImmutable $_updatedAt = null;
 
 	// Relationships - these will be populated by the repository
-	private ?User $_Author = null;
-	private array $_Categories = [];
-	private array $_Tags = [];
+	private ?User $_author = null;
+	private array $_categories = [];
+	private array $_tags = [];
 
 	/**
 	 * Post status constants
@@ -39,7 +39,7 @@ class Post
 
 	public function __construct()
 	{
-		$this->_CreatedAt = new DateTimeImmutable();
+		$this->_createdAt = new DateTimeImmutable();
 	}
 
 	/**
@@ -47,15 +47,15 @@ class Post
 	 */
 	public function getId(): ?int
 	{
-		return $this->_Id;
+		return $this->_id;
 	}
 
 	/**
 	 * Set post ID
 	 */
-	public function setId( int $Id ): self
+	public function setId( int $id ): self
 	{
-		$this->_Id = $Id;
+		$this->_id = $id;
 		return $this;
 	}
 
@@ -64,15 +64,15 @@ class Post
 	 */
 	public function getTitle(): string
 	{
-		return $this->_Title;
+		return $this->_title;
 	}
 
 	/**
 	 * Set title
 	 */
-	public function setTitle( string $Title ): self
+	public function setTitle( string $title ): self
 	{
-		$this->_Title = $Title;
+		$this->_title = $title;
 		return $this;
 	}
 
@@ -81,15 +81,15 @@ class Post
 	 */
 	public function getSlug(): string
 	{
-		return $this->_Slug;
+		return $this->_slug;
 	}
 
 	/**
 	 * Set slug
 	 */
-	public function setSlug( string $Slug ): self
+	public function setSlug( string $slug ): self
 	{
-		$this->_Slug = $Slug;
+		$this->_slug = $slug;
 		return $this;
 	}
 
@@ -98,15 +98,15 @@ class Post
 	 */
 	public function getBody(): string
 	{
-		return $this->_Body;
+		return $this->_body;
 	}
 
 	/**
 	 * Set body content
 	 */
-	public function setBody( string $Body ): self
+	public function setBody( string $body ): self
 	{
-		$this->_Body = $Body;
+		$this->_body = $body;
 		return $this;
 	}
 
@@ -115,15 +115,15 @@ class Post
 	 */
 	public function getExcerpt(): ?string
 	{
-		return $this->_Excerpt;
+		return $this->_excerpt;
 	}
 
 	/**
 	 * Set excerpt
 	 */
-	public function setExcerpt( ?string $Excerpt ): self
+	public function setExcerpt( ?string $excerpt ): self
 	{
-		$this->_Excerpt = $Excerpt;
+		$this->_excerpt = $excerpt;
 		return $this;
 	}
 
@@ -132,15 +132,15 @@ class Post
 	 */
 	public function getFeaturedImage(): ?string
 	{
-		return $this->_FeaturedImage;
+		return $this->_featuredImage;
 	}
 
 	/**
 	 * Set featured image
 	 */
-	public function setFeaturedImage( ?string $FeaturedImage ): self
+	public function setFeaturedImage( ?string $featuredImage ): self
 	{
-		$this->_FeaturedImage = $FeaturedImage;
+		$this->_featuredImage = $featuredImage;
 		return $this;
 	}
 
@@ -149,15 +149,15 @@ class Post
 	 */
 	public function getAuthorId(): int
 	{
-		return $this->_AuthorId;
+		return $this->_authorId;
 	}
 
 	/**
 	 * Set author ID
 	 */
-	public function setAuthorId( int $AuthorId ): self
+	public function setAuthorId( int $authorId ): self
 	{
-		$this->_AuthorId = $AuthorId;
+		$this->_authorId = $authorId;
 		return $this;
 	}
 
@@ -166,18 +166,18 @@ class Post
 	 */
 	public function getAuthor(): ?User
 	{
-		return $this->_Author;
+		return $this->_author;
 	}
 
 	/**
 	 * Set author
 	 */
-	public function setAuthor( ?User $Author ): self
+	public function setAuthor( ?User $author ): self
 	{
-		$this->_Author = $Author;
-		if( $Author && $Author->getId() )
+		$this->_author = $author;
+		if( $author && $author->getId() )
 		{
-			$this->_AuthorId = $Author->getId();
+			$this->_authorId = $author->getId();
 		}
 		return $this;
 	}
@@ -187,15 +187,15 @@ class Post
 	 */
 	public function getStatus(): string
 	{
-		return $this->_Status;
+		return $this->_status;
 	}
 
 	/**
 	 * Set status
 	 */
-	public function setStatus( string $Status ): self
+	public function setStatus( string $status ): self
 	{
-		$this->_Status = $Status;
+		$this->_status = $status;
 		return $this;
 	}
 
@@ -204,7 +204,7 @@ class Post
 	 */
 	public function isPublished(): bool
 	{
-		return $this->_Status === self::STATUS_PUBLISHED;
+		return $this->_status === self::STATUS_PUBLISHED;
 	}
 
 	/**
@@ -212,7 +212,7 @@ class Post
 	 */
 	public function isDraft(): bool
 	{
-		return $this->_Status === self::STATUS_DRAFT;
+		return $this->_status === self::STATUS_DRAFT;
 	}
 
 	/**
@@ -220,7 +220,7 @@ class Post
 	 */
 	public function isScheduled(): bool
 	{
-		return $this->_Status === self::STATUS_SCHEDULED;
+		return $this->_status === self::STATUS_SCHEDULED;
 	}
 
 	/**
@@ -228,15 +228,15 @@ class Post
 	 */
 	public function getPublishedAt(): ?DateTimeImmutable
 	{
-		return $this->_PublishedAt;
+		return $this->_publishedAt;
 	}
 
 	/**
 	 * Set published date
 	 */
-	public function setPublishedAt( ?DateTimeImmutable $PublishedAt ): self
+	public function setPublishedAt( ?DateTimeImmutable $publishedAt ): self
 	{
-		$this->_PublishedAt = $PublishedAt;
+		$this->_publishedAt = $publishedAt;
 		return $this;
 	}
 
@@ -245,15 +245,15 @@ class Post
 	 */
 	public function getViewCount(): int
 	{
-		return $this->_ViewCount;
+		return $this->_viewCount;
 	}
 
 	/**
 	 * Set view count
 	 */
-	public function setViewCount( int $ViewCount ): self
+	public function setViewCount( int $viewCount ): self
 	{
-		$this->_ViewCount = $ViewCount;
+		$this->_viewCount = $viewCount;
 		return $this;
 	}
 
@@ -262,7 +262,7 @@ class Post
 	 */
 	public function incrementViewCount(): self
 	{
-		$this->_ViewCount++;
+		$this->_viewCount++;
 		return $this;
 	}
 
@@ -271,15 +271,15 @@ class Post
 	 */
 	public function getCreatedAt(): ?DateTimeImmutable
 	{
-		return $this->_CreatedAt;
+		return $this->_createdAt;
 	}
 
 	/**
 	 * Set created timestamp
 	 */
-	public function setCreatedAt( DateTimeImmutable $CreatedAt ): self
+	public function setCreatedAt( DateTimeImmutable $createdAt ): self
 	{
-		$this->_CreatedAt = $CreatedAt;
+		$this->_createdAt = $createdAt;
 		return $this;
 	}
 
@@ -288,15 +288,15 @@ class Post
 	 */
 	public function getUpdatedAt(): ?DateTimeImmutable
 	{
-		return $this->_UpdatedAt;
+		return $this->_updatedAt;
 	}
 
 	/**
 	 * Set updated timestamp
 	 */
-	public function setUpdatedAt( ?DateTimeImmutable $UpdatedAt ): self
+	public function setUpdatedAt( ?DateTimeImmutable $updatedAt ): self
 	{
-		$this->_UpdatedAt = $UpdatedAt;
+		$this->_updatedAt = $updatedAt;
 		return $this;
 	}
 
@@ -307,28 +307,28 @@ class Post
 	 */
 	public function getCategories(): array
 	{
-		return $this->_Categories;
+		return $this->_categories;
 	}
 
 	/**
 	 * Set categories
 	 *
-	 * @param Category[] $Categories
+	 * @param Category[] $categories
 	 */
-	public function setCategories( array $Categories ): self
+	public function setCategories( array $categories ): self
 	{
-		$this->_Categories = $Categories;
+		$this->_categories = $categories;
 		return $this;
 	}
 
 	/**
 	 * Add category
 	 */
-	public function addCategory( Category $Category ): self
+	public function addCategory( Category $category ): self
 	{
-		if( !$this->hasCategory( $Category ) )
+		if( !$this->hasCategory( $category ) )
 		{
-			$this->_Categories[] = $Category;
+			$this->_categories[] = $category;
 		}
 		return $this;
 	}
@@ -336,11 +336,11 @@ class Post
 	/**
 	 * Remove category
 	 */
-	public function removeCategory( Category $Category ): self
+	public function removeCategory( Category $category ): self
 	{
-		$this->_Categories = array_filter(
-			$this->_Categories,
-			fn( $c ) => $c->getId() !== $Category->getId()
+		$this->_categories = array_filter(
+			$this->_categories,
+			fn( $c ) => $c->getId() !== $category->getId()
 		);
 		return $this;
 	}
@@ -348,11 +348,11 @@ class Post
 	/**
 	 * Check if post has category
 	 */
-	public function hasCategory( Category $Category ): bool
+	public function hasCategory( Category $category ): bool
 	{
-		foreach( $this->_Categories as $c )
+		foreach( $this->_categories as $c )
 		{
-			if( $c->getId() === $Category->getId() )
+			if( $c->getId() === $category->getId() )
 			{
 				return true;
 			}
@@ -367,28 +367,28 @@ class Post
 	 */
 	public function getTags(): array
 	{
-		return $this->_Tags;
+		return $this->_tags;
 	}
 
 	/**
 	 * Set tags
 	 *
-	 * @param Tag[] $Tags
+	 * @param Tag[] $tags
 	 */
-	public function setTags( array $Tags ): self
+	public function setTags( array $tags ): self
 	{
-		$this->_Tags = $Tags;
+		$this->_tags = $tags;
 		return $this;
 	}
 
 	/**
 	 * Add tag
 	 */
-	public function addTag( Tag $Tag ): self
+	public function addTag( Tag $tag ): self
 	{
-		if( !$this->hasTag( $Tag ) )
+		if( !$this->hasTag( $tag ) )
 		{
-			$this->_Tags[] = $Tag;
+			$this->_tags[] = $tag;
 		}
 		return $this;
 	}
@@ -396,11 +396,11 @@ class Post
 	/**
 	 * Remove tag
 	 */
-	public function removeTag( Tag $Tag ): self
+	public function removeTag( Tag $tag ): self
 	{
-		$this->_Tags = array_filter(
-			$this->_Tags,
-			fn( $t ) => $t->getId() !== $Tag->getId()
+		$this->_tags = array_filter(
+			$this->_tags,
+			fn( $t ) => $t->getId() !== $tag->getId()
 		);
 		return $this;
 	}
@@ -408,11 +408,11 @@ class Post
 	/**
 	 * Check if post has tag
 	 */
-	public function hasTag( Tag $Tag ): bool
+	public function hasTag( Tag $tag ): bool
 	{
-		foreach( $this->_Tags as $t )
+		foreach( $this->_tags as $t )
 		{
-			if( $t->getId() === $Tag->getId() )
+			if( $t->getId() === $tag->getId() )
 			{
 				return true;
 			}
@@ -423,72 +423,72 @@ class Post
 	/**
 	 * Create Post from array data
 	 *
-	 * @param array $Data Associative array of post data
+	 * @param array $data Associative array of post data
 	 * @return Post
 	 * @throws Exception
 	 */
-	public static function fromArray( array $Data ): Post
+	public static function fromArray( array $data ): Post
 	{
-		$Post = new self();
+		$post = new self();
 
-		if( isset( $Data['id'] ) )
+		if( isset( $data['id'] ) )
 		{
-			$Post->setId( (int)$Data['id'] );
+			$post->setId( (int)$data['id'] );
 		}
 
-		$Post->setTitle( $Data['title'] ?? '' );
-		$Post->setSlug( $Data['slug'] ?? '' );
-		$Post->setBody( $Data['body'] ?? '' );
-		$Post->setExcerpt( $Data['excerpt'] ?? null );
-		$Post->setFeaturedImage( $Data['featured_image'] ?? null );
-		$Post->setAuthorId( (int)($Data['author_id'] ?? 0) );
-		$Post->setStatus( $Data['status'] ?? self::STATUS_DRAFT );
-		$Post->setViewCount( (int)($Data['view_count'] ?? 0) );
+		$post->setTitle( $data['title'] ?? '' );
+		$post->setSlug( $data['slug'] ?? '' );
+		$post->setBody( $data['body'] ?? '' );
+		$post->setExcerpt( $data['excerpt'] ?? null );
+		$post->setFeaturedImage( $data['featured_image'] ?? null );
+		$post->setAuthorId( (int)($data['author_id'] ?? 0) );
+		$post->setStatus( $data['status'] ?? self::STATUS_DRAFT );
+		$post->setViewCount( (int)($data['view_count'] ?? 0) );
 
-		if( isset( $Data['published_at'] ) && $Data['published_at'] )
+		if( isset( $data['published_at'] ) && $data['published_at'] )
 		{
-			$Post->setPublishedAt(
-				is_string( $Data['published_at'] )
-					? new DateTimeImmutable( $Data['published_at'] )
-					: $Data['published_at']
+			$post->setPublishedAt(
+				is_string( $data['published_at'] )
+					? new DateTimeImmutable( $data['published_at'] )
+					: $data['published_at']
 			);
 		}
 
-		if( isset( $Data['created_at'] ) && $Data['created_at'] )
+		if( isset( $data['created_at'] ) && $data['created_at'] )
 		{
-			$Post->setCreatedAt(
-				is_string( $Data['created_at'] )
-					? new DateTimeImmutable( $Data['created_at'] )
-					: $Data['created_at']
+			$post->setCreatedAt(
+				is_string( $data['created_at'] )
+					? new DateTimeImmutable( $data['created_at'] )
+					: $data['created_at']
 			);
 		}
 
-		if( isset( $Data['updated_at'] ) && $Data['updated_at'] )
+		if( isset( $data['updated_at'] ) && $data['updated_at'] )
 		{
-			$Post->setUpdatedAt(
-				is_string( $Data['updated_at'] )
-					? new DateTimeImmutable( $Data['updated_at'] )
-					: $Data['updated_at']
+			$post->setUpdatedAt(
+				is_string( $data['updated_at'] )
+					? new DateTimeImmutable( $data['updated_at'] )
+					: $data['updated_at']
 			);
 		}
 
 		// Relationships
-		if( isset( $Data['author'] ) && $Data['author'] instanceof User )
+		if( isset( $data['author'] ) && $data['author'] instanceof User )
 		{
-			$Post->setAuthor( $Data['author'] );
+			$post->setAuthor( $data['author'] );
 		}
 
-		if( isset( $Data['categories'] ) && is_array( $Data['categories'] ) )
+		if( isset( $data['categories'] ) && is_array( $data['categories'] ) )
 		{
-			$Post->setCategories( $Data['categories'] );
+			$post->setCategories( $data['categories'] );
 		}
 
-		if( isset( $Data['tags'] ) && is_array( $Data['tags'] ) )
+		if( isset( $data['tags'] ) && is_array( $data['tags'] ) )
 		{
-			$Post->setTags( $Data['tags'] );
+			$post->setTags( $data['tags'] );
 		}
 
-		return $Post;
+		return $post;
 	}
 
 	/**
@@ -499,18 +499,18 @@ class Post
 	public function toArray(): array
 	{
 		return [
-			'id' => $this->_Id,
-			'title' => $this->_Title,
-			'slug' => $this->_Slug,
-			'body' => $this->_Body,
-			'excerpt' => $this->_Excerpt,
-			'featured_image' => $this->_FeaturedImage,
-			'author_id' => $this->_AuthorId,
-			'status' => $this->_Status,
-			'published_at' => $this->_PublishedAt?->format( 'Y-m-d H:i:s' ),
-			'view_count' => $this->_ViewCount,
-			'created_at' => $this->_CreatedAt?->format( 'Y-m-d H:i:s' ),
-			'updated_at' => $this->_UpdatedAt?->format( 'Y-m-d H:i:s' ),
+			'id' => $this->_id,
+			'title' => $this->_title,
+			'slug' => $this->_slug,
+			'body' => $this->_body,
+			'excerpt' => $this->_excerpt,
+			'featured_image' => $this->_featuredImage,
+			'author_id' => $this->_authorId,
+			'status' => $this->_status,
+			'published_at' => $this->_publishedAt?->format( 'Y-m-d H:i:s' ),
+			'view_count' => $this->_viewCount,
+			'created_at' => $this->_createdAt?->format( 'Y-m-d H:i:s' ),
+			'updated_at' => $this->_updatedAt?->format( 'Y-m-d H:i:s' ),
 		];
 	}
 }

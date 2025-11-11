@@ -9,14 +9,14 @@ use DateTime;
  */
 class MaintenanceManager
 {
-	private string $_MaintenanceFilePath;
+	private string $_maintenanceFilePath;
 
 	/**
-	 * @param string $BasePath Application base path
+	 * @param string $basePath Application base path
 	 */
-	public function __construct( string $BasePath )
+	public function __construct( string $basePath )
 	{
-		$this->_MaintenanceFilePath = $BasePath . '/.maintenance.json';
+		$this->_maintenanceFilePath = $basePath . '/.maintenance.json';
 	}
 
 	/**
@@ -26,7 +26,7 @@ class MaintenanceManager
 	 */
 	public function isEnabled(): bool
 	{
-		if( !file_exists( $this->_MaintenanceFilePath ) )
+		if( !file_exists( $this->_maintenanceFilePath ) )
 		{
 			return false;
 		}
@@ -39,32 +39,32 @@ class MaintenanceManager
 	/**
 	 * Enable maintenance mode
 	 *
-	 * @param string $Message Custom maintenance message
-	 * @param array|null $AllowedIps List of allowed IP addresses (null = use defaults)
-	 * @param int|null $RetryAfter Retry-After header value in seconds
-	 * @param string|null $EnabledBy User who enabled maintenance mode
+	 * @param string $message Custom maintenance message
+	 * @param array|null $allowedIps List of allowed IP addresses (null = use defaults)
+	 * @param int|null $retryAfter Retry-After header value in seconds
+	 * @param string|null $enabledBy User who enabled maintenance mode
 	 * @return bool Success status
 	 */
 	public function enable(
-		string $Message = 'Site is currently under maintenance. Please check back soon.',
-		?array $AllowedIps = null,
-		?int $RetryAfter = null,
-		?string $EnabledBy = null
+		string $message = 'Site is currently under maintenance. Please check back soon.',
+		?array $allowedIps = null,
+		?int $retryAfter = null,
+		?string $enabledBy = null
 	): bool
 	{
 		// Add localhost to allowed IPs by default only if null (not provided)
-		if( $AllowedIps === null )
+		if( $allowedIps === null )
 		{
-			$AllowedIps = ['127.0.0.1', '::1'];
+			$allowedIps = ['127.0.0.1', '::1'];
 		}
 
 		$data = [
 			'enabled' => true,
-			'message' => $Message,
-			'allowed_ips' => $AllowedIps,
-			'retry_after' => $RetryAfter,
+			'message' => $message,
+			'allowed_ips' => $allowedIps,
+			'retry_after' => $retryAfter,
 			'enabled_at' => (new DateTime())->format( DateTime::ATOM ),
-			'enabled_by' => $EnabledBy ?? get_current_user()
+			'enabled_by' => $enabledBy ?? get_current_user()
 		];
 
 		return $this->writeMaintenanceFile( $data );
@@ -77,9 +77,9 @@ class MaintenanceManager
 	 */
 	public function disable(): bool
 	{
-		if( file_exists( $this->_MaintenanceFilePath ) )
+		if( file_exists( $this->_maintenanceFilePath ) )
 		{
-			return unlink( $this->_MaintenanceFilePath );
+			return unlink( $this->_maintenanceFilePath );
 		}
 
 		return true;
@@ -92,7 +92,7 @@ class MaintenanceManager
 	 */
 	public function getStatus(): ?array
 	{
-		if( !file_exists( $this->_MaintenanceFilePath ) )
+		if( !file_exists( $this->_maintenanceFilePath ) )
 		{
 			return null;
 		}
@@ -103,10 +103,10 @@ class MaintenanceManager
 	/**
 	 * Check if a specific IP address is allowed during maintenance
 	 *
-	 * @param string $IpAddress
+	 * @param string $ipAddress
 	 * @return bool
 	 */
-	public function isIpAllowed( string $IpAddress ): bool
+	public function isIpAllowed( string $ipAddress ): bool
 	{
 		$status = $this->getStatus();
 
@@ -120,7 +120,7 @@ class MaintenanceManager
 		foreach( $allowedIps as $allowed )
 		{
 			// Check for exact match
-			if( $allowed === $IpAddress )
+			if( $allowed === $ipAddress )
 			{
 				return true;
 			}
@@ -128,7 +128,7 @@ class MaintenanceManager
 			// Check for CIDR notation
 			if( strpos( $allowed, '/' ) !== false )
 			{
-				if( $this->ipInCidr( $IpAddress, $allowed ) )
+				if( $this->ipInCidr( $ipAddress, $allowed ) )
 				{
 					return true;
 				}
@@ -169,7 +169,7 @@ class MaintenanceManager
 	 */
 	private function readMaintenanceFile(): array
 	{
-		$contents = file_get_contents( $this->_MaintenanceFilePath );
+		$contents = file_get_contents( $this->_maintenanceFilePath );
 
 		if( $contents === false )
 		{
@@ -191,7 +191,7 @@ class MaintenanceManager
 	{
 		$json = json_encode( $data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES );
 
-		$result = file_put_contents( $this->_MaintenanceFilePath, $json );
+		$result = file_put_contents( $this->_maintenanceFilePath, $json );
 
 		return $result !== false;
 	}
@@ -199,16 +199,16 @@ class MaintenanceManager
 	/**
 	 * Check if an IP address is within a CIDR range
 	 *
-	 * @param string $IpAddress IP address to check
-	 * @param string $Cidr CIDR notation (e.g., "192.168.1.0/24")
+	 * @param string $ipAddress IP address to check
+	 * @param string $cidr CIDR notation (e.g., "192.168.1.0/24")
 	 * @return bool
 	 */
-	private function ipInCidr( string $IpAddress, string $Cidr ): bool
+	private function ipInCidr( string $ipAddress, string $cidr ): bool
 	{
-		list( $subnet, $mask ) = explode( '/', $Cidr );
+		list( $subnet, $mask ) = explode( '/', $cidr );
 
 		// Convert IP addresses to long integers
-		$ipLong = ip2long( $IpAddress );
+		$ipLong = ip2long( $ipAddress );
 		$subnetLong = ip2long( $subnet );
 
 		if( $ipLong === false || $subnetLong === false )

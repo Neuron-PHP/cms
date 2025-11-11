@@ -17,17 +17,18 @@ use Neuron\Patterns\Registry;
  */
 class InstallCommand extends Command
 {
-	private string $_ProjectPath;
-	private string $_ComponentPath;
-	private array $_Messages = [];
+
+	private string $_projectPath;
+	private string $_componentPath;
+	private array $_messages = [];
 
 	public function __construct()
 	{
 		// Get project root (where composer.json is)
-		$this->_ProjectPath = getcwd();
+		$this->_projectPath = getcwd();
 
 		// Get component path
-		$this->_ComponentPath = dirname( dirname( dirname( dirname( dirname( __DIR__ ) ) ) ) );
+		$this->_componentPath = dirname( dirname( dirname( dirname( dirname( __DIR__ ) ) ) ) );
 	}
 
 	/**
@@ -57,22 +58,22 @@ class InstallCommand extends Command
 	/**
 	 * Execute the command
 	 */
-	public function execute( array $Parameters = [] ): int
+	public function execute( array $parameters = [] ): int
 	{
-		$this->output( "\n╔═══════════════════════════════════════╗" );
-		$this->output( "║  Neuron CMS - Installation           ║" );
-		$this->output( "╚═══════════════════════════════════════╝\n" );
+		$this->output->writeln( "\n╔═══════════════════════════════════════╗" );
+		$this->output->writeln( "║  Neuron CMS - Installation            ║" );
+		$this->output->writeln( "╚═══════════════════════════════════════╝\n" );
 
 		// Check if already installed
 		if( $this->isAlreadyInstalled() )
 		{
-			$this->output( "⚠️  Admin UI appears to be already installed." );
-			$this->output( "Resources directory exists: resources/views/admin/" );
-			$this->output( "" );
+			$this->output->warning( "Admin UI appears to be already installed." );
+			$this->output->writeln( "Resources directory exists: resources/views/admin/" );
+			$this->output->writeln( "" );
 
 			if( !$this->input->confirm( "Do you want to reinstall? This will overwrite existing files", false ) )
 			{
-				$this->output( "\n❌ Installation cancelled.\n" );
+				$this->output->error( "Installation cancelled." );
 				return 1;
 			}
 		}
@@ -90,11 +91,11 @@ class InstallCommand extends Command
 
 		foreach( $steps as $method => $message )
 		{
-			$this->output( $message );
+			$this->output->writeln( $message );
 
 			if( !$this->$method() )
 			{
-				$this->output( "\n❌ Installation failed!\n" );
+				$this->output->error( "Installation failed!" );
 				return 1;
 			}
 		}
@@ -102,39 +103,39 @@ class InstallCommand extends Command
 		// Generate migration
 		if( !$this->generateMigration() )
 		{
-			$this->output( "\n❌ Installation failed at migration generation!\n" );
+			$this->output->error( "Installation failed at migration generation!" );
 			return 1;
 		}
 
 		// Ask to run migration
-		$this->output( "\n" );
+		$this->output->writeln( "" );
 		if( $this->input->confirm( "Would you like to run the migration now?", true ) )
 		{
 			if( !$this->runMigration() )
 			{
-				$this->output( "\n❌ Migration failed!\n" );
-				$this->output( "ℹ️  You can run it manually with: php neuron db:migrate\n" );
+				$this->output->error( "Migration failed!" );
+				$this->output->info( "You can run it manually with: php neuron db:migrate" );
 				return 1;
 			}
 		}
 		else
 		{
-			$this->output( "\nℹ️  Remember to run migration with: php neuron db:migrate\n" );
+			$this->output->info( "Remember to run migration with: php neuron db:migrate" );
 		}
 
 		// Display summary
-		$this->output( "\n✅ Installation complete!\n" );
+		$this->output->success( "Installation complete!" );
 		$this->displaySummary();
 
 		// Create first admin user
-		$this->output( "\n" );
+		$this->output->writeln( "" );
 		if( $this->input->confirm( "Would you like to create an admin user now?", true ) )
 		{
 			$this->createAdminUser();
 		}
 		else
 		{
-			$this->output( "\nℹ️  You can create an admin user later with: php neuron cms:user:create\n" );
+			$this->output->info( "You can create an admin user later with: php neuron cms:user:create" );
 		}
 
 		return 0;
@@ -145,7 +146,7 @@ class InstallCommand extends Command
 	 */
 	private function isAlreadyInstalled(): bool
 	{
-		return is_dir( $this->_ProjectPath . '/resources/views/admin' );
+		return is_dir( $this->_projectPath . '/resources/views/admin' );
 	}
 
 	/**
@@ -196,17 +197,17 @@ class InstallCommand extends Command
 
 		foreach( $directories as $dir )
 		{
-			$path = $this->_ProjectPath . $dir;
+			$path = $this->_projectPath . $dir;
 
 			if( !is_dir( $path ) )
 			{
 				if( !mkdir( $path, 0755, true ) )
 				{
-					$this->output( "  ❌ Failed to create: $dir" );
+					$this->output->error( "  Failed to create: $dir" );
 					return false;
 				}
 
-				$this->_Messages[] = "Created: $dir";
+				$this->_messages[] = "Created: $dir";
 			}
 		}
 
@@ -223,19 +224,19 @@ class InstallCommand extends Command
 
 		foreach( $viewDirs as $dir )
 		{
-			$viewSource = $this->_ComponentPath . '/resources/views/' . $dir;
-			$viewDest = $this->_ProjectPath . '/resources/views/' . $dir;
+			$viewSource = $this->_componentPath . '/resources/views/' . $dir;
+			$viewDest = $this->_projectPath . '/resources/views/' . $dir;
 
 			if( !is_dir( $viewSource ) )
 			{
-				$this->output( "  ⚠️  Warning: Source views not found at: $viewSource" );
+				$this->output->warning( "  Source views not found at: $viewSource" );
 				continue; // Skip if directory doesn't exist
 			}
 
 			// Copy all view files recursively
 			if( !$this->copyDirectory( $viewSource, $viewDest ) )
 			{
-				$this->output( "  ❌ Failed to copy views from: $dir" );
+				$this->output->error( "  Failed to copy views from: $dir" );
 				return false;
 			}
 		}
@@ -248,12 +249,12 @@ class InstallCommand extends Command
 	 */
 	private function publishInitializers(): bool
 	{
-		$initializerSource = $this->_ComponentPath . '/resources/app/Initializers';
-		$initializerDest = $this->_ProjectPath . '/app/Initializers';
+		$initializerSource = $this->_componentPath . '/resources/app/Initializers';
+		$initializerDest = $this->_projectPath . '/app/Initializers';
 
 		if( !is_dir( $initializerSource ) )
 		{
-			$this->output( "  ⚠️  Warning: Source initializers not found at: $initializerSource" );
+			$this->output->warning( "  Source initializers not found at: $initializerSource" );
 			return true; // Don't fail, initializers might not exist yet
 		}
 
@@ -266,19 +267,19 @@ class InstallCommand extends Command
 	 */
 	private function createRouteConfig(): bool
 	{
-		$routeFile = $this->_ProjectPath . '/config/routes.yaml';
-		$resourceFile = $this->_ComponentPath . '/resources/config/routes.yaml';
+		$routeFile = $this->_projectPath . '/config/routes.yaml';
+		$resourceFile = $this->_componentPath . '/resources/config/routes.yaml';
 
 		// If routes.yaml doesn't exist, copy from resources
 		if( !file_exists( $routeFile ) && file_exists( $resourceFile ) )
 		{
 			if( copy( $resourceFile, $routeFile ) )
 			{
-				$this->_Messages[] = "Created: config/routes.yaml";
+				$this->_messages[] = "Created: config/routes.yaml";
 				return true;
 			}
 
-			$this->output( "  ❌ Failed to create routes.yaml" );
+			$this->output->error( "  Failed to create routes.yaml" );
 			return false;
 		}
 
@@ -289,8 +290,8 @@ class InstallCommand extends Command
 
 			if( strpos( $content, '/admin/dashboard' ) === false )
 			{
-				$this->_Messages[] = "⚠️  Please add admin routes to config/routes.yaml";
-				$this->_Messages[] = "   See resources/config/routes.yaml for reference";
+				$this->_messages[] = "⚠️  Please add admin routes to config/routes.yaml";
+				$this->_messages[] = "   See resources/config/routes.yaml for reference";
 			}
 		}
 
@@ -302,19 +303,19 @@ class InstallCommand extends Command
 	 */
 	private function createAuthConfig(): bool
 	{
-		$authFile = $this->_ProjectPath . '/config/auth.yaml';
-		$resourceFile = $this->_ComponentPath . '/resources/config/auth.yaml';
+		$authFile = $this->_projectPath . '/config/auth.yaml';
+		$resourceFile = $this->_componentPath . '/resources/config/auth.yaml';
 
 		// If auth.yaml doesn't exist, copy from resources
 		if( !file_exists( $authFile ) && file_exists( $resourceFile ) )
 		{
 			if( copy( $resourceFile, $authFile ) )
 			{
-				$this->_Messages[] = "Created: config/auth.yaml";
+				$this->_messages[] = "Created: config/auth.yaml";
 				return true;
 			}
 
-			$this->output( "  ❌ Failed to create auth.yaml" );
+			$this->output->error( "  Failed to create auth.yaml" );
 			return false;
 		}
 
@@ -326,24 +327,24 @@ class InstallCommand extends Command
 	 */
 	private function createPublicFiles(): bool
 	{
-		$publicDir = $this->_ProjectPath . '/public';
+		$publicDir = $this->_projectPath . '/public';
 
 		// Create public directory if it doesn't exist
 		if( !is_dir( $publicDir ) )
 		{
 			if( !mkdir( $publicDir, 0755, true ) )
 			{
-				$this->output( "  ❌ Failed to create public directory" );
+				$this->output->error( "  Failed to create public directory" );
 				return false;
 			}
 		}
 
 		// Copy all files from resources/public
-		$sourceDir = $this->_ComponentPath . '/resources/public';
+		$sourceDir = $this->_componentPath . '/resources/public';
 
 		if( !is_dir( $sourceDir ) )
 		{
-			$this->output( "  ❌ Source public directory not found" );
+			$this->output->error( "  Source public directory not found" );
 			return false;
 		}
 
@@ -370,11 +371,11 @@ class InstallCommand extends Command
 			{
 				if( copy( $sourceFile, $destFile ) )
 				{
-					$this->_Messages[] = "Created: public/" . $file;
+					$this->_messages[] = "Created: public/" . $file;
 				}
 				else
 				{
-					$this->output( "  ❌ Failed to copy: " . $file );
+					$this->output->error( "  Failed to copy: " . $file );
 					return false;
 				}
 			}
@@ -386,19 +387,19 @@ class InstallCommand extends Command
 	/**
 	 * Copy directory recursively
 	 */
-	private function copyDirectory( string $Source, string $Dest ): bool
+	private function copyDirectory( string $source, string $dest ): bool
 	{
-		if( !is_dir( $Source ) )
+		if( !is_dir( $source ) )
 		{
 			return false;
 		}
 
-		if( !is_dir( $Dest ) )
+		if( !is_dir( $dest ) )
 		{
-			mkdir( $Dest, 0755, true );
+			mkdir( $dest, 0755, true );
 		}
 
-		$items = scandir( $Source );
+		$items = scandir( $source );
 
 		foreach( $items as $item )
 		{
@@ -407,8 +408,8 @@ class InstallCommand extends Command
 				continue;
 			}
 
-			$sourcePath = $Source . '/' . $item;
-			$destPath = $Dest . '/' . $item;
+			$sourcePath = $source . '/' . $item;
+			$destPath = $dest . '/' . $item;
 
 			if( is_dir( $sourcePath ) )
 			{
@@ -421,7 +422,7 @@ class InstallCommand extends Command
 			{
 				if( !copy( $sourcePath, $destPath ) )
 				{
-					$this->output( "  ❌ Failed to copy: $item" );
+					$this->output->error( "  Failed to copy: $item" );
 					return false;
 				}
 			}
@@ -435,9 +436,9 @@ class InstallCommand extends Command
 	 */
 	private function setupDatabase(): bool
 	{
-		$this->output( "\n╔═══════════════════════════════════════╗" );
-		$this->output( "║  Database Configuration               ║" );
-		$this->output( "╚═══════════════════════════════════════╝\n" );
+		$this->output->writeln( "\n╔═══════════════════════════════════════╗" );
+		$this->output->writeln( "║  Database Configuration               ║" );
+		$this->output->writeln( "╚═══════════════════════════════════════╝\n" );
 
 		$choice = $this->input->choice(
 			"Select database adapter:",
@@ -479,22 +480,22 @@ class InstallCommand extends Command
 	 */
 	private function configureApplication(): array
 	{
-		$this->output( "\n╔═══════════════════════════════════════╗" );
-		$this->output( "║  Application Configuration            ║" );
-		$this->output( "╚═══════════════════════════════════════╝\n" );
+		$this->output->writeln( "\n╔═══════════════════════════════════════╗" );
+		$this->output->writeln( "║  Application Configuration            ║" );
+		$this->output->writeln( "╚═══════════════════════════════════════╝\n" );
 
 		// System timezone
 		$defaultTimezone = date_default_timezone_get();
 		$timezone = $this->input->ask( "System timezone", $defaultTimezone );
 
 		// Site configuration
-		$this->output( "\n--- Site Information ---\n" );
+		$this->output->writeln( "\n--- Site Information ---\n" );
 
 		$siteName = $this->input->ask( "Site name" );
 
 		if( !$siteName )
 		{
-			$this->output( "❌ Site name is required!" );
+			$this->output->error( "Site name is required!" );
 			return [];
 		}
 
@@ -503,14 +504,14 @@ class InstallCommand extends Command
 
 		if( !$siteUrl )
 		{
-			$this->output( "❌ Site URL is required!" );
+			$this->output->error( "Site URL is required!" );
 			return [];
 		}
 
 		$siteDescription = $this->input->ask( "Site description (optional)", "" );
 
-		$this->_Messages[] = "Site: $siteName ($siteUrl)";
-		$this->_Messages[] = "Timezone: $timezone";
+		$this->_messages[] = "Site: $siteName ($siteUrl)";
+		$this->_messages[] = "Timezone: $timezone";
 
 		return [
 			'timezone' => $timezone,
@@ -524,7 +525,7 @@ class InstallCommand extends Command
 	/**
 	 * Save complete configuration with all required sections
 	 */
-	private function saveCompleteConfig( array $DatabaseConfig, array $AppConfig ): bool
+	private function saveCompleteConfig( array $databaseConfig, array $appConfig ): bool
 	{
 		// Build complete configuration
 		$config = [
@@ -538,14 +539,14 @@ class InstallCommand extends Command
 				'path' => 'resources/views'
 			],
 			'system' => [
-				'timezone' => $AppConfig['timezone'],
-				'base_path' => $this->_ProjectPath
+				'timezone' => $appConfig['timezone'],
+				'base_path' => $this->_projectPath
 			],
 			'site' => [
-				'name' => $AppConfig['siteName'],
-				'title' => $AppConfig['siteTitle'],
-				'url' => $AppConfig['siteUrl'],
-				'description' => $AppConfig['siteDescription']
+				'name' => $appConfig['siteName'],
+				'title' => $appConfig['siteTitle'],
+				'url' => $appConfig['siteUrl'],
+				'description' => $appConfig['siteDescription']
 			],
 			'cache' => [
 				'enabled' => false,
@@ -556,7 +557,7 @@ class InstallCommand extends Command
 		];
 
 		// Merge database configuration
-		$config = array_merge( $config, $DatabaseConfig );
+		$config = array_merge( $config, $databaseConfig );
 
 		// Save configuration
 		return $this->saveConfig( $config );
@@ -567,14 +568,14 @@ class InstallCommand extends Command
 	 */
 	private function configureSqlite(): array
 	{
-		$this->output( "\n--- SQLite Configuration ---\n" );
+		$this->output->writeln( "\n--- SQLite Configuration ---\n" );
 
 		$dbPath = $this->input->ask( "Database file path", "storage/database.sqlite3" );
 
 		// Make path absolute if relative
 		if( !empty( $dbPath ) && $dbPath[0] !== '/' )
 		{
-			$dbPath = $this->_ProjectPath . '/' . $dbPath;
+			$dbPath = $this->_projectPath . '/' . $dbPath;
 		}
 
 		// Create directory if needed
@@ -583,12 +584,12 @@ class InstallCommand extends Command
 		{
 			if( !mkdir( $dir, 0755, true ) )
 			{
-				$this->output( "❌ Failed to create directory: $dir" );
+				$this->output->error( "Failed to create directory: $dir" );
 				return [];
 			}
 		}
 
-		$this->_Messages[] = "Database: SQLite ($dbPath)";
+		$this->_messages[] = "Database: SQLite ($dbPath)";
 
 		return [
 			'database' => [
@@ -603,7 +604,7 @@ class InstallCommand extends Command
 	 */
 	private function configureMysql(): array
 	{
-		$this->output( "\n--- MySQL Configuration ---\n" );
+		$this->output->writeln( "\n--- MySQL Configuration ---\n" );
 
 		$host = $this->input->ask( "Host", "localhost" );
 		$port = $this->input->ask( "Port", "3306" );
@@ -611,7 +612,7 @@ class InstallCommand extends Command
 
 		if( !$name )
 		{
-			$this->output( "❌ Database name is required!" );
+			$this->output->error( "Database name is required!" );
 			return [];
 		}
 
@@ -619,14 +620,14 @@ class InstallCommand extends Command
 
 		if( !$user )
 		{
-			$this->output( "❌ Username is required!" );
+			$this->output->error( "Username is required!" );
 			return [];
 		}
 
 		$pass = $this->input->askSecret( "Database password" );
 		$charset = $this->input->ask( "Character set (utf8mb4 recommended)", "utf8mb4" );
 
-		$this->_Messages[] = "Database: MySQL ($host:$port/$name)";
+		$this->_messages[] = "Database: MySQL ($host:$port/$name)";
 
 		return [
 			'database' => [
@@ -646,7 +647,7 @@ class InstallCommand extends Command
 	 */
 	private function configurePostgresql(): array
 	{
-		$this->output( "\n--- PostgreSQL Configuration ---\n" );
+		$this->output->writeln( "\n--- PostgreSQL Configuration ---\n" );
 
 		$host = $this->input->ask( "Host", "localhost" );
 		$port = $this->input->ask( "Port", "5432" );
@@ -654,7 +655,7 @@ class InstallCommand extends Command
 
 		if( !$name )
 		{
-			$this->output( "❌ Database name is required!" );
+			$this->output->error( "Database name is required!" );
 			return [];
 		}
 
@@ -662,13 +663,13 @@ class InstallCommand extends Command
 
 		if( !$user )
 		{
-			$this->output( "❌ Username is required!" );
+			$this->output->error( "Username is required!" );
 			return [];
 		}
 
 		$pass = $this->input->askSecret( "Database password" );
 
-		$this->_Messages[] = "Database: PostgreSQL ($host:$port/$name)";
+		$this->_messages[] = "Database: PostgreSQL ($host:$port/$name)";
 
 		return [
 			'database' => [
@@ -685,9 +686,9 @@ class InstallCommand extends Command
 	/**
 	 * Save configuration to YAML file
 	 */
-	private function saveConfig( array $Config ): bool
+	private function saveConfig( array $config ): bool
 	{
-		$configFile = $this->_ProjectPath . '/config/config.yaml';
+		$configFile = $this->_projectPath . '/config/config.yaml';
 
 		// If config exists, merge with existing
 		$existingConfig = [];
@@ -719,35 +720,35 @@ class InstallCommand extends Command
 		}
 
 		// Merge configurations
-		$finalConfig = array_merge( $existingConfig, $Config );
+		$finalConfig = array_merge( $existingConfig, $config );
 
 		// Convert to YAML manually (simple approach)
 		$yamlContent = $this->arrayToYaml( $finalConfig );
 
 		if( file_put_contents( $configFile, $yamlContent ) === false )
 		{
-			$this->output( "❌ Failed to save configuration file!" );
+			$this->output->error( "Failed to save configuration file!" );
 			return false;
 		}
 
-		$this->_Messages[] = "Created: config/config.yaml";
+		$this->_messages[] = "Created: config/config.yaml";
 		return true;
 	}
 
 	/**
 	 * Convert array to YAML format (simple implementation)
 	 */
-	private function arrayToYaml( array $Data, int $Indent = 0 ): string
+	private function arrayToYaml( array $data, int $indent = 0 ): string
 	{
 		$yaml = '';
-		$indentStr = str_repeat( '  ', $Indent );
+		$indentStr = str_repeat( '  ', $indent );
 
-		foreach( $Data as $key => $value )
+		foreach( $data as $key => $value )
 		{
 			if( is_array( $value ) )
 			{
 				$yaml .= $indentStr . $key . ":\n";
-				$yaml .= $this->arrayToYaml( $value, $Indent + 1 );
+				$yaml .= $this->arrayToYaml( $value, $indent + 1 );
 			}
 			else
 			{
@@ -761,24 +762,24 @@ class InstallCommand extends Command
 	/**
 	 * Format value for YAML
 	 */
-	private function yamlValue( $Value ): string
+	private function yamlValue( $value ): string
 	{
-		if( is_bool( $Value ) )
+		if( is_bool( $value ) )
 		{
-			return $Value ? 'true' : 'false';
+			return $value ? 'true' : 'false';
 		}
 
-		if( is_int( $Value ) || is_float( $Value ) )
+		if( is_int( $value ) || is_float( $value ) )
 		{
-			return (string)$Value;
+			return (string)$value;
 		}
 
-		if( is_string( $Value ) && ( strpos( $Value, ' ' ) !== false || strpos( $Value, ':' ) !== false ) )
+		if( is_string( $value ) && ( strpos( $value, ' ' ) !== false || strpos( $value, ':' ) !== false ) )
 		{
-			return '"' . addslashes( $Value ) . '"';
+			return '"' . addslashes( $value ) . '"';
 		}
 
-		return (string)$Value;
+		return (string)$value;
 	}
 
 	/**
@@ -786,20 +787,20 @@ class InstallCommand extends Command
 	 */
 	private function generateMigration(): bool
 	{
-		$this->output( "\nGenerating database migration..." );
+		$this->output->writeln( "\nGenerating database migration..." );
 
 		$migrationName = 'CreateUsersTable';
 		$snakeCaseName = $this->camelToSnake( $migrationName );
 
 		// Use db/migrate path to match MigrationManager expectations
-		$migrationsDir = $this->_ProjectPath . '/db/migrate';
+		$migrationsDir = $this->_projectPath . '/db/migrate';
 
 		// Create migrations directory if it doesn't exist
 		if( !is_dir( $migrationsDir ) )
 		{
 			if( !mkdir( $migrationsDir, 0755, true ) )
 			{
-				$this->output( "❌ Failed to create migrations directory!" );
+				$this->output->error( "Failed to create migrations directory!" );
 				return false;
 			}
 		}
@@ -809,8 +810,8 @@ class InstallCommand extends Command
 		if( !empty( $existingFiles ) )
 		{
 			$existingFile = basename( $existingFiles[0] );
-			$this->output( "ℹ️  Migration already exists: $existingFile" );
-			$this->_Messages[] = "Using existing migration: db/migrate/$existingFile";
+			$this->output->info( "Migration already exists: $existingFile" );
+			$this->_messages[] = "Using existing migration: db/migrate/$existingFile";
 			return true;
 		}
 
@@ -823,18 +824,18 @@ class InstallCommand extends Command
 
 		if( file_put_contents( $filePath, $template ) === false )
 		{
-			$this->output( "❌ Failed to create migration file!" );
+			$this->output->error( "Failed to create migration file!" );
 			return false;
 		}
 
-		$this->_Messages[] = "Created: db/migrate/$fileName";
+		$this->_messages[] = "Created: db/migrate/$fileName";
 		return true;
 	}
 
 	/**
 	 * Get migration template with users and password_reset_tokens table schema
 	 */
-	private function getMigrationTemplate( string $ClassName ): string
+	private function getMigrationTemplate( string $className ): string
 	{
 		return <<<PHP
 <?php
@@ -844,7 +845,7 @@ use Phinx\Migration\AbstractMigration;
 /**
  * Create users and password_reset_tokens tables
  */
-class $ClassName extends AbstractMigration
+class $className extends AbstractMigration
 {
 	/**
 	 * Create users and password_reset_tokens tables
@@ -893,9 +894,9 @@ PHP;
 	/**
 	 * Convert CamelCase to snake_case
 	 */
-	private function camelToSnake( string $Input ): string
+	private function camelToSnake( string $input ): string
 	{
-		return strtolower( preg_replace( '/(?<!^)[A-Z]/', '_$0', $Input ) );
+		return strtolower( preg_replace( '/(?<!^)[A-Z]/', '_$0', $input ) );
 	}
 
 	/**
@@ -903,7 +904,7 @@ PHP;
 	 */
 	private function runMigration(): bool
 	{
-		$this->output( "\nRunning migration...\n" );
+		$this->output->writeln( "\nRunning migration...\n" );
 
 		try
 		{
@@ -912,14 +913,14 @@ PHP;
 
 			if( !$app )
 			{
-				$this->output( "❌ CLI application not found in registry!" );
+				$this->output->error( "CLI application not found in registry!" );
 				return false;
 			}
 
 			// Check if db:migrate command exists
 			if( !$app->has( 'db:migrate' ) )
 			{
-				$this->output( "❌ db:migrate command not found!" );
+				$this->output->error( "db:migrate command not found!" );
 				return false;
 			}
 
@@ -928,7 +929,7 @@ PHP;
 
 			if( !class_exists( $commandClass ) )
 			{
-				$this->output( "❌ Migrate command class not found: {$commandClass}" );
+				$this->output->error( "Migrate command class not found: {$commandClass}" );
 				return false;
 			}
 
@@ -947,16 +948,16 @@ PHP;
 
 			if( $exitCode !== 0 )
 			{
-				$this->output( "\n❌ Migration failed with exit code: $exitCode" );
+				$this->output->error( "Migration failed with exit code: $exitCode" );
 				return false;
 			}
 
-			$this->output( "\n✅ Migration completed successfully!" );
+			$this->output->success( "Migration completed successfully!" );
 			return true;
 		}
 		catch( \Exception $e )
 		{
-			$this->output( "❌ Error running migration: " . $e->getMessage() );
+			$this->output->error( "Error running migration: " . $e->getMessage() );
 			return false;
 		}
 	}
@@ -966,19 +967,19 @@ PHP;
 	 */
 	private function displaySummary(): void
 	{
-		$this->output( "Installation Summary:" );
-		$this->output( "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" );
+		$this->output->writeln( "Installation Summary:" );
+		$this->output->writeln( "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" );
 
-		foreach( $this->_Messages as $message )
+		foreach( $this->_messages as $message )
 		{
-			$this->output( "  $message" );
+			$this->output->writeln( "  $message" );
 		}
 
-		$this->output( "\nNext Steps:" );
-		$this->output( "  1. Create an admin user (prompted below)" );
-		$this->output( "  2. Review config/routes.yaml for admin routes" );
-		$this->output( "  3. Start your server and visit /login" );
-		$this->output( "  4. Access admin at /admin/dashboard" );
+		$this->output->writeln( "\nNext Steps:" );
+		$this->output->writeln( "  1. Create an admin user (prompted below)" );
+		$this->output->writeln( "  2. Review config/routes.yaml for admin routes" );
+		$this->output->writeln( "  3. Start your server and visit /login" );
+		$this->output->writeln( "  4. Access admin at /admin/dashboard" );
 	}
 
 	/**
@@ -986,35 +987,26 @@ PHP;
 	 */
 	private function createAdminUser(): bool
 	{
-		$this->output( "\n╔═══════════════════════════════════════╗" );
-		$this->output( "║  Create Admin User                    ║" );
-		$this->output( "╚═══════════════════════════════════════╝\n" );
-
-		// Load database config
-		$configFile = $this->_ProjectPath . '/config/config.yaml';
-		if( !file_exists( $configFile ) )
-		{
-			$this->output( "\n❌ Configuration file not found!\n" );
-			return false;
-		}
+		$this->output->writeln( "\n╔═══════════════════════════════════════╗" );
+		$this->output->writeln( "║  Create Admin User                    ║" );
+		$this->output->writeln( "╚═══════════════════════════════════════╝\n" );
 
 		try
 		{
-			$yaml = new Yaml( $configFile );
-			$settings = new SettingManager( $yaml );
-			$dbConfig = $this->getDatabaseConfig( $settings );
+			$settings = Registry::getInstance()->get( 'Settings' );
 
-			if( !$dbConfig )
+			if( !$settings )
 			{
-				$this->output( "\n❌ Database configuration not found!\n" );
+				$this->output->error( "Application not initialized: Settings not found in Registry" );
+				$this->output->writeln( "This is a configuration error - the application should load settings into the Registry" );
 				return false;
 			}
 
-			$repository = new DatabaseUserRepository( $dbConfig );
+			$repository = new DatabaseUserRepository( $settings );
 		}
 		catch( \Exception $e )
 		{
-			$this->output( "\n❌ Database connection failed: " . $e->getMessage() . "\n" );
+			$this->output->error( "Database connection failed: " . $e->getMessage() );
 			return false;
 		}
 
@@ -1026,8 +1018,8 @@ PHP;
 		// Check if user exists
 		if( $repository->findByUsername( $username ) )
 		{
-			$this->output( "\n⚠️  Warning: User '$username' already exists!" );
-			$this->output( "You can manage users with: php neuron cms:user:list\n" );
+			$this->output->warning( "User '$username' already exists!" );
+			$this->output->writeln( "You can manage users with: php neuron cms:user:list" );
 			return true;
 		}
 
@@ -1035,26 +1027,26 @@ PHP;
 		$email = $this->input->ask( "Email address", "admin@example.com" );
 
 		// Get password
-		$this->output( "Password requirements: min 8 chars, uppercase, lowercase, number, special char" );
+		$this->output->writeln( "Password requirements: min 8 chars, uppercase, lowercase, number, special char" );
 		$password = $this->input->askSecret( "Password" );
 
 		if( strlen( $password ) < 8 )
 		{
-			$this->output( "\n❌ Error: Password must be at least 8 characters long!\n" );
+			$this->output->error( "Password must be at least 8 characters long!" );
 			return false;
 		}
 
 		// Validate password
 		if( !$hasher->meetsRequirements( $password ) )
 		{
-			$this->output( "\n❌ Error: Password does not meet requirements:" );
+			$this->output->error( "Password does not meet requirements:" );
 
 			foreach( $hasher->getValidationErrors( $password ) as $error )
 			{
-				$this->output( "  - $error" );
+				$this->output->writeln( "  - $error" );
 			}
 
-			$this->output( "" );
+			$this->output->writeln( "" );
 			return false;
 		}
 
@@ -1071,66 +1063,19 @@ PHP;
 		{
 			$repository->create( $user );
 
-			$this->output( "\n✅ Success! Admin user created:" );
-			$this->output( "  Username: " . $user->getUsername() );
-			$this->output( "  Email: " . $user->getEmail() );
-			$this->output( "  Role: " . $user->getRole() );
-			$this->output( "\n🚀 You can now login at: http://localhost:8000/login\n" );
+			$this->output->success( "Admin user created:" );
+			$this->output->writeln( "  Username: " . $user->getUsername() );
+			$this->output->writeln( "  Email: " . $user->getEmail() );
+			$this->output->writeln( "  Role: " . $user->getRole() );
+			$this->output->writeln( "\n🚀 You can now login at: http://localhost:8000/login" );
 
 			return true;
 		}
 		catch( \Exception $e )
 		{
-			$this->output( "\n❌ Error creating user: " . $e->getMessage() . "\n" );
+			$this->output->error( "Error creating user: " . $e->getMessage() );
 			return false;
 		}
 	}
 
-	/**
-	 * Get database configuration from settings
-	 */
-	private function getDatabaseConfig( SettingManager $Settings ): ?array
-	{
-		try
-		{
-			$settingNames = $Settings->getSectionSettingNames( 'database' );
-
-			if( empty( $settingNames ) )
-			{
-				return null;
-			}
-
-			$config = [];
-			foreach( $settingNames as $name )
-			{
-				$value = $Settings->get( 'database', $name );
-				if( $value !== null )
-				{
-					// Convert string values to appropriate types
-					if( $name === 'port' )
-					{
-						$config[$name] = (int)$value;
-					}
-					else
-					{
-						$config[$name] = $value;
-					}
-				}
-			}
-
-			return $config;
-		}
-		catch( \Exception $e )
-		{
-			return null;
-		}
-	}
-
-	/**
-	 * Output message
-	 */
-	private function output( string $Message ): void
-	{
-		echo $Message . "\n";
-	}
 }

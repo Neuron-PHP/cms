@@ -17,45 +17,53 @@ use Neuron\Patterns\Registry;
  */
 class DashboardController extends Content
 {
+	/**
+	 * @param Application|null $app
+	 * @return void
+	 * @throws \Exception
+	 */
 	public function __construct( ?Application $app = null )
 	{
 		parent::__construct( $app );
 	}
 
+
 	/**
 	 * Show admin dashboard
+	 * @param array $parameters
+	 * @return string
 	 */
-	public function index( array $Parameters ): string
+	public function index( array $parameters ): string
 	{
 		// Get authenticated user from Registry
-		$User = Registry::getInstance()->get( 'Auth.User' );
+		$user = Registry::getInstance()->get( 'Auth.User' );
 
-		if( !$User )
+		if( !$user )
 		{
 			throw new \RuntimeException( 'Authenticated user not found in Registry' );
 		}
 
 		// Generate CSRF token and store in Registry for helper functions
-		$SessionManager = new SessionManager();
-		$SessionManager->start();
-		$CsrfManager = new CsrfTokenManager( $SessionManager );
-		Registry::getInstance()->set( 'Auth.CsrfToken', $CsrfManager->getToken() );
+		$sessionManager = new SessionManager();
+		$sessionManager->start();
+		$csrfManager = new CsrfTokenManager( $sessionManager );
+		Registry::getInstance()->set( 'Auth.CsrfToken', $csrfManager->getToken() );
 
-		$ViewData = [
+		$viewData = [
 			'Title' => 'Dashboard | ' . $this->getName(),
 			'Description' => 'Admin Dashboard',
-			'User' => $User,
-			'WelcomeMessage' => 'Welcome back, ' . $User->getUsername() . '!'
+			'User' => $user,
+			'WelcomeMessage' => 'Welcome back, ' . $user->getUsername() . '!'
 		];
 
 		// Manually render with custom controller path
 		@http_response_code( HttpResponseStatus::OK->value );
 
-		$View = new Html();
-		$View->setController( 'Admin/Dashboard' )
+		$view = new Html();
+		$view->setController( 'Admin/Dashboard' )
 			 ->setLayout( 'admin' )
 			 ->setPage( 'index' );
 
-		return $View->render( $ViewData );
+		return $view->render( $viewData );
 	}
 }

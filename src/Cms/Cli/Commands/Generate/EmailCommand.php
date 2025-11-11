@@ -9,13 +9,13 @@ use Neuron\Cli\Commands\Command;
  */
 class EmailCommand extends Command
 {
-	private string $_ProjectPath;
-	private string $_ComponentPath;
+	private string $_projectPath;
+	private string $_componentPath;
 
 	public function __construct()
 	{
-		$this->_ProjectPath = getcwd();
-		$this->_ComponentPath = dirname( dirname( dirname( dirname( dirname( __DIR__ ) ) ) ) );
+		$this->_projectPath = getcwd();
+		$this->_componentPath = dirname( dirname( dirname( dirname( dirname( __DIR__ ) ) ) ) );
 	}
 
 	/**
@@ -45,10 +45,10 @@ class EmailCommand extends Command
 	/**
 	 * Execute the command
 	 */
-	public function execute( array $Parameters = [] ): int
+	public function execute( array $parameters = [] ): int
 	{
 		// Get template name from first parameter
-		$templateName = $Parameters[0] ?? null;
+		$templateName = $parameters[0] ?? null;
 
 		if( !$templateName )
 		{
@@ -89,7 +89,7 @@ class EmailCommand extends Command
 	 */
 	private function createTemplate( string $name ): bool
 	{
-		$emailsDir = $this->_ProjectPath . '/resources/views/emails';
+		$emailsDir = $this->_projectPath . '/resources/views/emails';
 
 		// Create emails directory if it doesn't exist
 		if( !is_dir( $emailsDir ) )
@@ -111,7 +111,7 @@ class EmailCommand extends Command
 		}
 
 		// Load stub template
-		$stubPath = $this->_ComponentPath . '/src/Cms/Cli/Commands/Generate/stubs/email.stub';
+		$stubPath = $this->_componentPath . '/src/Cms/Cli/Commands/Generate/stubs/email.stub';
 
 		if( !file_exists( $stubPath ) )
 		{

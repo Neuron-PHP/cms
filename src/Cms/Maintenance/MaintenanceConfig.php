@@ -9,15 +9,15 @@ use Neuron\Data\Setting\Source\ISettingSource;
  */
 class MaintenanceConfig
 {
-	private ?ISettingSource $_SettingSource;
-	private array $_Config = [];
+	private ?ISettingSource $_settingSource;
+	private array $_config = [];
 
 	/**
-	 * @param ISettingSource|null $SettingSource
+	 * @param ISettingSource|null $settingSource
 	 */
-	public function __construct( ?ISettingSource $SettingSource = null )
+	public function __construct( ?ISettingSource $settingSource = null )
 	{
-		$this->_SettingSource = $SettingSource;
+		$this->_settingSource = $settingSource;
 		$this->loadConfig();
 	}
 
@@ -28,17 +28,17 @@ class MaintenanceConfig
 	 */
 	private function loadConfig(): void
 	{
-		if( !$this->_SettingSource )
+		if( !$this->_settingSource )
 		{
-			$this->_Config = $this->getDefaults();
+			$this->_config = $this->getDefaults();
 			return;
 		}
 
 		// Load maintenance configuration from settings
 		$defaults = $this->getDefaults();
-		$section = $this->_SettingSource->getSection( 'maintenance' ) ?? [];
+		$section = $this->_settingSource->getSection( 'maintenance' ) ?? [];
 
-		$this->_Config = [
+		$this->_config = [
 			'enabled' => $section['enabled'] ?? $defaults['enabled'],
 			'default_message' => $section['default_message'] ?? $defaults['default_message'],
 			'allowed_ips' => $section['allowed_ips'] ?? $defaults['allowed_ips'],
@@ -72,7 +72,7 @@ class MaintenanceConfig
 	 */
 	public function isEnabled(): bool
 	{
-		return $this->_Config['enabled'] ?? false;
+		return $this->_config['enabled'] ?? false;
 	}
 
 	/**
@@ -82,7 +82,7 @@ class MaintenanceConfig
 	 */
 	public function getDefaultMessage(): string
 	{
-		return $this->_Config['default_message'] ?? 'Site is currently under maintenance.';
+		return $this->_config['default_message'] ?? 'Site is currently under maintenance.';
 	}
 
 	/**
@@ -92,7 +92,7 @@ class MaintenanceConfig
 	 */
 	public function getAllowedIps(): array
 	{
-		$ips = $this->_Config['allowed_ips'] ?? [];
+		$ips = $this->_config['allowed_ips'] ?? [];
 
 		// Ensure it's an array
 		if( is_string( $ips ) )
@@ -110,7 +110,7 @@ class MaintenanceConfig
 	 */
 	public function getRetryAfter(): int
 	{
-		return (int)($this->_Config['retry_after'] ?? 3600);
+		return (int)($this->_config['retry_after'] ?? 3600);
 	}
 
 	/**
@@ -120,7 +120,7 @@ class MaintenanceConfig
 	 */
 	public function getCustomView(): ?string
 	{
-		return $this->_Config['custom_view'] ?? null;
+		return $this->_config['custom_view'] ?? null;
 	}
 
 	/**
@@ -130,17 +130,17 @@ class MaintenanceConfig
 	 */
 	public function shouldShowCountdown(): bool
 	{
-		return $this->_Config['show_countdown'] ?? false;
+		return $this->_config['show_countdown'] ?? false;
 	}
 
 	/**
 	 * Create MaintenanceConfig from settings source
 	 *
-	 * @param ISettingSource $Source
+	 * @param ISettingSource $source
 	 * @return self
 	 */
-	public static function fromSettings( ISettingSource $Source ): self
+	public static function fromSettings( ISettingSource $source ): self
 	{
-		return new self( $Source );
+		return new self( $source );
 	}
 }

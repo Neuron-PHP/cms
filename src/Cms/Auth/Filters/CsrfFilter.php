@@ -17,15 +17,15 @@ use Neuron\Log\Log;
  */
 class CsrfFilter extends Filter
 {
-	private CsrfTokenManager $_CsrfManager;
-	private array $_ExemptMethods = ['GET', 'HEAD', 'OPTIONS'];
+	private CsrfTokenManager $_csrfManager;
+	private array $_exemptMethods = ['GET', 'HEAD', 'OPTIONS'];
 
-	public function __construct( CsrfTokenManager $CsrfManager )
+	public function __construct( CsrfTokenManager $csrfManager )
 	{
-		$this->_CsrfManager = $CsrfManager;
+		$this->_csrfManager = $csrfManager;
 
 		parent::__construct(
-			function( RouteMap $Route ) { $this->validateCsrfToken( $Route ); },
+			function( RouteMap $route ) { $this->validateCsrfToken( $route ); },
 			null
 		);
 	}
@@ -33,27 +33,27 @@ class CsrfFilter extends Filter
 	/**
 	 * Validate CSRF token
 	 */
-	protected function validateCsrfToken( RouteMap $Route ): void
+	protected function validateCsrfToken( RouteMap $route ): void
 	{
-		$Method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
+		$method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
 
 		// Skip validation for safe methods
-		if( in_array( strtoupper( $Method ), $this->_ExemptMethods ) )
+		if( in_array( strtoupper( $method ), $this->_exemptMethods ) )
 		{
 			return;
 		}
 
 		// Get token from request
-		$Token = $this->getTokenFromRequest();
+		$token = $this->getTokenFromRequest();
 
-		if( !$Token )
+		if( !$token )
 		{
 			Log::warning( 'CSRF token missing from request' );
 			$this->respondForbidden( 'CSRF token missing' );
 		}
 
 		// Validate token
-		if( !$this->_CsrfManager->validate( $Token ) )
+		if( !$this->_csrfManager->validate( $token ) )
 		{
 			Log::warning( 'Invalid CSRF token' );
 			$this->respondForbidden( 'Invalid CSRF token' );
@@ -83,11 +83,11 @@ class CsrfFilter extends Filter
 	/**
 	 * Respond with 403 Forbidden
 	 */
-	private function respondForbidden( string $Message ): void
+	private function respondForbidden( string $message ): void
 	{
 		http_response_code( 403 );
 		echo '<h1>403 Forbidden</h1>';
-		echo '<p>' . htmlspecialchars( $Message ) . '</p>';
+		echo '<p>' . htmlspecialchars( $message ) . '</p>';
 		exit;
 	}
 }

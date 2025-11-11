@@ -14,32 +14,32 @@ interface ITagRepository
 	/**
 	 * Find tag by ID
 	 */
-	public function findById( int $Id ): ?Tag;
+	public function findById( int $id ): ?Tag;
 
 	/**
 	 * Find tag by slug
 	 */
-	public function findBySlug( string $Slug ): ?Tag;
+	public function findBySlug( string $slug ): ?Tag;
 
 	/**
 	 * Find tag by name
 	 */
-	public function findByName( string $Name ): ?Tag;
+	public function findByName( string $name ): ?Tag;
 
 	/**
 	 * Create a new tag
 	 */
-	public function create( Tag $Tag ): Tag;
+	public function create( Tag $tag ): Tag;
 
 	/**
 	 * Update an existing tag
 	 */
-	public function update( Tag $Tag ): bool;
+	public function update( Tag $tag ): bool;
 
 	/**
 	 * Delete a tag
 	 */
-	public function delete( int $Id ): bool;
+	public function delete( int $id ): bool;
 
 	/**
 	 * Get all tags

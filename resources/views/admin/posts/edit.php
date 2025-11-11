@@ -23,7 +23,7 @@
 
 				<div class="mb-3">
 					<label for="content" class="form-label">Content</label>
-					<textarea class="form-control" id="content" name="content" rows="15" required><?= htmlspecialchars( $post->getContent() ) ?></textarea>
+					<textarea class="form-control" id="content" name="content" rows="15" required><?= htmlspecialchars( $post->getBody() ) ?></textarea>
 					<small class="form-text text-muted">Markdown supported</small>
 				</div>
 

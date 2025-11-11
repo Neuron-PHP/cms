@@ -16,80 +16,80 @@ use DateInterval;
  */
 class AuthManager
 {
-	private IUserRepository $_UserRepository;
-	private SessionManager $_SessionManager;
-	private PasswordHasher $_PasswordHasher;
-	private int $_MaxLoginAttempts = 5;
-	private int $_LockoutDuration = 15; // minutes
+	private IUserRepository $_userRepository;
+	private SessionManager $_sessionManager;
+	private PasswordHasher $_passwordHasher;
+	private int $_maxLoginAttempts = 5;
+	private int $_lockoutDuration = 15; // minutes
 
 	public function __construct(
-		IUserRepository $UserRepository,
-		SessionManager $SessionManager,
-		PasswordHasher $PasswordHasher
+		IUserRepository $userRepository,
+		SessionManager $sessionManager,
+		PasswordHasher $passwordHasher
 	)
 	{
-		$this->_UserRepository = $UserRepository;
-		$this->_SessionManager = $SessionManager;
-		$this->_PasswordHasher = $PasswordHasher;
+		$this->_userRepository = $userRepository;
+		$this->_sessionManager = $sessionManager;
+		$this->_passwordHasher = $passwordHasher;
 	}
 
 	/**
 	 * Attempt to authenticate a user
 	 */
-	public function attempt( string $Username, string $Password, bool $Remember = false ): bool
+	public function attempt( string $username, string $password, bool $remember = false ): bool
 	{
-		$User = $this->_UserRepository->findByUsername( $Username );
+		$user = $this->_userRepository->findByUsername( $username );
 
-		if( !$User )
+		if( !$user )
 		{
 			// Perform dummy hash to normalize timing
-			$this->_PasswordHasher->verify( $Password, '$2y$10$dummyhashtopreventtimingattack1234567890' );
+			$this->_passwordHasher->verify( $password, '$2y$10$dummyhashtopreventtimingattack1234567890' );
 			return false;
 		}
 
 		// Check if account is locked
-		if( $User->isLockedOut() )
+		if( $user->isLockedOut() )
 		{
 			return false;
 		}
 
 		// Check if account is active
-		if( !$User->isActive() )
+		if( !$user->isActive() )
 		{
 			return false;
 		}
 
 		// Verify password
-		if( !$this->validateCredentials( $User, $Password ) )
+		if( !$this->validateCredentials( $user, $password ) )
 		{
 			// Increment failed login attempts
-			$User->incrementFailedLoginAttempts();
+			$user->incrementFailedLoginAttempts();
 
 			// Lock account if too many failed attempts
-			if( $User->getFailedLoginAttempts() >= $this->_MaxLoginAttempts )
+			if( $user->getFailedLoginAttempts() >= $this->_maxLoginAttempts )
 			{
-				$LockedUntil = (new DateTimeImmutable())->add( new DateInterval( "PT{$this->_LockoutDuration}M" ) );
-				$User->setLockedUntil( $LockedUntil );
+				$lockedUntil = (new DateTimeImmutable())->add( new DateInterval( "PT{$this->_lockoutDuration}M" ) );
+				$user->setLockedUntil( $lockedUntil );
 			}
 
-			$this->_UserRepository->update( $User );
+			$this->_userRepository->update( $user );
 			return false;
 		}
 
 		// Successful login - reset failed attempts
-		$User->resetFailedLoginAttempts();
-		$User->setLastLoginAt( new DateTimeImmutable() );
+		$user->resetFailedLoginAttempts();
+		$user->setLastLoginAt( new DateTimeImmutable() );
 
 		// Check if password needs rehashing
-		if( $this->_PasswordHasher->needsRehash( $User->getPasswordHash() ) )
+		if( $this->_passwordHasher->needsRehash( $user->getPasswordHash() ) )
 		{
-			$User->setPasswordHash( $this->_PasswordHasher->hash( $Password ) );
+			$user->setPasswordHash( $this->_passwordHasher->hash( $password ) );
 		}
 
-		$this->_UserRepository->update( $User );
+		$this->_userRepository->update( $user );
 
 		// Log the user in
-		$this->login( $User, $Remember );
+		$this->login( $user, $remember );
 
 		return true;
 	}
@@ -97,19 +97,19 @@ class AuthManager
 	/**
 	 * Log a user in
 	 */
-	public function login( User $User, bool $Remember = false ): void
+	public function login( User $user, bool $remember = false ): void
 	{
 		// Regenerate session ID to prevent session fixation
-		$this->_SessionManager->regenerate();
+		$this->_sessionManager->regenerate();
 
 		// Store user ID in session
-		$this->_SessionManager->set( 'user_id', $User->getId() );
-		$this->_SessionManager->set( 'user_role', $User->getRole() );
+		$this->_sessionManager->set( 'user_id', $user->getId() );
+		$this->_sessionManager->set( 'user_role', $user->getRole() );
 
 		// Handle remember me
-		if( $Remember )
+		if( $remember )
 		{
-			$this->setRememberToken( $User );
+			$this->setRememberToken( $user );
 		}
 	}
 
@@ -121,16 +121,16 @@ class AuthManager
 		// Clear remember token if exists
 		if( $this->check() )
 		{
-			$User = $this->user();
-			if( $User )
+			$user = $this->user();
+			if( $user )
 			{
-				$User->setRememberToken( null );
-				$this->_UserRepository->update( $User );
+				$user->setRememberToken( null );
+				$this->_userRepository->update( $user );
 			}
 		}
 
 		// Destroy session
-		$this->_SessionManager->destroy();
+		$this->_sessionManager->destroy();
 
 		// Delete remember me cookie if exists
 		if( isset( $_COOKIE['remember_token'] ) )
@@ -145,7 +145,7 @@ class AuthManager
 	public function check(): bool
 	{
 		// Check session first
-		if( $this->_SessionManager->has( 'user_id' ) )
+		if( $this->_sessionManager->has( 'user_id' ) )
 		{
 			return true;
 		}
@@ -169,22 +169,22 @@ class AuthManager
 			return null;
 		}
 
-		$UserId = $this->_SessionManager->get( 'user_id' );
+		$userId = $this->_sessionManager->get( 'user_id' );
 
-		if( !$UserId )
+		if( !$userId )
 		{
 			return null;
 		}
 
-		$User = $this->_UserRepository->findById( $UserId );
-		
-		if( !$User )
+		$user = $this->_userRepository->findById( $userId );
+
+		if( !$user )
 		{
 			// Clear stale session if user no longer exists
 			$this->logout();
 		}
-		
-		return $User;
+
+		return $user;
 	}
 
 	/**
@@ -196,37 +196,37 @@ class AuthManager
 		{
 			return null;
 		}
-		
-		return $this->_SessionManager->get( 'user_id' );
+
+		return $this->_sessionManager->get( 'user_id' );
 	}
 
 	/**
 	 * Validate user credentials
 	 */
-	public function validateCredentials( User $User, string $Password ): bool
+	public function validateCredentials( User $user, string $password ): bool
 	{
-		return $this->_PasswordHasher->verify( $Password, $User->getPasswordHash() );
+		return $this->_passwordHasher->verify( $password, $user->getPasswordHash() );
 	}
 
 	/**
 	 * Set remember me token for user
 	 */
-	private function setRememberToken( User $User ): void
+	private function setRememberToken( User $user ): void
 	{
 		// Generate secure random token
-		$Token = bin2hex( random_bytes( 32 ) );
+		$token = bin2hex( random_bytes( 32 ) );
 
 		// Hash the token before storing
-		$HashedToken = hash( 'sha256', $Token );
+		$hashedToken = hash( 'sha256', $token );
 
 		// Store hashed token in user record
-		$User->setRememberToken( $HashedToken );
-		$this->_UserRepository->update( $User );
+		$user->setRememberToken( $hashedToken );
+		$this->_userRepository->update( $user );
 
 		// Set cookie with plain token (30 days)
 		setcookie(
 			'remember_token',
-			$Token,
+			$token,
 			time() + (30 * 24 * 60 * 60),
 			'/',
 			'',
@@ -238,20 +238,20 @@ class AuthManager
 	/**
 	 * Attempt to log in using remember token
 	 */
-	public function loginUsingRememberToken( string $Token ): bool
+	public function loginUsingRememberToken( string $token ): bool
 	{
 		// Hash the token to compare with stored hash
-		$HashedToken = hash( 'sha256', $Token );
+		$hashedToken = hash( 'sha256', $token );
 
-		$User = $this->_UserRepository->findByRememberToken( $HashedToken );
+		$user = $this->_userRepository->findByRememberToken( $hashedToken );
 
-		if( !$User || !$User->isActive() )
+		if( !$user || !$user->isActive() )
 		{
 			return false;
 		}
 
 		// Log the user in
-		$this->login( $User, true );
+		$this->login( $user, true );
 
 		return true;
 	}
@@ -259,28 +259,28 @@ class AuthManager
 	/**
 	 * Set maximum login attempts before lockout
 	 */
-	public function setMaxLoginAttempts( int $MaxLoginAttempts ): self
+	public function setMaxLoginAttempts( int $maxLoginAttempts ): self
 	{
-		$this->_MaxLoginAttempts = $MaxLoginAttempts;
+		$this->_maxLoginAttempts = $maxLoginAttempts;
 		return $this;
 	}
 
 	/**
 	 * Set lockout duration in minutes
 	 */
-	public function setLockoutDuration( int $LockoutDuration ): self
+	public function setLockoutDuration( int $lockoutDuration ): self
 	{
-		$this->_LockoutDuration = $LockoutDuration;
+		$this->_lockoutDuration = $lockoutDuration;
 		return $this;
 	}
 
 	/**
 	 * Check if user has a specific role
 	 */
-	public function hasRole( string $Role ): bool
+	public function hasRole( string $role ): bool
 	{
-		$User = $this->user();
-		return $User && $User->getRole() === $Role;
+		$user = $this->user();
+		return $user && $user->getRole() === $role;
 	}
 
 	/**
@@ -296,13 +296,13 @@ class AuthManager
 	 */
 	public function isEditorOrHigher(): bool
 	{
-		$User = $this->user();
-		if( !$User )
+		$user = $this->user();
+		if( !$user )
 		{
 			return false;
 		}
 
-		return in_array( $User->getRole(), [User::ROLE_ADMIN, User::ROLE_EDITOR] );
+		return in_array( $user->getRole(), [User::ROLE_ADMIN, User::ROLE_EDITOR] );
 	}
 
 	/**
@@ -310,12 +310,12 @@ class AuthManager
 	 */
 	public function isAuthorOrHigher(): bool
 	{
-		$User = $this->user();
-		if( !$User )
+		$user = $this->user();
+		if( !$user )
 		{
 			return false;
 		}
 
-		return in_array( $User->getRole(), [User::ROLE_ADMIN, User::ROLE_EDITOR, User::ROLE_AUTHOR] );
+		return in_array( $user->getRole(), [User::ROLE_ADMIN, User::ROLE_EDITOR, User::ROLE_AUTHOR] );
 	}
 }

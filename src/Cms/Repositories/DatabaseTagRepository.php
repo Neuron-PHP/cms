@@ -2,7 +2,9 @@
 
 namespace Neuron\Cms\Repositories;
 
+use Neuron\Cms\Database\ConnectionFactory;
 use Neuron\Cms\Models\Tag;
+use Neuron\Data\Setting\SettingManager;
 use PDO;
 use Exception;
 use DateTimeImmutable;
@@ -16,55 +18,26 @@ use DateTimeImmutable;
  */
 class DatabaseTagRepository implements ITagRepository
 {
-	private PDO $_PDO;
+	private PDO $_pdo;
 
 	/**
 	 * Constructor
 	 *
-	 * @param array $DatabaseConfig Database configuration
-	 * @throws Exception if adapter is not supported
+	 * @param SettingManager $settings Settings manager with database configuration
+	 * @throws Exception if database configuration is missing or adapter is unsupported
 	 */
-	public function __construct( array $DatabaseConfig )
+	public function __construct( SettingManager $settings )
 	{
-		$adapter = $DatabaseConfig['adapter'] ?? 'sqlite';
-
-		$dsn = match( $adapter )
-		{
-			'sqlite' => "sqlite:{$DatabaseConfig['name']}",
-			'mysql' => sprintf(
-				"mysql:host=%s;port=%s;dbname=%s;charset=%s",
-				$DatabaseConfig['host'] ?? 'localhost',
-				$DatabaseConfig['port'] ?? 3306,
-				$DatabaseConfig['name'],
-				$DatabaseConfig['charset'] ?? 'utf8mb4'
-			),
-			'pgsql' => sprintf(
-				"pgsql:host=%s;port=%s;dbname=%s",
-				$DatabaseConfig['host'] ?? 'localhost',
-				$DatabaseConfig['port'] ?? 5432,
-				$DatabaseConfig['name']
-			),
-			default => throw new Exception( "Unsupported database adapter: $adapter" )
-		};
-
-		$this->_PDO = new PDO(
-			$dsn,
-			$DatabaseConfig['user'] ?? null,
-			$DatabaseConfig['pass'] ?? null,
-			[
-				PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-				PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC
-			]
-		);
+		$this->_pdo = ConnectionFactory::createFromSettings( $settings );
 	}
 
 	/**
 	 * Find tag by ID
 	 */
-	public function findById( int $Id ): ?Tag
+	public function findById( int $id ): ?Tag
 	{
-		$stmt = $this->_PDO->prepare( "SELECT * FROM tags WHERE id = ? LIMIT 1" );
-		$stmt->execute( [ $Id ] );
+		$stmt = $this->_pdo->prepare( "SELECT * FROM tags WHERE id = ? LIMIT 1" );
+		$stmt->execute( [ $id ] );
 
 		$row = $stmt->fetch();
 
@@ -74,10 +47,10 @@ class DatabaseTagRepository implements ITagRepository
 	/**
 	 * Find tag by slug
 	 */
-	public function findBySlug( string $Slug ): ?Tag
+	public function findBySlug( string $slug ): ?Tag
 	{
-		$stmt = $this->_PDO->prepare( "SELECT * FROM tags WHERE slug = ? LIMIT 1" );
-		$stmt->execute( [ $Slug ] );
+		$stmt = $this->_pdo->prepare( "SELECT * FROM tags WHERE slug = ? LIMIT 1" );
+		$stmt->execute( [ $slug ] );
 
 		$row = $stmt->fetch();
 
@@ -87,10 +60,10 @@ class DatabaseTagRepository implements ITagRepository
 	/**
 	 * Find tag by name
 	 */
-	public function findByName( string $Name ): ?Tag
+	public function findByName( string $name ): ?Tag
 	{
-		$stmt = $this->_PDO->prepare( "SELECT * FROM tags WHERE name = ? LIMIT 1" );
-		$stmt->execute( [ $Name ] );
+		$stmt = $this->_pdo->prepare( "SELECT * FROM tags WHERE name = ? LIMIT 1" );
+		$stmt->execute( [ $name ] );
 
 		$row = $stmt->fetch();
 
@@ -100,62 +73,62 @@ class DatabaseTagRepository implements ITagRepository
 	/**
 	 * Create a new tag
 	 */
-	public function create( Tag $Tag ): Tag
+	public function create( Tag $tag ): Tag
 	{
 		// Check for duplicate slug
-		if( $this->findBySlug( $Tag->getSlug() ) )
+		if( $this->findBySlug( $tag->getSlug() ) )
 		{
 			throw new Exception( 'Slug already exists' );
 		}
 
 		// Check for duplicate name
-		if( $this->findByName( $Tag->getName() ) )
+		if( $this->findByName( $tag->getName() ) )
 		{
 			throw new Exception( 'Tag name already exists' );
 		}
 
-		$stmt = $this->_PDO->prepare(
+		$stmt = $this->_pdo->prepare(
 			"INSERT INTO tags (name, slug, created_at, updated_at)
 			VALUES (?, ?, ?, ?)"
 		);
 
 		$stmt->execute([
-			$Tag->getName(),
-			$Tag->getSlug(),
-			$Tag->getCreatedAt()->format( 'Y-m-d H:i:s' ),
+			$tag->getName(),
+			$tag->getSlug(),
+			$tag->getCreatedAt()->format( 'Y-m-d H:i:s' ),
 			(new DateTimeImmutable())->format( 'Y-m-d H:i:s' )
 		]);
 
-		$Tag->setId( (int)$this->_PDO->lastInsertId() );
+		$tag->setId( (int)$this->_pdo->lastInsertId() );
 
-		return $Tag;
+		return $tag;
 	}
 
 	/**
 	 * Update an existing tag
 	 */
-	public function update( Tag $Tag ): bool
+	public function update( Tag $tag ): bool
 	{
-		if( !$Tag->getId() )
+		if( !$tag->getId() )
 		{
 			return false;
 		}
 
 		// Check for duplicate slug (excluding current tag)
-		$ExistingBySlug = $this->findBySlug( $Tag->getSlug() );
-		if( $ExistingBySlug && $ExistingBySlug->getId() !== $Tag->getId() )
+		$existingBySlug = $this->findBySlug( $tag->getSlug() );
+		if( $existingBySlug && $existingBySlug->getId() !== $tag->getId() )
 		{
 			throw new Exception( 'Slug already exists' );
 		}
 
 		// Check for duplicate name (excluding current tag)
-		$ExistingByName = $this->findByName( $Tag->getName() );
-		if( $ExistingByName && $ExistingByName->getId() !== $Tag->getId() )
+		$existingByName = $this->findByName( $tag->getName() );
+		if( $existingByName && $existingByName->getId() !== $tag->getId() )
 		{
 			throw new Exception( 'Tag name already exists' );
 		}
 
-		$stmt = $this->_PDO->prepare(
+		$stmt = $this->_pdo->prepare(
 			"UPDATE tags SET
 				name = ?,
 				slug = ?,
@@ -164,21 +137,21 @@ class DatabaseTagRepository implements ITagRepository
 		);
 
 		return $stmt->execute([
-			$Tag->getName(),
-			$Tag->getSlug(),
+			$tag->getName(),
+			$tag->getSlug(),
 			(new DateTimeImmutable())->format( 'Y-m-d H:i:s' ),
-			$Tag->getId()
+			$tag->getId()
 		]);
 	}
 
 	/**
 	 * Delete a tag
 	 */
-	public function delete( int $Id ): bool
+	public function delete( int $id ): bool
 	{
 		// Foreign key constraints will handle cascade delete of post relationships
-		$stmt = $this->_PDO->prepare( "DELETE FROM tags WHERE id = ?" );
-		$stmt->execute( [ $Id ] );
+		$stmt = $this->_pdo->prepare( "DELETE FROM tags WHERE id = ?" );
+		$stmt->execute( [ $id ] );
 
 		return $stmt->rowCount() > 0;
 	}
@@ -188,7 +161,7 @@ class DatabaseTagRepository implements ITagRepository
 	 */
 	public function all(): array
 	{
-		$stmt = $this->_PDO->query( "SELECT * FROM tags ORDER BY name ASC" );
+		$stmt = $this->_pdo->query( "SELECT * FROM tags ORDER BY name ASC" );
 		$rows = $stmt->fetchAll();
 
 		return array_map( fn( $row ) => Tag::fromArray( $row ), $rows );
@@ -199,7 +172,7 @@ class DatabaseTagRepository implements ITagRepository
 	 */
 	public function count(): int
 	{
-		$stmt = $this->_PDO->query( "SELECT COUNT(*) as total FROM tags" );
+		$stmt = $this->_pdo->query( "SELECT COUNT(*) as total FROM tags" );
 		$row = $stmt->fetch();
 
 		return (int)$row['total'];
@@ -210,7 +183,7 @@ class DatabaseTagRepository implements ITagRepository
 	 */
 	public function allWithPostCount(): array
 	{
-		$stmt = $this->_PDO->query(
+		$stmt = $this->_pdo->query(
 			"SELECT t.*, COUNT(pt.post_id) as post_count
 			FROM tags t
 			LEFT JOIN post_tags pt ON t.id = pt.tag_id

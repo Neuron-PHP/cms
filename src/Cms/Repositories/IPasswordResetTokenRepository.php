@@ -16,34 +16,34 @@ interface IPasswordResetTokenRepository
 	/**
 	 * Create a new password reset token
 	 *
-	 * @param PasswordResetToken $Token Token to create
+	 * @param PasswordResetToken $token Token to create
 	 * @return PasswordResetToken Created token with ID set
 	 */
-	public function create( PasswordResetToken $Token ): PasswordResetToken;
+	public function create( PasswordResetToken $token ): PasswordResetToken;
 
 	/**
 	 * Find a token by its hashed value
 	 *
-	 * @param string $Token Hashed token
+	 * @param string $token Hashed token
 	 * @return PasswordResetToken|null Token if found, null otherwise
 	 */
-	public function findByToken( string $Token ): ?PasswordResetToken;
+	public function findByToken( string $token ): ?PasswordResetToken;
 
 	/**
 	 * Delete all tokens for a given email address
 	 *
-	 * @param string $Email Email address
+	 * @param string $email Email address
 	 * @return int Number of tokens deleted
 	 */
-	public function deleteByEmail( string $Email ): int;
+	public function deleteByEmail( string $email ): int;
 
 	/**
 	 * Delete a specific token by its hashed value
 	 *
-	 * @param string $Token Hashed token
+	 * @param string $token Hashed token
 	 * @return bool True if deleted, false otherwise
 	 */
-	public function deleteByToken( string $Token ): bool;
+	public function deleteByToken( string $token ): bool;
 
 	/**
 	 * Delete all expired tokens

@@ -14,11 +14,11 @@ use Neuron\Patterns\Registry;
  */
 class InstallCommand extends Command
 {
-	private string $_ProjectPath;
+	private string $_projectPath;
 
 	public function __construct()
 	{
-		$this->_ProjectPath = getcwd();
+		$this->_projectPath = getcwd();
 	}
 
 	/**
@@ -48,7 +48,7 @@ class InstallCommand extends Command
 	/**
 	 * Execute the command
 	 */
-	public function execute( array $Parameters = [] ): int
+	public function execute( array $parameters = [] ): int
 	{
 		$this->output->info( "╔═══════════════════════════════════════╗" );
 		$this->output->info( "║  Job Queue Installation               ║" );
@@ -155,7 +155,7 @@ class InstallCommand extends Command
 	 */
 	private function isAlreadyInstalled(): bool
 	{
-		$migrationsDir = $this->_ProjectPath . '/db/migrate';
+		$migrationsDir = $this->_projectPath . '/db/migrate';
 		$snakeCaseName = $this->camelToSnake( 'CreateQueueTables' );
 
 		// Check for existing migration
@@ -167,7 +167,7 @@ class InstallCommand extends Command
 		}
 
 		// Check for queue config
-		$configFile = $this->_ProjectPath . '/config/config.yaml';
+		$configFile = $this->_projectPath . '/config/config.yaml';
 
 		if( !file_exists( $configFile ) )
 		{
@@ -195,7 +195,7 @@ class InstallCommand extends Command
 	{
 		$migrationName = 'CreateQueueTables';
 		$snakeCaseName = $this->camelToSnake( $migrationName );
-		$migrationsDir = $this->_ProjectPath . '/db/migrate';
+		$migrationsDir = $this->_projectPath . '/db/migrate';
 
 		// Create migrations directory if it doesn't exist
 		if( !is_dir( $migrationsDir ) )
@@ -238,7 +238,7 @@ class InstallCommand extends Command
 	/**
 	 * Get migration template
 	 */
-	private function getMigrationTemplate( string $ClassName ): string
+	private function getMigrationTemplate( string $className ): string
 	{
 		return <<<PHP
 <?php
@@ -248,7 +248,7 @@ use Phinx\Migration\AbstractMigration;
 /**
  * Create queue tables for job processing
  */
-class $ClassName extends AbstractMigration
+class $className extends AbstractMigration
 {
 	/**
 	 * Create jobs and failed_jobs tables
@@ -292,7 +292,7 @@ PHP;
 	 */
 	private function addQueueConfig(): bool
 	{
-		$configFile = $this->_ProjectPath . '/config/config.yaml';
+		$configFile = $this->_projectPath . '/config/config.yaml';
 
 		if( !file_exists( $configFile ) )
 		{
@@ -406,8 +406,8 @@ YAML;
 	/**
 	 * Convert CamelCase to snake_case
 	 */
-	private function camelToSnake( string $Input ): string
+	private function camelToSnake( string $input ): string
 	{
-		return strtolower( preg_replace( '/(?<!^)[A-Z]/', '_$0', $Input ) );
+		return strtolower( preg_replace( '/(?<!^)[A-Z]/', '_$0', $input ) );
 	}
 }

@@ -19,25 +19,25 @@ use PHPUnit\Framework\TestCase;
 
 class BlogControllerTest extends TestCase
 {
-	private PDO $_PDO;
-	private DatabasePostRepository $_PostRepository;
-	private DatabaseCategoryRepository $_CategoryRepository;
-	private DatabaseTagRepository $_TagRepository;
-	private $OriginalRegistry;
+	private PDO $_pdo;
+	private DatabasePostRepository $_postRepository;
+	private DatabaseCategoryRepository $_categoryRepository;
+	private DatabaseTagRepository $_tagRepository;
+	private $originalRegistry;
 
 	protected function setUp(): void
 	{
 		parent::setUp();
 
 		// Store original registry values
-		$this->OriginalRegistry = [
+		$this->originalRegistry = [
 			'Settings' => Registry::getInstance()->get( 'Settings' ),
 			'Base.Path' => Registry::getInstance()->get( 'Base.Path' ),
 			'Views.Path' => Registry::getInstance()->get( 'Views.Path' )
 		];
 
 		// Set up in-memory database
-		$this->_PDO = new PDO(
+		$this->_pdo = new PDO(
 			'sqlite::memory:',
 			null,
 			null,
@@ -51,18 +51,18 @@ class BlogControllerTest extends TestCase
 		$this->createTables();
 
 		// Set up Settings with database config
-		$Settings = new Memory();
-		$Settings->set( 'site', 'name', 'Test Blog' );
-		$Settings->set( 'site', 'title', 'Test Blog Title' );
-		$Settings->set( 'site', 'description', 'Test Blog Description' );
-		$Settings->set( 'site', 'url', 'http://test.com' );
-		$Settings->set( 'database', 'adapter', 'sqlite' );
-		$Settings->set( 'database', 'name', ':memory:' );
+		$settings = new Memory();
+		$settings->set( 'site', 'name', 'Test Blog' );
+		$settings->set( 'site', 'title', 'Test Blog Title' );
+		$settings->set( 'site', 'description', 'Test Blog Description' );
+		$settings->set( 'site', 'url', 'http://test.com' );
+		$settings->set( 'database', 'adapter', 'sqlite' );
+		$settings->set( 'database', 'name', ':memory:' );
 
 		// Wrap in SettingManager
-		$SettingManager = new SettingManager( $Settings );
+		$settingManager = new SettingManager( $settings );
 
-		Registry::getInstance()->set( 'Settings', $SettingManager );
+		Registry::getInstance()->set( 'Settings', $settingManager );
 
 		// Set paths for views - point to CMS component's resources
 		Registry::getInstance()->set( 'Base.Path', __DIR__ . '/../..' );
@@ -75,9 +75,9 @@ class BlogControllerTest extends TestCase
 	protected function tearDown(): void
 	{
 		// Restore original registry values
-		foreach( $this->OriginalRegistry as $Key => $Value )
+		foreach( $this->originalRegistry as $key => $value )
 		{
-			Registry::getInstance()->set( $Key, $Value );
+			Registry::getInstance()->set( $key, $value );
 		}
 		parent::tearDown();
 	}
@@ -85,7 +85,7 @@ class BlogControllerTest extends TestCase
 	private function createTables(): void
 	{
 		// Create posts table
-		$this->_PDO->exec( "
+		$this->_pdo->exec( "
 			CREATE TABLE posts (
 				id INTEGER PRIMARY KEY AUTOINCREMENT,
 				title VARCHAR(255) NOT NULL,
@@ -103,7 +103,7 @@ class BlogControllerTest extends TestCase
 		" );
 
 		// Create categories table
-		$this->_PDO->exec( "
+		$this->_pdo->exec( "
 			CREATE TABLE categories (
 				id INTEGER PRIMARY KEY AUTOINCREMENT,
 				name VARCHAR(255) NOT NULL,
@@ -115,7 +115,7 @@ class BlogControllerTest extends TestCase
 		" );
 
 		// Create tags table
-		$this->_PDO->exec( "
+		$this->_pdo->exec( "
 			CREATE TABLE tags (
 				id INTEGER PRIMARY KEY AUTOINCREMENT,
 				name VARCHAR(100) NOT NULL,
@@ -126,7 +126,7 @@ class BlogControllerTest extends TestCase
 		" );
 
 		// Create junction tables
-		$this->_PDO->exec( "
+		$this->_pdo->exec( "
 			CREATE TABLE post_categories (
 				post_id INTEGER NOT NULL,
 				category_id INTEGER NOT NULL,
@@ -137,7 +137,7 @@ class BlogControllerTest extends TestCase
 			)
 		" );
 
-		$this->_PDO->exec( "
+		$this->_pdo->exec( "
 			CREATE TABLE post_tags (
 				post_id INTEGER NOT NULL,
 				tag_id INTEGER NOT NULL,
@@ -151,37 +151,37 @@ class BlogControllerTest extends TestCase
 
 	private function initializeRepositories(): void
 	{
-		$pdo = $this->_PDO;
+		$pdo = $this->_pdo;
 
 		// Create repositories using reflection to inject PDO
-		$this->_PostRepository = new class( $pdo ) extends DatabasePostRepository
+		$this->_postRepository = new class( $pdo ) extends DatabasePostRepository
 		{
 			public function __construct( PDO $PDO )
 			{
 				$reflection = new \ReflectionClass( DatabasePostRepository::class );
-				$property = $reflection->getProperty( '_PDO' );
+				$property = $reflection->getProperty( '_pdo' );
 				$property->setAccessible( true );
 				$property->setValue( $this, $PDO );
 			}
 		};
 
-		$this->_CategoryRepository = new class( $pdo ) extends DatabaseCategoryRepository
+		$this->_categoryRepository = new class( $pdo ) extends DatabaseCategoryRepository
 		{
 			public function __construct( PDO $PDO )
 			{
 				$reflection = new \ReflectionClass( DatabaseCategoryRepository::class );
-				$property = $reflection->getProperty( '_PDO' );
+				$property = $reflection->getProperty( '_pdo' );
 				$property->setAccessible( true );
 				$property->setValue( $this, $PDO );
 			}
 		};
 
-		$this->_TagRepository = new class( $pdo ) extends DatabaseTagRepository
+		$this->_tagRepository = new class( $pdo ) extends DatabaseTagRepository
 		{
 			public function __construct( PDO $PDO )
 			{
 				$reflection = new \ReflectionClass( DatabaseTagRepository::class );
-				$property = $reflection->getProperty( '_PDO' );
+				$property = $reflection->getProperty( '_pdo' );
 				$property->setAccessible( true );
 				$property->setValue( $this, $PDO );
 			}
@@ -191,24 +191,24 @@ class BlogControllerTest extends TestCase
 	private function createBlogWithInjectedRepositories(): Blog
 	{
 		// Create Blog controller
-		$Blog = new Blog();
+		$blog = new Blog();
 
 		// Inject our test repositories using reflection
-		$reflection = new \ReflectionClass( $Blog );
+		$reflection = new \ReflectionClass( $blog );
 
-		$postRepoProp = $reflection->getProperty( '_PostRepository' );
+		$postRepoProp = $reflection->getProperty( '_postRepository' );
 		$postRepoProp->setAccessible( true );
-		$postRepoProp->setValue( $Blog, $this->_PostRepository );
+		$postRepoProp->setValue( $blog, $this->_postRepository );
 
-		$categoryRepoProp = $reflection->getProperty( '_CategoryRepository' );
+		$categoryRepoProp = $reflection->getProperty( '_categoryRepository' );
 		$categoryRepoProp->setAccessible( true );
-		$categoryRepoProp->setValue( $Blog, $this->_CategoryRepository );
+		$categoryRepoProp->setValue( $blog, $this->_categoryRepository );
 
-		$tagRepoProp = $reflection->getProperty( '_TagRepository' );
+		$tagRepoProp = $reflection->getProperty( '_tagRepository' );
 		$tagRepoProp->setAccessible( true );
-		$tagRepoProp->setValue( $Blog, $this->_TagRepository );
+		$tagRepoProp->setValue( $blog, $this->_tagRepository );
 
-		return $Blog;
+		return $blog;
 	}
 
 	private function createTestPost(
@@ -230,7 +230,7 @@ class BlogControllerTest extends TestCase
 			$post->setPublishedAt( new DateTimeImmutable() );
 		}
 
-		return $this->_PostRepository->create( $post );
+		return $this->_postRepository->create( $post );
 	}
 
 	private function createTestCategory( string $name, string $slug ): Category
@@ -239,7 +239,7 @@ class BlogControllerTest extends TestCase
 		$category->setName( $name );
 		$category->setSlug( $slug );
 
-		return $this->_CategoryRepository->create( $category );
+		return $this->_categoryRepository->create( $category );
 	}
 
 	private function createTestTag( string $name, string $slug ): Tag
@@ -248,7 +248,7 @@ class BlogControllerTest extends TestCase
 		$tag->setName( $name );
 		$tag->setSlug( $slug );
 
-		return $this->_TagRepository->create( $tag );
+		return $this->_tagRepository->create( $tag );
 	}
 
 	public function testIndexReturnsPublishedPosts(): void
@@ -289,7 +289,7 @@ class BlogControllerTest extends TestCase
 
 		$post1 = $this->createTestPost( 'PHP Post', 'php-post', Post::STATUS_PUBLISHED );
 		$post1->addTag( $tag );
-		$this->_PostRepository->update( $post1 );
+		$this->_postRepository->update( $post1 );
 
 		$this->createTestPost( 'Other Post', 'other-post', Post::STATUS_PUBLISHED );
 
@@ -305,7 +305,7 @@ class BlogControllerTest extends TestCase
 
 		$post1 = $this->createTestPost( 'Tech Post', 'tech-post', Post::STATUS_PUBLISHED );
 		$post1->addCategory( $category );
-		$this->_PostRepository->update( $post1 );
+		$this->_postRepository->update( $post1 );
 
 		$this->createTestPost( 'Other Post', 'other-post', Post::STATUS_PUBLISHED );
 
@@ -350,8 +350,8 @@ class BlogControllerTest extends TestCase
 		$this->assertIsString( $blog->show( [ 'title' => 'test-post' ], null ) );
 
 		// Test with actual Request object
-		$MockRequest = $this->createMock( Request::class );
-		$this->assertIsString( $blog->index( [], $MockRequest ) );
-		$this->assertIsString( $blog->show( [ 'title' => 'test-post' ], $MockRequest ) );
+		$mockRequest = $this->createMock( Request::class );
+		$this->assertIsString( $blog->index( [], $mockRequest ) );
+		$this->assertIsString( $blog->show( [ 'title' => 'test-post' ], $mockRequest ) );
 	}
 }

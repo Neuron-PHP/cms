@@ -8,6 +8,7 @@ use Neuron\Cms\Auth\SessionManager;
 use Neuron\Cms\Auth\PasswordHasher;
 use Neuron\Cms\Models\User;
 use Neuron\Cms\Repositories\DatabaseUserRepository;
+use Neuron\Data\Setting\SettingManager;
 use DateTimeImmutable;
 use PDO;
 
@@ -31,11 +32,17 @@ class AuthManagerTest extends TestCase
 			'name' => ':memory:'
 		];
 
-		$this->userRepository = new DatabaseUserRepository($config);
+		// Mock SettingManager
+		$settings = $this->createMock( SettingManager::class );
+		$settings->method( 'getSection' )
+			->with( 'database' )
+			->willReturn( $config );
+
+		$this->userRepository = new DatabaseUserRepository($settings);
 
 		// Get PDO connection via reflection to create table
 		$reflection = new \ReflectionClass($this->userRepository);
-		$property = $reflection->getProperty('_PDO');
+		$property = $reflection->getProperty('_pdo');
 		$property->setAccessible(true);
 		$this->pdo = $property->getValue($this->userRepository);
 

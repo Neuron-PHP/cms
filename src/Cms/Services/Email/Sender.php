@@ -1,6 +1,6 @@
 <?php
 
-namespace Neuron\Cms\Services;
+namespace Neuron\Cms\Services\Email;
 
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception as PHPMailerException;
@@ -9,26 +9,30 @@ use Neuron\Log\Log;
 use Neuron\Mvc\Views\Html;
 
 /**
- * Email service for sending emails with templates
+ * Email sending service.
+ *
+ * Sends emails with templates using PHPMailer.
+ *
+ * @package Neuron\Cms\Services\Email
  */
-class EmailService
+class Sender
 {
-	private ?ISettingSource $_Settings;
-	private string $_BasePath;
-	private array $_To = [];
-	private array $_Cc = [];
-	private array $_Bcc = [];
-	private string $_Subject = '';
-	private string $_Body = '';
-	private bool $_IsHtml = true;
-	private array $_Attachments = [];
-	private ?string $_ReplyTo = null;
-	private ?string $_ReplyToName = null;
+	private ?ISettingSource $_settings;
+	private string $_basePath;
+	private array $_to = [];
+	private array $_cc = [];
+	private array $_bcc = [];
+	private string $_subject = '';
+	private string $_body = '';
+	private bool $_isHtml = true;
+	private array $_attachments = [];
+	private ?string $_replyTo = null;
+	private ?string $_replyToName = null;
 
-	public function __construct( ?ISettingSource $Settings = null, string $BasePath = '' )
+	public function __construct( ?ISettingSource $settings = null, string $basePath = '' )
 	{
-		$this->_Settings = $Settings;
-		$this->_BasePath = $BasePath ?: getcwd();
+		$this->_settings = $settings;
+		$this->_basePath = $basePath ?: getcwd();
 	}
 
 	/**
@@ -36,7 +40,7 @@ class EmailService
 	 */
 	public function to( string $email, string $name = '' ): self
 	{
-		$this->_To[] = [ 'email' => $email, 'name' => $name ];
+		$this->_to[] = [ 'email' => $email, 'name' => $name ];
 		return $this;
 	}
 
@@ -45,7 +49,7 @@ class EmailService
 	 */
 	public function cc( string $email, string $name = '' ): self
 	{
-		$this->_Cc[] = [ 'email' => $email, 'name' => $name ];
+		$this->_cc[] = [ 'email' => $email, 'name' => $name ];
 		return $this;
 	}
 
@@ -54,7 +58,7 @@ class EmailService
 	 */
 	public function bcc( string $email, string $name = '' ): self
 	{
-		$this->_Bcc[] = [ 'email' => $email, 'name' => $name ];
+		$this->_bcc[] = [ 'email' => $email, 'name' => $name ];
 		return $this;
 	}
 
@@ -63,7 +67,7 @@ class EmailService
 	 */
 	public function subject( string $subject ): self
 	{
-		$this->_Subject = $subject;
+		$this->_subject = $subject;
 		return $this;
 	}
 
@@ -72,8 +76,8 @@ class EmailService
 	 */
 	public function body( string $body, bool $isHtml = true ): self
 	{
-		$this->_Body = $body;
-		$this->_IsHtml = $isHtml;
+		$this->_body = $body;
+		$this->_isHtml = $isHtml;
 		return $this;
 	}
 
@@ -82,8 +86,8 @@ class EmailService
 	 */
 	public function replyTo( string $email, string $name = '' ): self
 	{
-		$this->_ReplyTo = $email;
-		$this->_ReplyToName = $name;
+		$this->_replyTo = $email;
+		$this->_replyToName = $name;
 		return $this;
 	}
 
@@ -92,7 +96,7 @@ class EmailService
 	 */
 	public function attach( string $filePath, string $name = '' ): self
 	{
-		$this->_Attachments[] = [ 'path' => $filePath, 'name' => $name ];
+		$this->_attachments[] = [ 'path' => $filePath, 'name' => $name ];
 		return $this;
 	}
 
@@ -104,7 +108,7 @@ class EmailService
 		try
 		{
 			$view = new Html();
-			$view->setViewPath( $this->_BasePath . '/resources/views' );
+			$view->setViewPath( $this->_basePath . '/resources/views' );
 			$view->setPage( $templatePath );
 
 			// Render the template
@@ -114,14 +118,14 @@ class EmailService
 				$$key = $value;
 			}
 			require $view->getViewPath() . '/' . $templatePath . '.php';
-			$this->_Body = ob_get_clean();
-			$this->_IsHtml = true;
+			$this->_body = ob_get_clean();
+			$this->_isHtml = true;
 
 			return $this;
 		}
-		catch( \Exception $e )
+		catch( \Exception $exception )
 		{
-			Log::error( "Email template error: " . $e->getMessage() );
+			Log::error( "Email template error: " . $exception->getMessage() );
 			throw new \RuntimeException( "Failed to render email template: {$templatePath}" );
 		}
 	}
@@ -132,7 +136,7 @@ class EmailService
 	public function send(): bool
 	{
 		// Check for test mode
-		if( $this->_Settings && $this->_Settings->get( 'email.test_mode' ) )
+		if( $this->_settings && $this->_settings->get( 'email.test_mode' ) )
 		{
 			return $this->logEmail();
 		}
@@ -142,51 +146,51 @@ class EmailService
 			$mail = $this->createMailer();
 
 			// Recipients
-			foreach( $this->_To as $recipient )
+			foreach( $this->_to as $recipient )
 			{
 				$mail->addAddress( $recipient['email'], $recipient['name'] );
 			}
 
-			foreach( $this->_Cc as $recipient )
+			foreach( $this->_cc as $recipient )
 			{
 				$mail->addCC( $recipient['email'], $recipient['name'] );
 			}
 
-			foreach( $this->_Bcc as $recipient )
+			foreach( $this->_bcc as $recipient )
 			{
 				$mail->addBCC( $recipient['email'], $recipient['name'] );
 			}
 
 			// Reply-To
-			if( $this->_ReplyTo )
+			if( $this->_replyTo )
 			{
-				$mail->addReplyTo( $this->_ReplyTo, $this->_ReplyToName ?? '' );
+				$mail->addReplyTo( $this->_replyTo, $this->_replyToName ?? '' );
 			}
 
 			// Attachments
-			foreach( $this->_Attachments as $attachment )
+			foreach( $this->_attachments as $attachment )
 			{
 				$mail->addAttachment( $attachment['path'], $attachment['name'] );
 			}
 
 			// Content
-			$mail->Subject = $this->_Subject;
-			$mail->Body = $this->_Body;
-			$mail->isHTML( $this->_IsHtml );
+			$mail->Subject = $this->_subject;
+			$mail->Body = $this->_body;
+			$mail->isHTML( $this->_isHtml );
 
 			// Send
 			$result = $mail->send();
 
 			if( $result )
 			{
-				Log::info( "Email sent to: " . $this->_To[0]['email'] );
+				Log::info( "Email sent to: " . $this->_to[0]['email'] );
 			}
 
 			return $result;
 		}
-		catch( PHPMailerException $e )
+		catch( PHPMailerException $exception )
 		{
-			Log::error( "Email send failed: " . $e->getMessage() );
+			Log::error( "Email send failed: " . $exception->getMessage() );
 			return false;
 		}
 	}
@@ -199,14 +203,14 @@ class EmailService
 		$mail = new PHPMailer( true );
 
 		// Get config
-		$driver = $this->_Settings?->get( 'email.driver' ) ?? 'mail';
-		$host = $this->_Settings?->get( 'email.host' ) ?? '';
-		$port = $this->_Settings?->get( 'email.port' ) ?? 587;
-		$username = $this->_Settings?->get( 'email.username' ) ?? '';
-		$password = $this->_Settings?->get( 'email.password' ) ?? '';
-		$encryption = $this->_Settings?->get( 'email.encryption' ) ?? 'tls';
-		$fromAddress = $this->_Settings?->get( 'email.from_address' ) ?? 'noreply@example.com';
-		$fromName = $this->_Settings?->get( 'email.from_name' ) ?? 'Neuron CMS';
+		$driver = $this->_settings?->get( 'email.driver' ) ?? 'mail';
+		$host = $this->_settings?->get( 'email.host' ) ?? '';
+		$port = $this->_settings?->get( 'email.port' ) ?? 587;
+		$username = $this->_settings?->get( 'email.username' ) ?? '';
+		$password = $this->_settings?->get( 'email.password' ) ?? '';
+		$encryption = $this->_settings?->get( 'email.encryption' ) ?? 'tls';
+		$fromAddress = $this->_settings?->get( 'email.from_address' ) ?? 'noreply@example.com';
+		$fromName = $this->_settings?->get( 'email.from_name' ) ?? 'Neuron CMS';
 
 		// Configure based on driver
 		if( $driver === 'smtp' )
@@ -254,12 +258,12 @@ class EmailService
 	 */
 	private function logEmail(): bool
 	{
-		$recipients = array_map( fn($r) => $r['email'], $this->_To );
+		$recipients = array_map( fn($recipient) => $recipient['email'], $this->_to );
 
 		Log::info( "TEST MODE - Email not sent" );
 		Log::info( "  To: " . implode( ', ', $recipients ) );
-		Log::info( "  Subject: " . $this->_Subject );
-		Log::info( "  Body: " . substr( strip_tags( $this->_Body ), 0, 100 ) . '...' );
+		Log::info( "  Subject: " . $this->_subject );
+		Log::info( "  Body: " . substr( strip_tags( $this->_body ), 0, 100 ) . '...' );
 
 		return true;
 	}

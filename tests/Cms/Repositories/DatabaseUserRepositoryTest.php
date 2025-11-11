@@ -5,6 +5,7 @@ namespace Neuron\Cms\Tests\Repositories;
 use PHPUnit\Framework\TestCase;
 use Neuron\Cms\Repositories\DatabaseUserRepository;
 use Neuron\Cms\Models\User;
+use Neuron\Data\Setting\SettingManager;
 use PDO;
 use DateTimeImmutable;
 
@@ -28,11 +29,17 @@ class DatabaseUserRepositoryTest extends TestCase
 			'name' => $this->dbPath
 		];
 
-		$this->repository = new DatabaseUserRepository( $config );
+		// Mock SettingManager
+		$settings = $this->createMock( SettingManager::class );
+		$settings->method( 'getSection' )
+			->with( 'database' )
+			->willReturn( $config );
+
+		$this->repository = new DatabaseUserRepository( $settings );
 
 		// Get PDO connection via reflection to create table
 		$reflection = new \ReflectionClass( $this->repository );
-		$property = $reflection->getProperty( '_PDO' );
+		$property = $reflection->getProperty( '_pdo' );
 		$property->setAccessible( true );
 		$this->pdo = $property->getValue( $this->repository );
 
@@ -71,7 +78,12 @@ class DatabaseUserRepositoryTest extends TestCase
 			'name' => ':memory:'
 		];
 
-		$repository = new DatabaseUserRepository( $config );
+		$settings = $this->createMock( SettingManager::class );
+		$settings->method( 'getSection' )
+			->with( 'database' )
+			->willReturn( $config );
+
+		$repository = new DatabaseUserRepository( $settings );
 		$this->assertInstanceOf( DatabaseUserRepository::class, $repository );
 	}
 
@@ -89,7 +101,12 @@ class DatabaseUserRepositoryTest extends TestCase
 			'charset' => 'utf8mb4'
 		];
 
-		new DatabaseUserRepository( $config );
+		$settings = $this->createMock( SettingManager::class );
+		$settings->method( 'getSection' )
+			->with( 'database' )
+			->willReturn( $config );
+
+		new DatabaseUserRepository( $settings );
 	}
 
 	public function testConstructorWithInvalidAdapter(): void
@@ -102,7 +119,12 @@ class DatabaseUserRepositoryTest extends TestCase
 			'name' => 'test.db'
 		];
 
-		new DatabaseUserRepository( $config );
+		$settings = $this->createMock( SettingManager::class );
+		$settings->method( 'getSection' )
+			->with( 'database' )
+			->willReturn( $config );
+
+		new DatabaseUserRepository( $settings );
 	}
 
 	public function testFindById(): void

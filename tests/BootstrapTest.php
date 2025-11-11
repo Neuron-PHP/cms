@@ -11,18 +11,18 @@ use function Neuron\Cms\Boot;
 
 class BootstrapTest extends TestCase
 {
-	private $Root;
-	private $OriginalEnv;
+	private $root;
+	private $originalEnv;
 	
 	protected function setUp(): void
 	{
 		parent::setUp();
 		
 		// Create virtual filesystem
-		$this->Root = vfsStream::setup( 'test' );
-		
+		$this->root = vfsStream::setup( 'test' );
+
 		// Store original environment
-		$this->OriginalEnv = $_ENV ?? [];
+		$this->originalEnv = $_ENV ?? [];
 		
 		// Clear environment variable
 		putenv( 'SYSTEM_BASE_PATH' );
@@ -31,7 +31,7 @@ class BootstrapTest extends TestCase
 	protected function tearDown(): void
 	{
 		// Restore original environment
-		$_ENV = $this->OriginalEnv;
+		$_ENV = $this->originalEnv;
 		
 		// Clear environment variable
 		putenv( 'SYSTEM_BASE_PATH' );
@@ -45,7 +45,7 @@ class BootstrapTest extends TestCase
 	public function testBootWithValidConfig()
 	{
 		// Create config.yaml
-		$ConfigContent = <<<YAML
+		$configContent = <<<YAML
 system:
   base_path: /app
   environment: test
@@ -53,42 +53,42 @@ system:
 database:
   host: localhost
   port: 3306
-  
+
 site:
   name: Test Site
   title: Test Title
   description: Test Description
   url: http://test.com
 YAML;
-		
+
 		vfsStream::newFile( 'config.yaml' )
-			->at( $this->Root )
-			->setContent( $ConfigContent );
-		
+			->at( $this->root )
+			->setContent( $configContent );
+
 		// Create version.json
-		$VersionContent = json_encode([
+		$versionContent = json_encode([
 			'major' => 1,
 			'minor' => 0,
 			'patch' => 0
 		]);
-		
+
 		vfsStream::newFile( '.version.json' )
-			->at( $this->Root )
-			->setContent( $VersionContent );
-		
+			->at( $this->root )
+			->setContent( $versionContent );
+
 		// Mock base path
-		$BasePath = vfsStream::url( 'test' );
-		
+		$basePath = vfsStream::url( 'test' );
+
 		// Update config to use virtual filesystem path
-		$ConfigContent = str_replace( '/app', $BasePath, $ConfigContent );
-		$this->Root->getChild( 'config.yaml' )->setContent( $ConfigContent );
-		
+		$configContent = str_replace( '/app', $basePath, $configContent );
+		$this->root->getChild( 'config.yaml' )->setContent( $configContent );
+
 		// Boot the application
-		$App = Boot( $BasePath );
-		
+		$app = Boot( $basePath );
+
 		// Assertions
-		$this->assertInstanceOf( Application::class, $App );
-		$this->assertEquals( '1.0.0', $App->getVersion() );
+		$this->assertInstanceOf( Application::class, $app );
+		$this->assertEquals( '1.0.0', $app->getVersion() );
 	}
 	
 	/**
@@ -97,26 +97,26 @@ YAML;
 	public function testBootWithMissingConfig()
 	{
 		// Set environment variable
-		$BasePath = vfsStream::url( 'test' );
-		putenv( "SYSTEM_BASE_PATH=$BasePath" );
-		
+		$basePath = vfsStream::url( 'test' );
+		putenv( "SYSTEM_BASE_PATH=$basePath" );
+
 		// Create version.json
-		$VersionContent = json_encode([
+		$versionContent = json_encode([
 			'major' => 2,
 			'minor' => 1,
 			'patch' => 0
 		]);
-		
+
 		vfsStream::newFile( '.version.json' )
-			->at( $this->Root )
-			->setContent( $VersionContent );
-		
+			->at( $this->root )
+			->setContent( $versionContent );
+
 		// Boot with non-existent config path - should use environment variable
-		$App = Boot( vfsStream::url( 'test/nonexistent' ) );
-		
+		$app = Boot( vfsStream::url( 'test/nonexistent' ) );
+
 		// Should successfully create application with environment path
-		$this->assertInstanceOf( Application::class, $App );
-		$this->assertEquals( '2.1.0', $App->getVersion() );
+		$this->assertInstanceOf( Application::class, $app );
+		$this->assertEquals( '2.1.0', $app->getVersion() );
 	}
 	
 	/**
@@ -126,40 +126,40 @@ YAML;
 	{
 		// Clear environment variable
 		putenv( 'SYSTEM_BASE_PATH' );
-		
+
 		// Create version.json
-		$VersionContent = json_encode([
+		$versionContent = json_encode([
 			'major' => 3,
 			'minor' => 0,
 			'patch' => 1
 		]);
-		
+
 		// Create a temporary directory for this test
-		$TempDir = sys_get_temp_dir() . '/neuron_cms_test_' . uniqid();
-		mkdir( $TempDir );
-		$TempVersionFile = $TempDir . '/.version.json';
-		file_put_contents( $TempVersionFile, $VersionContent );
-		
+		$tempDir = sys_get_temp_dir() . '/neuron_cms_test_' . uniqid();
+		mkdir( $tempDir );
+		$tempVersionFile = $tempDir . '/.version.json';
+		file_put_contents( $tempVersionFile, $versionContent );
+
 		// Save original CWD and change to temp directory
-		$OriginalCwd = getcwd();
-		chdir( $TempDir );
-		
+		$originalCwd = getcwd();
+		chdir( $tempDir );
+
 		try
 		{
 			// Boot with non-existent config path - will use current directory
-			$App = Boot( vfsStream::url( 'test/nonexistent' ) );
-			
+			$app = Boot( vfsStream::url( 'test/nonexistent' ) );
+
 			// Should successfully create application
-			$this->assertInstanceOf( Application::class, $App );
-			$this->assertEquals( '3.0.1', $App->getVersion() );
+			$this->assertInstanceOf( Application::class, $app );
+			$this->assertEquals( '3.0.1', $app->getVersion() );
 		}
 		finally
 		{
 			// Restore original directory
-			chdir( $OriginalCwd );
+			chdir( $originalCwd );
 			// Clean up temp files
-			@unlink( $TempVersionFile );
-			@rmdir( $TempDir );
+			@unlink( $tempVersionFile );
+			@rmdir( $tempDir );
 		}
 	}
 	
@@ -170,7 +170,7 @@ YAML;
 	{
 		// The CMS Boot function should call the MVC Boot function
 		// Let's test with a valid config in examples directory
-		$App = Boot( 'examples/config' );
-		$this->assertInstanceOf( Application::class, $App );
+		$app = Boot( 'examples/config' );
+		$this->assertInstanceOf( Application::class, $app );
 	}
 }
