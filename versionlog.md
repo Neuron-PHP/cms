@@ -1,3 +1,5 @@
+## 0.8.2
+
 * Added `queue:install` command for installing the job queue system.
 * Queue installer generates migration for jobs and failed_jobs tables.
 * Queue installer automatically adds queue configuration to config.yaml.
