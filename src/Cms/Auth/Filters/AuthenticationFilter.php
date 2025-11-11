@@ -37,7 +37,8 @@ class AuthenticationFilter extends Filter
 	 */
 	protected function checkAuthentication( RouteMap $route ): void
 	{
-		if( !$this->_authManager->check() )
+		$user = $this->_authManager->user();
+		if( !$user )
 		{
 			// Store intended URL for post-login redirect
 			$intendedUrl = $_SERVER['REQUEST_URI'] ?? $route->getPath();
@@ -51,14 +52,9 @@ class AuthenticationFilter extends Filter
 			exit;
 		}
 
-		// Store authenticated user in Registry for easy access
-		$user = $this->_authManager->user();
-		if( $user )
-		{
-			Registry::getInstance()->set( 'Auth.User', $user );
-			Registry::getInstance()->set( 'Auth.UserId', $user->getId() );
-			Registry::getInstance()->set( 'Auth.UserRole', $user->getRole() );
-		}
+		Registry::getInstance()->set( 'Auth.User', $user );
+		Registry::getInstance()->set( 'Auth.UserId', $user->getId() );
+		Registry::getInstance()->set( 'Auth.UserRole', $user->getRole() );
 	}
 
 	/**
