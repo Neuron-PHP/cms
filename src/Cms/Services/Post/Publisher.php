@@ -28,7 +28,7 @@ class Publisher
 	 *
 	 * @param Post $post The post to publish
 	 * @return Post
-	 * @throws Exception if post is already published
+	 * @throws Exception if post is already published or persistence fails
 	 */
 	public function publish( Post $post ): Post
 	{
@@ -41,7 +41,10 @@ class Publisher
 		$post->setStatus( Post::STATUS_PUBLISHED );
 		$post->setPublishedAt( new DateTimeImmutable() );
 
-		$this->_postRepository->update( $post );
+		if( !$this->_postRepository->update( $post ) )
+		{
+			throw new Exception( 'Failed to persist post changes' );
+		}
 
 		return $post;
 	}
@@ -51,7 +54,7 @@ class Publisher
 	 *
 	 * @param Post $post The post to unpublish
 	 * @return Post
-	 * @throws Exception if post is not published
+	 * @throws Exception if post is not published or persistence fails
 	 */
 	public function unpublish( Post $post ): Post
 	{
@@ -64,7 +67,10 @@ class Publisher
 		$post->setStatus( Post::STATUS_DRAFT );
 		$post->setPublishedAt( null );
 
-		$this->_postRepository->update( $post );
+		if( !$this->_postRepository->update( $post ) )
+		{
+			throw new Exception( 'Failed to persist post changes' );
+		}
 
 		return $post;
 	}
@@ -75,7 +81,7 @@ class Publisher
 	 * @param Post $post The post to schedule
 	 * @param DateTimeImmutable $publishAt When to publish
 	 * @return Post
-	 * @throws Exception if scheduled date is in the past
+	 * @throws Exception if scheduled date is in the past or persistence fails
 	 */
 	public function schedule( Post $post, DateTimeImmutable $publishAt ): Post
 	{
@@ -88,7 +94,10 @@ class Publisher
 		$post->setStatus( Post::STATUS_SCHEDULED );
 		$post->setPublishedAt( $publishAt );
 
-		$this->_postRepository->update( $post );
+		if( !$this->_postRepository->update( $post ) )
+		{
+			throw new Exception( 'Failed to persist post changes' );
+		}
 
 		return $post;
 	}
