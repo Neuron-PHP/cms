@@ -64,6 +64,12 @@ class Updater
 		$post->setFeaturedImage( $featuredImage );
 		$post->setStatus( $status );
 
+		// Business rule: auto-set published date when changing to published status
+		if( $status === Post::STATUS_PUBLISHED && !$post->getPublishedAt() )
+		{
+			$post->setPublishedAt( new \DateTimeImmutable() );
+		}
+
 		// Update relationships
 		$categories = $this->_categoryRepository->findByIds( $categoryIds );
 		$post->setCategories( $categories );
