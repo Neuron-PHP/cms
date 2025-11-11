@@ -62,6 +62,7 @@ class Updater
 		$user->setUsername( $username );
 		$user->setEmail( $email );
 		$user->setRole( $role );
+		$user->setUpdatedAt( new \DateTimeImmutable() );
 
 		$this->_userRepository->update( $user );
 
