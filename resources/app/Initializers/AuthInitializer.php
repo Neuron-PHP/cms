@@ -12,7 +12,7 @@ use Neuron\Patterns\Registry;
 use Neuron\Patterns\IRunnable;
 
 /**
- * Initialize authentication system
+ * Initialize the authentication system
  *
  * Registers the auth filter with the Router for protecting routes
  */

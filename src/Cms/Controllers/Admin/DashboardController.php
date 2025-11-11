@@ -7,7 +7,6 @@ use Neuron\Cms\Auth\CsrfTokenManager;
 use Neuron\Cms\Auth\SessionManager;
 use Neuron\Mvc\Application;
 use Neuron\Mvc\Responses\HttpResponseStatus;
-use Neuron\Mvc\Views\Html;
 use Neuron\Patterns\Registry;
 
 /**
@@ -56,14 +55,11 @@ class DashboardController extends Content
 			'WelcomeMessage' => 'Welcome back, ' . $user->getUsername() . '!'
 		];
 
-		// Manually render with custom controller path
-		@http_response_code( HttpResponseStatus::OK->value );
-
-		$view = new Html();
-		$view->setController( 'Admin/Dashboard' )
-			 ->setLayout( 'admin' )
-			 ->setPage( 'index' );
-
-		return $view->render( $viewData );
+		return $this->renderHtml(
+			HttpResponseStatus::OK,
+			$viewData,
+			'index',
+			'admin'
+		);
 	}
 }

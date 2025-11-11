@@ -1,6 +1,6 @@
-<form method="POST" action="/login">
-	<input type="hidden" name="csrf_token" value="<?= htmlspecialchars($CsrfToken) ?>">
-	<input type="hidden" name="redirect_url" value="<?= htmlspecialchars($RedirectUrl ?? '/admin/dashboard') ?>">
+<form method="POST" action="<?= route_path('login_post') ?>">
+	<?= csrf_field() ?>
+	<input type="hidden" name="redirect_url" value="<?= htmlspecialchars($RedirectUrl ?? route_path('admin_dashboard')) ?>">
 
 	<div class="mb-3">
 		<label for="username" class="form-label">Username</label>

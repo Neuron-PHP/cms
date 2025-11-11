@@ -1,0 +1,68 @@
+# Email Configuration Example
+#
+# Copy this file to email.yaml and configure for your environment
+#
+# This configuration is used by the SendWelcomeEmailListener and other
+# email-sending features of the CMS powered by PHPMailer.
+
+email:
+  # Test mode - logs emails instead of sending (useful for development)
+  # When enabled, emails are logged to the log file instead of being sent
+  test_mode: false
+
+  # Email driver: mail, sendmail, or smtp
+  # - mail: Uses PHP's mail() function (default, requires server mail setup)
+  # - sendmail: Uses sendmail binary (Linux/Mac)
+  # - smtp: Uses SMTP server (recommended for production)
+  driver: mail
+
+  # From address and name for system emails
+  from_address: noreply@yourdomain.com
+  from_name: Your Site Name
+
+  # SMTP Configuration (only required if driver is 'smtp')
+  # Examples for popular email services:
+  #
+  # Gmail:
+  #   host: smtp.gmail.com
+  #   port: 587
+  #   encryption: tls
+  #   username: your-email@gmail.com
+  #   password: your-app-password (not your regular password!)
+  #
+  # SendGrid:
+  #   host: smtp.sendgrid.net
+  #   port: 587
+  #   encryption: tls
+  #   username: apikey
+  #   password: your-sendgrid-api-key
+  #
+  # Mailgun:
+  #   host: smtp.mailgun.org
+  #   port: 587
+  #   encryption: tls
+  #   username: postmaster@yourdomain.com
+  #   password: your-mailgun-smtp-password
+
+  # host: smtp.gmail.com
+  # port: 587
+  # username: your-email@gmail.com
+  # password: your-app-password
+  # encryption: tls  # or 'ssl' for port 465
+
+# Email Template Customization
+#
+# Templates are located in: resources/views/emails/
+#
+# Available templates:
+# - welcome.php - Welcome email sent to new users
+#
+# To customize, edit the template files directly. They use standard PHP
+# templating with variables like $Username, $SiteName, $SiteUrl.
+#
+# Example customization in welcome.php:
+# - Change colors in the <style> section
+# - Modify greeting text
+# - Update call-to-action button text
+# - Add your logo (use absolute URL for images)
+# - Customize footer text

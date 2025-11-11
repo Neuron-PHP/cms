@@ -1,12 +1,12 @@
 <div class="container-fluid">
 	<div class="d-flex justify-content-between align-items-center mb-4">
 		<h2>Create New Tag</h2>
-		<a href="/admin/tags" class="btn btn-secondary">Back to Tags</a>
+		<a href="<?= route_path('admin_tags') ?>" class="btn btn-secondary">Back to Tags</a>
 	</div>
 
 	<div class="card">
 		<div class="card-body">
-			<form method="POST" action="/admin/tags">
+			<form method="POST" action="<?= route_path('admin_tags') ?>">
 				<?= csrf_field() ?>
 
 				<div class="mb-3">
@@ -21,7 +21,7 @@
 				</div>
 
 				<button type="submit" class="btn btn-primary">Create Tag</button>
-				<a href="/admin/tags" class="btn btn-secondary">Cancel</a>
+				<a href="<?= route_path('admin_tags') ?>" class="btn btn-secondary">Cancel</a>
 			</form>
 		</div>
 	</div>

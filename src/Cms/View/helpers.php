@@ -54,3 +54,51 @@ if (!function_exists('gravatar')) {
 		);
 	}
 }
+
+if (!function_exists('route_path')) {
+	/**
+	 * Generate a relative URL path for a named route
+	 *
+	 * @param string $routeName The name of the route
+	 * @param array $parameters Route parameters
+	 * @return string Relative URL path
+	 *
+	 * @example
+	 * route_path('blog_post', ['slug' => 'my-post']) // Returns: /blog/post/my-post
+	 * route_path('admin_dashboard') // Returns: /admin/dashboard
+	 */
+	function route_path(string $routeName, array $parameters = []): string
+	{
+		$app = \Neuron\Patterns\Registry::getInstance()->get('App');
+		if (!$app) {
+			return '';
+		}
+
+		$urlHelper = new \Neuron\Mvc\Helpers\UrlHelper($app->getRouter());
+		return $urlHelper->routePath($routeName, $parameters) ?? '';
+	}
+}
+
+if (!function_exists('route_url')) {
+	/**
+	 * Generate an absolute URL for a named route
+	 *
+	 * @param string $routeName The name of the route
+	 * @param array $parameters Route parameters
+	 * @return string Absolute URL
+	 *
+	 * @example
+	 * route_url('blog_post', ['slug' => 'my-post']) // Returns: https://example.com/blog/post/my-post
+	 * route_url('admin_dashboard') // Returns: https://example.com/admin/dashboard
+	 */
+	function route_url(string $routeName, array $parameters = []): string
+	{
+		$app = \Neuron\Patterns\Registry::getInstance()->get('App');
+		if (!$app) {
+			return '';
+		}
+
+		$urlHelper = new \Neuron\Mvc\Helpers\UrlHelper($app->getRouter());
+		return $urlHelper->routeUrl($routeName, $parameters) ?? '';
+	}
+}

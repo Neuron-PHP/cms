@@ -1,4 +1,7 @@
 <div class="container">
+	<?php if (!isset($Post)): ?>
+		<p>Post not found</p>
+	<?php else: ?>
 	<article>
 		<header class="mb-4">
 			<h1><?= htmlspecialchars( $Post->getTitle() ) ?></h1>
@@ -14,7 +17,7 @@
 			<?php if( !empty( $Post->getCategories() ) ): ?>
 				<div class="mb-2">
 					<?php foreach( $Post->getCategories() as $category ): ?>
-						<a href="/blog/category/<?= htmlspecialchars( $category->getSlug() ) ?>" class="badge bg-primary text-decoration-none"><?= htmlspecialchars( $category->getName() ) ?></a>
+						<a href="<?= route_path('blog_category', ['slug' => $category->getSlug()]) ?>" class="badge bg-primary text-decoration-none"><?= htmlspecialchars( $category->getName() ) ?></a>
 					<?php endforeach; ?>
 				</div>
 			<?php endif; ?>
@@ -22,7 +25,7 @@
 			<?php if( !empty( $Post->getTags() ) ): ?>
 				<div class="mb-3">
 					<?php foreach( $Post->getTags() as $tag ): ?>
-						<a href="/blog/tag/<?= htmlspecialchars( $tag->getSlug() ) ?>" class="badge bg-secondary text-decoration-none"><?= htmlspecialchars( $tag->getName() ) ?></a>
+						<a href="<?= route_path('blog_tag', ['slug' => $tag->getSlug()]) ?>" class="badge bg-secondary text-decoration-none"><?= htmlspecialchars( $tag->getName() ) ?></a>
 					<?php endforeach; ?>
 				</div>
 			<?php endif; ?>
@@ -40,6 +43,7 @@
 	<hr class="my-5">
 
 	<div class="text-center">
-		<a href="/blog" class="btn btn-secondary">← Back to Blog</a>
+		<a href="<?= route_path('blog') ?>" class="btn btn-secondary">← Back to Blog</a>
 	</div>
+	<?php endif; ?>
 </div>

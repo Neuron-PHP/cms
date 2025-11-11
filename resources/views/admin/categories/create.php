@@ -1,12 +1,12 @@
 <div class="container-fluid">
 	<div class="d-flex justify-content-between align-items-center mb-4">
 		<h2>Create New Category</h2>
-		<a href="/admin/categories" class="btn btn-secondary">Back to Categories</a>
+		<a href="<?= route_path('admin_categories') ?>" class="btn btn-secondary">Back to Categories</a>
 	</div>
 
 	<div class="card">
 		<div class="card-body">
-			<form method="POST" action="/admin/categories">
+			<form method="POST" action="<?= route_path('admin_categories') ?>">
 				<?= csrf_field() ?>
 
 				<div class="mb-3">
@@ -26,7 +26,7 @@
 				</div>
 
 				<button type="submit" class="btn btn-primary">Create Category</button>
-				<a href="/admin/categories" class="btn btn-secondary">Cancel</a>
+				<a href="<?= route_path('admin_categories') ?>" class="btn btn-secondary">Cancel</a>
 			</form>
 		</div>
 	</div>

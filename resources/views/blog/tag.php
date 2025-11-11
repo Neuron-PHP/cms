@@ -16,7 +16,7 @@
 						<?php endif; ?>
 						<div class="card-body">
 							<h2 class="card-title">
-								<a href="/blog/post/<?= htmlspecialchars( $post->getSlug() ) ?>"><?= htmlspecialchars( $post->getTitle() ) ?></a>
+								<a href="<?= route_path('blog_post', ['slug' => $post->getSlug()]) ?>"><?= htmlspecialchars( $post->getTitle() ) ?></a>
 							</h2>
 							<p class="text-muted">
 								<small>
@@ -27,7 +27,7 @@
 			<?php if( $post->getExcerpt() ): ?>
 								<p class="card-text"><?= htmlspecialchars( $post->getExcerpt() ) ?></p>
 							<?php endif; ?>
-							<a href="/blog/post/<?= htmlspecialchars( $post->getSlug() ) ?>" class="btn btn-primary">Read More</a>
+							<a href="<?= route_path('blog_post', ['slug' => $post->getSlug()]) ?>" class="btn btn-primary">Read More</a>
 						</div>
 					</article>
 				</div>
@@ -40,6 +40,6 @@
 	<?php endif; ?>
 
 	<div class="mt-4">
-		<a href="/blog" class="btn btn-secondary">← Back to Blog</a>
+		<a href="<?= route_path('blog') ?>" class="btn btn-secondary">← Back to Blog</a>
 	</div>
 </div>

@@ -1,7 +1,7 @@
 <div class="container-fluid">
 	<div class="d-flex justify-content-between align-items-center mb-4">
 		<h2>Categories</h2>
-		<a href="/admin/categories/create" class="btn btn-primary">Create New Category</a>
+		<a href="<?= route_path('admin_categories_create') ?>" class="btn btn-primary">Create New Category</a>
 	</div>
 
 	<div class="card">
@@ -27,9 +27,9 @@
 								<td><?= htmlspecialchars( substr( $category->getDescription() ?? '', 0, 50 ) ) ?><?= strlen( $category->getDescription() ?? '' ) > 50 ? '...' : '' ?></td>
 								<td><?= $category->getPostCount() ?? 0 ?></td>
 								<td>
-									<a href="/blog/category/<?= htmlspecialchars( $category->getSlug() ) ?>" class="btn btn-sm btn-outline-secondary" target="_blank">View</a>
-									<a href="/admin/categories/<?= $category->getId() ?>/edit" class="btn btn-sm btn-outline-primary">Edit</a>
-									<form method="POST" action="/admin/categories/<?= $category->getId() ?>" class="d-inline">
+									<a href="<?= route_path('blog_category', ['slug' => $category->getSlug()]) ?>" class="btn btn-sm btn-outline-secondary" target="_blank">View</a>
+									<a href="<?= route_path('admin_categories_edit', ['id' => $category->getId()]) ?>" class="btn btn-sm btn-outline-primary">Edit</a>
+									<form method="POST" action="<?= route_path('admin_categories_destroy', ['id' => $category->getId()]) ?>" class="d-inline">
 										<input type="hidden" name="_method" value="DELETE">
 										<?= csrf_field() ?>
 										<button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Are you sure?')">Delete</button>

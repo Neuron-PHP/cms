@@ -16,7 +16,6 @@ use Neuron\Cms\Auth\SessionManager;
 use Neuron\Data\Setting\SettingManager;
 use Neuron\Mvc\Application;
 use Neuron\Mvc\Responses\HttpResponseStatus;
-use Neuron\Mvc\Views\Html;
 use Neuron\Patterns\Registry;
 
 /**
@@ -87,9 +86,7 @@ class PostController extends Content
 		}
 
 		// Generate CSRF token
-		$sessionManager = new SessionManager();
-		$sessionManager->start();
-		$csrfManager = new CsrfTokenManager( $sessionManager );
+		$csrfManager = new CsrfTokenManager( $this->getSessionManager() );
 		Registry::getInstance()->set( 'Auth.CsrfToken', $csrfManager->getToken() );
 
 		// Get all posts or filter by author if not admin
@@ -111,14 +108,12 @@ class PostController extends Content
 			'Error' => $sessionManager->getFlash( 'error' )
 		];
 
-		@http_response_code( HttpResponseStatus::OK->value );
-
-		$view = new Html();
-		$view->setController( 'Admin/Posts' )
-			 ->setLayout( 'admin' )
-			 ->setPage( 'index' );
-
-		return $view->render( $viewData );
+		return $this->renderHtml(
+			HttpResponseStatus::OK,
+			$viewData,
+			'index',
+			'admin'
+		);
 	}
 
 	/**
@@ -137,9 +132,7 @@ class PostController extends Content
 		}
 
 		// Generate CSRF token
-		$sessionManager = new SessionManager();
-		$sessionManager->start();
-		$csrfManager = new CsrfTokenManager( $sessionManager );
+		$csrfManager = new CsrfTokenManager( $this->getSessionManager() );
 		Registry::getInstance()->set( 'Auth.CsrfToken', $csrfManager->getToken() );
 
 		$viewData = [
@@ -149,27 +142,23 @@ class PostController extends Content
 			'categories' => $this->_categoryRepository->all()
 		];
 
-		@http_response_code( HttpResponseStatus::OK->value );
-
-		$view = new Html();
-		$view->setController( 'Admin/Posts' )
-			 ->setLayout( 'admin' )
-			 ->setPage( 'create' );
-
-		return $view->render( $viewData );
+		return $this->renderHtml(
+			HttpResponseStatus::OK,
+			$viewData,
+			'create',
+			'admin'
+		);
 	}
 
 	/**
 	 * Store new post
 	 * @param array $parameters
-	 * @return string
+	 * @return never
 	 * @throws \Exception
 	 */
-	public function store( array $parameters ): string
+	public function store( array $parameters ): never
 	{
 		$user = Registry::getInstance()->get( 'Auth.User' );
-		$sessionManager = new SessionManager();
-		$sessionManager->start();
 
 		if( !$user )
 		{
@@ -201,15 +190,11 @@ class PostController extends Content
 				$tagNames
 			);
 
-			$sessionManager->flash( 'success', 'Post created successfully' );
-			header( 'Location: /admin/posts' );
-			exit;
+			$this->redirect( 'admin_posts', [], ['success', 'Post created successfully'] );
 		}
 		catch( \Exception $e )
 		{
-			$sessionManager->flash( 'error', 'Failed to create post: ' . $e->getMessage() );
-			header( 'Location: /admin/posts/create' );
-			exit;
+			$this->redirect( 'admin_posts_create', [], ['error', 'Failed to create post: ' . $e->getMessage()] );
 		}
 	}
 
@@ -233,11 +218,7 @@ class PostController extends Content
 
 		if( !$post )
 		{
-			$sessionManager = new SessionManager();
-			$sessionManager->start();
-			$sessionManager->flash( 'error', 'Post not found' );
-			header( 'Location: /admin/posts' );
-			exit;
+			$this->redirect( 'admin_posts', [], ['error', 'Post not found'] );
 		}
 
 		// Check permissions
@@ -247,9 +228,7 @@ class PostController extends Content
 		}
 
 		// Generate CSRF token
-		$sessionManager = new SessionManager();
-		$sessionManager->start();
-		$csrfManager = new CsrfTokenManager( $sessionManager );
+		$csrfManager = new CsrfTokenManager( $this->getSessionManager() );
 		Registry::getInstance()->set( 'Auth.CsrfToken', $csrfManager->getToken() );
 
 		$viewData = [
@@ -260,27 +239,23 @@ class PostController extends Content
 			'categories' => $this->_categoryRepository->all()
 		];
 
-		@http_response_code( HttpResponseStatus::OK->value );
-
-		$view = new Html();
-		$view->setController( 'Admin/Posts' )
-			 ->setLayout( 'admin' )
-			 ->setPage( 'edit' );
-
-		return $view->render( $viewData );
+		return $this->renderHtml(
+			HttpResponseStatus::OK,
+			$viewData,
+			'edit',
+			'admin'
+		);
 	}
 
 	/**
 	 * Update post
 	 * @param array $parameters
-	 * @return string
+	 * @return never
 	 * @throws \Exception
 	 */
-	public function update( array $parameters ): string
+	public function update( array $parameters ): never
 	{
 		$user = Registry::getInstance()->get( 'Auth.User' );
-		$sessionManager = new SessionManager();
-		$sessionManager->start();
 
 		if( !$user )
 		{
@@ -292,9 +267,7 @@ class PostController extends Content
 
 		if( !$post )
 		{
-			$sessionManager->flash( 'error', 'Post not found' );
-			header( 'Location: /admin/posts' );
-			exit;
+			$this->redirect( 'admin_posts', [], ['error', 'Post not found'] );
 		}
 
 		// Check permissions
@@ -328,28 +301,22 @@ class PostController extends Content
 				$tagNames
 			);
 
-			$sessionManager->flash( 'success', 'Post updated successfully' );
-			header( 'Location: /admin/posts' );
-			exit;
+			$this->redirect( 'admin_posts', [], ['success', 'Post updated successfully'] );
 		}
 		catch( \Exception $e )
 		{
-			$sessionManager->flash( 'error', 'Failed to update post: ' . $e->getMessage() );
-			header( 'Location: /admin/posts/' . $postId . '/edit' );
-			exit;
+			$this->redirect( 'admin_posts_edit', ['id' => $postId], ['error', 'Failed to update post: ' . $e->getMessage()] );
 		}
 	}
 
 	/**
 	 * Delete post
 	 * @param array $parameters
-	 * @return string
+	 * @return never
 	 */
-	public function destroy( array $parameters ): string
+	public function destroy( array $parameters ): never
 	{
 		$user = Registry::getInstance()->get( 'Auth.User' );
-		$sessionManager = new SessionManager();
-		$sessionManager->start();
 
 		if( !$user )
 		{
@@ -361,30 +328,23 @@ class PostController extends Content
 
 		if( !$post )
 		{
-			$sessionManager->flash( 'error', 'Post not found' );
-			header( 'Location: /admin/posts' );
-			exit;
+			$this->redirect( 'admin_posts', [], ['error', 'Post not found'] );
 		}
 
 		// Check permissions
 		if( !$user->isAdmin() && !$user->isEditor() && $post->getAuthorId() !== $user->getId() )
 		{
-			$sessionManager->flash( 'error', 'Unauthorized to delete this post' );
-			header( 'Location: /admin/posts' );
-			exit;
+			$this->redirect( 'admin_posts', [], ['error', 'Unauthorized to delete this post'] );
 		}
 
 		try
 		{
 			$this->_postDeleter->delete( $post );
-			$sessionManager->flash( 'success', 'Post deleted successfully' );
+			$this->redirect( 'admin_posts', [], ['success', 'Post deleted successfully'] );
 		}
 		catch( \Exception $e )
 		{
-			$sessionManager->flash( 'error', 'Failed to delete post: ' . $e->getMessage() );
+			$this->redirect( 'admin_posts', [], ['error', 'Failed to delete post: ' . $e->getMessage()] );
 		}
-
-		header( 'Location: /admin/posts' );
-		exit;
 	}
 }

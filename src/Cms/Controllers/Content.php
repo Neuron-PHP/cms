@@ -47,6 +47,7 @@ namespace Neuron\Cms\Controllers;
  * ```
  */
 
+use Neuron\Cms\Auth\SessionManager;
 use Neuron\Data\Object\Version;
 use Neuron\Mvc\Application;
 use Neuron\Mvc\Controllers\Base;
@@ -60,6 +61,7 @@ class Content extends Base
 	private string $_description = '';
 	private string $_url = 'example.com/bog';
 	private string $_rssUrl = 'example.com/blog/rss';
+	protected ?SessionManager $_sessionManager = null;
 
 	/**
 	 * @param Application $app
@@ -206,5 +208,72 @@ class Content extends Base
 			$viewData,
 			$parameters[ 'page' ]
 		);
+	}
+
+	/**
+	 * Get or initialize the session manager.
+	 * Lazy-loads the session manager only when needed.
+	 *
+	 * @return SessionManager
+	 */
+	protected function getSessionManager(): SessionManager
+	{
+		if( !$this->_sessionManager )
+		{
+			$this->_sessionManager = new SessionManager();
+			$this->_sessionManager->start();
+		}
+		return $this->_sessionManager;
+	}
+
+	/**
+	 * Redirect to a named route with optional flash message.
+	 *
+	 * @param string $routeName The name of the route to redirect to
+	 * @param array $parameters Route parameters
+	 * @param array|null $flash Optional flash message as [$type, $message]
+	 * @return never
+	 */
+	protected function redirect( string $routeName, array $parameters = [], ?array $flash = null ): never
+	{
+		if( $flash )
+		{
+			[ $type, $message ] = $flash;
+			$this->getSessionManager()->flash( $type, $message );
+		}
+		$url = $this->urlFor( $routeName, $parameters ) ?? '/';
+		header( 'Location: ' . $url );
+		exit;
+	}
+
+	/**
+	 * Redirect back to the previous page or a fallback URL.
+	 *
+	 * @param string $fallback Fallback URL if referer is not available
+	 * @param array|null $flash Optional flash message as [$type, $message]
+	 * @return never
+	 */
+	protected function redirectBack( string $fallback = '/', ?array $flash = null ): never
+	{
+		if( $flash )
+		{
+			[ $type, $message ] = $flash;
+			$this->getSessionManager()->flash( $type, $message );
+		}
+		$url = $_SERVER['HTTP_REFERER'] ?? $fallback;
+		header( 'Location: ' . $url );
+		exit;
+	}
+
+	/**
+	 * Set a flash message for the next request.
+	 *
+	 * @param string $type Message type (success, error, warning, info)
+	 * @param string $message The message text
+	 * @return void
+	 */
+	protected function flash( string $type, string $message ): void
+	{
+		$this->getSessionManager()->flash( $type, $message );
 	}
 }

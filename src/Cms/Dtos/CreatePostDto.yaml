@@ -1,0 +1,36 @@
+properties:
+  title:
+    type: string
+    required: true
+    validators:
+      - IsNotEmpty
+      - IsStringLength:
+          min: 5
+          max: 255
+  body:
+    type: string
+    required: true
+    validators:
+      - IsNotEmpty
+      - IsStringLength:
+          min: 10
+  status:
+    type: string
+    required: true
+    validators:
+      - IsNotEmpty
+  slug:
+    type: string
+    required: false
+  excerpt:
+    type: string
+    required: false
+  featuredImage:
+    type: string
+    required: false
+  categoryIds:
+    type: array
+    required: false
+  tags:
+    type: string
+    required: false
