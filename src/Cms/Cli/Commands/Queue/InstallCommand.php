@@ -93,12 +93,12 @@ class InstallCommand extends Command
 
 		if( $this->addQueueConfig() )
 		{
-			$this->output->success( "Queue configuration added to config.yaml" );
+			$this->output->success( "Queue configuration added to neuron.yaml" );
 		}
 		else
 		{
 			$this->output->warning( "Could not add queue configuration automatically" );
-			$this->output->info( "Please add the following to config/config.yaml:" );
+			$this->output->info( "Please add the following to config/neuron.yaml:" );
 			$this->output->write( "\n" );
 			$this->output->write( "queue:\n" );
 			$this->output->write( "  driver: database\n" );
@@ -167,7 +167,7 @@ class InstallCommand extends Command
 		}
 
 		// Check for queue config
-		$configFile = $this->_projectPath . '/config/config.yaml';
+		$configFile = $this->_projectPath . '/config/neuron.yaml';
 
 		if( !file_exists( $configFile ) )
 		{
@@ -288,11 +288,11 @@ PHP;
 	}
 
 	/**
-	 * Add queue configuration to config.yaml
+	 * Add queue configuration to neuron.yaml
 	 */
 	private function addQueueConfig(): bool
 	{
-		$configFile = $this->_projectPath . '/config/config.yaml';
+		$configFile = $this->_projectPath . '/config/neuron.yaml';
 
 		if( !file_exists( $configFile ) )
 		{

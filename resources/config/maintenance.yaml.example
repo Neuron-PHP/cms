@@ -1,7 +1,7 @@
 # Maintenance Mode Configuration
 #
 # This file provides configuration defaults for the CMS maintenance mode system.
-# Copy this file to your config directory and rename to config.yaml (or merge with existing config.yaml)
+# Copy this file to your config directory and rename to neuron.yaml (or merge with existing neuron.yaml)
 
 maintenance:
   # Default maintenance message shown to users

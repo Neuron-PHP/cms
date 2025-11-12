@@ -617,7 +617,7 @@ cms/src/Cms/Auth/Filters/ApiKeyFilter.php
 **Configure Tiered Rate Limits**
 
 ```yaml
-# config/config.yaml
+# config/neuron.yaml
 api_limit_free:
   enabled: true
   storage: redis
@@ -944,7 +944,7 @@ cms/
 │               └── show.php
 ├── config/
 │   ├── auth.yaml       (new - auth configuration)
-│   └── config.yaml     (existing - add auth settings)
+│   └── neuron.yaml     (existing - add auth settings)
 ├── storage/
 │   └── users/
 │       └── users.json  (file-based user storage)
@@ -1166,7 +1166,7 @@ auth:
 
 ### Rate Limiting Configuration
 
-**File**: `config/config.yaml` (add to existing)
+**File**: `config/neuron.yaml` (add to existing)
 
 ```yaml
 # API Rate Limiting by Tier
@@ -1574,8 +1574,8 @@ php neuron user:create admin --role=admin
 
 **Step 5: Update Configuration**
 ```bash
-# Add auth configuration to config/config.yaml
-cat >> config/config.yaml << 'EOF'
+# Add auth configuration to config/neuron.yaml
+cat >> config/neuron.yaml << 'EOF'
 
 # Authentication
 auth:

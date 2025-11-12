@@ -688,7 +688,7 @@ class InstallCommand extends Command
 	 */
 	private function saveConfig( array $config ): bool
 	{
-		$configFile = $this->_projectPath . '/config/config.yaml';
+		$configFile = $this->_projectPath . '/config/neuron.yaml';
 
 		// If config exists, merge with existing
 		$existingConfig = [];
@@ -731,7 +731,7 @@ class InstallCommand extends Command
 			return false;
 		}
 
-		$this->_messages[] = "Created: config/config.yaml";
+		$this->_messages[] = "Created: config/neuron.yaml";
 		return true;
 	}
 

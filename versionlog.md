@@ -2,6 +2,9 @@
 
 * Large refactoring.
 * Updated to use the new ORM component.
+* Added user timezone support.
+* Renamed config.yaml to neuron.yaml
+
 
 ## 0.8.2 2025-11-11
 

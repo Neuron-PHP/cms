@@ -25,7 +25,7 @@ database:
   name: :memory:
 YAML;
 
-		vfsStream::newFile('config/config.yaml')
+		vfsStream::newFile('config/neuron.yaml')
 			->at($this->root)
 			->setContent($configContent);
 	}

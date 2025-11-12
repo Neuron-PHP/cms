@@ -168,7 +168,7 @@ class EnableCommand extends Command
 	 */
 	private function loadConfiguration( string $configPath ): ?MaintenanceConfig
 	{
-		$configFile = $configPath . '/config.yaml';
+		$configFile = $configPath . '/neuron.yaml';
 
 		if( !file_exists( $configFile ) )
 		{
