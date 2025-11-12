@@ -1,7 +1,7 @@
 <div class="container-fluid">
 	<div class="d-flex justify-content-between align-items-center mb-4">
 		<h2>Users</h2>
-		<a href="/admin/users/create" class="btn btn-primary">Create New User</a>
+		<a href="<?= route_path('admin_users_create') ?>" class="btn btn-primary">Create New User</a>
 	</div>
 
 	<div class="card">
@@ -27,11 +27,11 @@
 								<td><?= htmlspecialchars( $user->getEmail() ) ?></td>
 								<td><span class="badge bg-primary"><?= htmlspecialchars( $user->getRole() ) ?></span></td>
 								<td><span class="badge bg-<?= $user->getStatus() === 'active' ? 'success' : 'secondary' ?>"><?= htmlspecialchars( $user->getStatus() ) ?></span></td>
-								<td><?= $user->getCreatedAt() ? $user->getCreatedAt()->format( 'Y-m-d H:i' ) : 'N/A' ?></td>
+								<td><?= format_user_datetime( $user->getCreatedAt() ) ?></td>
 								<td>
-									<a href="/admin/users/<?= $user->getId() ?>/edit" class="btn btn-sm btn-outline-primary">Edit</a>
+									<a href="<?= route_path('admin_users_edit', ['id' => $user->getId()]) ?>" class="btn btn-sm btn-outline-primary">Edit</a>
 									<?php if( $User->getId() !== $user->getId() ): ?>
-										<form method="POST" action="/admin/users/<?= $user->getId() ?>" class="d-inline">
+										<form method="POST" action="<?= route_path('admin_users_destroy', ['id' => $user->getId()]) ?>" class="d-inline">
 											<input type="hidden" name="_method" value="DELETE">
 											<?= csrf_field() ?>
 											<button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Are you sure?')">Delete</button>

@@ -4,11 +4,10 @@ namespace Neuron\Cms\Controllers\Auth;
 
 use Neuron\Cms\Controllers\Content;
 use Neuron\Cms\Auth\AuthManager;
-use Neuron\Cms\Auth\SessionManager;
 use Neuron\Cms\Auth\CsrfTokenManager;
+use Neuron\Data\Filter\Post;
 use Neuron\Mvc\Application;
 use Neuron\Mvc\Responses\HttpResponseStatus;
-use Neuron\Mvc\Views\Html;
 use Neuron\Patterns\Registry;
 
 /**
@@ -18,10 +17,9 @@ use Neuron\Patterns\Registry;
  *
  * @package Neuron\Cms\Controllers\Auth
  */
-class LoginController extends Content
+class Login extends Content
 {
 	private ?AuthManager $_authManager;
-	private SessionManager $_sessionManager;
 	private CsrfTokenManager $_csrfManager;
 
 	/**
@@ -40,11 +38,8 @@ class LoginController extends Content
 			throw new \RuntimeException( 'AuthManager not found in Registry. Ensure authentication is properly configured and that Application is set in Registry before initializers run.' );
 		}
 
-		// Initialize session and CSRF managers
-		$this->_sessionManager = new SessionManager();
-		$this->_sessionManager->start();
-
-		$this->_csrfManager = new CsrfTokenManager( $this->_sessionManager );
+		// Initialize CSRF manager with parent's session manager
+		$this->_csrfManager = new CsrfTokenManager( $this->getSessionManager() );
 	}
 
 	/**
@@ -57,49 +52,48 @@ class LoginController extends Content
 		// If already logged in, redirect to dashboard
 		if( $this->_authManager->check() )
 		{
-			header( 'Location: /admin/dashboard' );
+			header( 'Location: ' . $this->urlFor( 'admin_dashboard' ) );
 			exit;
 		}
 
-		$requestedRedirect = $_GET['redirect'] ?? '/admin/dashboard';
+		// Set CSRF token in Registry so csrf_field() helper works
+		Registry::getInstance()->set( 'Auth.CsrfToken', $this->_csrfManager->getToken() );
+
+		$defaultRedirect = $this->urlFor( 'admin_dashboard' ) ?? '/admin/dashboard';
+		$requestedRedirect = $_GET['redirect'] ?? $defaultRedirect;
 		$redirectUrl = $this->isValidRedirectUrl( $requestedRedirect )
 			? $requestedRedirect
-			: '/admin/dashboard';
+			: $defaultRedirect;
 
 		$viewData = [
 			'Title' => 'Login | ' . $this->getName(),
 			'Description' => 'Login to ' . $this->getName(),
-			'CsrfToken' => $this->_csrfManager->getToken(),
-			'Error' => $this->_sessionManager->getFlash( 'error' ),
-			'Success' => $this->_sessionManager->getFlash( 'success' ),
+			'Error' => $this->getSessionManager()->getFlash( 'error' ),
+			'Success' => $this->getSessionManager()->getFlash( 'success' ),
 			'RedirectUrl' => $redirectUrl
 		];
 
-		// Manually render with custom controller path
-		@http_response_code( HttpResponseStatus::OK->value );
-
-		$view = new Html();
-		$view->setController( 'Auth' )
-			 ->setLayout( 'auth' )
-			 ->setPage( 'login' );
-
-		return $view->render( $viewData );
+		return $this->renderHtml(
+			HttpResponseStatus::OK,
+			$viewData,
+			'login',
+			'auth'
+		);
 	}
 
 	/**
 	 * Process login
 	 * @param array $parameters
-	 * @return string
+	 * @return never
 	 */
-	public function login( array $parameters ): string
+	public function login( array $parameters ): never
 	{
 		// Validate CSRF token
-		$token = $_POST['csrf_token'] ?? '';
+		$token = new Post()->filterScalar( 'csrf_token' );
+
 		if( !$this->_csrfManager->validate( $token ) )
 		{
-			$this->_sessionManager->flash( 'error', 'Invalid CSRF token. Please try again.' );
-			header( 'Location: /login' );
-			exit;
+			$this->redirect( 'login', [], ['error', 'Invalid CSRF token. Please try again.'] );
 		}
 
 		// Get credentials
@@ -110,45 +104,34 @@ class LoginController extends Content
 		// Validate input
 		if( empty( $username ) || empty( $password ) )
 		{
-			$this->_sessionManager->flash( 'error', 'Please enter both username and password.' );
-			header( 'Location: /login' );
-			exit;
+			$this->redirect( 'login', [], ['error', 'Please enter both username and password.'] );
 		}
 
 		// Attempt authentication
 		if( !$this->_authManager->attempt( $username, $password, $remember ) )
 		{
-			$this->_sessionManager->flash( 'error', 'Invalid username or password.' );
-			header( 'Location: /login' );
-			exit;
+			$this->redirect( 'login', [], ['error', 'Invalid username or password.'] );
 		}
 
-		// Successful login
-		$this->_sessionManager->flash( 'success', 'Welcome back!' );
-
-		// Redirect to intended URL or dashboard
-		$requestedRedirect = $_POST['redirect_url'] ?? '/admin/dashboard';
+		// Successful login - redirect to intended URL or dashboard
+		$defaultRedirect = $this->urlFor( 'admin_dashboard' ) ?? '/admin/dashboard';
+		$requestedRedirect = $_POST['redirect_url'] ?? $defaultRedirect;
 		$redirectUrl = $this->isValidRedirectUrl( $requestedRedirect )
 			? $requestedRedirect
-			: '/admin/dashboard';
-		header( 'Location: ' . $redirectUrl );
-		exit;
+			: $defaultRedirect;
+
+		$this->redirect( $redirectUrl, [], [ 'success', 'Welcome back!' ] );
 	}
 
 	/**
 	 * Process logout
 	 * @param array $parameters
-	 * @return string
+	 * @return never
 	 */
-	public function logout( array $parameters ): string
+	public function logout( array $parameters ): never
 	{
 		$this->_authManager->logout();
-
-		$this->_sessionManager->start();
-		$this->_sessionManager->flash( 'success', 'You have been logged out successfully.' );
-
-		header( 'Location: /login' );
-		exit;
+		$this->redirect( 'login', [], ['success', 'You have been logged out successfully.'] );
 	}
 
 	/**

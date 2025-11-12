@@ -220,7 +220,7 @@ class InstallCommand extends Command
 	private function publishViews(): bool
 	{
 		// Copy all view directories
-		$viewDirs = [ 'admin', 'auth', 'blog', 'content', 'http_codes', 'layouts' ];
+		$viewDirs = [ 'admin', 'auth', 'blog', 'content', 'emails', 'home', 'http_codes', 'layouts' ];
 
 		foreach( $viewDirs as $dir )
 		{
@@ -866,6 +866,7 @@ class $className extends AbstractMigration
 			->addColumn( 'failed_login_attempts', 'integer', [ 'default' => 0 ] )
 			->addColumn( 'locked_until', 'timestamp', [ 'null' => true ] )
 			->addColumn( 'last_login_at', 'timestamp', [ 'null' => true ] )
+			->addColumn( 'timezone', 'string', [ 'limit' => 50, 'default' => 'UTC' ] )
 			->addColumn( 'created_at', 'timestamp', [ 'default' => 'CURRENT_TIMESTAMP' ] )
 			->addColumn( 'updated_at', 'timestamp', [ 'default' => 'CURRENT_TIMESTAMP', 'update' => 'CURRENT_TIMESTAMP' ] )
 			->addIndex( [ 'username' ], [ 'unique' => true ] )

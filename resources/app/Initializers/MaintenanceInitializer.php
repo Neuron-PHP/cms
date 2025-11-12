@@ -10,7 +10,7 @@ use Neuron\Patterns\Registry;
 use Neuron\Patterns\IRunnable;
 
 /**
- * Initialize maintenance mode filter
+ * Initialize the maintenance mode filter
  *
  * Registers the maintenance mode filter with the Router to intercept
  * requests when maintenance mode is enabled.

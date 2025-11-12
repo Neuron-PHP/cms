@@ -18,7 +18,7 @@
 <body class="pt-5 bg-light">
 	<nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
 		<div class="container-fluid">
-			<a class="navbar-brand" href="/admin/dashboard">
+			<a class="navbar-brand" href="<?= route_path('admin_dashboard') ?>">
 				<?= htmlspecialchars($name ?? 'Neuron CMS') ?> Admin
 			</a>
 			<button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
@@ -27,10 +27,10 @@
 			<div class="collapse navbar-collapse" id="navbarNav">
 				<ul class="navbar-nav me-auto">
 					<li class="nav-item">
-						<a class="nav-link" href="/admin/dashboard">Dashboard</a>
+						<a class="nav-link" href="<?= route_path('admin_dashboard') ?>">Dashboard</a>
 					</li>
 					<li class="nav-item">
-						<a class="nav-link" href="/">View Site</a>
+						<a class="nav-link" href="<?= route_path('home') ?>">View Site</a>
 					</li>
 				</ul>
 				<ul class="navbar-nav">
@@ -41,10 +41,10 @@
 						<ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
 							<li><h6 class="dropdown-header"><?= htmlspecialchars($User->getUsername()) ?></h6></li>
 							<li><hr class="dropdown-divider"></li>
-							<li><a class="dropdown-item" href="/admin/profile"><i class="bi bi-person me-2"></i>Profile &amp; Settings</a></li>
+							<li><a class="dropdown-item" href="<?= route_path('admin_profile') ?>"><i class="bi bi-person me-2"></i>Profile &amp; Settings</a></li>
 							<li><hr class="dropdown-divider"></li>
 							<li>
-								<form method="POST" action="/logout" class="px-2">
+								<form method="POST" action="<?= route_path('logout') ?>" class="px-2">
 									<?= csrf_field() ?>
 									<button type="submit" class="dropdown-item"><i class="bi bi-box-arrow-right me-2"></i>Logout</button>
 								</form>
@@ -71,7 +71,7 @@
 			</div>
 		<?php endif; ?>
 
-		<?= $Content ?? '' ?>
+		<?= $content ?? '' ?>
 	</div>
 </body>
 </html>

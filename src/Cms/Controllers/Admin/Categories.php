@@ -3,8 +3,10 @@
 namespace Neuron\Cms\Controllers\Admin;
 
 use Neuron\Cms\Controllers\Content;
-use Neuron\Cms\Models\Category;
 use Neuron\Cms\Repositories\DatabaseCategoryRepository;
+use Neuron\Cms\Services\Category\Creator;
+use Neuron\Cms\Services\Category\Updater;
+use Neuron\Cms\Services\Category\Deleter;
 use Neuron\Core\Exceptions\NotFound;
 use Neuron\Data\Setting\SettingManager;
 use Neuron\Mvc\Application;
@@ -17,10 +19,12 @@ use Neuron\Patterns\Registry;
  *
  * @package Neuron\Cms\Controllers\Admin
  */
-class CategoryController extends Content
+class Categories extends Content
 {
-
 	private DatabaseCategoryRepository $_categoryRepository;
+	private Creator $_categoryCreator;
+	private Updater $_categoryUpdater;
+	private Deleter $_categoryDeleter;
 
 	/**
 	 * @param Application|null $app
@@ -30,11 +34,14 @@ class CategoryController extends Content
 	{
 		parent::__construct( $app );
 
-		// Get settings for repositories
+		// Get settings and initialize repository
 		$settings = Registry::getInstance()->get( 'Settings' );
-
-		// Initialize repository
 		$this->_categoryRepository = new DatabaseCategoryRepository( $settings );
+
+		// Initialize services
+		$this->_categoryCreator = new Creator( $this->_categoryRepository );
+		$this->_categoryUpdater = new Updater( $this->_categoryRepository );
+		$this->_categoryDeleter = new Deleter( $this->_categoryRepository );
 	}
 
 	/**
@@ -71,7 +78,7 @@ class CategoryController extends Content
 	}
 
 	/**
-	 * List categories
+	 * Show create category form
 	 * @param array $parameters
 	 * @param Request|null $request
 	 * @return string
@@ -104,53 +111,23 @@ class CategoryController extends Content
 	 * Store new category
 	 * @param array $parameters
 	 * @param Request|null $request
-	 * @return string
-	 * @throws NotFound
+	 * @return never
+	 * @throws \Exception
 	 */
-	public function store( array $parameters, ?Request $request ): string
+	public function store( array $parameters, ?Request $request ): never
 	{
-		$user = Registry::getInstance()->get( 'Auth.User' );
-
-		if( !$user )
-		{
-			throw new \RuntimeException( 'Authenticated user not found' );
-		}
-
 		try
 		{
-			// Get form data
 			$name = $request->post( 'name' );
 			$slug = $request->post( 'slug' );
 			$description = $request->post( 'description' );
 
-			// Create category
-			$category = new Category();
-			$category->setName( $name );
-			$category->setSlug( $slug ?: $this->generateSlug( $name ) );
-			$category->setDescription( $description );
-
-			// Save category
-			$this->_categoryRepository->create( $category );
-
-			// Redirect to category list
-			header( 'Location: /admin/categories' );
-			exit;
+			$this->_categoryCreator->create( $name, $slug, $description );
+			$this->redirect( 'admin_categories', [], ['success', 'Category created successfully'] );
 		}
 		catch( \Exception $e )
 		{
-			$viewData = [
-				'Title' => 'Create Category | Admin | ' . $this->getName(),
-				'Description' => 'Create a new blog category',
-				'User' => $user,
-				'Error' => $e->getMessage()
-			];
-
-			return $this->renderHtml(
-				HttpResponseStatus::BAD_REQUEST,
-				$viewData,
-				'create',
-				'categories'
-			);
+			$this->redirect( 'admin_categories_create', [], ['error', $e->getMessage()] );
 		}
 	}
 
@@ -197,61 +174,31 @@ class CategoryController extends Content
 	 * Update category
 	 * @param array $parameters
 	 * @param Request|null $request
-	 * @return string
+	 * @return never
 	 * @throws \Exception
 	 */
-	public function update( array $parameters, ?Request $request ): string
+	public function update( array $parameters, ?Request $request ): never
 	{
-		$user = Registry::getInstance()->get( 'Auth.User' );
-
-		if( !$user )
-		{
-			throw new \RuntimeException( 'Authenticated user not found' );
-		}
-
 		$categoryId = (int)$parameters['id'];
 		$category = $this->_categoryRepository->findById( $categoryId );
 
 		if( !$category )
 		{
-			throw new \RuntimeException( 'Category not found' );
+			$this->redirect( 'admin_categories', [], ['error', 'Category not found'] );
 		}
 
 		try
 		{
-			// Get form data
 			$name = $request->post( 'name' );
 			$slug = $request->post( 'slug' );
 			$description = $request->post( 'description' );
 
-			// Update category
-			$category->setName( $name );
-			$category->setSlug( $slug ?: $this->generateSlug( $name ) );
-			$category->setDescription( $description );
-
-			// Save category
-			$this->_categoryRepository->update( $category );
-
-			// Redirect to category list
-			header( 'Location: /admin/categories' );
-			exit;
+			$this->_categoryUpdater->update( $category, $name, $slug, $description );
+			$this->redirect( 'admin_categories', [], ['success', 'Category updated successfully'] );
 		}
 		catch( \Exception $e )
 		{
-			$viewData = [
-				'Title' => 'Edit Category | Admin | ' . $this->getName(),
-				'Description' => 'Edit blog category',
-				'User' => $user,
-				'Category' => $category,
-				'Error' => $e->getMessage()
-			];
-
-			return $this->renderHtml(
-				HttpResponseStatus::BAD_REQUEST,
-				$viewData,
-				'edit',
-				'categories'
-			);
+			$this->redirect( 'admin_categories_edit', ['id' => $categoryId], ['error', $e->getMessage()] );
 		}
 	}
 
@@ -259,51 +206,21 @@ class CategoryController extends Content
 	 * Delete category
 	 * @param array $parameters
 	 * @param Request|null $request
-	 * @return string
+	 * @return never
 	 * @throws \Exception
 	 */
-	public function destroy( array $parameters, ?Request $request ): string
+	public function destroy( array $parameters, ?Request $request ): never
 	{
-		$user = Registry::getInstance()->get( 'Auth.User' );
-
-		if( !$user )
-		{
-			throw new \RuntimeException( 'Authenticated user not found' );
-		}
-
 		$categoryId = (int)$parameters['id'];
-		$category = $this->_categoryRepository->findById( $categoryId );
-
-		if( !$category )
-		{
-			throw new \RuntimeException( 'Category not found' );
-		}
 
 		try
 		{
-			$this->_categoryRepository->delete( $categoryId );
-
-			// Redirect to category list
-			header( 'Location: /admin/categories' );
-			exit;
+			$this->_categoryDeleter->delete( $categoryId );
+			$this->redirect( 'admin_categories', [], ['success', 'Category deleted successfully'] );
 		}
 		catch( \Exception $e )
 		{
-			throw new \RuntimeException( 'Failed to delete category: ' . $e->getMessage() );
+			$this->redirect( 'admin_categories', [], ['error', $e->getMessage()] );
 		}
 	}
-
-	/**
-	 * Generate slug from name
-	 * @param string $name
-	 * @return string
-	 */
-	private function generateSlug( string $name ): string
-	{
-		$slug = strtolower( trim( $name ) );
-		$slug = preg_replace( '/[^a-z0-9-]/', '-', $slug );
-		$slug = preg_replace( '/-+/', '-', $slug );
-		return trim( $slug, '-' );
-	}
-
 }

@@ -4,19 +4,26 @@ namespace Neuron\Cms\Models;
 
 use DateTimeImmutable;
 use Exception;
+use Neuron\Orm\Model;
+use Neuron\Orm\Attributes\{Table, BelongsToMany};
 
 /**
  * Tag entity representing a blog post tag.
  *
  * @package Neuron\Cms\Models
  */
-class Tag
+#[Table('tags')]
+class Tag extends Model
 {
 	private ?int $_id = null;
 	private string $_name;
 	private string $_slug;
 	private ?DateTimeImmutable $_createdAt = null;
 	private ?DateTimeImmutable $_updatedAt = null;
+
+	// Relationships
+	#[BelongsToMany(Post::class, pivotTable: 'post_tags')]
+	private array $_posts = [];
 
 	public function __construct()
 	{
@@ -112,10 +119,10 @@ class Tag
 	 * Create Tag from array data
 	 *
 	 * @param array $data Associative array of tag data
-	 * @return Tag
+	 * @return static
 	 * @throws Exception
 	 */
-	public static function fromArray( array $data ): Tag
+	public static function fromArray( array $data ): static
 	{
 		$tag = new self();
 

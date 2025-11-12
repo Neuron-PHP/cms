@@ -77,6 +77,7 @@ class AuthManagerTest extends TestCase
 				failed_login_attempts INTEGER DEFAULT 0,
 				locked_until TIMESTAMP NULL,
 				last_login_at TIMESTAMP NULL,
+				timezone VARCHAR(50) DEFAULT 'UTC',
 				created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 				updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 			)

@@ -31,7 +31,7 @@
 					<h5>Account Information</h5>
 				</div>
 				<div class="card-body">
-					<form method="POST" action="/admin/profile">
+					<form method="POST" action="<?= route_path('admin_profile_update') ?>">
 						<input type="hidden" name="_method" value="PUT">
 						<?= csrf_field() ?>
 
@@ -44,6 +44,49 @@
 						<div class="mb-3">
 							<label for="email" class="form-label">Email</label>
 							<input type="email" class="form-control" id="email" name="email" value="<?= htmlspecialchars( $User->getEmail() ) ?>" required>
+						</div>
+
+						<div class="mb-3">
+							<label for="timezone" class="form-label">Timezone</label>
+							<select class="form-select" id="timezone" name="timezone">
+								<?php
+								$currentTimezone = $User->getTimezone();
+								$grouped = [];
+
+								// Group timezones by region
+								$grouped['Other'] = [];
+								foreach( $timezones as $timezone )
+								{
+									$parts = explode( '/', $timezone, 2 );
+									if( count( $parts ) === 2 )
+									{
+										$region = $parts[0];
+										if( !isset( $grouped[$region] ) )
+										{
+											$grouped[$region] = [];
+										}
+										$grouped[$region][] = $timezone;
+									}
+									else
+									{
+										$grouped['Other'][] = $timezone;
+									}
+								}
+
+								// Display grouped timezones
+								foreach( $grouped as $region => $tzList )
+								{
+									echo '<optgroup label="' . htmlspecialchars( $region ) . '">';
+									foreach( $tzList as $timezone )
+									{
+										$selected = $timezone === $currentTimezone ? ' selected' : '';
+										echo '<option value="' . htmlspecialchars( $timezone ) . '"' . $selected . '>' . htmlspecialchars( $timezone ) . '</option>';
+									}
+									echo '</optgroup>';
+								}
+								?>
+							</select>
+							<small class="form-text text-muted">All dates and times will be displayed in your selected timezone</small>
 						</div>
 
 						<div class="mb-3">
@@ -63,7 +106,7 @@
 					<h5>Change Password</h5>
 				</div>
 				<div class="card-body">
-					<form method="POST" action="/admin/profile">
+					<form method="POST" action="<?= route_path('admin_profile_update') ?>">
 						<input type="hidden" name="_method" value="PUT">
 						<?= csrf_field() ?>
 

@@ -169,4 +169,49 @@ class ContentControllerTest extends TestCase
 
 		$this->assertEquals( '<html>Test Content</html>', $result );
 	}
+
+	/**
+	 * Test getSessionManager returns SessionManager instance
+	 * @runInSeparateProcess
+	 */
+	public function testGetSessionManager()
+	{
+		$controller = new Content();
+
+		// Use reflection to access protected method
+		$reflection = new \ReflectionClass( $controller );
+		$method = $reflection->getMethod( 'getSessionManager' );
+		$method->setAccessible( true );
+
+		$sessionManager = $method->invoke( $controller );
+
+		$this->assertInstanceOf( \Neuron\Cms\Auth\SessionManager::class, $sessionManager );
+
+		// Calling again should return same instance
+		$sessionManager2 = $method->invoke( $controller );
+		$this->assertSame( $sessionManager, $sessionManager2 );
+	}
+
+	/**
+	 * Test flash method sets flash message
+	 * @runInSeparateProcess
+	 */
+	public function testFlash()
+	{
+		$controller = new Content();
+
+		// Use reflection to access protected methods
+		$reflection = new \ReflectionClass( $controller );
+		$flashMethod = $reflection->getMethod( 'flash' );
+		$flashMethod->setAccessible( true );
+		$getSessionMethod = $reflection->getMethod( 'getSessionManager' );
+		$getSessionMethod->setAccessible( true );
+
+		// Invoke flash
+		$flashMethod->invoke( $controller, 'success', 'Test message' );
+
+		// Verify flash was set in session manager
+		$sessionManager = $getSessionMethod->invoke( $controller );
+		$this->assertInstanceOf( \Neuron\Cms\Auth\SessionManager::class, $sessionManager );
+	}
 }

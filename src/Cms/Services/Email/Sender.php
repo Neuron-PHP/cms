@@ -4,9 +4,8 @@ namespace Neuron\Cms\Services\Email;
 
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception as PHPMailerException;
-use Neuron\Data\Setting\ISettingSource;
+use Neuron\Data\Setting\SettingManager;
 use Neuron\Log\Log;
-use Neuron\Mvc\Views\Html;
 
 /**
  * Email sending service.
@@ -17,7 +16,7 @@ use Neuron\Mvc\Views\Html;
  */
 class Sender
 {
-	private ?ISettingSource $_settings;
+	private ?SettingManager $_settings;
 	private string $_basePath;
 	private array $_to = [];
 	private array $_cc = [];
@@ -29,7 +28,7 @@ class Sender
 	private ?string $_replyTo = null;
 	private ?string $_replyToName = null;
 
-	public function __construct( ?ISettingSource $settings = null, string $basePath = '' )
+	public function __construct( ?SettingManager $settings = null, string $basePath = '' )
 	{
 		$this->_settings = $settings;
 		$this->_basePath = $basePath ?: getcwd();
@@ -107,17 +106,19 @@ class Sender
 	{
 		try
 		{
-			$view = new Html();
-			$view->setViewPath( $this->_basePath . '/resources/views' );
-			$view->setPage( $templatePath );
+			$templateFile = $this->_basePath . '/resources/views/' . $templatePath . '.php';
+
+			if( !file_exists( $templateFile ) )
+			{
+				throw new \RuntimeException( "Email template not found: {$templateFile}" );
+			}
+
+			// Extract data variables into local scope
+			extract( $data, EXTR_SKIP );
 
 			// Render the template
 			ob_start();
-			foreach( $data as $key => $value )
-			{
-				$$key = $value;
-			}
-			require $view->getViewPath() . '/' . $templatePath . '.php';
+			require $templateFile;
 			$this->_body = ob_get_clean();
 			$this->_isHtml = true;
 
@@ -136,7 +137,7 @@ class Sender
 	public function send(): bool
 	{
 		// Check for test mode
-		if( $this->_settings && $this->_settings->get( 'email.test_mode' ) )
+		if( $this->_settings && $this->_settings->get( 'email', 'test_mode' ) )
 		{
 			return $this->logEmail();
 		}
@@ -203,14 +204,14 @@ class Sender
 		$mail = new PHPMailer( true );
 
 		// Get config
-		$driver = $this->_settings?->get( 'email.driver' ) ?? 'mail';
-		$host = $this->_settings?->get( 'email.host' ) ?? '';
-		$port = $this->_settings?->get( 'email.port' ) ?? 587;
-		$username = $this->_settings?->get( 'email.username' ) ?? '';
-		$password = $this->_settings?->get( 'email.password' ) ?? '';
-		$encryption = $this->_settings?->get( 'email.encryption' ) ?? 'tls';
-		$fromAddress = $this->_settings?->get( 'email.from_address' ) ?? 'noreply@example.com';
-		$fromName = $this->_settings?->get( 'email.from_name' ) ?? 'Neuron CMS';
+		$driver = $this->_settings?->get( 'email', 'driver' ) ?? 'mail';
+		$host = $this->_settings?->get( 'email', 'host' ) ?? '';
+		$port = $this->_settings?->get( 'email', 'port' ) ?? 587;
+		$username = $this->_settings?->get( 'email', 'username' ) ?? '';
+		$password = $this->_settings?->get( 'email', 'password' ) ?? '';
+		$encryption = $this->_settings?->get( 'email', 'encryption' ) ?? 'tls';
+		$fromAddress = $this->_settings?->get( 'email', 'from_address' ) ?? 'noreply@example.com';
+		$fromName = $this->_settings?->get( 'email', 'from_name' ) ?? 'Neuron CMS';
 
 		// Configure based on driver
 		if( $driver === 'smtp' )

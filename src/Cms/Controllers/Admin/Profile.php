@@ -4,13 +4,12 @@ namespace Neuron\Cms\Controllers\Admin;
 
 use Neuron\Cms\Controllers\Content;
 use Neuron\Cms\Repositories\DatabaseUserRepository;
+use Neuron\Cms\Services\User\Updater;
 use Neuron\Cms\Auth\PasswordHasher;
 use Neuron\Cms\Auth\CsrfTokenManager;
-use Neuron\Cms\Auth\SessionManager;
 use Neuron\Data\Setting\SettingManager;
 use Neuron\Mvc\Application;
 use Neuron\Mvc\Responses\HttpResponseStatus;
-use Neuron\Mvc\Views\Html;
 use Neuron\Patterns\Registry;
 
 /**
@@ -18,12 +17,11 @@ use Neuron\Patterns\Registry;
  *
  * @package Neuron\Cms\Controllers\Admin
  */
-class ProfileController extends Content
+class Profile extends Content
 {
-
 	private DatabaseUserRepository $_repository;
 	private PasswordHasher $_hasher;
-	private SessionManager $_sessionManager;
+	private Updater $_userUpdater;
 
 	/**
 	 * @param Application|null $app
@@ -35,11 +33,11 @@ class ProfileController extends Content
 
 		// Get settings and initialize repository
 		$settings = Registry::getInstance()->get( 'Settings' );
-
 		$this->_repository = new DatabaseUserRepository( $settings );
 		$this->_hasher = new PasswordHasher();
-		$this->_sessionManager = new SessionManager();
-		$this->_sessionManager->start();
+
+		// Initialize service
+		$this->_userUpdater = new Updater( $this->_repository, $this->_hasher );
 	}
 
 	/**
@@ -58,34 +56,36 @@ class ProfileController extends Content
 		}
 
 		// Generate CSRF token
-		$csrfManager = new CsrfTokenManager( $this->_sessionManager );
+		$csrfManager = new CsrfTokenManager( $this->getSessionManager() );
 		Registry::getInstance()->set( 'Auth.CsrfToken', $csrfManager->getToken() );
+
+		// Get available timezones grouped by region
+		$timezones = \DateTimeZone::listIdentifiers();
 
 		$viewData = [
 			'Title' => 'Profile | ' . $this->getName(),
 			'Description' => 'Edit Your Profile',
 			'User' => $user,
-			'success' => $this->_sessionManager->getFlash( 'success' ),
-			'error' => $this->_sessionManager->getFlash( 'error' )
+			'timezones' => $timezones,
+			'success' => $this->getSessionManager()->getFlash( 'success' ),
+			'error' => $this->getSessionManager()->getFlash( 'error' )
 		];
 
-		@http_response_code( HttpResponseStatus::OK->value );
-
-		$view = new Html();
-		$view->setController( 'Admin/Profile' )
-			 ->setLayout( 'admin' )
-			 ->setPage( 'edit' );
-
-		return $view->render( $viewData );
+		return $this->renderHtml(
+			HttpResponseStatus::OK,
+			$viewData,
+			'edit',
+			'admin'
+		);
 	}
 
 	/**
 	 * Update profile
 	 * @param array $parameters
-	 * @return string
+	 * @return never
 	 * @throws \Exception
 	 */
-	public function update( array $parameters ): string
+	public function update( array $parameters ): never
 	{
 		$user = Registry::getInstance()->get( 'Auth.User' );
 
@@ -95,55 +95,42 @@ class ProfileController extends Content
 		}
 
 		$email = $_POST['email'] ?? '';
+		$timezone = $_POST['timezone'] ?? '';
 		$currentPassword = $_POST['current_password'] ?? '';
 		$newPassword = $_POST['new_password'] ?? '';
 		$confirmPassword = $_POST['confirm_password'] ?? '';
 
-		// Update email
-		if( !empty( $email ) && $email !== $user->getEmail() )
-		{
-			$user->setEmail( $email );
-		}
-
-		// Update password if provided
+		// Validate password change if requested
 		if( !empty( $newPassword ) )
 		{
 			// Verify current password
 			if( empty( $currentPassword ) || !$this->_hasher->verify( $currentPassword, $user->getPasswordHash() ) )
 			{
-				$this->_sessionManager->flash( 'error', 'Current password is incorrect' );
-				header( 'Location: /admin/profile' );
-				exit;
+				$this->redirect( 'admin_profile', [], ['error', 'Current password is incorrect'] );
 			}
 
-			// Validate new password
+			// Validate new password matches confirmation
 			if( $newPassword !== $confirmPassword )
 			{
-				$this->_sessionManager->flash( 'error', 'New passwords do not match' );
-				header( 'Location: /admin/profile' );
-				exit;
+				$this->redirect( 'admin_profile', [], ['error', 'New passwords do not match'] );
 			}
-
-			if( !$this->_hasher->meetsRequirements( $newPassword ) )
-			{
-				$this->_sessionManager->flash( 'error', 'Password does not meet requirements' );
-				header( 'Location: /admin/profile' );
-				exit;
-			}
-
-			$user->setPasswordHash( $this->_hasher->hash( $newPassword ) );
 		}
 
-		if( $this->_repository->update( $user ) )
+		try
 		{
-			$this->_sessionManager->flash( 'success', 'Profile updated successfully' );
+			$this->_userUpdater->update(
+				$user,
+				$user->getUsername(),
+				$email,
+				$user->getRole(),
+				!empty( $newPassword ) ? $newPassword : null,
+				!empty( $timezone ) ? $timezone : null
+			);
+			$this->redirect( 'admin_profile', [], ['success', 'Profile updated successfully'] );
 		}
-		else
+		catch( \Exception $e )
 		{
-			$this->_sessionManager->flash( 'error', 'Failed to update profile' );
+			$this->redirect( 'admin_profile', [], ['error', $e->getMessage()] );
 		}
-
-		header( 'Location: /admin/profile' );
-		exit;
 	}
 }

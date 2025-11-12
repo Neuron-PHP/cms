@@ -4,8 +4,8 @@
 	</p>
 </div>
 
-<form method="POST" action="/forgot-password">
-	<input type="hidden" name="csrf_token" value="<?= htmlspecialchars($CsrfToken) ?>">
+<form method="POST" action="<?= route_path('forgot_password_post') ?>">
+	<?= csrf_field() ?>
 
 	<div class="mb-3">
 		<label for="email" class="form-label">Email Address</label>
@@ -26,5 +26,5 @@
 </form>
 
 <div class="text-center mt-3">
-	<a href="/login" class="small">← Back to Login</a>
+	<a href="<?= route_path('login') ?>" class="small">← Back to Login</a>
 </div>
