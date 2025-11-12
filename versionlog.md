@@ -1,7 +1,7 @@
 * Large refactoring.
 * Updated to use the new ORM component.
 
-## 0.8.2
+## 0.8.2 2025-11-11
 
 * Added `queue:install` command for installing the job queue system.
 * Added email system with PHPMailer integration.
