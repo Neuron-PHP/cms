@@ -54,6 +54,7 @@
 								$grouped = [];
 
 								// Group timezones by region
+								$grouped['Other'] = [];
 								foreach( $timezones as $timezone )
 								{
 									$parts = explode( '/', $timezone, 2 );
@@ -65,6 +66,10 @@
 											$grouped[$region] = [];
 										}
 										$grouped[$region][] = $timezone;
+									}
+									else
+									{
+										$grouped['Other'][] = $timezone;
 									}
 								}
 
