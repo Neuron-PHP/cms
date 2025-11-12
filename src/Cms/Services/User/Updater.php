@@ -37,6 +37,7 @@ class Updater
 	 * @param string $email Email address
 	 * @param string $role User role
 	 * @param string|null $password Optional new password (if provided, will be validated and hashed)
+	 * @param string|null $timezone Optional user timezone
 	 * @return User
 	 * @throws \Exception If password doesn't meet requirements or update fails
 	 */
@@ -45,7 +46,8 @@ class Updater
 		string $username,
 		string $email,
 		string $role,
-		?string $password = null
+		?string $password = null,
+		?string $timezone = null
 	): User
 	{
 		// If password is provided, validate and hash it
@@ -62,6 +64,13 @@ class Updater
 		$user->setUsername( $username );
 		$user->setEmail( $email );
 		$user->setRole( $role );
+
+		// Update timezone if provided
+		if( $timezone !== null && $timezone !== '' )
+		{
+			$user->setTimezone( $timezone );
+		}
+
 		$user->setUpdatedAt( new \DateTimeImmutable() );
 
 		$this->_userRepository->update( $user );

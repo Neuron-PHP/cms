@@ -4,13 +4,16 @@ namespace Neuron\Cms\Models;
 
 use DateTimeImmutable;
 use Exception;
+use Neuron\Orm\Model;
+use Neuron\Orm\Attributes\{Table, BelongsToMany};
 
 /**
  * Category entity representing a blog post category.
  *
  * @package Neuron\Cms\Models
  */
-class Category
+#[Table('categories')]
+class Category extends Model
 {
 	private ?int $_id = null;
 	private string $_name;
@@ -18,6 +21,10 @@ class Category
 	private ?string $_description = null;
 	private ?DateTimeImmutable $_createdAt = null;
 	private ?DateTimeImmutable $_updatedAt = null;
+
+	// Relationships
+	#[BelongsToMany(Post::class, pivotTable: 'post_categories')]
+	private array $_posts = [];
 
 	public function __construct()
 	{
@@ -130,10 +137,10 @@ class Category
 	 * Create Category from array data
 	 *
 	 * @param array $data Associative array of category data
-	 * @return Category
+	 * @return static
 	 * @throws Exception
 	 */
-	public static function fromArray( array $data ): Category
+	public static function fromArray( array $data ): static
 	{
 		$category = new self();
 

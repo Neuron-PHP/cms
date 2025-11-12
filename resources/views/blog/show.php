@@ -8,7 +8,7 @@
 			<p class="text-muted">
 				<?php $Author = $Post->getAuthor(); ?>
 				By <?= htmlspecialchars( $Author ? $Author->getUsername() : 'Unknown' ) ?>
-				on <?= $Post->getCreatedAt() ? $Post->getCreatedAt()->format( 'F j, Y' ) : '' ?>
+				on <?= format_user_date( $Post->getCreatedAt(), 'F j, Y' ) ?>
 				<?php if( $Post->getViewCount() > 0 ): ?>
 					· <?= $Post->getViewCount() ?> views
 				<?php endif; ?>

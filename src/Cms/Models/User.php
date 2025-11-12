@@ -3,13 +3,16 @@
 namespace Neuron\Cms\Models;
 
 use DateTimeImmutable;
+use Neuron\Orm\Model;
+use Neuron\Orm\Attributes\{Table, HasMany};
 
 /**
  * User entity representing a CMS user.
  *
  * @package Neuron\Cms\Models
  */
-class User
+#[Table('users')]
+class User extends Model
 {
 	private ?int $_id = null;
 	private string $_username;
@@ -26,6 +29,11 @@ class User
 	private ?DateTimeImmutable $_createdAt = null;
 	private ?DateTimeImmutable $_updatedAt = null;
 	private ?DateTimeImmutable $_lastLoginAt = null;
+	private string $_timezone = 'UTC';
+
+	// Relationships
+	#[HasMany(Post::class, foreignKey: 'author_id')]
+	private array $_posts = [];
 
 	/**
 	 * User roles
@@ -383,6 +391,23 @@ class User
 	}
 
 	/**
+	 * Get user timezone
+	 */
+	public function getTimezone(): string
+	{
+		return $this->_timezone;
+	}
+
+	/**
+	 * Set user timezone
+	 */
+	public function setTimezone( string $timezone ): self
+	{
+		$this->_timezone = $timezone;
+		return $this;
+	}
+
+	/**
 	 * Convert user to array
 	 */
 	public function toArray(): array
@@ -402,14 +427,15 @@ class User
 			'locked_until' => $this->_lockedUntil?->format( 'Y-m-d H:i:s' ),
 			'created_at' => $this->_createdAt?->format( 'Y-m-d H:i:s' ),
 			'updated_at' => $this->_updatedAt?->format( 'Y-m-d H:i:s' ),
-			'last_login_at' => $this->_lastLoginAt?->format( 'Y-m-d H:i:s' )
+			'last_login_at' => $this->_lastLoginAt?->format( 'Y-m-d H:i:s' ),
+			'timezone' => $this->_timezone
 		];
 	}
 
 	/**
 	 * Create user from array
 	 */
-	public static function fromArray( array $data ): self
+	public static function fromArray( array $data ): static
 	{
 		$user = new self();
 
@@ -452,6 +478,11 @@ class User
 		if( isset( $data['last_login_at'] ) && $data['last_login_at'] )
 		{
 			$user->setLastLoginAt( new DateTimeImmutable( $data['last_login_at'] ) );
+		}
+
+		if( isset( $data['timezone'] ) && $data['timezone'] )
+		{
+			$user->setTimezone( $data['timezone'] );
 		}
 
 		return $user;

@@ -59,10 +59,14 @@ class ProfileController extends Content
 		$csrfManager = new CsrfTokenManager( $this->getSessionManager() );
 		Registry::getInstance()->set( 'Auth.CsrfToken', $csrfManager->getToken() );
 
+		// Get available timezones grouped by region
+		$timezones = \DateTimeZone::listIdentifiers();
+
 		$viewData = [
 			'Title' => 'Profile | ' . $this->getName(),
 			'Description' => 'Edit Your Profile',
 			'User' => $user,
+			'timezones' => $timezones,
 			'success' => $this->getSessionManager()->getFlash( 'success' ),
 			'error' => $this->getSessionManager()->getFlash( 'error' )
 		];
@@ -91,6 +95,7 @@ class ProfileController extends Content
 		}
 
 		$email = $_POST['email'] ?? '';
+		$timezone = $_POST['timezone'] ?? '';
 		$currentPassword = $_POST['current_password'] ?? '';
 		$newPassword = $_POST['new_password'] ?? '';
 		$confirmPassword = $_POST['confirm_password'] ?? '';
@@ -118,7 +123,8 @@ class ProfileController extends Content
 				$user->getUsername(),
 				$email,
 				$user->getRole(),
-				!empty( $newPassword ) ? $newPassword : null
+				!empty( $newPassword ) ? $newPassword : null,
+				!empty( $timezone ) ? $timezone : null
 			);
 			$this->redirect( 'admin_profile', [], ['success', 'Profile updated successfully'] );
 		}

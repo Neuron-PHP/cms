@@ -29,7 +29,7 @@
 		<p><strong>Role:</strong> <?= htmlspecialchars($User->getRole()) ?></p>
 		<p><strong>Account Status:</strong> <?= htmlspecialchars($User->getStatus()) ?></p>
 		<?php if($User->getLastLoginAt()): ?>
-			<p class="mb-0"><strong>Last Login:</strong> <?= $User->getLastLoginAt()->format('F j, Y g:i A') ?></p>
+			<p class="mb-0"><strong>Last Login:</strong> <?= format_user_datetime($User->getLastLoginAt(), 'F j, Y g:i A') ?></p>
 		<?php endif; ?>
 	</div>
 </div>
