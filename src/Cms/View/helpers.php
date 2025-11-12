@@ -131,7 +131,12 @@ if (!function_exists('format_user_datetime')) {
 		// Fall back to system timezone if user timezone not available
 		if (!$userTimezone) {
 			$settings = \Neuron\Patterns\Registry::getInstance()->get('Settings');
-			$userTimezone = $settings ? $settings->get('system', 'timezone') : date_default_timezone_get();
+			$userTimezone = $settings ? $settings->get('system', 'timezone') : null;
+		}
+
+		// Ensure we have a valid timezone string (PHP 8.4+ doesn't accept null)
+		if (!$userTimezone) {
+			$userTimezone = date_default_timezone_get();
 		}
 
 		try {
