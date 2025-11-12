@@ -74,10 +74,10 @@
 								}
 
 								// Display grouped timezones
-								foreach( $grouped as $region => $timezones )
+								foreach( $grouped as $region => $tzList )
 								{
 									echo '<optgroup label="' . htmlspecialchars( $region ) . '">';
-									foreach( $timezones as $timezone )
+									foreach( $tzList as $timezone )
 									{
 										$selected = $timezone === $currentTimezone ? ' selected' : '';
 										echo '<option value="' . htmlspecialchars( $timezone ) . '"' . $selected . '>' . htmlspecialchars( $timezone ) . '</option>';
