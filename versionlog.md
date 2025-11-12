@@ -1,3 +1,6 @@
+* Large refactoring.
+* Updated to use the new ORM component.
+
 ## 0.8.2
 
 * Added `queue:install` command for installing the job queue system.
