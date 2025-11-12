@@ -1,5 +1,5 @@
 <form method="POST" action="<?= route_path('login_post') ?>">
-	<input type="hidden" name="csrf_token" value="<?= htmlspecialchars($CsrfToken) ?>">
+	<?= csrf_field() ?>
 	<input type="hidden" name="redirect_url" value="<?= htmlspecialchars($RedirectUrl ?? route_path('admin_dashboard')) ?>">
 
 	<div class="mb-3">

@@ -14,7 +14,7 @@ use Neuron\Patterns\Registry;
  *
  * @package Neuron\Cms\Controllers\Admin
  */
-class DashboardController extends Content
+class Dashboard extends Content
 {
 	/**
 	 * @param Application|null $app

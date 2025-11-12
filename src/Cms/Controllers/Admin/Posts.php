@@ -23,7 +23,7 @@ use Neuron\Patterns\Registry;
  *
  * @package Neuron\Cms\Controllers\Admin
  */
-class PostController extends Content
+class Posts extends Content
 {
 
 	private DatabasePostRepository $_postRepository;
@@ -86,7 +86,8 @@ class PostController extends Content
 		}
 
 		// Generate CSRF token
-		$csrfManager = new CsrfTokenManager( $this->getSessionManager() );
+		$sessionManager = $this->getSessionManager();
+		$csrfManager = new CsrfTokenManager( $sessionManager );
 		Registry::getInstance()->set( 'Auth.CsrfToken', $csrfManager->getToken() );
 
 		// Get all posts or filter by author if not admin

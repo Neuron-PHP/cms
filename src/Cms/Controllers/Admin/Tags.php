@@ -3,28 +3,22 @@
 namespace Neuron\Cms\Controllers\Admin;
 
 use Neuron\Cms\Controllers\Content;
-use Neuron\Cms\Repositories\DatabaseCategoryRepository;
-use Neuron\Cms\Services\Category\Creator;
-use Neuron\Cms\Services\Category\Updater;
-use Neuron\Cms\Services\Category\Deleter;
-use Neuron\Core\Exceptions\NotFound;
-use Neuron\Data\Setting\SettingManager;
+use Neuron\Cms\Models\Tag;
+use Neuron\Cms\Repositories\DatabaseTagRepository;
 use Neuron\Mvc\Application;
 use Neuron\Mvc\Requests\Request;
 use Neuron\Mvc\Responses\HttpResponseStatus;
 use Neuron\Patterns\Registry;
 
 /**
- * Admin category management controller.
+ * Admin tag management controller.
  *
  * @package Neuron\Cms\Controllers\Admin
  */
-class CategoryController extends Content
+class Tags extends Content
 {
-	private DatabaseCategoryRepository $_categoryRepository;
-	private Creator $_categoryCreator;
-	private Updater $_categoryUpdater;
-	private Deleter $_categoryDeleter;
+
+	private DatabaseTagRepository $_tagRepository;
 
 	/**
 	 * @param Application|null $app
@@ -34,18 +28,15 @@ class CategoryController extends Content
 	{
 		parent::__construct( $app );
 
-		// Get settings and initialize repository
+		// Get settings for repositories
 		$settings = Registry::getInstance()->get( 'Settings' );
-		$this->_categoryRepository = new DatabaseCategoryRepository( $settings );
 
-		// Initialize services
-		$this->_categoryCreator = new Creator( $this->_categoryRepository );
-		$this->_categoryUpdater = new Updater( $this->_categoryRepository );
-		$this->_categoryDeleter = new Deleter( $this->_categoryRepository );
+		// Initialize repository
+		$this->_tagRepository = new DatabaseTagRepository( $settings );
 	}
 
 	/**
-	 * List categories
+	 * List all tags
 	 * @param array $parameters
 	 * @param Request|null $request
 	 * @return string
@@ -60,25 +51,25 @@ class CategoryController extends Content
 			throw new \RuntimeException( 'Authenticated user not found' );
 		}
 
-		$categoriesWithCount = $this->_categoryRepository->allWithPostCount();
+		$tagsWithCount = $this->_tagRepository->allWithPostCount();
 
 		$viewData = [
-			'Title' => 'Categories | Admin | ' . $this->getName(),
-			'Description' => 'Manage blog categories',
+			'Title' => 'Tags | Admin | ' . $this->getName(),
+			'Description' => 'Manage blog tags',
 			'User' => $user,
-			'CategoriesWithCount' => $categoriesWithCount
+			'TagsWithCount' => $tagsWithCount
 		];
 
 		return $this->renderHtml(
 			HttpResponseStatus::OK,
 			$viewData,
 			'index',
-			'categories'
+			'tags'
 		);
 	}
 
 	/**
-	 * Show create category form
+	 * Show create tag form
 	 * @param array $parameters
 	 * @param Request|null $request
 	 * @return string
@@ -94,8 +85,8 @@ class CategoryController extends Content
 		}
 
 		$viewData = [
-			'Title' => 'Create Category | Admin | ' . $this->getName(),
-			'Description' => 'Create a new blog category',
+			'Title' => 'Create Tag | Admin | ' . $this->getName(),
+			'Description' => 'Create a new blog tag',
 			'User' => $user
 		];
 
@@ -103,12 +94,12 @@ class CategoryController extends Content
 			HttpResponseStatus::OK,
 			$viewData,
 			'create',
-			'categories'
+			'tags'
 		);
 	}
 
 	/**
-	 * Store new category
+	 * Store new tag
 	 * @param array $parameters
 	 * @param Request|null $request
 	 * @return never
@@ -118,21 +109,28 @@ class CategoryController extends Content
 	{
 		try
 		{
+			// Get form data
 			$name = $request->post( 'name' );
 			$slug = $request->post( 'slug' );
-			$description = $request->post( 'description' );
 
-			$this->_categoryCreator->create( $name, $slug, $description );
-			$this->redirect( 'admin_categories', [], ['success', 'Category created successfully'] );
+			// Create tag
+			$tag = new Tag();
+			$tag->setName( $name );
+			$tag->setSlug( $slug ?: $this->generateSlug( $name ) );
+
+			// Save tag
+			$this->_tagRepository->create( $tag );
+
+			$this->redirect( 'admin_tags', [], ['success', 'Tag created successfully'] );
 		}
 		catch( \Exception $e )
 		{
-			$this->redirect( 'admin_categories_create', [], ['error', $e->getMessage()] );
+			$this->redirect( 'admin_tags_create', [], ['error', $e->getMessage()] );
 		}
 	}
 
 	/**
-	 * Show edit category form
+	 * Show edit tag form
 	 * @param array $parameters
 	 * @param Request|null $request
 	 * @return string
@@ -147,31 +145,31 @@ class CategoryController extends Content
 			throw new \RuntimeException( 'Authenticated user not found' );
 		}
 
-		$categoryId = (int)$parameters['id'];
-		$category = $this->_categoryRepository->findById( $categoryId );
+		$tagId = (int)$parameters['id'];
+		$tag = $this->_tagRepository->findById( $tagId );
 
-		if( !$category )
+		if( !$tag )
 		{
-			throw new \RuntimeException( 'Category not found' );
+			throw new \RuntimeException( 'Tag not found' );
 		}
 
 		$viewData = [
-			'Title' => 'Edit Category | Admin | ' . $this->getName(),
-			'Description' => 'Edit blog category',
+			'Title' => 'Edit Tag | Admin | ' . $this->getName(),
+			'Description' => 'Edit blog tag',
 			'User' => $user,
-			'Category' => $category
+			'Tag' => $tag
 		];
 
 		return $this->renderHtml(
 			HttpResponseStatus::OK,
 			$viewData,
 			'edit',
-			'categories'
+			'tags'
 		);
 	}
 
 	/**
-	 * Update category
+	 * Update tag
 	 * @param array $parameters
 	 * @param Request|null $request
 	 * @return never
@@ -179,31 +177,37 @@ class CategoryController extends Content
 	 */
 	public function update( array $parameters, ?Request $request ): never
 	{
-		$categoryId = (int)$parameters['id'];
-		$category = $this->_categoryRepository->findById( $categoryId );
+		$tagId = (int)$parameters['id'];
+		$tag = $this->_tagRepository->findById( $tagId );
 
-		if( !$category )
+		if( !$tag )
 		{
-			$this->redirect( 'admin_categories', [], ['error', 'Category not found'] );
+			$this->redirect( 'admin_tags', [], ['error', 'Tag not found'] );
 		}
 
 		try
 		{
+			// Get form data
 			$name = $request->post( 'name' );
 			$slug = $request->post( 'slug' );
-			$description = $request->post( 'description' );
 
-			$this->_categoryUpdater->update( $category, $name, $slug, $description );
-			$this->redirect( 'admin_categories', [], ['success', 'Category updated successfully'] );
+			// Update tag
+			$tag->setName( $name );
+			$tag->setSlug( $slug ?: $this->generateSlug( $name ) );
+
+			// Save tag
+			$this->_tagRepository->update( $tag );
+
+			$this->redirect( 'admin_tags', [], ['success', 'Tag updated successfully'] );
 		}
 		catch( \Exception $e )
 		{
-			$this->redirect( 'admin_categories_edit', ['id' => $categoryId], ['error', $e->getMessage()] );
+			$this->redirect( 'admin_tags_edit', ['id' => $tagId], ['error', $e->getMessage()] );
 		}
 	}
 
 	/**
-	 * Delete category
+	 * Delete tag
 	 * @param array $parameters
 	 * @param Request|null $request
 	 * @return never
@@ -211,16 +215,30 @@ class CategoryController extends Content
 	 */
 	public function destroy( array $parameters, ?Request $request ): never
 	{
-		$categoryId = (int)$parameters['id'];
+		$tagId = (int)$parameters['id'];
 
 		try
 		{
-			$this->_categoryDeleter->delete( $categoryId );
-			$this->redirect( 'admin_categories', [], ['success', 'Category deleted successfully'] );
+			$this->_tagRepository->delete( $tagId );
+			$this->redirect( 'admin_tags', [], ['success', 'Tag deleted successfully'] );
 		}
 		catch( \Exception $e )
 		{
-			$this->redirect( 'admin_categories', [], ['error', $e->getMessage()] );
+			$this->redirect( 'admin_tags', [], ['error', 'Failed to delete tag: ' . $e->getMessage()] );
 		}
+	}
+
+	/**
+	 * Generate slug from name
+	 * @param string $name
+	 * @return string
+	 * @throws \Exception
+	 */
+	private function generateSlug( string $name ): string
+	{
+		$slug = strtolower( trim( $name ) );
+		$slug = preg_replace( '/[^a-z0-9-]/', '-', $slug );
+		$slug = preg_replace( '/-+/', '-', $slug );
+		return trim( $slug, '-' );
 	}
 }

@@ -39,7 +39,7 @@ use Neuron\Patterns\Registry;
 	</div>
 </nav>
 <div class="container pt-5 mt-4">
-	<?= $Content ?>
+	<?= $content ?>
 	<hr>
 	<footer class="footer" role="presentation">
 		<div class="text-center small mb-2">

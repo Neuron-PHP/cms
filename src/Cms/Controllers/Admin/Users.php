@@ -20,7 +20,7 @@ use Neuron\Patterns\Registry;
  *
  * @package Neuron\Cms\Controllers\Admin
  */
-class UserController extends Content
+class Users extends Content
 {
 	private DatabaseUserRepository $_repository;
 	private Creator $_userCreator;

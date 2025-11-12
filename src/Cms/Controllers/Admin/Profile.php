@@ -17,7 +17,7 @@ use Neuron\Patterns\Registry;
  *
  * @package Neuron\Cms\Controllers\Admin
  */
-class ProfileController extends Content
+class Profile extends Content
 {
 	private DatabaseUserRepository $_repository;
 	private PasswordHasher $_hasher;

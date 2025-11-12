@@ -20,10 +20,9 @@ use Exception;
  *
  * @package Neuron\Cms\Controllers\Auth
  */
-class PasswordResetController extends Content
+class PasswordReset extends Content
 {
 	private ?PasswordResetManager $_resetManager;
-	private SessionManager $_sessionManager;
 	private CsrfTokenManager $_csrfManager;
 
 	/**
@@ -42,11 +41,8 @@ class PasswordResetController extends Content
 			throw new \RuntimeException( 'PasswordResetManager not found in Registry. Ensure password reset is properly configured.' );
 		}
 
-		// Initialize session and CSRF managers
-		$this->_sessionManager = new SessionManager();
-		$this->_sessionManager->start();
-
-		$this->_csrfManager = new CsrfTokenManager( $this->_sessionManager );
+		// Initialize CSRF manager with parent's session manager
+		$this->_csrfManager = new CsrfTokenManager( $this->getSessionManager() );
 	}
 
 	/**
@@ -56,23 +52,23 @@ class PasswordResetController extends Content
 	 */
 	public function showForgotPasswordForm( array $parameters ): string
 	{
+		// Set CSRF token in Registry so csrf_field() helper works
+		Registry::getInstance()->set( 'Auth.CsrfToken', $this->_csrfManager->getToken() );
+
 		$viewData = [
 			'Title' => 'Forgot Password | ' . $this->getName(),
 			'Description' => 'Reset your password',
 			'PageSubtitle' => 'Reset Password',
-			'CsrfToken' => $this->_csrfManager->getToken(),
 			'Error' => $this->_sessionManager->getFlash( 'error' ),
 			'Success' => $this->_sessionManager->getFlash( 'success' )
 		];
 
-		@http_response_code( HttpResponseStatus::OK->value );
-
-		$view = new Html();
-		$view->setController( 'Auth' )
-			 ->setLayout( 'auth' )
-			 ->setPage( 'forgot-password' );
-
-		return $view->render( $viewData );
+		return $this->renderHtml(
+			HttpResponseStatus::OK,
+			$viewData,
+			'forgot-password',
+			'auth'
+		);
 	}
 
 	/**
@@ -162,25 +158,25 @@ class PasswordResetController extends Content
 			exit;
 		}
 
+		// Set CSRF token in Registry so csrf_field() helper works
+		Registry::getInstance()->set( 'Auth.CsrfToken', $this->_csrfManager->getToken() );
+
 		$viewData = [
 			'Title' => 'Reset Password | ' . $this->getName(),
 			'Description' => 'Enter your new password',
 			'PageSubtitle' => 'Create New Password',
-			'CsrfToken' => $this->_csrfManager->getToken(),
 			'Error' => $this->_sessionManager->getFlash( 'error' ),
 			'Success' => $this->_sessionManager->getFlash( 'success' ),
 			'Token' => $token,
 			'Email' => $tokenObj->getEmail()
 		];
 
-		@http_response_code( HttpResponseStatus::OK->value );
-
-		$view = new Html();
-		$view->setController( 'Auth' )
-			 ->setLayout( 'auth' )
-			 ->setPage( 'reset-password' );
-
-		return $view->render( $viewData );
+		return $this->renderHtml(
+			HttpResponseStatus::OK,
+			$viewData,
+			'reset-password',
+			'auth'
+		);
 	}
 
 	/**

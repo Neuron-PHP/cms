@@ -5,7 +5,7 @@
 </div>
 
 <form method="POST" action="<?= route_path('forgot_password_post') ?>">
-	<input type="hidden" name="csrf_token" value="<?= htmlspecialchars($CsrfToken) ?>">
+	<?= csrf_field() ?>
 
 	<div class="mb-3">
 		<label for="email" class="form-label">Email Address</label>

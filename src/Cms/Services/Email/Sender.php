@@ -4,7 +4,7 @@ namespace Neuron\Cms\Services\Email;
 
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception as PHPMailerException;
-use Neuron\Data\Setting\Source\ISettingSource;
+use Neuron\Data\Setting\SettingManager;
 use Neuron\Log\Log;
 
 /**
@@ -16,7 +16,7 @@ use Neuron\Log\Log;
  */
 class Sender
 {
-	private ?ISettingSource $_settings;
+	private ?SettingManager $_settings;
 	private string $_basePath;
 	private array $_to = [];
 	private array $_cc = [];
@@ -28,7 +28,7 @@ class Sender
 	private ?string $_replyTo = null;
 	private ?string $_replyToName = null;
 
-	public function __construct( ?ISettingSource $settings = null, string $basePath = '' )
+	public function __construct( ?SettingManager $settings = null, string $basePath = '' )
 	{
 		$this->_settings = $settings;
 		$this->_basePath = $basePath ?: getcwd();

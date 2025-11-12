@@ -17,10 +17,13 @@ class SessionManager
 
 	public function __construct( array $config = [] )
 	{
+		// Auto-detect if connection is secure
+		$isSecure = !empty( $_SERVER['HTTPS'] ) && $_SERVER['HTTPS'] !== 'off';
+
 		$this->_config = array_merge([
 			'lifetime' => 7200,          // 2 hours
 			'cookie_httponly' => true,
-			'cookie_secure' => true,     // HTTPS only
+			'cookie_secure' => $isSecure, // Auto-detect HTTPS
 			'cookie_samesite' => 'Lax',
 			'use_strict_mode' => true
 		], $config);

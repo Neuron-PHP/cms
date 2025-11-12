@@ -71,7 +71,7 @@
 			</div>
 		<?php endif; ?>
 
-		<?= $Content ?? '' ?>
+		<?= $content ?? '' ?>
 	</div>
 </body>
 </html>

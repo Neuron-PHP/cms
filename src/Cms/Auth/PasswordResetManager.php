@@ -6,7 +6,7 @@ use Neuron\Cms\Models\PasswordResetToken;
 use Neuron\Cms\Repositories\IPasswordResetTokenRepository;
 use Neuron\Cms\Repositories\IUserRepository;
 use Neuron\Cms\Services\Email\Sender;
-use Neuron\Data\Setting\Source\ISettingSource;
+use Neuron\Data\Setting\SettingManager;
 use Neuron\Log\Log;
 use Exception;
 
@@ -22,7 +22,7 @@ class PasswordResetManager
 	private IPasswordResetTokenRepository $_tokenRepository;
 	private IUserRepository $_userRepository;
 	private PasswordHasher $_passwordHasher;
-	private ISettingSource $_settings;
+	private SettingManager $_settings;
 	private string $_basePath;
 	private string $_resetUrl;
 	private int $_tokenExpirationMinutes = 60;
@@ -33,7 +33,7 @@ class PasswordResetManager
 	 * @param IPasswordResetTokenRepository $tokenRepository Token repository
 	 * @param IUserRepository $userRepository User repository
 	 * @param PasswordHasher $passwordHasher Password hasher
-	 * @param ISettingSource $settings Settings manager with email configuration
+	 * @param SettingManager $settings Settings manager with email configuration
 	 * @param string $basePath Base path for template loading
 	 * @param string $resetUrl Base URL for password reset (token will be appended)
 	 */
@@ -41,7 +41,7 @@ class PasswordResetManager
 		IPasswordResetTokenRepository $tokenRepository,
 		IUserRepository $userRepository,
 		PasswordHasher $passwordHasher,
-		ISettingSource $settings,
+		SettingManager $settings,
 		string $basePath,
 		string $resetUrl
 	)

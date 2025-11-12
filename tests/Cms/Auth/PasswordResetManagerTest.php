@@ -17,7 +17,7 @@ class PasswordResetManagerTest extends TestCase
 	private IPasswordResetTokenRepository $_tokenRepository;
 	private IUserRepository $_userRepository;
 	private PasswordHasher $_passwordHasher;
-	private Memory $_settings;
+	private SettingManager $_settings;
 	private string $_basePath;
 	private string $_resetUrl;
 	private PasswordResetManager $_manager;
@@ -31,13 +31,14 @@ class PasswordResetManagerTest extends TestCase
 		$this->_userRepository = $this->createMock( IUserRepository::class );
 		$this->_passwordHasher = new PasswordHasher();
 
-		// Set up settings (use Memory directly, not SettingManager)
-		$this->_settings = new Memory();
-		$this->_settings->set( 'site', 'name', 'Test Site' );
-		$this->_settings->set( 'site', 'url', 'http://test.com' );
-		$this->_settings->set( 'email', 'from_address', 'test@example.com' );
-		$this->_settings->set( 'email', 'from_name', 'Test Site' );
-		$this->_settings->set( 'email', 'test_mode', true ); // Enable test mode to prevent actual email sending
+		// Set up settings with Memory source wrapped in SettingManager
+		$memorySource = new Memory();
+		$memorySource->set( 'site', 'name', 'Test Site' );
+		$memorySource->set( 'site', 'url', 'http://test.com' );
+		$memorySource->set( 'email', 'from_address', 'test@example.com' );
+		$memorySource->set( 'email', 'from_name', 'Test Site' );
+		$memorySource->set( 'email', 'test_mode', true ); // Enable test mode to prevent actual email sending
+		$this->_settings = new SettingManager( $memorySource );
 
 		$this->_basePath = __DIR__ . '/../../..';
 		$this->_resetUrl = 'http://test.com/reset-password';
