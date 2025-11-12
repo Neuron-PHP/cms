@@ -104,8 +104,8 @@ class DatabaseUserRepository implements IUserRepository
 			"INSERT INTO users (
 				username, email, password_hash, role, status, email_verified,
 				two_factor_secret, remember_token, failed_login_attempts,
-				locked_until, last_login_at, created_at, updated_at
-			) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+				locked_until, last_login_at, timezone, created_at, updated_at
+			) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
 		);
 
 		$stmt->execute([
@@ -120,6 +120,7 @@ class DatabaseUserRepository implements IUserRepository
 			$user->getFailedLoginAttempts(),
 			$user->getLockedUntil() ? $user->getLockedUntil()->format( 'Y-m-d H:i:s' ) : null,
 			$user->getLastLoginAt() ? $user->getLastLoginAt()->format( 'Y-m-d H:i:s' ) : null,
+			$user->getTimezone(),
 			$user->getCreatedAt()->format( 'Y-m-d H:i:s' ),
 			(new DateTimeImmutable())->format( 'Y-m-d H:i:s' )
 		]);
@@ -166,6 +167,7 @@ class DatabaseUserRepository implements IUserRepository
 				failed_login_attempts = ?,
 				locked_until = ?,
 				last_login_at = ?,
+				timezone = ?,
 				updated_at = ?
 			WHERE id = ?"
 		);
@@ -182,6 +184,7 @@ class DatabaseUserRepository implements IUserRepository
 			$user->getFailedLoginAttempts(),
 			$user->getLockedUntil() ? $user->getLockedUntil()->format( 'Y-m-d H:i:s' ) : null,
 			$user->getLastLoginAt() ? $user->getLastLoginAt()->format( 'Y-m-d H:i:s' ) : null,
+			$user->getTimezone(),
 			(new DateTimeImmutable())->format( 'Y-m-d H:i:s' ),
 			$user->getId()
 		]);
@@ -250,6 +253,7 @@ class DatabaseUserRepository implements IUserRepository
 			'failed_login_attempts' => (int)$row['failed_login_attempts'],
 			'locked_until' => $row['locked_until'] ?? null,
 			'last_login_at' => $row['last_login_at'] ?? null,
+			'timezone' => $row['timezone'] ?? 'UTC',
 			'created_at' => $row['created_at'],
 			'updated_at' => $row['updated_at'] ?? null,
 		];

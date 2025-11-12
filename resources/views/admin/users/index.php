@@ -27,7 +27,7 @@
 								<td><?= htmlspecialchars( $user->getEmail() ) ?></td>
 								<td><span class="badge bg-primary"><?= htmlspecialchars( $user->getRole() ) ?></span></td>
 								<td><span class="badge bg-<?= $user->getStatus() === 'active' ? 'success' : 'secondary' ?>"><?= htmlspecialchars( $user->getStatus() ) ?></span></td>
-								<td><?= $user->getCreatedAt() ? $user->getCreatedAt()->format( 'Y-m-d H:i' ) : 'N/A' ?></td>
+								<td><?= format_user_datetime( $user->getCreatedAt() ) ?></td>
 								<td>
 									<a href="<?= route_path('admin_users_edit', ['id' => $user->getId()]) ?>" class="btn btn-sm btn-outline-primary">Edit</a>
 									<?php if( $User->getId() !== $user->getId() ): ?>

@@ -4,13 +4,16 @@ namespace Neuron\Cms\Models;
 
 use DateTimeImmutable;
 use Exception;
+use Neuron\Orm\Model;
+use Neuron\Orm\Attributes\{Table, BelongsTo, BelongsToMany};
 
 /**
  * Post entity representing a blog post.
  *
  * @package Neuron\Cms\Models
  */
-class Post
+#[Table('posts')]
+class Post extends Model
 {
 	private ?int $_id = null;
 	private string $_title;
@@ -25,9 +28,14 @@ class Post
 	private ?DateTimeImmutable $_createdAt = null;
 	private ?DateTimeImmutable $_updatedAt = null;
 
-	// Relationships - these will be populated by the repository
+	// Relationships - now managed by ORM
+	#[BelongsTo(User::class, foreignKey: 'author_id')]
 	private ?User $_author = null;
+
+	#[BelongsToMany(Category::class, pivotTable: 'post_categories')]
 	private array $_categories = [];
+
+	#[BelongsToMany(Tag::class, pivotTable: 'post_tags')]
 	private array $_tags = [];
 
 	/**
@@ -424,10 +432,10 @@ class Post
 	 * Create Post from array data
 	 *
 	 * @param array $data Associative array of post data
-	 * @return Post
+	 * @return static
 	 * @throws Exception
 	 */
-	public static function fromArray( array $data ): Post
+	public static function fromArray( array $data ): static
 	{
 		$post = new self();
 

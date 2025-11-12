@@ -21,7 +21,7 @@
 							<p class="text-muted">
 								<small>
 									By <?= $post->getAuthor() ? htmlspecialchars( $post->getAuthor()->getUsername() ) : 'Unknown' ?>
-									on <?= $post->getCreatedAt() ? $post->getCreatedAt()->format( 'F j, Y' ) : '' ?>
+									on <?= format_user_date( $post->getCreatedAt(), 'F j, Y' ) ?>
 								</small>
 							</p>
 			<?php if( $post->getExcerpt() ): ?>

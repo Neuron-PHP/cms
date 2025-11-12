@@ -27,7 +27,7 @@
 								<td><?= $post->getAuthor() ? htmlspecialchars( $post->getAuthor()->getUsername() ) : 'Unknown' ?></td>
 								<td><span class="badge bg-<?= $post->getStatus() === 'published' ? 'success' : 'secondary' ?>"><?= htmlspecialchars( $post->getStatus() ) ?></span></td>
 								<td><?= $post->getViewCount() ?></td>
-								<td><?= $post->getCreatedAt() ? $post->getCreatedAt()->format( 'Y-m-d H:i' ) : 'N/A' ?></td>
+								<td><?= format_user_datetime( $post->getCreatedAt() ) ?></td>
 								<td>
 									<a href="<?= route_path('blog_post', ['slug' => $post->getSlug()]) ?>" class="btn btn-sm btn-outline-secondary" target="_blank">View</a>
 									<a href="<?= route_path('admin_posts_edit', ['id' => $post->getId()]) ?>" class="btn btn-sm btn-outline-primary">Edit</a>

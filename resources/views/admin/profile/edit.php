@@ -47,6 +47,49 @@
 						</div>
 
 						<div class="mb-3">
+							<label for="timezone" class="form-label">Timezone</label>
+							<select class="form-select" id="timezone" name="timezone">
+								<?php
+								$currentTimezone = $User->getTimezone();
+								$grouped = [];
+
+								// Group timezones by region
+								$grouped['Other'] = [];
+								foreach( $timezones as $timezone )
+								{
+									$parts = explode( '/', $timezone, 2 );
+									if( count( $parts ) === 2 )
+									{
+										$region = $parts[0];
+										if( !isset( $grouped[$region] ) )
+										{
+											$grouped[$region] = [];
+										}
+										$grouped[$region][] = $timezone;
+									}
+									else
+									{
+										$grouped['Other'][] = $timezone;
+									}
+								}
+
+								// Display grouped timezones
+								foreach( $grouped as $region => $tzList )
+								{
+									echo '<optgroup label="' . htmlspecialchars( $region ) . '">';
+									foreach( $tzList as $timezone )
+									{
+										$selected = $timezone === $currentTimezone ? ' selected' : '';
+										echo '<option value="' . htmlspecialchars( $timezone ) . '"' . $selected . '>' . htmlspecialchars( $timezone ) . '</option>';
+									}
+									echo '</optgroup>';
+								}
+								?>
+							</select>
+							<small class="form-text text-muted">All dates and times will be displayed in your selected timezone</small>
+						</div>
+
+						<div class="mb-3">
 							<label class="form-label">Role</label>
 							<input type="text" class="form-control" value="<?= htmlspecialchars( ucfirst( $User->getRole() ) ) ?>" disabled>
 						</div>
