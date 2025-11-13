@@ -73,7 +73,7 @@ class RegistrationInitializer implements IRunnable
 				// Get verification URL from settings
 				$siteUrl = $settings->get( 'site', 'url' ) ?? 'http://localhost:8000';
 				$verificationPath = $settings->get( 'member', 'verification_url' ) ?? '/verify-email';
-				$verificationUrl = rtrim( $siteUrl, '/' ) . $verificationPath;
+				$verificationUrl = rtrim( $siteUrl, '/' ) . '/' . ltrim( $verificationPath, '/' );
 
 				// Create EmailVerificationManager
 				$verificationManager = new EmailVerificationManager(
