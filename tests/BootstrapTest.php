@@ -44,7 +44,7 @@ class BootstrapTest extends TestCase
 	 */
 	public function testBootWithValidConfig()
 	{
-		// Create config.yaml
+		// Create neuron.yaml
 		$configContent = <<<YAML
 system:
   base_path: /app
@@ -61,7 +61,7 @@ site:
   url: http://test.com
 YAML;
 
-		vfsStream::newFile( 'config.yaml' )
+		vfsStream::newFile( 'neuron.yaml' )
 			->at( $this->root )
 			->setContent( $configContent );
 
@@ -81,7 +81,7 @@ YAML;
 
 		// Update config to use virtual filesystem path
 		$configContent = str_replace( '/app', $basePath, $configContent );
-		$this->root->getChild( 'config.yaml' )->setContent( $configContent );
+		$this->root->getChild( 'neuron.yaml' )->setContent( $configContent );
 
 		// Boot the application
 		$app = Boot( $basePath );

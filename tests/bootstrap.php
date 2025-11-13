@@ -9,3 +9,12 @@ ini_set( 'display_errors', 1 );
 
 // Set timezone
 date_default_timezone_set( 'UTC' );
+
+// Initialize ViewDataProvider for tests
+$provider = \Neuron\Mvc\Views\ViewDataProvider::getInstance();
+$provider->share( 'siteName', 'Test Site' );
+$provider->share( 'appVersion', '1.0.0-test' );
+$provider->share( 'currentUser', null );
+$provider->share( 'theme', 'sandstone' );
+$provider->share( 'currentYear', fn() => date('Y') );
+$provider->share( 'isAuthenticated', false );

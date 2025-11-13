@@ -68,6 +68,15 @@ class BlogControllerTest extends TestCase
 		Registry::getInstance()->set( 'Base.Path', __DIR__ . '/../..' );
 		Registry::getInstance()->set( 'Views.Path', __DIR__ . '/../../resources/views' );
 
+		// Initialize ViewDataProvider for tests
+		$provider = \Neuron\Mvc\Views\ViewDataProvider::getInstance();
+		$provider->share( 'siteName', 'Test Site' );
+		$provider->share( 'appVersion', '1.0.0-test' );
+		$provider->share( 'currentUser', null );
+		$provider->share( 'theme', 'sandstone' );
+		$provider->share( 'currentYear', fn() => date('Y') );
+		$provider->share( 'isAuthenticated', false );
+
 		// Initialize repositories with our test PDO
 		$this->initializeRepositories();
 	}

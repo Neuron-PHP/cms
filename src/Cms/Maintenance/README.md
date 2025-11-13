@@ -55,7 +55,7 @@ neuron cms:maintenance:status --json
 
 ## Configuration
 
-Add maintenance mode settings to your `config/config.yaml`:
+Add maintenance mode settings to your `config/neuron.yaml`:
 
 ```yaml
 maintenance:
@@ -159,7 +159,7 @@ You can create a custom maintenance page template:
 </html>
 ```
 
-2. Configure it in `config.yaml`:
+2. Configure it in `neuron.yaml`:
 
 ```yaml
 maintenance:

@@ -55,11 +55,11 @@ maintenance:
   show_countdown: true
 YAML;
 
-		vfsStream::newFile( 'config.yaml' )
+		vfsStream::newFile( 'neuron.yaml' )
 			->at( $this->root )
 			->setContent( $configContent );
 
-		$settings = new Yaml( vfsStream::url( 'test/config.yaml' ) );
+		$settings = new Yaml( vfsStream::url( 'test/neuron.yaml' ) );
 		$config = new MaintenanceConfig( $settings );
 
 		$this->assertTrue( $config->isEnabled() );
@@ -82,11 +82,11 @@ maintenance:
   default_message: "Site maintenance"
 YAML;
 
-		vfsStream::newFile( 'config.yaml' )
+		vfsStream::newFile( 'neuron.yaml' )
 			->at( $this->root )
 			->setContent( $configContent );
 
-		$settings = new Yaml( vfsStream::url( 'test/config.yaml' ) );
+		$settings = new Yaml( vfsStream::url( 'test/neuron.yaml' ) );
 		$config = MaintenanceConfig::fromSettings( $settings );
 
 		$this->assertInstanceOf( MaintenanceConfig::class, $config );
@@ -104,11 +104,11 @@ maintenance:
   allowed_ips: "192.168.1.1, 10.0.0.1, 172.16.0.0/16"
 YAML;
 
-		vfsStream::newFile( 'config.yaml' )
+		vfsStream::newFile( 'neuron.yaml' )
 			->at( $this->root )
 			->setContent( $configContent );
 
-		$settings = new Yaml( vfsStream::url( 'test/config.yaml' ) );
+		$settings = new Yaml( vfsStream::url( 'test/neuron.yaml' ) );
 		$config = new MaintenanceConfig( $settings );
 
 		$ips = $config->getAllowedIps();
@@ -128,11 +128,11 @@ maintenance:
   default_message: "Only message specified"
 YAML;
 
-		vfsStream::newFile( 'config.yaml' )
+		vfsStream::newFile( 'neuron.yaml' )
 			->at( $this->root )
 			->setContent( $configContent );
 
-		$settings = new Yaml( vfsStream::url( 'test/config.yaml' ) );
+		$settings = new Yaml( vfsStream::url( 'test/neuron.yaml' ) );
 		$config = new MaintenanceConfig( $settings );
 
 		$this->assertEquals( 'Only message specified', $config->getDefaultMessage() );
@@ -152,11 +152,11 @@ site:
   name: Test Site
 YAML;
 
-		vfsStream::newFile( 'config.yaml' )
+		vfsStream::newFile( 'neuron.yaml' )
 			->at( $this->root )
 			->setContent( $configContent );
 
-		$settings = new Yaml( vfsStream::url( 'test/config.yaml' ) );
+		$settings = new Yaml( vfsStream::url( 'test/neuron.yaml' ) );
 		$config = new MaintenanceConfig( $settings );
 
 		// Should all be defaults

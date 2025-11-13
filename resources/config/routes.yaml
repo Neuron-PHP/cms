@@ -250,3 +250,55 @@ routes:
     method: GET
     route: /rss
     controller: Neuron\Cms\Controllers\Blog@feed
+
+  # Member Registration Routes
+  register:
+    method: GET
+    route: /register
+    controller: Neuron\Cms\Controllers\Member\Registration@showRegistrationForm
+
+  register_post:
+    method: POST
+    route: /register
+    controller: Neuron\Cms\Controllers\Member\Registration@processRegistration
+
+  verify_email:
+    method: GET
+    route: /verify-email
+    controller: Neuron\Cms\Controllers\Member\Registration@verify
+
+  verify_email_sent:
+    method: GET
+    route: /verify-email-sent
+    controller: Neuron\Cms\Controllers\Member\Registration@showVerificationSent
+
+  resend_verification:
+    method: POST
+    route: /resend-verification
+    controller: Neuron\Cms\Controllers\Member\Registration@resendVerification
+
+  # Member Dashboard Routes
+  member:
+    method: GET
+    route: /member
+    controller: Neuron\Cms\Controllers\Member\Dashboard@index
+    filter: member
+
+  member_dashboard:
+    method: GET
+    route: /member/dashboard
+    controller: Neuron\Cms\Controllers\Member\Dashboard@index
+    filter: member
+
+  # Member Profile Routes
+  member_profile:
+    method: GET
+    route: /member/profile
+    controller: Neuron\Cms\Controllers\Member\Profile@edit
+    filter: member
+
+  member_profile_update:
+    method: PUT
+    route: /member/profile
+    controller: Neuron\Cms\Controllers\Member\Profile@update
+    filter: member

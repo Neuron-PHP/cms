@@ -1,0 +1,28 @@
+properties:
+  username:
+    type: string
+    required: true
+    validators:
+      - IsNotEmpty
+      - IsStringLength:
+          min: 3
+          max: 50
+      - IsAlphanumeric
+  email:
+    type: string
+    required: true
+    validators:
+      - IsNotEmpty
+      - IsEmail
+  password:
+    type: string
+    required: true
+    validators:
+      - IsNotEmpty
+      - IsStringLength:
+          min: 8
+  password_confirmation:
+    type: string
+    required: true
+    validators:
+      - IsNotEmpty

@@ -1,7 +1,7 @@
 # Database Configuration
 #
 # This file provides database configuration for the CMS component.
-# Copy sections to your config/config.yaml
+# Copy sections to your config/neuron.yaml
 
 database:
   # Database adapter (mysql, pgsql, sqlite)

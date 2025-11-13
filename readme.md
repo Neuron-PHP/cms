@@ -68,7 +68,7 @@ The installer will:
 1. Create the complete directory structure (app/, config/, db/, public/, resources/, storage/)
 2. Publish all view templates (admin panel, blog, auth, layouts)
 3. Publish application initializers
-4. Create configuration files (config.yaml, routes.yaml, auth.yaml, event-listeners.yaml)
+4. Create configuration files (neuron.yaml, routes.yaml, auth.yaml, event-listeners.yaml)
 5. Generate the front controller (public/index.php)
 6. Set up database migrations
 7. Optionally run migrations to create database tables
@@ -88,7 +88,8 @@ your-project/
 │   ├── Initializers/        # Application initializers
 │   │   ├── AuthInitializer.php
 │   │   ├── MaintenanceInitializer.php
-│   │   └── PasswordResetInitializer.php
+│   │   ├── PasswordResetInitializer.php
+│   │   └── ViewDataInitializer.php
 │   ├── Jobs/                # Background jobs
 │   ├── Listeners/           # Event listeners
 │   ├── Models/              # Domain models
@@ -97,7 +98,7 @@ your-project/
 │
 ├── config/
 │   ├── auth.yaml           # Authentication configuration
-│   ├── config.yaml         # Main application config
+│   ├── neuron.yaml         # Main application config
 │   ├── event-listeners.yaml # Event listener configuration
 │   └── routes.yaml         # Route definitions
 │
@@ -156,7 +157,7 @@ Log in with the admin credentials you created during installation.
 
 ### Optional Configuration
 
-If you need to customize settings, edit `config/config.yaml`:
+If you need to customize settings, edit `config/neuron.yaml`:
 
 ```yaml
 site:
@@ -265,7 +266,7 @@ You can customize routes by editing `config/routes.yaml`.
 
 ### Email
 
-Configure email in `config/config.yaml`:
+Configure email in `config/neuron.yaml`:
 
 ```yaml
 email:
