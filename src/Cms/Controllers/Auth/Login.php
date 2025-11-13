@@ -35,7 +35,7 @@ class Login extends Content
 
 		if( !$this->_authManager )
 		{
-			throw new \RuntimeException( 'AuthManager not found in Registry. Ensure authentication is properly configured and that Application is set in Registry before initializers run.' );
+			throw new \RuntimeException( 'AuthManager not found in Registry.' );
 		}
 
 		// Initialize CSRF manager with parent's session manager
@@ -60,7 +60,7 @@ class Login extends Content
 		Registry::getInstance()->set( 'Auth.CsrfToken', $this->_csrfManager->getToken() );
 
 		$defaultRedirect = $this->urlFor( 'admin_dashboard' ) ?? '/admin/dashboard';
-		$requestedRedirect = $_GET['redirect'] ?? $defaultRedirect;
+		$requestedRedirect = $this->filterGet( 'redirect', $defaultRedirect );
 		$redirectUrl = $this->isValidRedirectUrl( $requestedRedirect )
 			? $requestedRedirect
 			: $defaultRedirect;
@@ -120,7 +120,7 @@ class Login extends Content
 			? $requestedRedirect
 			: $defaultRedirect;
 
-		$this->redirect( $redirectUrl, [], [ 'success', 'Welcome back!' ] );
+		$this->redirectToUrl( $redirectUrl, [ 'success', 'Welcome back!' ] );
 	}
 
 	/**

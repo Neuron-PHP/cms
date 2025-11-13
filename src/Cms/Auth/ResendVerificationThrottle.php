@@ -2,6 +2,7 @@
 
 namespace Neuron\Cms\Auth;
 
+use Neuron\Routing\RateLimit\RateLimitConfig;
 use Neuron\Routing\RateLimit\Storage\IRateLimitStorage;
 use Neuron\Routing\RateLimit\Storage\RateLimitStorageFactory;
 
@@ -33,10 +34,13 @@ class ResendVerificationThrottle
 		if( $storage === null )
 		{
 			// Use file-based storage by default
-			$storage = RateLimitStorageFactory::create( 'file', [
-				'path' => sys_get_temp_dir() . '/neuron/rate_limits/resend_verification',
-				'prefix' => 'resend_verify_'
-			] );
+			$rateLimitConfig = new RateLimitConfig([
+				'storage' => 'file',
+				'file_path' => sys_get_temp_dir() . '/neuron/rate_limits/resend_verification',
+				'key_prefix' => 'resend_verify_'
+			]);
+
+			$storage = RateLimitStorageFactory::create( $rateLimitConfig );
 		}
 
 		$this->_storage = $storage;

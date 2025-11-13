@@ -139,7 +139,7 @@ class PasswordReset extends Content
 	public function showResetForm( array $parameters ): string
 	{
 		// Get token from query string
-		$token = $_GET['token'] ?? '';
+		$token = $this->filterGet( 'token', '' );
 
 		if( empty( $token ) )
 		{
