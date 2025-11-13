@@ -289,22 +289,14 @@ This is the **easiest way** to run the complete job system. It manages both the 
 - `--worker-sleep=5` - Worker sleep when queue is empty (default: 3)
 - `--worker-timeout=120` - Job timeout in seconds (default: 60)
 - `--max-jobs=100` - Max jobs before restarting worker (default: unlimited)
-- `--no-scheduler` - Run only the worker
-- `--no-worker` - Run only the scheduler
 
 **Examples:**
 ```bash
 # Run with defaults (both scheduler and worker)
 vendor/bin/neuron jobs:run
 
-# Custom configuration
+# Run with custom schedule interval and specific queues (in order of priority)
 vendor/bin/neuron jobs:run --schedule-interval=30 --queue=emails,notifications
-
-# Only run scheduler
-vendor/bin/neuron jobs:run --no-worker
-
-# Only run worker
-vendor/bin/neuron jobs:run --no-scheduler
 ```
 
 #### 2. Scheduler Only
