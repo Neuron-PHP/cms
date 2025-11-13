@@ -1,4 +1,4 @@
-## 0.8.3
+## 0.8.3 2025-11-12
 
 * Large refactoring.
 * Updated to use the new ORM component.
