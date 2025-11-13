@@ -1,0 +1,78 @@
+# Neuron CMS Configuration Example
+# Copy this file to neuron.yaml and customize for your site
+# Main configuration file for the Neuron CMS application
+
+system:
+  timezone: UTC  # Server timezone (e.g., America/New_York, Europe/London, UTC)
+  base_path: resources  # Base path for resources
+  routes_path: resources/config  # Path to routes configuration
+
+logging:
+  destination: \Neuron\Log\Destination\File  # Log destination class
+  format: \Neuron\Log\Format\PlainText  # Log format class
+  file: storage/logs/app.log  # Log file path
+  level: info  # Log level: debug, info, warning, error
+
+cache:
+  enabled: true  # Enable view caching
+  storage: file  # Cache storage type
+  path: storage/cache/views  # Cache storage path
+  ttl: 3600  # Cache time-to-live in seconds
+  html: true  # Cache HTML views
+  markdown: true  # Cache Markdown views
+  json: false  # Cache JSON views
+  xml: false  # Cache XML views
+
+views:
+  path: resources/views  # Path to view templates
+
+site:
+  name: 'Neuron CMS'  # Site name
+  url: 'https://example.com'  # Site URL (without trailing slash)
+  description: 'A modern content management system built with Neuron.'  # Site description
+  title: 'Neuron CMS'  # Default page title
+
+# Theme Configuration
+# Controls the Bootswatch theme for different portals
+# Themes are role-based: admin, subscriber (member), and guest (public/auth)
+#
+# Available Bootswatch 5.3+ themes:
+# - cerulean: A calm blue sky theme
+# - cosmo: An ode to Metro
+# - cyborg: Jet black and electric blue
+# - darkly: Flatly in night mode
+# - flatly: Flat and modern
+# - journal: Crisp like a new sheet of paper
+# - litera: The medium is the message
+# - lumen: Light and shadow
+# - lux: A touch of class
+# - materia: Material is the metaphor
+# - minty: A fresh feel
+# - morph: A neumorphic design
+# - pulse: A trace of purple
+# - quartz: A glassmorphism design
+# - sandstone: A touch of warmth
+# - simplex: Mini and minimalist
+# - sketchy: A hand-drawn look
+# - slate: Shades of gunmetal gray
+# - solar: A spin on Solarized
+# - spacelab: Silvery and sleek
+# - superhero: The brave and the blue
+# - united: Ubuntu orange and unique font
+# - vapor: A cyberpunk aesthetic
+# - yeti: A friendly foundation
+# - zephyr: Breezy and beautiful
+#
+# Preview themes at: https://bootswatch.com/
+theme:
+  # Admin portal theme (for users with admin role)
+  # Recommended: vapor (dark), darkly, cyborg, slate
+  admin: vapor
+
+  # Member portal theme (for users with subscriber, editor, author roles)
+  # Recommended: sandstone, flatly, cosmo, lux, materia
+  subscriber: sandstone
+
+  # Guest theme (for public website and login/registration pages)
+  # Recommended: sandstone, flatly, cosmo, litera, lumen, minty
+  guest: sandstone

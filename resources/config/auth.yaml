@@ -38,3 +38,15 @@ auth:
   storage:
     type: file  # file or database (future)
     path: storage/users  # Path for file-based storage
+
+# Member Portal Configuration
+member:
+  # Registration settings
+  registration_enabled: true  # Enable/disable public user registration
+  require_email_verification: true  # Require email verification before account activation
+  default_role: subscriber  # Default role for new members
+
+  # Email verification settings
+  verification_token_expiration_minutes: 60  # Token validity in minutes
+  verification_url: /verify-email  # Verification endpoint URL
+  resend_throttle_seconds: 60  # Minimum time between resend requests

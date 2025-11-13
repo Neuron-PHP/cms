@@ -87,6 +87,7 @@ class InstallCommand extends Command
 			'createAuthConfig' => 'Creating auth configuration...',
 			'createPublicFiles' => 'Creating public folder and copying static assets...',
 			'setupDatabase' => 'Setting up database...',
+			'copyMigrations' => 'Copying database migrations...',
 		];
 
 		foreach( $steps as $method => $message )
@@ -98,13 +99,6 @@ class InstallCommand extends Command
 				$this->output->error( "Installation failed!" );
 				return 1;
 			}
-		}
-
-		// Generate migration
-		if( !$this->generateMigration() )
-		{
-			$this->output->error( "Installation failed at migration generation!" );
-			return 1;
 		}
 
 		// Ask to run migration
@@ -170,6 +164,9 @@ class InstallCommand extends Command
 			'/resources/views/emails',
 			'/resources/views/http_codes',
 			'/resources/views/layouts',
+			'/resources/views/member',
+			'/resources/views/member/dashboard',
+			'/resources/views/member/profile',
 
 			// Application directories
 			'/app/Controllers',
@@ -220,7 +217,7 @@ class InstallCommand extends Command
 	private function publishViews(): bool
 	{
 		// Copy all view directories
-		$viewDirs = [ 'admin', 'auth', 'blog', 'content', 'emails', 'home', 'http_codes', 'layouts' ];
+		$viewDirs = [ 'admin', 'auth', 'blog', 'content', 'emails', 'home', 'http_codes', 'layouts', 'member' ];
 
 		foreach( $viewDirs as $dir )
 		{
@@ -783,17 +780,12 @@ class InstallCommand extends Command
 	}
 
 	/**
-	 * Generate database migration
+	 * Copy database migrations from component to project
 	 */
-	private function generateMigration(): bool
+	private function copyMigrations(): bool
 	{
-		$this->output->writeln( "\nGenerating database migration..." );
-
-		$migrationName = 'CreateUsersTable';
-		$snakeCaseName = $this->camelToSnake( $migrationName );
-
-		// Use db/migrate path to match MigrationManager expectations
 		$migrationsDir = $this->_projectPath . '/db/migrate';
+		$componentMigrationsDir = $this->_componentPath . '/resources/database/migrate';
 
 		// Create migrations directory if it doesn't exist
 		if( !is_dir( $migrationsDir ) )
@@ -805,99 +797,46 @@ class InstallCommand extends Command
 			}
 		}
 
-		// Check if migration already exists
-		$existingFiles = glob( $migrationsDir . '/*_' . $snakeCaseName . '.php' );
-		if( !empty( $existingFiles ) )
+		// Check if component migrations directory exists
+		if( !is_dir( $componentMigrationsDir ) )
 		{
-			$existingFile = basename( $existingFiles[0] );
-			$this->output->info( "Migration already exists: $existingFile" );
-			$this->_messages[] = "Using existing migration: db/migrate/$existingFile";
-			return true;
-		}
-
-		$timestamp = date( 'YmdHis' );
-		$className = $migrationName;
-		$fileName = $timestamp . '_' . $snakeCaseName . '.php';
-		$filePath = $migrationsDir . '/' . $fileName;
-
-		$template = $this->getMigrationTemplate( $className );
-
-		if( file_put_contents( $filePath, $template ) === false )
-		{
-			$this->output->error( "Failed to create migration file!" );
+			$this->output->error( "Component migrations directory not found at: $componentMigrationsDir" );
 			return false;
 		}
 
-		$this->_messages[] = "Created: db/migrate/$fileName";
+		// Copy all migration files
+		$files = glob( $componentMigrationsDir . '/*.php' );
+
+		if( empty( $files ) )
+		{
+			$this->output->warning( "No migration files found in component" );
+			return true;
+		}
+
+		foreach( $files as $sourceFile )
+		{
+			$fileName = basename( $sourceFile );
+			$destFile = $migrationsDir . '/' . $fileName;
+
+			// Skip if file already exists
+			if( file_exists( $destFile ) )
+			{
+				$this->_messages[] = "Migration already exists: db/migrate/$fileName";
+				continue;
+			}
+
+			if( copy( $sourceFile, $destFile ) )
+			{
+				$this->_messages[] = "Copied migration: db/migrate/$fileName";
+			}
+			else
+			{
+				$this->output->error( "Failed to copy migration: $fileName" );
+				return false;
+			}
+		}
+
 		return true;
-	}
-
-	/**
-	 * Get migration template with users and password_reset_tokens table schema
-	 */
-	private function getMigrationTemplate( string $className ): string
-	{
-		return <<<PHP
-<?php
-
-use Phinx\Migration\AbstractMigration;
-
-/**
- * Create users and password_reset_tokens tables
- */
-class $className extends AbstractMigration
-{
-	/**
-	 * Create users and password_reset_tokens tables
-	 */
-	public function change()
-	{
-		// Create users table
-		\$usersTable = \$this->table( 'users' );
-
-		\$usersTable->addColumn( 'username', 'string', [ 'limit' => 255 ] )
-			->addColumn( 'email', 'string', [ 'limit' => 255 ] )
-			->addColumn( 'password_hash', 'string', [ 'limit' => 255 ] )
-			->addColumn( 'role', 'string', [ 'limit' => 50, 'default' => 'subscriber' ] )
-			->addColumn( 'status', 'string', [ 'limit' => 50, 'default' => 'active' ] )
-			->addColumn( 'email_verified', 'boolean', [ 'default' => false ] )
-			->addColumn( 'two_factor_secret', 'string', [ 'limit' => 255, 'null' => true ] )
-			->addColumn( 'remember_token', 'string', [ 'limit' => 255, 'null' => true ] )
-			->addColumn( 'failed_login_attempts', 'integer', [ 'default' => 0 ] )
-			->addColumn( 'locked_until', 'timestamp', [ 'null' => true ] )
-			->addColumn( 'last_login_at', 'timestamp', [ 'null' => true ] )
-			->addColumn( 'timezone', 'string', [ 'limit' => 50, 'default' => 'UTC' ] )
-			->addColumn( 'created_at', 'timestamp', [ 'default' => 'CURRENT_TIMESTAMP' ] )
-			->addColumn( 'updated_at', 'timestamp', [ 'default' => 'CURRENT_TIMESTAMP', 'update' => 'CURRENT_TIMESTAMP' ] )
-			->addIndex( [ 'username' ], [ 'unique' => true ] )
-			->addIndex( [ 'email' ], [ 'unique' => true ] )
-			->addIndex( [ 'remember_token' ] )
-			->addIndex( [ 'status' ] )
-			->create();
-
-		// Create password_reset_tokens table
-		\$tokensTable = \$this->table( 'password_reset_tokens' );
-
-		\$tokensTable->addColumn( 'email', 'string', [ 'limit' => 255 ] )
-			->addColumn( 'token', 'string', [ 'limit' => 64 ] )
-			->addColumn( 'created_at', 'timestamp', [ 'default' => 'CURRENT_TIMESTAMP' ] )
-			->addColumn( 'expires_at', 'timestamp', [ 'null' => false ] )
-			->addIndex( [ 'email' ] )
-			->addIndex( [ 'token' ] )
-			->addIndex( [ 'expires_at' ] )
-			->create();
-	}
-}
-
-PHP;
-	}
-
-	/**
-	 * Convert CamelCase to snake_case
-	 */
-	private function camelToSnake( string $input ): string
-	{
-		return strtolower( preg_replace( '/(?<!^)[A-Z]/', '_$0', $input ) );
 	}
 
 	/**

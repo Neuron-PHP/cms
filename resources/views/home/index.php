@@ -11,6 +11,9 @@
 
 			<div class="d-grid gap-2 d-sm-flex justify-content-sm-center mb-5">
 				<a href="<?= route_path('blog') ?>" class="btn btn-primary btn-lg px-4 gap-3">Blog</a>
+				<?php if( !empty( $RegistrationEnabled ) ): ?>
+					<a href="<?= route_path('register') ?>" class="btn btn-success btn-lg px-4 gap-3">Sign Up</a>
+				<?php endif; ?>
 			</div>
 
 			<div class="row mt-5">
@@ -34,7 +37,7 @@
 					<div class="card h-100 border-0 shadow-sm">
 						<div class="card-body text-center">
 							<h3 class="h5 card-title mb-3">Admin Portal</h3>
-							<p class="card-text text-muted">Manage users and blog posts in an easy to use back end.</p>
+							<p class="card-text text-muted">Manage users and blog posts in an easy-to-use back end.</p>
 						</div>
 					</div>
 				</div>

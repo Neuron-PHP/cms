@@ -88,7 +88,8 @@ your-project/
 │   ├── Initializers/        # Application initializers
 │   │   ├── AuthInitializer.php
 │   │   ├── MaintenanceInitializer.php
-│   │   └── PasswordResetInitializer.php
+│   │   ├── PasswordResetInitializer.php
+│   │   └── ViewDataInitializer.php
 │   ├── Jobs/                # Background jobs
 │   ├── Listeners/           # Event listeners
 │   ├── Models/              # Domain models
