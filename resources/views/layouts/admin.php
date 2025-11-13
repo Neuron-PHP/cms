@@ -6,7 +6,7 @@
 	<title><?= htmlspecialchars($Title ?? 'Admin') ?></title>
 	<meta name="description" content="<?= htmlspecialchars($Description ?? '') ?>">
 
-	<link href="https://cdn.jsdelivr.net/npm/bootswatch@5.3.7/dist/vapor/bootstrap.min.css" rel="stylesheet">
+	<link href="https://cdn.jsdelivr.net/npm/bootswatch@5.3.7/dist/<?= htmlspecialchars($theme) ?>/bootstrap.min.css" rel="stylesheet">
 	<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
 	<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js"></script>
 	<style>
@@ -19,7 +19,7 @@
 	<nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
 		<div class="container-fluid">
 			<a class="navbar-brand" href="<?= route_path('admin_dashboard') ?>">
-				<?= htmlspecialchars($name ?? 'Neuron CMS') ?> Admin
+				<?= htmlspecialchars($siteName) ?> Admin
 			</a>
 			<button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
 				<span class="navbar-toggler-icon"></span>

@@ -106,41 +106,17 @@ class InstallCommandTest extends TestCase
 		$this->assertEquals('simple', $method->invoke($command, 'simple'));
 	}
 
-	public function testCamelToSnakeConvertsCorrectly(): void
+	public function testCopyMigrationsMethodExists(): void
 	{
 		$command = new InstallCommand();
 
-		// Use reflection to call private method
+		// Verify the new copyMigrations method exists
 		$reflection = new \ReflectionClass($command);
-		$method = $reflection->getMethod('camelToSnake');
-		$method->setAccessible(true);
+		$this->assertTrue($reflection->hasMethod('copyMigrations'));
 
-		$this->assertEquals('create_users_table', $method->invoke($command, 'CreateUsersTable'));
-		$this->assertEquals('add_index', $method->invoke($command, 'AddIndex'));
-		$this->assertEquals('simple', $method->invoke($command, 'simple'));
+		$method = $reflection->getMethod('copyMigrations');
+		$this->assertTrue($method->isPrivate());
 	}
-
-	public function testGetMigrationTemplateGeneratesValidPhp(): void
-	{
-		$command = new InstallCommand();
-
-		// Use reflection to call private method
-		$reflection = new \ReflectionClass($command);
-		$method = $reflection->getMethod('getMigrationTemplate');
-		$method->setAccessible(true);
-
-		$result = $method->invoke($command, 'CreateUsersTable');
-
-		$this->assertIsString($result);
-		$this->assertStringContainsString('<?php', $result);
-		$this->assertStringContainsString('class CreateUsersTable extends AbstractMigration', $result);
-		$this->assertStringContainsString('public function change()', $result);
-		$this->assertStringContainsString('->addColumn( \'username\'', $result);
-		$this->assertStringContainsString('->addColumn( \'email\'', $result);
-		$this->assertStringContainsString('->addColumn( \'password_hash\'', $result);
-		$this->assertStringContainsString('->addIndex( [ \'username\' ]', $result);
-	}
-
 
 	/**
 	 * Helper to set stdin input for testing

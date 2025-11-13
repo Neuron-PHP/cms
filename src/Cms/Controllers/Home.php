@@ -25,12 +25,22 @@ class Home extends Content
 	 */
 	public function index( array $parameters, ?Request $request ): string
 	{
+		// Check if registration is enabled
+		$registrationEnabled = false;
+		$registrationService = \Neuron\Patterns\Registry::getInstance()->get( 'RegistrationService' );
+
+		if( $registrationService && method_exists( $registrationService, 'isRegistrationEnabled' ) )
+		{
+			$registrationEnabled = $registrationService->isRegistrationEnabled();
+		}
+
 		return $this->renderHtml(
 			HttpResponseStatus::OK,
 			[
 				'Title' => $this->getTitle(),
 				'Name' => $this->getName(),
 				'Description' => $this->getDescription(),
+				'RegistrationEnabled' => $registrationEnabled,
 			],
 			'index'
 		);
