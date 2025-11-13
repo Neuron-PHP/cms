@@ -1,4 +1,5 @@
 ## 0.8.6
+* Cleanup and minor fixes.
 
 ## 0.8.5 2025-11-12
 
