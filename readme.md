@@ -39,7 +39,7 @@ A modern, database-backed Content Management System for PHP 8.4+ built on the Ne
   - Configurable email templates
   - PHPMailer integration
 
-  **Scheduling & Background Jobs**
+- **Scheduling & Background Jobs**
   - Scheduled tasks (e.g., daily summaries)
   - Background job processing (e.g., email sending, report generation)
   - Email queue support
