@@ -12,6 +12,13 @@ A modern, database-backed Content Management System for PHP 8.4+ built on the Ne
   - Account locking after failed login attempts
   - "Remember me" functionality
 
+- **Member Registration & Management**
+  - Public member registration with email verification
+  - Email verification system with secure tokens
+  - Rate-limited verification email resends (DOS/spam protection)
+  - Member dashboard with profile management
+  - Enumeration protection for security
+
 - **Blog System**
   - Create, edit, and publish blog posts
   - Category and tag organization
@@ -74,7 +81,7 @@ The installer will:
 7. Optionally run migrations to create database tables
 8. Prompt you to create an admin user
 
-That's it! The installer handles all setup automatically.
+That's it. The installer handles all setup automatically.
 
 ## Project Structure
 
@@ -118,14 +125,18 @@ your-project/
 ├── resources/
 │   └── views/
 │       ├── admin/         # Admin panel templates
+│       │   ├── categories/
 │       │   ├── dashboard/ # Dashboard views
 │       │   ├── posts/     # Post management
-│       │   ├── categories/
+│       │   ├── profile/     # Post management
 │       │   ├── tags/
-│       │   ├── users/
-│       │   └── profile/
+│       │   └── users/
 │       ├── auth/          # Login/password reset
 │       ├── blog/          # Public blog views
+│       ├── member/        # Member registration & dashboard
+│       │   ├── dashboard/
+│       │   ├── profile/
+│       │   └── registration/
 │       ├── content/       # Content pages
 │       ├── emails/        # Email templates
 │       ├── http_codes/    # Error pages
@@ -152,8 +163,21 @@ php -S localhost:8000 -t public
 Visit:
 - Public blog: `http://localhost:8000/blog`
 - Admin panel: `http://localhost:8000/admin`
+- Member registration: `http://localhost:8000/register`
+- Member dashboard: `http://localhost:8000/member` (after registration)
 
 Log in with the admin credentials you created during installation.
+
+### Start the Job System (Optional)
+
+For background jobs and scheduled tasks:
+
+```bash
+vendor/bin/neuron jobs:run
+```
+
+This runs both the scheduler (for scheduled tasks) and worker (for email sending and background jobs).
+
 
 ### Optional Configuration
 
@@ -197,6 +221,37 @@ Admin users can:
 - Activate/deactivate accounts
 - Reset passwords
 
+### Member Registration
+
+The CMS supports public member registration with email verification:
+
+1. **Enable Registration**: Configure in `config/neuron.yaml`:
+   ```yaml
+   member:
+     registration_enabled: true
+     require_email_verification: true
+   ```
+
+2. **Registration Flow**:
+   - Users visit `/register` to create an account
+   - System sends verification email with secure token
+   - Users click verification link to activate account
+   - Upon verification, users can access `/member` dashboard
+
+3. **Security Features**:
+   - **Email Verification**: Prevents fake accounts with unverified emails
+   - **Rate Limiting**: Resend verification requests are throttled:
+     - Per-IP limit: 5 requests per 5 minutes
+     - Per-email limit: 1 resend per 5 minutes
+   - **Enumeration Protection**: Generic responses prevent email address discovery
+   - **CSRF Protection**: All forms protected against cross-site request forgery
+   - **IP Resolution**: Properly handles proxy headers (Cloudflare, X-Forwarded-For, etc.)
+
+4. **Member Dashboard**:
+   - Access at `/member` (requires authentication)
+   - Profile management at `/member/profile`
+   - Role-based access separate from admin panel
+
 ### Customizing Views
 
 All view templates are in `resources/views/` and can be customized:
@@ -205,41 +260,82 @@ All view templates are in `resources/views/` and can be customized:
 - `blog/index.php` - Blog listing
 - `blog/show.php` - Individual post
 - `admin/*` - Admin panel templates
+- `member/*` - Member registration and dashboard templates
+  - `member/registration/register.php` - Registration form
+  - `member/registration/verify-email-sent.php` - Email verification sent page
+  - `member/registration/email-verified.php` - Email verification success/failure
+  - `member/dashboard/index.php` - Member dashboard
+  - `member/profile/edit.php` - Profile editing
 
-### Scheduling Jobs
+### Running the Job System
 
-Start the scheduler:
+[Neuron Jobs](https://github.com/Neuron-PHP/jobs)
 
-```bash
-php neuron jobs:schedule
-```
+The CMS includes a complete job system for scheduled tasks and background processing. You can run it in three different modes:
 
-This will process scheduled jobs.
+#### 1. Combined Mode (Recommended)
 
-### Running Background Jobs
-
-Start the queue worker:
-
-```bash
-php neuron jobs:work
-```
-
-This will process queued jobs like sending emails in the background.
-
-## Testing
-
-Run the test suite:
+Run both scheduler and queue worker together with a single command:
 
 ```bash
-# Run all tests
-vendor/bin/phpunit tests
-
-# Run with coverage
-vendor/bin/phpunit tests --coverage-text
-
-# Run specific test
-vendor/bin/phpunit tests/Cms/BlogControllerTest.php
+vendor/bin/neuron jobs:run
 ```
+
+This is the **easiest way** to run the complete job system. It manages both the scheduler and worker in one process.
+
+**Options:**
+- `--schedule-interval=30` - Scheduler polling interval in seconds (default: 60)
+- `--queue=emails,default` - Queue(s) to process (default: default)
+- `--worker-sleep=5` - Worker sleep when queue is empty (default: 3)
+- `--worker-timeout=120` - Job timeout in seconds (default: 60)
+- `--max-jobs=100` - Max jobs before restarting worker (default: unlimited)
+- `--no-scheduler` - Run only the worker
+- `--no-worker` - Run only the scheduler
+
+**Examples:**
+```bash
+# Run with defaults (both scheduler and worker)
+vendor/bin/neuron jobs:run
+
+# Custom configuration
+vendor/bin/neuron jobs:run --schedule-interval=30 --queue=emails,notifications
+
+# Only run scheduler
+vendor/bin/neuron jobs:run --no-worker
+
+# Only run worker
+vendor/bin/neuron jobs:run --no-scheduler
+```
+
+#### 2. Scheduler Only
+
+Run just the scheduler for executing scheduled tasks:
+
+```bash
+vendor/bin/neuron jobs:schedule
+```
+
+Handles recurring tasks and scheduled jobs defined in `config/schedule.yaml`.
+
+**Options:**
+- `--interval=30` - Polling interval in seconds (default: 60)
+- `--poll` - Run a single poll and exit (useful for cron)
+
+#### 3. Worker Only
+
+Run just the queue worker for processing background jobs:
+
+```bash
+vendor/bin/neuron jobs:work
+```
+
+Processes queued jobs including emails and background tasks.
+
+**Options:**
+- `--queue=emails` - Process specific queue
+- `--sleep=5` - Seconds to sleep when queue is empty
+- `--timeout=120` - Job timeout in seconds
+- `--max-jobs=100` - Maximum jobs to process before stopping
 
 ## Configuration
 
@@ -260,6 +356,12 @@ The installer automatically creates `config/routes.yaml` with pre-configured rou
 - Admin panel (`/admin/*`)
 - Authentication (`/login`, `/logout`)
 - Password reset (`/password/reset`, `/password/reset/confirm`)
+- Member registration and dashboard:
+  - `/register` - Registration form
+  - `/verify-email` - Email verification
+  - `/resend-verification` - Resend verification email (rate-limited)
+  - `/member` - Member dashboard (requires authentication)
+  - `/member/profile` - Profile management
 - RSS feed (`/blog/rss`)
 
 You can customize routes by editing `config/routes.yaml`.
@@ -279,6 +381,31 @@ email:
   from_address: noreply@example.com
   from_name: My Blog
   test_mode: false               # optional - logs emails instead of sending
+```
+
+### Rate Limiting
+
+The resend verification email endpoint is protected by rate limiting to prevent DOS attacks and spam. The default configuration is:
+
+- **Per-IP limit**: 5 requests per 5 minutes
+- **Per-email limit**: 1 resend per 5 minutes
+
+These limits are enforced server-side using the `ResendVerificationThrottle` service, which:
+- Hashes email addresses (SHA-256) before storage for privacy
+- Uses file-based storage by default (configurable to Redis or memory)
+- Properly resolves client IPs through proxy headers (Cloudflare, X-Forwarded-For, etc.)
+- Returns generic success messages to prevent email enumeration attacks
+
+To customize rate limits, modify the throttle configuration in your application initialization:
+
+```php
+// app/Initializers/CustomRateLimitInitializer.php
+$throttle = new ResendVerificationThrottle(null, [
+    'ip_limit' => 10,           // 10 requests per window
+    'ip_window' => 600,         // 10 minutes
+    'email_limit' => 2,         // 2 resends per window
+    'email_window' => 900       // 15 minutes
+]);
 ```
 
 ## Dependencies
