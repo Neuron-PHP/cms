@@ -5,11 +5,15 @@ namespace Neuron\Cms\Controllers\Member;
 use Neuron\Cms\Controllers\Content;
 use Neuron\Cms\Auth\CsrfTokenManager;
 use Neuron\Cms\Auth\EmailVerificationManager;
+use Neuron\Cms\Auth\ResendVerificationThrottle;
 use Neuron\Cms\Services\Member\RegistrationService;
+use Neuron\Data\Filter\Get;
 use Neuron\Data\Filter\Post;
 use Neuron\Mvc\Application;
 use Neuron\Mvc\Responses\HttpResponseStatus;
 use Neuron\Patterns\Registry;
+use Neuron\Routing\DefaultIpResolver;
+use Neuron\Routing\IIpResolver;
 use Exception;
 
 /**
@@ -24,6 +28,8 @@ class Registration extends Content
 	private RegistrationService $_registrationService;
 	private EmailVerificationManager $_verificationManager;
 	private CsrfTokenManager $_csrfManager;
+	private ResendVerificationThrottle $_resendThrottle;
+	private IIpResolver $_ipResolver;
 
 	/**
 	 * @param Application|null $app
@@ -44,6 +50,12 @@ class Registration extends Content
 
 		// Initialize CSRF manager
 		$this->_csrfManager = new CsrfTokenManager( $this->getSessionManager() );
+
+		// Initialize resend verification throttle
+		$this->_resendThrottle = new ResendVerificationThrottle();
+
+		// Initialize IP resolver
+		$this->_ipResolver = new DefaultIpResolver();
 	}
 
 	/**
@@ -94,8 +106,10 @@ class Registration extends Content
 	 */
 	public function processRegistration( array $parameters ): never
 	{
+		$post = new Post();
+
 		// Validate CSRF token
-		$token = new Post()->filterScalar( 'csrf_token' );
+		$token = $post->filterScalar( 'csrf_token' );
 
 		if( !$this->_csrfManager->validate( $token ) )
 		{
@@ -103,10 +117,10 @@ class Registration extends Content
 		}
 
 		// Get form data
-		$username = $_POST['username'] ?? '';
-		$email = $_POST['email'] ?? '';
-		$password = $_POST['password'] ?? '';
-		$passwordConfirmation = $_POST['password_confirmation'] ?? '';
+		$username = $post->filterScalar( 'username' ) ?? '';
+		$email = $post->filterScalar( 'email' ) ?? '';
+		$password = $post->filterScalar( 'password' ) ?? '';
+		$passwordConfirmation = $post->filterScalar( 'password_confirmation' ) ?? '';
 
 		try
 		{
@@ -168,8 +182,10 @@ class Registration extends Content
 	 */
 	public function verify( array $parameters ): string
 	{
+		$get = new Get();
+
 		// Get token from query string
-		$token = $_GET['token'] ?? '';
+		$token = $get->filterScalar( 'token' ) ?? '';
 
 		if( empty( $token ) )
 		{
@@ -251,20 +267,31 @@ class Registration extends Content
 	 */
 	public function resendVerification( array $parameters ): never
 	{
+		$post = new Post();
+
 		// Validate CSRF token
-		$token = new Post()->filterScalar( 'csrf_token' );
+		$token = $post->filterScalar( 'csrf_token' );
 
 		if( !$this->_csrfManager->validate( $token ) )
 		{
 			$this->redirect( 'register', [], ['error', 'Invalid CSRF token. Please try again.'] );
 		}
 
-		// Get email
-		$email = $_POST['email'] ?? '';
+		// Get email and client IP
+		$email = $post->filterScalar( 'email' ) ?? '';
+		$clientIp = $this->_ipResolver->resolve( $_SERVER );
 
 		if( empty( $email ) )
 		{
 			$this->redirect( 'register', [], ['error', 'Email address is required.'] );
+		}
+
+		// Check rate limits (combined IP and email throttling)
+		if( !$this->_resendThrottle->allow( $clientIp, $email ) )
+		{
+			// Rate limit exceeded - return generic success to prevent enumeration
+			// This prevents attackers from using rate limiting to determine if an email exists
+			$this->redirect( 'verify_email_sent', [], ['success', 'If an account exists with that email, a verification email has been sent.'] );
 		}
 
 		try
@@ -277,7 +304,9 @@ class Registration extends Content
 		}
 		catch( Exception $e )
 		{
-			$this->redirect( 'register', [], ['error', 'Unable to resend verification email. Please try again later.'] );
+			// Don't reveal specific error details to prevent enumeration
+			// Log the error internally but show generic message to user
+			$this->redirect( 'verify_email_sent', [], ['success', 'If an account exists with that email, a verification email has been sent.'] );
 		}
 	}
 }
