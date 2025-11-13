@@ -148,7 +148,11 @@ class EmailVerificationManager
 
 		// Update user email verification status
 		$user->setEmailVerified( true );
-		$user->setStatus( User::STATUS_ACTIVE );
+
+		if( $user->getStatus() === User::STATUS_INACTIVE )
+		{
+			$user->setStatus( User::STATUS_ACTIVE );
+		}
 		$this->_userRepository->update( $user );
 
 		// Delete the token

@@ -19,7 +19,7 @@ class CreateEmailVerificationTokensTable extends AbstractMigration
 			->addColumn( 'created_at', 'timestamp', [ 'default' => 'CURRENT_TIMESTAMP' ] )
 			->addColumn( 'expires_at', 'timestamp', [ 'null' => false ] )
 			->addIndex( [ 'user_id' ] )
-			->addIndex( [ 'token' ] )
+			->addIndex( [ 'token' ], [ 'unique' => true ] )
 			->addIndex( [ 'expires_at' ] )
 			->addForeignKey( 'user_id', 'users', 'id', [ 'delete' => 'CASCADE', 'update' => 'NO_ACTION' ] )
 			->create();
