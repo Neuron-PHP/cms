@@ -247,6 +247,24 @@ class Content extends Base
 	}
 
 	/**
+	 * Redirect to a URL path with optional flash message.
+	 *
+	 * @param string $url The URL path to redirect to
+	 * @param array|null $flash Optional flash message as [$type, $message]
+	 * @return never
+	 */
+	protected function redirectToUrl( string $url, ?array $flash = null ): never
+	{
+		if( $flash )
+		{
+			[ $type, $message ] = $flash;
+			$this->getSessionManager()->flash( $type, $message );
+		}
+		header( 'Location: ' . $url );
+		exit;
+	}
+
+	/**
 	 * Redirect back to the previous page or a fallback URL.
 	 *
 	 * @param string $fallback Fallback URL if referer is not available
