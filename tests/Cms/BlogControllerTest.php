@@ -290,7 +290,7 @@ class BlogControllerTest extends TestCase
 		$blog = $this->createBlogWithInjectedRepositories();
 		$request = new Request();
 		$request->setRouteParameters( [ 'slug' => 'nonexistent' ] );
-		$result = $blog->show( $request, null );
+		$result = $blog->show( $request );
 
 		$this->assertIsString( $result );
 		// Should handle gracefully
