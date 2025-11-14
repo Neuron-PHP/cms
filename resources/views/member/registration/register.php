@@ -76,7 +76,7 @@
 					</button>
 
 					<div class="text-center">
-						<small>Already have an account? <a href="<?= route_path('login') ?>">Sign in</a></small>
+						<small>Already have an account? <a href="<?= route_path('login') ?>?redirect=%2Fmember%2Fdashboard">Sign in</a></small>
 					</div>
 				</form>
 			</div>

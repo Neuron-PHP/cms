@@ -5,10 +5,11 @@ namespace Neuron\Cms\Controllers\Auth;
 use Neuron\Cms\Controllers\Content;
 use Neuron\Cms\Auth\AuthManager;
 use Neuron\Cms\Auth\CsrfTokenManager;
-use Neuron\Data\Filter\Post;
+use Neuron\Core\Exceptions\NotFound;
 use Neuron\Mvc\Application;
 use Neuron\Mvc\Responses\HttpResponseStatus;
 use Neuron\Patterns\Registry;
+use Neuron\Mvc\Requests\Request;
 
 /**
  * Login controller.
@@ -44,23 +45,24 @@ class Login extends Content
 
 	/**
 	 * Show login form
-	 * @param array $parameters
+	 *
+	 * @param Request $request
 	 * @return string
+	 * @throws NotFound
 	 */
-	public function showLoginForm( array $parameters ): string
+	public function showLoginForm( Request $request ): string
 	{
-		// If already logged in, redirect to dashboard
+		// If already logged in, redirect to the dashboard
 		if( $this->_authManager->check() )
 		{
-			header( 'Location: ' . $this->urlFor( 'admin_dashboard' ) );
-			exit;
+			$this->redirect( 'admin_dashboard' );
 		}
 
 		// Set CSRF token in Registry so csrf_field() helper works
 		Registry::getInstance()->set( 'Auth.CsrfToken', $this->_csrfManager->getToken() );
 
 		$defaultRedirect = $this->urlFor( 'admin_dashboard' ) ?? '/admin/dashboard';
-		$requestedRedirect = $this->filterGet( 'redirect', $defaultRedirect );
+		$requestedRedirect = $request->get( 'redirect', $defaultRedirect );
 		$redirectUrl = $this->isValidRedirectUrl( $requestedRedirect )
 			? $requestedRedirect
 			: $defaultRedirect;
@@ -83,13 +85,14 @@ class Login extends Content
 
 	/**
 	 * Process login
-	 * @param array $parameters
+	 *
+	 * @param Request $request
 	 * @return never
 	 */
-	public function login( array $parameters ): never
+	public function login( Request $request ): never
 	{
 		// Validate CSRF token
-		$token = new Post()->filterScalar( 'csrf_token' );
+		$token = $request->post( 'csrf_token' );
 
 		if( !$this->_csrfManager->validate( $token ) )
 		{
@@ -97,9 +100,9 @@ class Login extends Content
 		}
 
 		// Get credentials
-		$username = $_POST['username'] ?? '';
-		$password = $_POST['password'] ?? '';
-		$remember = isset( $_POST['remember'] );
+		$username = $request->post( 'username', '' );
+		$password = $request->post( 'password', '' );
+		$remember = $request->post( 'remember' ) === 'on';
 
 		// Validate input
 		if( empty( $username ) || empty( $password ) )
@@ -125,10 +128,10 @@ class Login extends Content
 
 	/**
 	 * Process logout
-	 * @param array $parameters
+	 * @param Request $request
 	 * @return never
 	 */
-	public function logout( array $parameters ): never
+	public function logout( Request $request ): never
 	{
 		$this->_authManager->logout();
 		$this->redirect( 'login', [], ['success', 'You have been logged out successfully.'] );
@@ -164,7 +167,7 @@ class Login extends Content
 		// Check for malicious patterns
 		// Prevent URLs with @ symbol (could be used for phishing: /path@evil.com)
 		// Prevent URLs with backslashes (could bypass filters: /\evil.com)
-		if( strpos( $url, '@' ) !== false || strpos( $url, '\\' ) !== false )
+		if( str_contains( $url, '@' ) || str_contains( $url, '\\' ) )
 		{
 			return false;
 		}

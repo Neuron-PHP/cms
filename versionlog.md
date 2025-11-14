@@ -1,3 +1,6 @@
+## 0.8.7 2025-11-14
+* Refactored all controllers to support the new method signature.
+
 ## 0.8.6 2025-11-13
 * Cleanup and minor fixes.
 

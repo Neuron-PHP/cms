@@ -1,7 +1,6 @@
 <div class="card mb-4">
 	<div class="card-body bg-primary text-white rounded p-4 mb-4">
-		<h2 class="h4 mb-2"><?= htmlspecialchars($WelcomeMessage) ?></h2>
-		<p class="mb-0">You are logged in as <strong><?= htmlspecialchars($User->getRole()) ?></strong></p>
+		<h2 class="h4 mb-2">Dashboard</h2>
 	</div>
 
 	<div class="card-body">

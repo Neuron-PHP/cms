@@ -4,7 +4,9 @@ namespace Neuron\Cms\Controllers\Member;
 
 use Neuron\Cms\Controllers\Content;
 use Neuron\Cms\Auth\CsrfTokenManager;
+use Neuron\Core\Exceptions\NotFound;
 use Neuron\Mvc\Application;
+use Neuron\Mvc\Requests\Request;
 use Neuron\Mvc\Responses\HttpResponseStatus;
 use Neuron\Patterns\Registry;
 
@@ -27,10 +29,12 @@ class Dashboard extends Content
 
 	/**
 	 * Show member dashboard
-	 * @param array $parameters
+	 *
+	 * @param Request $request
 	 * @return string
+	 * @throws NotFound
 	 */
-	public function index( array $parameters ): string
+	public function index( Request $request ): string
 	{
 		// Get authenticated user from Registry
 		$user = Registry::getInstance()->get( 'Auth.User' );
@@ -47,8 +51,7 @@ class Dashboard extends Content
 		$viewData = [
 			'Title' => 'Member Dashboard | ' . $this->getName(),
 			'Description' => 'Member Dashboard',
-			'User' => $user,
-			'WelcomeMessage' => 'Welcome, ' . $user->getUsername() . '!'
+			'User' => $user
 		];
 
 		return $this->renderHtml(
