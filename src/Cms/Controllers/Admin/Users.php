@@ -12,6 +12,7 @@ use Neuron\Cms\Auth\PasswordHasher;
 use Neuron\Cms\Auth\CsrfTokenManager;
 use Neuron\Data\Setting\SettingManager;
 use Neuron\Mvc\Application;
+use Neuron\Mvc\Requests\Request;
 use Neuron\Mvc\Responses\HttpResponseStatus;
 use Neuron\Patterns\Registry;
 
@@ -48,11 +49,11 @@ class Users extends Content
 
 	/**
 	 * List all users
-	 * @param array $parameters
+	 * @param Request $request
 	 * @return string
 	 * @throws \Exception
 	 */
-	public function index( array $parameters ): string
+	public function index( Request $request ): string
 	{
 		$user = Registry::getInstance()->get( 'Auth.User' );
 
@@ -81,11 +82,11 @@ class Users extends Content
 
 	/**
 	 * Show create user form
-	 * @param array $parameters
+	 * @param Request $request
 	 * @return string
 	 * @throws \Exception
 	 */
-	public function create( array $parameters ): string
+	public function create( Request $request ): string
 	{
 		$user = Registry::getInstance()->get( 'Auth.User' );
 
@@ -110,16 +111,16 @@ class Users extends Content
 
 	/**
 	 * Store new user
-	 * @param array $parameters
+	 * @param Request $request
 	 * @return never
 	 * @throws \Exception
 	 */
-	public function store( array $parameters ): never
+	public function store( Request $request ): never
 	{
-		$username = $_POST['username'] ?? '';
-		$email = $_POST['email'] ?? '';
-		$password = $_POST['password'] ?? '';
-		$role = $_POST['role'] ?? User::ROLE_SUBSCRIBER;
+		$username = $request->post( 'username','' );
+		$email = $request->post( 'email', '' );
+		$password = $request->post( 'password', '' );
+		$role = $request->post( 'role', User::ROLE_SUBSCRIBER );
 
 		// Basic validation
 		if( empty( $username ) || empty( $email ) || empty( $password ) )
@@ -140,13 +141,14 @@ class Users extends Content
 
 	/**
 	 * Show edit user form
-	 * @param array $parameters
+	 *
+	 * @param Request $request
 	 * @return string|never
 	 * @throws \Exception
 	 */
-	public function edit( array $parameters )
+	public function edit( Request $request ) : string|never
 	{
-		$id = (int)$parameters['id'];
+		$id = (int)$request->getRouteParameter( 'id' );
 		$currentUser = Registry::getInstance()->get( 'Auth.User' );
 		$user = $this->_repository->findById( $id );
 
@@ -177,13 +179,14 @@ class Users extends Content
 
 	/**
 	 * Update user
-	 * @param array $parameters
+	 *
+	 * @param Request $request
 	 * @return never
 	 * @throws \Exception
 	 */
-	public function update( array $parameters ): never
+	public function update( Request $request ): never
 	{
-		$id = (int)$parameters['id'];
+		$id = (int)$request->getRouteParameter( 'id' );
 		$user = $this->_repository->findById( $id );
 
 		if( !$user )
@@ -191,8 +194,8 @@ class Users extends Content
 			$this->redirect( 'admin_users', [], ['error', 'User not found'] );
 		}
 
-		$usernameInput = $_POST['username'] ?? null;
-		$emailInput = $_POST['email'] ?? null;
+		$usernameInput = $request->post( 'username', null );
+		$emailInput = $request->post( 'email', null );
 
 		$username = $usernameInput !== null ? trim( (string)$usernameInput ) : $user->getUsername();
 		$email = $emailInput !== null ? trim( (string)$emailInput ) : $user->getEmail();
@@ -218,13 +221,14 @@ class Users extends Content
 
 	/**
 	 * Delete user
-	 * @param array $parameters
+	 *
+	 * @param Request $request
 	 * @return never
 	 * @throws \Exception
 	 */
-	public function destroy( array $parameters ): never
+	public function destroy( Request $request ): never
 	{
-		$id = (int)$parameters['id'];
+		$id = (int)$request->getRouteParameter( 'id' );
 		$currentUser = Registry::getInstance()->get( 'Auth.User' );
 
 		// Prevent self-deletion

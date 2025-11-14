@@ -267,7 +267,7 @@ class BlogControllerTest extends TestCase
 		$this->createTestPost( 'Draft Post', 'draft-1', Post::STATUS_DRAFT );
 
 		$blog = $this->createBlogWithInjectedRepositories();
-		$result = $blog->index( [], null );
+		$result = $blog->index( new Request() );
 
 		$this->assertIsString( $result );
 		// Should contain published posts but not drafts
@@ -278,7 +278,9 @@ class BlogControllerTest extends TestCase
 		$post = $this->createTestPost( 'Test Article', 'test-article', Post::STATUS_PUBLISHED );
 
 		$blog = $this->createBlogWithInjectedRepositories();
-		$result = $blog->show( [ 'title' => 'test-article' ], null );
+		$request = new Request();
+		$request->setRouteParameters( [ 'slug' => 'test-article' ] );
+		$result = $blog->show( $request );
 
 		$this->assertIsString( $result );
 	}
@@ -286,7 +288,9 @@ class BlogControllerTest extends TestCase
 	public function testShowWithNonexistentSlug(): void
 	{
 		$blog = $this->createBlogWithInjectedRepositories();
-		$result = $blog->show( [ 'title' => 'nonexistent' ], null );
+		$request = new Request();
+		$request->setRouteParameters( [ 'slug' => 'nonexistent' ] );
+		$result = $blog->show( $request, null );
 
 		$this->assertIsString( $result );
 		// Should handle gracefully
@@ -303,7 +307,9 @@ class BlogControllerTest extends TestCase
 		$this->createTestPost( 'Other Post', 'other-post', Post::STATUS_PUBLISHED );
 
 		$blog = $this->createBlogWithInjectedRepositories();
-		$result = $blog->tag( [ 'tag' => $tag->getSlug() ], null );
+		$request = new Request();
+		$request->setRouteParameters( [ 'tag' => $tag->getSlug() ] );
+		$result = $blog->tag( $request );
 
 		$this->assertIsString( $result );
 	}
@@ -319,7 +325,9 @@ class BlogControllerTest extends TestCase
 		$this->createTestPost( 'Other Post', 'other-post', Post::STATUS_PUBLISHED );
 
 		$blog = $this->createBlogWithInjectedRepositories();
-		$result = $blog->category( [ 'category' => $category->getSlug() ], null );
+		$request = new Request();
+		$request->setRouteParameters( [ 'category' => $category->getSlug() ] );
+		$result = $blog->category( $request );
 
 		$this->assertIsString( $result );
 	}
@@ -346,21 +354,5 @@ class BlogControllerTest extends TestCase
 		$this->assertEquals( 'Test Blog Description', $blog->getDescription() );
 		$this->assertEquals( 'http://test.com', $blog->getUrl() );
 		$this->assertEquals( 'http://test.com/blog/rss', $blog->getRssUrl() );
-	}
-
-	public function testRequestParameterIsOptional(): void
-	{
-		$this->createTestPost( 'Test Post', 'test-post', Post::STATUS_PUBLISHED );
-
-		$blog = $this->createBlogWithInjectedRepositories();
-
-		// Test all methods with null Request
-		$this->assertIsString( $blog->index( [], null ) );
-		$this->assertIsString( $blog->show( [ 'title' => 'test-post' ], null ) );
-
-		// Test with actual Request object
-		$mockRequest = $this->createMock( Request::class );
-		$this->assertIsString( $blog->index( [], $mockRequest ) );
-		$this->assertIsString( $blog->show( [ 'title' => 'test-post' ], $mockRequest ) );
 	}
 }

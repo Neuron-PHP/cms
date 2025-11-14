@@ -6,8 +6,10 @@ use Neuron\Cms\Controllers\Content;
 use Neuron\Cms\Auth\PasswordResetManager;
 use Neuron\Cms\Auth\SessionManager;
 use Neuron\Cms\Auth\CsrfTokenManager;
+use Neuron\Core\Exceptions\NotFound;
 use Neuron\Log\Log;
 use Neuron\Mvc\Application;
+use Neuron\Mvc\Requests\Request;
 use Neuron\Mvc\Responses\HttpResponseStatus;
 use Neuron\Mvc\Views\Html;
 use Neuron\Patterns\Registry;
@@ -47,10 +49,11 @@ class PasswordReset extends Content
 
 	/**
 	 * Show forgot password form
-	 * @param array $parameters
+	 *
+	 * @param Request $request
 	 * @return string
 	 */
-	public function showForgotPasswordForm( array $parameters ): string
+	public function showForgotPasswordForm( Request $request ): string
 	{
 		// Set CSRF token in Registry so csrf_field() helper works
 		Registry::getInstance()->set( 'Auth.CsrfToken', $this->_csrfManager->getToken() );
@@ -73,13 +76,14 @@ class PasswordReset extends Content
 
 	/**
 	 * Process forgot password request
+	 *
 	 * @param array $parameters
 	 * @return string
 	 */
-	public function requestReset( array $parameters ): string
+	public function requestReset( Request $request ): string
 	{
 		// Validate CSRF token
-		$token = $_POST['csrf_token'] ?? '';
+		$token = $request->post( 'csrf_token', '' );
 		if( !$this->_csrfManager->validate( $token ) )
 		{
 			$this->_sessionManager->flash( 'error', 'Invalid CSRF token. Please try again.' );
@@ -88,22 +92,12 @@ class PasswordReset extends Content
 		}
 
 		// Get email
-		$email = $_POST['email'] ?? '';
+		$email = $request->post( 'email', '' );
 
 		// Validate input
-		if( empty( $email ) )
+		if( empty( $email ) || !filter_var( $email, FILTER_VALIDATE_EMAIL ) )
 		{
-			$this->_sessionManager->flash( 'error', 'Please enter your email address.' );
-			header( 'Location: /forgot-password' );
-			exit;
-		}
-
-		// Validate email format
-		if( !filter_var( $email, FILTER_VALIDATE_EMAIL ) )
-		{
-			$this->_sessionManager->flash( 'error', 'Please enter a valid email address.' );
-			header( 'Location: /forgot-password' );
-			exit;
+			$this->redirect( 'admin_posts', [], ['error', 'Please enter a valid email address.'] );
 		}
 
 		try
@@ -133,13 +127,15 @@ class PasswordReset extends Content
 
 	/**
 	 * Show reset password form (with token)
-	 * @param array $parameters
+	 *
+	 * @param Request $request
 	 * @return string
+	 * @throws NotFound
 	 */
-	public function showResetForm( array $parameters ): string
+	public function showResetForm( Request $request ): string
 	{
 		// Get token from query string
-		$token = $this->filterGet( 'token', '' );
+		$token = $request->get( 'token', '' );
 
 		if( empty( $token ) )
 		{
@@ -181,39 +177,33 @@ class PasswordReset extends Content
 
 	/**
 	 * Process password reset
-	 * @param array $parameters
+	 * @param Request $request
 	 * @return string
 	 */
-	public function resetPassword( array $parameters ): string
+	public function resetPassword( Request $request ): string
 	{
 		// Validate CSRF token
-		$csrfToken = $_POST['csrf_token'] ?? '';
+		$csrfToken = $request->post( 'csrf_token', '' );
 		if( !$this->_csrfManager->validate( $csrfToken ) )
 		{
-			$this->_sessionManager->flash( 'error', 'Invalid CSRF token. Please try again.' );
-			header( 'Location: /forgot-password' );
-			exit;
+			$this->redirect( 'admin_posts', [], ['error', 'Invalid CSRF token.'] );
 		}
 
 		// Get form data
-		$token = $_POST['token'] ?? '';
-		$password = $_POST['password'] ?? '';
-		$passwordConfirmation = $_POST['password_confirmation'] ?? '';
+		$token = $request->post( 'token', '' );
+		$password = $request->post( 'password', '' );
+		$passwordConfirmation = $request->post( 'password_confirmation', '' );
 
 		// Validate input
 		if( empty( $token ) || empty( $password ) || empty( $passwordConfirmation ) )
 		{
-			$this->_sessionManager->flash( 'error', 'All fields are required.' );
-			header( 'Location: /reset-password?token=' . urlencode( $token ) );
-			exit;
+			$this->redirectToUrl( '/reset-password?token=' . urlencode( $token ), ['error', 'All fields are required.'] );
 		}
 
 		// Validate passwords match
 		if( $password !== $passwordConfirmation )
 		{
-			$this->_sessionManager->flash( 'error', 'Passwords do not match.' );
-			header( 'Location: /reset-password?token=' . urlencode( $token ) );
-			exit;
+			$this->redirectToUrl( '/reset-password?token=' . urlencode( $token ), ['error', 'Passwords do not match.'] );
 		}
 
 		try
@@ -223,22 +213,15 @@ class PasswordReset extends Content
 
 			if( !$success )
 			{
-				$this->_sessionManager->flash( 'error', 'This password reset link is invalid or has expired.' );
-				header( 'Location: /forgot-password' );
-				exit;
+				$this->redirect( 'forgot_password', [], ['error', 'This password reset link is invalid or has expired.'] );
 			}
 
 			// Success
-			$this->_sessionManager->flash( 'success', 'Your password has been reset successfully. You can now log in.' );
-			header( 'Location: /login' );
-			exit;
+			$this->redirect( 'login', [], ['success', 'Your password has been reset successfully. You can now log in.'] );
 		}
 		catch( Exception $e )
 		{
-			// Show validation or other errors
-			$this->_sessionManager->flash( 'error', $e->getMessage() );
-			header( 'Location: /reset-password?token=' . urlencode( $token ) );
-			exit;
+			$this->redirectToUrl( '/reset-password?token=' . urlencode( $token ), ['error', $e->getMessage() ] );
 		}
 	}
 }

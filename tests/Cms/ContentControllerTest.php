@@ -4,6 +4,7 @@ namespace Tests\Cms;
 
 use Neuron\Cms\Controllers\Content;
 use Neuron\Data\Setting\Source\Memory;
+use Neuron\Mvc\Requests\Request;
 use Neuron\Mvc\Responses\HttpResponseStatus;
 use Neuron\Patterns\Registry;
 use Neuron\Routing\Router;
@@ -164,8 +165,9 @@ class ContentControllerTest extends TestCase
 			)
 			->willReturn( '<html>Test Content</html>' );
 
-		$parameters = [ 'page' => 'test-page' ];
-		$result = $controller->markdown( $parameters );
+		$request = new Request();
+		$request->setRouteParameters( [ 'page' => 'test-page' ] );
+		$result = $controller->markdown( $request );
 
 		$this->assertEquals( '<html>Test Content</html>', $result );
 	}
