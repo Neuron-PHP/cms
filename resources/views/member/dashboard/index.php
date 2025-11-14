@@ -2,11 +2,6 @@
 	<div class="row">
 		<div class="col-12">
 			<h1 class="mb-4">Member Dashboard</h1>
-
-			<div class="alert alert-success" role="alert">
-				<h4 class="alert-heading"><?= htmlspecialchars( $WelcomeMessage ?? 'Welcome!' ) ?></h4>
-				<p class="mb-0">You are logged in to your member account.</p>
-			</div>
 		</div>
 	</div>
 

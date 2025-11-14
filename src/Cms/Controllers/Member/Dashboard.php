@@ -47,8 +47,7 @@ class Dashboard extends Content
 		$viewData = [
 			'Title' => 'Member Dashboard | ' . $this->getName(),
 			'Description' => 'Member Dashboard',
-			'User' => $user,
-			'WelcomeMessage' => 'Welcome, ' . $user->getUsername() . '!'
+			'User' => $user
 		];
 
 		return $this->renderHtml(
