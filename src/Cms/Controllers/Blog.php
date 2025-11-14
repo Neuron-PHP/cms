@@ -1,26 +1,22 @@
 <?php
 namespace Neuron\Cms\Controllers;
 
-use Neuron\Cms\Controllers\Content;
+use JetBrains\PhpStorm\NoReturn;
 use Neuron\Cms\Models\Post;
 use Neuron\Cms\Repositories\DatabasePostRepository;
 use Neuron\Cms\Repositories\DatabaseCategoryRepository;
 use Neuron\Cms\Repositories\DatabaseTagRepository;
-use Neuron\Data\Filter\Get;
-use Neuron\Data\Setting\SettingManager;
+use Neuron\Core\Exceptions\NotFound;
 use Neuron\Mvc\Application;
 use Neuron\Mvc\Requests\Request;
 use Neuron\Mvc\Responses\HttpResponseStatus;
-use Neuron\Mvc\Views\Html;
 use Neuron\Patterns\Registry;
 
 class Blog extends Content
 {
-
 	private DatabasePostRepository $_postRepository;
 	private DatabaseCategoryRepository $_categoryRepository;
 	private DatabaseTagRepository $_tagRepository;
-	private bool $_showDrafts = false;
 
 	/**
 	 * @param Application|null $app
@@ -37,29 +33,18 @@ class Blog extends Content
 		$this->_postRepository = new DatabasePostRepository( $settings );
 		$this->_categoryRepository = new DatabaseCategoryRepository( $settings );
 		$this->_tagRepository = new DatabaseTagRepository( $settings );
-
-		// Check for drafts parameter
-		$get = new Get();
-		$this->_showDrafts = $get->filterScalar( 'drafts' ) ? true : false;
 	}
 
 	/**
-	 * @param array $parameters
-	 * @param Request|null $request
+	 * Blog homepage - list of published posts
+	 *
+	 * @param Request $request
 	 * @return string
-	 * @throws \Neuron\Core\Exceptions\NotFound
+	 * @throws NotFound
 	 */
-	public function index( array $parameters, ?Request $request ): string
+	public function index( Request $request ): string
 	{
-		// Get published posts (or all if drafts mode)
-		if( $this->_showDrafts )
-		{
-			$posts = $this->_postRepository->all();
-		}
-		else
-		{
-			$posts = $this->_postRepository->getPublished();
-		}
+		$posts = $this->_postRepository->getPublished();
 
 		$categories = $this->_categoryRepository->all();
 		$tags = $this->_tagRepository->all();
@@ -68,7 +53,7 @@ class Blog extends Content
 			HttpResponseStatus::OK,
 			[
 				'Posts'       => $posts,
-				'Categories' => $categories,
+				'Categories'  => $categories,
 				'Tags'        => $tags,
 				'Title'       => $this->getName() . ' | ' . $this->getTitle(),
 				'Name'        => $this->getName(),
@@ -79,17 +64,18 @@ class Blog extends Content
 	}
 
 	/**
-	 * @param array $parameters
-	 * @param Request|null $request
+	 * Blog article detail view
+	 *
+	 * @param Request $request
 	 * @return string
-	 * @throws \Neuron\Core\Exceptions\NotFound
+	 * @throws NotFound
 	 */
-	public function show( array $parameters, ?Request $request ): string
+	public function show( Request $request ): string
 	{
-		$slug = $parameters['slug'] ?? '';
+		$slug = $request->getRouteParameter( 'slug', '' );
 		$post = $this->_postRepository->findBySlug( $slug );
 
-		if( !$post || ( !$post->isPublished() && !$this->_showDrafts ) )
+		if( !$post )
 		{
 			$post = new Post();
 			$post->setTitle( 'Article Not Found' );
@@ -121,12 +107,13 @@ class Blog extends Content
 	}
 
 	/**
-	 * @param array $parameters
-	 * @param Request|null $request
+	 * Blog posts by author
+	 *
+	 * @param Request $request
 	 * @return string
-	 * @throws \Neuron\Core\Exceptions\NotFound
+	 * @throws NotFound
 	 */
-	public function author( array $parameters, ?Request $request ): string
+	public function author( Request $request ): string
 	{
 		$authorName = $parameters['author'] ?? '';
 
@@ -152,14 +139,15 @@ class Blog extends Content
 
 
 	/**
-	 * @param array $parameters
+	 * Blog posts by tag
+	 *
 	 * @param Request|null $request
 	 * @return string
-	 * @throws \Neuron\Core\Exceptions\NotFound
+	 * @throws NotFound
 	 */
-	public function tag( array $parameters, ?Request $request ): string
+	public function tag( Request $request ): string
 	{
-		$tagSlug = $parameters['tag'] ?? '';
+		$tagSlug = $request->getRouteParameter( 'tag', '' );
 		$tag = $this->_tagRepository->findBySlug( $tagSlug );
 
 		if( !$tag )
@@ -169,7 +157,7 @@ class Blog extends Content
 		}
 		else
 		{
-			$status = $this->_showDrafts ? null : Post::STATUS_PUBLISHED;
+			$status = Post::STATUS_PUBLISHED;
 			$posts = $this->_postRepository->getByTag( $tag->getId(), $status );
 			$tagName = $tag->getName();
 		}
@@ -191,14 +179,15 @@ class Blog extends Content
 	}
 
 	/**
-	 * @param array $parameters
-	 * @param Request|null $request
+	 * Blog posts by category
+	 *
+	 * @param Request $request
 	 * @return string
-	 * @throws \Neuron\Core\Exceptions\NotFound
+	 * @throws NotFound
 	 */
-	public function category( array $parameters, ?Request $request ): string
+	public function category( Request $request ): string
 	{
-		$categorySlug = $parameters['category'] ?? '';
+		$categorySlug = $request->getRouteParameter( 'category', '' );
 		$category = $this->_categoryRepository->findBySlug( $categorySlug );
 
 		if( !$category )
@@ -208,7 +197,7 @@ class Blog extends Content
 		}
 		else
 		{
-			$status = $this->_showDrafts ? null : Post::STATUS_PUBLISHED;
+			$status = Post::STATUS_PUBLISHED;
 			$posts = $this->_postRepository->getByCategory( $category->getId(), $status );
 			$categoryName = $category->getName();
 		}
@@ -232,11 +221,11 @@ class Blog extends Content
 	/**
 	 * Generate RSS feed
 	 *
-	 * @param array $parameters
-	 * @param Request|null $request
+	 * @param Request $request
 	 * @return string
 	 */
-	public function feed( array $parameters, ?Request $request ): string
+	#[NoReturn]
+	public function feed( Request $request ): string
 	{
 		$posts = $this->_postRepository->getPublished( 20 );
 

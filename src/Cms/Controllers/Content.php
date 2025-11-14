@@ -47,10 +47,13 @@ namespace Neuron\Cms\Controllers;
  * ```
  */
 
+use League\CommonMark\Exception\CommonMarkException;
 use Neuron\Cms\Auth\SessionManager;
+use Neuron\Core\Exceptions\NotFound;
 use Neuron\Data\Object\Version;
 use Neuron\Mvc\Application;
 use Neuron\Mvc\Controllers\Base;
+use Neuron\Mvc\Requests\Request;
 use Neuron\Mvc\Responses\HttpResponseStatus;
 use Neuron\Patterns\Registry;
 
@@ -64,7 +67,7 @@ class Content extends Base
 	protected ?SessionManager $_sessionManager = null;
 
 	/**
-	 * @param Application $app
+	 * @param Application|null $app
 	 */
 	public function __construct( ?Application $app = null )
 	{
@@ -189,24 +192,24 @@ class Content extends Base
 	}
 
 	/**
-	 * @throws \Neuron\Core\Exceptions\NotFound
-	 * @throws \League\CommonMark\Exception\CommonMarkException
+	 * Render a markdown page.
+	 *
+	 * @param Request $request
+	 * @throws NotFound
+	 * @throws CommonMarkException
 	 */
-	public function markdown( array $parameters ): string
+	public function markdown( Request $request ): string
 	{
 		$viewData = array();
 
-		$title = $parameters[ 'page' ];
-
-		$title = str_replace( '-', ' ', $title );
-		$title = ucwords( $title );
+		$page = $request->getRouteParameter( 'page' );
 
 		$viewData[ 'Title' ]		= $this->getName() . ' | ' . $this->getTitle();
 
 		return $this->renderMarkdown(
 			HttpResponseStatus::OK,
 			$viewData,
-			$parameters[ 'page' ]
+			$page
 		);
 	}
 
@@ -241,6 +244,7 @@ class Content extends Base
 			[ $type, $message ] = $flash;
 			$this->getSessionManager()->flash( $type, $message );
 		}
+
 		$url = $this->urlFor( $routeName, $parameters ) ?? '/';
 		header( 'Location: ' . $url );
 		exit;
@@ -260,6 +264,7 @@ class Content extends Base
 			[ $type, $message ] = $flash;
 			$this->getSessionManager()->flash( $type, $message );
 		}
+
 		header( 'Location: ' . $url );
 		exit;
 	}

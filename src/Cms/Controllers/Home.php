@@ -1,8 +1,10 @@
 <?php
 namespace Neuron\Cms\Controllers;
 
+use Neuron\Core\Exceptions\NotFound;
 use Neuron\Mvc\Requests\Request;
 use Neuron\Mvc\Responses\HttpResponseStatus;
+use Neuron\Patterns\Registry;
 
 /**
  * Home controller for the main landing page
@@ -18,16 +20,15 @@ class Home extends Content
 	/**
 	 * Display the homepage
 	 *
-	 * @param array $parameters Route parameters
-	 * @param Request|null $request The HTTP request
+	 * @param Request $request The HTTP request
 	 * @return string Rendered HTML response
-	 * @throws \Neuron\Core\Exceptions\NotFound
+	 * @throws NotFound
 	 */
-	public function index( array $parameters, ?Request $request ): string
+	public function index( Request $request ): string
 	{
 		// Check if registration is enabled
 		$registrationEnabled = false;
-		$registrationService = \Neuron\Patterns\Registry::getInstance()->get( 'RegistrationService' );
+		$registrationService = Registry::getInstance()->get( 'RegistrationService' );
 
 		if( $registrationService && method_exists( $registrationService, 'isRegistrationEnabled' ) )
 		{

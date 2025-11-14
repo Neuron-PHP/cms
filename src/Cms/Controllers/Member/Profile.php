@@ -8,6 +8,7 @@ use Neuron\Cms\Services\User\Updater;
 use Neuron\Cms\Auth\PasswordHasher;
 use Neuron\Cms\Auth\CsrfTokenManager;
 use Neuron\Mvc\Application;
+use Neuron\Mvc\Requests\Request;
 use Neuron\Mvc\Responses\HttpResponseStatus;
 use Neuron\Patterns\Registry;
 
@@ -41,11 +42,12 @@ class Profile extends Content
 
 	/**
 	 * Show profile edit form
-	 * @param array $parameters
+	 *
+	 * @param Request $request
 	 * @return string
 	 * @throws \Exception
 	 */
-	public function edit( array $parameters ): string
+	public function edit( Request $request ): string
 	{
 		$user = Registry::getInstance()->get( 'Auth.User' );
 
@@ -80,11 +82,12 @@ class Profile extends Content
 
 	/**
 	 * Update profile
-	 * @param array $parameters
+	 *
+	 * @param Request $request
 	 * @return never
 	 * @throws \Exception
 	 */
-	public function update( array $parameters ): never
+	public function update( Request $request ): never
 	{
 		$user = Registry::getInstance()->get( 'Auth.User' );
 
@@ -93,11 +96,11 @@ class Profile extends Content
 			throw new \RuntimeException( 'Authenticated user not found' );
 		}
 
-		$email = $_POST['email'] ?? '';
-		$timezone = $_POST['timezone'] ?? '';
-		$currentPassword = $_POST['current_password'] ?? '';
-		$newPassword = $_POST['new_password'] ?? '';
-		$confirmPassword = $_POST['confirm_password'] ?? '';
+		$email = $request->post( 'email',  '' );
+		$timezone = $request->post( 'timezone', '' );
+		$currentPassword = $request->post( 'current_password', '' );
+		$newPassword = $request->post( 'new_password', '' );
+		$confirmPassword = $request->post( 'confirm_password', '' );
 
 		// Validate password change if requested
 		if( !empty( $newPassword ) )

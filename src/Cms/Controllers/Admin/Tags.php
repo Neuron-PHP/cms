@@ -17,7 +17,6 @@ use Neuron\Patterns\Registry;
  */
 class Tags extends Content
 {
-
 	private DatabaseTagRepository $_tagRepository;
 
 	/**
@@ -37,12 +36,11 @@ class Tags extends Content
 
 	/**
 	 * List all tags
-	 * @param array $parameters
-	 * @param Request|null $request
+	 * @param Request $request
 	 * @return string
 	 * @throws \Exception
 	 */
-	public function index( array $parameters, ?Request $request ): string
+	public function index( Request $request ): string
 	{
 		$user = Registry::getInstance()->get( 'Auth.User' );
 
@@ -70,12 +68,11 @@ class Tags extends Content
 
 	/**
 	 * Show create tag form
-	 * @param array $parameters
-	 * @param Request|null $request
+	 * @param Request $request
 	 * @return string
 	 * @throws \Exception
 	 */
-	public function create( array $parameters, ?Request $request ): string
+	public function create( Request $request ): string
 	{
 		$user = Registry::getInstance()->get( 'Auth.User' );
 
@@ -100,12 +97,11 @@ class Tags extends Content
 
 	/**
 	 * Store new tag
-	 * @param array $parameters
-	 * @param Request|null $request
+	 * @param Request $request
 	 * @return never
 	 * @throws \Exception
 	 */
-	public function store( array $parameters, ?Request $request ): never
+	public function store( Request $request ): never
 	{
 		try
 		{
@@ -131,12 +127,12 @@ class Tags extends Content
 
 	/**
 	 * Show edit tag form
-	 * @param array $parameters
+
 	 * @param Request|null $request
 	 * @return string
 	 * @throws \Exception
 	 */
-	public function edit( array $parameters, ?Request $request ): string
+	public function edit( Request $request ): string
 	{
 		$user = Registry::getInstance()->get( 'Auth.User' );
 
@@ -145,7 +141,7 @@ class Tags extends Content
 			throw new \RuntimeException( 'Authenticated user not found' );
 		}
 
-		$tagId = (int)$parameters['id'];
+		$tagId = (int)$request->getRouteParameter( 'id' );
 		$tag = $this->_tagRepository->findById( $tagId );
 
 		if( !$tag )
@@ -170,14 +166,14 @@ class Tags extends Content
 
 	/**
 	 * Update tag
-	 * @param array $parameters
+	 *
 	 * @param Request|null $request
 	 * @return never
 	 * @throws \Exception
 	 */
-	public function update( array $parameters, ?Request $request ): never
+	public function update( Request $request ): never
 	{
-		$tagId = (int)$parameters['id'];
+		$tagId = (int)$request->getRouteParameter( 'id' );
 		$tag = $this->_tagRepository->findById( $tagId );
 
 		if( !$tag )
@@ -208,14 +204,14 @@ class Tags extends Content
 
 	/**
 	 * Delete tag
-	 * @param array $parameters
-	 * @param Request|null $request
+
+	 * @param Request $request
 	 * @return never
 	 * @throws \Exception
 	 */
-	public function destroy( array $parameters, ?Request $request ): never
+	public function destroy( Request $request ): never
 	{
-		$tagId = (int)$parameters['id'];
+		$tagId = (int)$request->getRouteParameter( 'id' );
 
 		try
 		{

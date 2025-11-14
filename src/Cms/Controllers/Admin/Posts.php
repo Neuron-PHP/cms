@@ -15,6 +15,7 @@ use Neuron\Cms\Auth\CsrfTokenManager;
 use Neuron\Cms\Auth\SessionManager;
 use Neuron\Data\Setting\SettingManager;
 use Neuron\Mvc\Application;
+use Neuron\Mvc\Requests\Request;
 use Neuron\Mvc\Responses\HttpResponseStatus;
 use Neuron\Patterns\Registry;
 
@@ -25,7 +26,6 @@ use Neuron\Patterns\Registry;
  */
 class Posts extends Content
 {
-
 	private DatabasePostRepository $_postRepository;
 	private DatabaseCategoryRepository $_categoryRepository;
 	private DatabaseTagRepository $_tagRepository;
@@ -72,11 +72,11 @@ class Posts extends Content
 
 	/**
 	 * List all posts
-	 * @param array $parameters
+	 * @param Request $request
 	 * @return string
 	 * @throws \Exception
 	 */
-	public function index( array $parameters ): string
+	public function index( Request $request ): string
 	{
 		$user = Registry::getInstance()->get( 'Auth.User' );
 
@@ -119,11 +119,11 @@ class Posts extends Content
 
 	/**
 	 * Show create post form
-	 * @param array $parameters
+	 * @param Request $request
 	 * @return string
 	 * @throws \Exception
 	 */
-	public function create( array $parameters ): string
+	public function create( Request $request ): string
 	{
 		$user = Registry::getInstance()->get( 'Auth.User' );
 
@@ -153,11 +153,11 @@ class Posts extends Content
 
 	/**
 	 * Store new post
-	 * @param array $parameters
+	 * @param Request $request
 	 * @return never
 	 * @throws \Exception
 	 */
-	public function store( array $parameters ): never
+	public function store( Request $request ): never
 	{
 		$user = Registry::getInstance()->get( 'Auth.User' );
 
@@ -201,11 +201,11 @@ class Posts extends Content
 
 	/**
 	 * Show edit post form
-	 * @param array $parameters
+	 * @param Request $request
 	 * @return string
 	 * @throws \Exception
 	 */
-	public function edit( array $parameters ): string
+	public function edit( Request $request ): string
 	{
 		$user = Registry::getInstance()->get( 'Auth.User' );
 
@@ -214,7 +214,7 @@ class Posts extends Content
 			throw new \RuntimeException( 'Authenticated user not found' );
 		}
 
-		$postId = (int)$parameters['id'];
+		$postId = (int)$request->getRouteParameter( 'id' );
 		$post = $this->_postRepository->findById( $postId );
 
 		if( !$post )
@@ -250,11 +250,11 @@ class Posts extends Content
 
 	/**
 	 * Update post
-	 * @param array $parameters
+	 * @param Request $request
 	 * @return never
 	 * @throws \Exception
 	 */
-	public function update( array $parameters ): never
+	public function update( Request $request ): never
 	{
 		$user = Registry::getInstance()->get( 'Auth.User' );
 
@@ -263,7 +263,7 @@ class Posts extends Content
 			throw new \RuntimeException( 'Authenticated user not found' );
 		}
 
-		$postId = (int)$parameters['id'];
+		$postId = (int)$request->getRouteParameter( 'id' );
 		$post = $this->_postRepository->findById( $postId );
 
 		if( !$post )
@@ -280,14 +280,14 @@ class Posts extends Content
 		try
 		{
 			// Get form data
-			$title = $_POST['title'] ?? '';
-			$slug = $_POST['slug'] ?? '';
-			$content = $_POST['content'] ?? '';
-			$excerpt = $_POST['excerpt'] ?? '';
-			$featuredImage = $_POST['featured_image'] ?? '';
-			$status = $_POST['status'] ?? Post::STATUS_DRAFT;
-			$categoryIds = $_POST['categories'] ?? [];
-			$tagNames = $_POST['tags'] ?? '';
+			$title = $request->post( 'title', '' );
+			$slug = $request->post('slug', '' );
+			$content = $request->post( 'content', '' );
+			$excerpt = $request->post( 'excerpt' ,'' );
+			$featuredImage = $request->post( 'featured_image', '' );
+			$status = $request->post( 'status', Post::STATUS_DRAFT );
+			$categoryIds = $request->post( 'categories', [] );
+			$tagNames = $request->post( 'tags','' );
 
 			// Update post using service
 			$this->_postUpdater->update(
@@ -312,10 +312,10 @@ class Posts extends Content
 
 	/**
 	 * Delete post
-	 * @param array $parameters
+	 * @param Request $request
 	 * @return never
 	 */
-	public function destroy( array $parameters ): never
+	public function destroy( Request $request ): never
 	{
 		$user = Registry::getInstance()->get( 'Auth.User' );
 
@@ -324,7 +324,7 @@ class Posts extends Content
 			throw new \RuntimeException( 'Authenticated user not found' );
 		}
 
-		$postId = (int)$parameters['id'];
+		$postId = (int)$request->getRouteParameter( 'id' );
 		$post = $this->_postRepository->findById( $postId );
 
 		if( !$post )

@@ -46,12 +46,11 @@ class Categories extends Content
 
 	/**
 	 * List categories
-	 * @param array $parameters
-	 * @param Request|null $request
+	 * @param Request $request
 	 * @return string
 	 * @throws \Exception
 	 */
-	public function index( array $parameters, ?Request $request ): string
+	public function index( Request $request ): string
 	{
 		$user = Registry::getInstance()->get( 'Auth.User' );
 
@@ -79,12 +78,11 @@ class Categories extends Content
 
 	/**
 	 * Show create category form
-	 * @param array $parameters
-	 * @param Request|null $request
+	 * @param Request $request
 	 * @return string
 	 * @throws \Exception
 	 */
-	public function create( array $parameters, ?Request $request ): string
+	public function create( Request $request ): string
 	{
 		$user = Registry::getInstance()->get( 'Auth.User' );
 
@@ -109,12 +107,11 @@ class Categories extends Content
 
 	/**
 	 * Store new category
-	 * @param array $parameters
-	 * @param Request|null $request
+	 * @param Request $request
 	 * @return never
 	 * @throws \Exception
 	 */
-	public function store( array $parameters, ?Request $request ): never
+	public function store( Request $request ): never
 	{
 		try
 		{
@@ -133,12 +130,11 @@ class Categories extends Content
 
 	/**
 	 * Show edit category form
-	 * @param array $parameters
-	 * @param Request|null $request
+	 * @param Request $request
 	 * @return string
 	 * @throws \Exception
 	 */
-	public function edit( array $parameters, ?Request $request ): string
+	public function edit( Request $request ): string
 	{
 		$user = Registry::getInstance()->get( 'Auth.User' );
 
@@ -147,7 +143,7 @@ class Categories extends Content
 			throw new \RuntimeException( 'Authenticated user not found' );
 		}
 
-		$categoryId = (int)$parameters['id'];
+		$categoryId = (int)$request->getRouteParameter( 'id' );
 		$category = $this->_categoryRepository->findById( $categoryId );
 
 		if( !$category )
@@ -172,14 +168,13 @@ class Categories extends Content
 
 	/**
 	 * Update category
-	 * @param array $parameters
-	 * @param Request|null $request
+	 * @param Request $request
 	 * @return never
 	 * @throws \Exception
 	 */
-	public function update( array $parameters, ?Request $request ): never
+	public function update( Request $request ): never
 	{
-		$categoryId = (int)$parameters['id'];
+		$categoryId = (int)$request->getRouteParameter( 'id' );
 		$category = $this->_categoryRepository->findById( $categoryId );
 
 		if( !$category )
@@ -204,14 +199,13 @@ class Categories extends Content
 
 	/**
 	 * Delete category
-	 * @param array $parameters
-	 * @param Request|null $request
+	 * @param Request $request
 	 * @return never
 	 * @throws \Exception
 	 */
-	public function destroy( array $parameters, ?Request $request ): never
+	public function destroy( Request $request ): never
 	{
-		$categoryId = (int)$parameters['id'];
+		$categoryId = (int)$request->getRouteParameter( 'id' );
 
 		try
 		{

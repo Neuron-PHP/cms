@@ -7,9 +7,9 @@ use Neuron\Cms\Auth\CsrfTokenManager;
 use Neuron\Cms\Auth\EmailVerificationManager;
 use Neuron\Cms\Auth\ResendVerificationThrottle;
 use Neuron\Cms\Services\Member\RegistrationService;
-use Neuron\Data\Filter\Get;
-use Neuron\Data\Filter\Post;
+use Neuron\Core\Exceptions\NotFound;
 use Neuron\Mvc\Application;
+use Neuron\Mvc\Requests\Request;
 use Neuron\Mvc\Responses\HttpResponseStatus;
 use Neuron\Patterns\Registry;
 use Neuron\Routing\DefaultIpResolver;
@@ -59,11 +59,12 @@ class Registration extends Content
 	}
 
 	/**
-	 * Show registration form
-	 * @param array $parameters
+	 * Show the registration form
+	 *
+	 * @param Request $request
 	 * @return string
 	 */
-	public function showRegistrationForm( array $parameters ): string
+	public function showRegistrationForm( Request $request ): string
 	{
 		// Check if registration is enabled
 		if( !$this->_registrationService->isRegistrationEnabled() )
@@ -101,15 +102,13 @@ class Registration extends Content
 
 	/**
 	 * Process registration
-	 * @param array $parameters
+	 * @param Request $request
 	 * @return never
 	 */
-	public function processRegistration( array $parameters ): never
+	public function processRegistration( Request $request ): never
 	{
-		$post = new Post();
-
 		// Validate CSRF token
-		$token = $post->filterScalar( 'csrf_token' );
+		$token = $request->post( 'csrf_token' );
 
 		if( !$this->_csrfManager->validate( $token ) )
 		{
@@ -117,10 +116,10 @@ class Registration extends Content
 		}
 
 		// Get form data
-		$username = $post->filterScalar( 'username' ) ?? '';
-		$email = $post->filterScalar( 'email' ) ?? '';
-		$password = $post->filterScalar( 'password' ) ?? '';
-		$passwordConfirmation = $post->filterScalar( 'password_confirmation' ) ?? '';
+		$username = $request->post( 'username' ) ?? '';
+		$email = $request->post( 'email' ) ?? '';
+		$password = $request->post( 'password' ) ?? '';
+		$passwordConfirmation = $request->post( 'password_confirmation' ) ?? '';
 
 		try
 		{
@@ -156,10 +155,12 @@ class Registration extends Content
 
 	/**
 	 * Show verification email sent page
-	 * @param array $parameters
+	 *
+	 * @param Request $request
 	 * @return string
+	 * @throws NotFound
 	 */
-	public function showVerificationSent( array $parameters ): string
+	public function showVerificationSent( Request $request ): string
 	{
 		$viewData = [
 			'Title' => 'Verify Your Email | ' . $this->getName(),
@@ -177,15 +178,15 @@ class Registration extends Content
 
 	/**
 	 * Verify email address
-	 * @param array $parameters
+	 *
+	 * @param Request $request
 	 * @return string
+	 * @throws NotFound
 	 */
-	public function verify( array $parameters ): string
+	public function verify( Request $request ): string
 	{
-		$get = new Get();
-
 		// Get token from query string
-		$token = $get->filterScalar( 'token' ) ?? '';
+		$token = $request->get( 'token' ) ?? '';
 
 		if( empty( $token ) )
 		{
@@ -262,15 +263,14 @@ class Registration extends Content
 
 	/**
 	 * Resend verification email
-	 * @param array $parameters
+	 *
+	 * @param Request $request
 	 * @return never
 	 */
-	public function resendVerification( array $parameters ): never
+	public function resendVerification( Request $request ): never
 	{
-		$post = new Post();
-
 		// Validate CSRF token
-		$token = $post->filterScalar( 'csrf_token' );
+		$token = $request->post( 'csrf_token' );
 
 		if( !$this->_csrfManager->validate( $token ) )
 		{
@@ -278,7 +278,7 @@ class Registration extends Content
 		}
 
 		// Get email and client IP
-		$email = $post->filterScalar( 'email' ) ?? '';
+		$email = $request->post( 'email' ) ?? '';
 		$clientIp = $this->_ipResolver->resolve( $_SERVER );
 
 		if( empty( $email ) )
