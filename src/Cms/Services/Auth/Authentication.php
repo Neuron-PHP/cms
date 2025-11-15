@@ -1,20 +1,22 @@
 <?php
 
-namespace Neuron\Cms\Auth;
+namespace Neuron\Cms\Services\Auth;
 
+use Neuron\Cms\Auth\SessionManager;
+use Neuron\Cms\Auth\PasswordHasher;
 use Neuron\Cms\Models\User;
 use Neuron\Cms\Repositories\IUserRepository;
 use DateTimeImmutable;
 use DateInterval;
 
 /**
- * Authentication manager.
+ * Authentication service.
  *
  * Handles user authentication, session management, and remember me functionality.
  *
- * @package Neuron\Cms\Auth
+ * @package Neuron\Cms\Services\Auth
  */
-class AuthManager
+class Authentication
 {
 	private IUserRepository $_userRepository;
 	private SessionManager $_sessionManager;

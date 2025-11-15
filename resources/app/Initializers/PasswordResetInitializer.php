@@ -3,7 +3,7 @@
 namespace App\Initializers;
 
 use Neuron\Cms\Auth\PasswordHasher;
-use Neuron\Cms\Auth\PasswordResetManager;
+use Neuron\Cms\Services\Auth\PasswordResetter;
 use Neuron\Cms\Repositories\DatabasePasswordResetTokenRepository;
 use Neuron\Cms\Repositories\DatabaseUserRepository;
 use Neuron\Data\Setting\SettingManager;
@@ -14,7 +14,7 @@ use Neuron\Patterns\IRunnable;
 /**
  * Initialize the password reset system
  *
- * Registers the PasswordResetManager in the Registry
+ * Registers the PasswordResetter in the Registry
  */
 class PasswordResetInitializer implements IRunnable
 {
@@ -59,8 +59,8 @@ class PasswordResetInitializer implements IRunnable
 				// Create password reset URL
 				$resetUrl = rtrim( $siteUrl, '/' ) . '/reset-password';
 
-				// Create password reset manager
-				$resetManager = new PasswordResetManager(
+				// Create password reset service
+				$passwordResetter = new PasswordResetter(
 					$tokenRepository,
 					$userRepository,
 					$passwordHasher,
@@ -70,10 +70,10 @@ class PasswordResetInitializer implements IRunnable
 				);
 
 				// Set token expiration if configured
-				$resetManager->setTokenExpirationMinutes( (int)$tokenExpiration );
+				$passwordResetter->setTokenExpirationMinutes( (int)$tokenExpiration );
 
-				// Store PasswordResetManager in Registry for easy access
-				Registry::getInstance()->set( 'PasswordResetManager', $resetManager );
+				// Store PasswordResetter in Registry for easy access
+				Registry::getInstance()->set( 'PasswordResetter', $passwordResetter );
 			}
 		}
 		catch( \Exception $e )

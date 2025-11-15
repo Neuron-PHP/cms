@@ -3,9 +3,9 @@
 namespace Neuron\Cms\Controllers\Auth;
 
 use Neuron\Cms\Controllers\Content;
-use Neuron\Cms\Auth\PasswordResetManager;
+use Neuron\Cms\Services\Auth\PasswordResetter;
 use Neuron\Cms\Auth\SessionManager;
-use Neuron\Cms\Auth\CsrfTokenManager;
+use Neuron\Cms\Services\Auth\CsrfToken;
 use Neuron\Core\Exceptions\NotFound;
 use Neuron\Log\Log;
 use Neuron\Mvc\Application;
@@ -24,8 +24,8 @@ use Exception;
  */
 class PasswordReset extends Content
 {
-	private ?PasswordResetManager $_resetManager;
-	private CsrfTokenManager $_csrfManager;
+	private ?PasswordResetter $_passwordResetter;
+	private CsrfToken $_csrfToken;
 
 	/**
 	 * @param Application|null $app
@@ -35,16 +35,16 @@ class PasswordReset extends Content
 	{
 		parent::__construct( $app );
 
-		// Get PasswordResetManager from Registry
-		$this->_resetManager = Registry::getInstance()->get( 'PasswordResetManager' );
+		// Get PasswordResetter from Registry
+		$this->_passwordResetter = Registry::getInstance()->get( 'PasswordResetter' );
 
-		if( !$this->_resetManager )
+		if( !$this->_passwordResetter )
 		{
-			throw new \RuntimeException( 'PasswordResetManager not found in Registry. Ensure password reset is properly configured.' );
+			throw new \RuntimeException( 'PasswordResetter not found in Registry. Ensure password reset is properly configured.' );
 		}
 
 		// Initialize CSRF manager with parent's session manager
-		$this->_csrfManager = new CsrfTokenManager( $this->getSessionManager() );
+		$this->_csrfToken = new CsrfToken( $this->getSessionManager() );
 	}
 
 	/**
@@ -56,7 +56,7 @@ class PasswordReset extends Content
 	public function showForgotPasswordForm( Request $request ): string
 	{
 		// Set CSRF token in Registry so csrf_field() helper works
-		Registry::getInstance()->set( 'Auth.CsrfToken', $this->_csrfManager->getToken() );
+		Registry::getInstance()->set( 'Auth.CsrfToken', $this->_csrfToken->getToken() );
 
 		$viewData = [
 			'Title' => 'Forgot Password | ' . $this->getName(),
@@ -84,7 +84,7 @@ class PasswordReset extends Content
 	{
 		// Validate CSRF token
 		$token = $request->post( 'csrf_token', '' );
-		if( !$this->_csrfManager->validate( $token ) )
+		if( !$this->_csrfToken->validate( $token ) )
 		{
 			$this->_sessionManager->flash( 'error', 'Invalid CSRF token. Please try again.' );
 			header( 'Location: /forgot-password' );
@@ -103,7 +103,7 @@ class PasswordReset extends Content
 		try
 		{
 			// Request password reset
-			$this->_resetManager->requestReset( $email );
+			$this->_passwordResetter->requestReset( $email );
 
 			// Always show success message (don't reveal if email exists)
 			$this->_sessionManager->flash(
@@ -145,7 +145,7 @@ class PasswordReset extends Content
 		}
 
 		// Validate token
-		$tokenObj = $this->_resetManager->validateToken( $token );
+		$tokenObj = $this->_passwordResetter->validateToken( $token );
 
 		if( !$tokenObj )
 		{
@@ -155,7 +155,7 @@ class PasswordReset extends Content
 		}
 
 		// Set CSRF token in Registry so csrf_field() helper works
-		Registry::getInstance()->set( 'Auth.CsrfToken', $this->_csrfManager->getToken() );
+		Registry::getInstance()->set( 'Auth.CsrfToken', $this->_csrfToken->getToken() );
 
 		$viewData = [
 			'Title' => 'Reset Password | ' . $this->getName(),
@@ -184,7 +184,7 @@ class PasswordReset extends Content
 	{
 		// Validate CSRF token
 		$csrfToken = $request->post( 'csrf_token', '' );
-		if( !$this->_csrfManager->validate( $csrfToken ) )
+		if( !$this->_csrfToken->validate( $csrfToken ) )
 		{
 			$this->redirect( 'admin_posts', [], ['error', 'Invalid CSRF token.'] );
 		}
@@ -209,7 +209,7 @@ class PasswordReset extends Content
 		try
 		{
 			// Attempt password reset
-			$success = $this->_resetManager->resetPassword( $token, $password );
+			$success = $this->_passwordResetter->resetPassword( $token, $password );
 
 			if( !$success )
 			{

@@ -1,4 +1,7 @@
-## 0.8.8
+## 0.8.8 2025-11-15
+* Updated to use MVC 0.9.2+ with DTO-based request validation
+* No breaking changes - CMS does not use request parameter validation
+* All 480 tests passing
 
 ## 0.8.7 2025-11-14
 * Refactored all controllers to support the new method signature.
@@ -7,9 +10,7 @@
 * Cleanup and minor fixes.
 
 ## 0.8.5 2025-11-12
-
 ## 0.8.4 2025-11-12
-
 ## 0.8.3 2025-11-12
 
 * Large refactoring.

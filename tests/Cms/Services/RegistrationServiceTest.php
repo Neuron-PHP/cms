@@ -2,7 +2,7 @@
 
 namespace Tests\Cms\Services;
 
-use Neuron\Cms\Auth\EmailVerificationManager;
+use Neuron\Cms\Services\Auth\EmailVerifier;
 use Neuron\Cms\Auth\PasswordHasher;
 use Neuron\Cms\Models\User;
 use Neuron\Cms\Repositories\IUserRepository;
@@ -16,7 +16,7 @@ class RegistrationServiceTest extends TestCase
 {
 	private IUserRepository $_userRepository;
 	private PasswordHasher $_passwordHasher;
-	private EmailVerificationManager $_verificationManager;
+	private EmailVerifier $_emailVerifier;
 	private SettingManager $_settings;
 	private Emitter $_emitter;
 	private RegistrationService $_service;
@@ -28,7 +28,7 @@ class RegistrationServiceTest extends TestCase
 		// Create mocks
 		$this->_userRepository = $this->createMock( IUserRepository::class );
 		$this->_passwordHasher = new PasswordHasher();
-		$this->_verificationManager = $this->createMock( EmailVerificationManager::class );
+		$this->_emailVerifier = $this->createMock( EmailVerifier::class );
 		$this->_emitter = $this->createMock( Emitter::class );
 
 		// Set up settings with Memory source
@@ -42,7 +42,7 @@ class RegistrationServiceTest extends TestCase
 		$this->_service = new RegistrationService(
 			$this->_userRepository,
 			$this->_passwordHasher,
-			$this->_verificationManager,
+			$this->_emailVerifier,
 			$this->_settings,
 			$this->_emitter
 		);
@@ -69,7 +69,7 @@ class RegistrationServiceTest extends TestCase
 		$service = new RegistrationService(
 			$this->_userRepository,
 			$this->_passwordHasher,
-			$this->_verificationManager,
+			$this->_emailVerifier,
 			$settings,
 			$this->_emitter
 		);
@@ -116,7 +116,7 @@ class RegistrationServiceTest extends TestCase
 			} );
 
 		// Expect verification email to be sent
-		$this->_verificationManager
+		$this->_emailVerifier
 			->expects( $this->once() )
 			->method( 'sendVerificationEmail' );
 
@@ -138,7 +138,7 @@ class RegistrationServiceTest extends TestCase
 		$service = new RegistrationService(
 			$this->_userRepository,
 			$this->_passwordHasher,
-			$this->_verificationManager,
+			$this->_emailVerifier,
 			$settings,
 			$this->_emitter
 		);
@@ -260,7 +260,7 @@ class RegistrationServiceTest extends TestCase
 		$service = new RegistrationService(
 			$this->_userRepository,
 			$this->_passwordHasher,
-			$this->_verificationManager,
+			$this->_emailVerifier,
 			$settings,
 			$this->_emitter
 		);
@@ -288,7 +288,7 @@ class RegistrationServiceTest extends TestCase
 			} );
 
 		// Verification email should NOT be sent
-		$this->_verificationManager
+		$this->_emailVerifier
 			->expects( $this->never() )
 			->method( 'sendVerificationEmail' );
 

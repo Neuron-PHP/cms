@@ -2,9 +2,9 @@
 
 namespace App\Initializers;
 
-use Neuron\Cms\Auth\EmailVerificationManager;
+use Neuron\Cms\Services\Auth\EmailVerifier;
 use Neuron\Cms\Auth\Filters\MemberAuthenticationFilter;
-use Neuron\Cms\Auth\AuthManager;
+use Neuron\Cms\Services\Auth\Authentication;
 use Neuron\Cms\Auth\PasswordHasher;
 use Neuron\Cms\Repositories\DatabaseEmailVerificationTokenRepository;
 use Neuron\Cms\Repositories\DatabaseUserRepository;
@@ -46,12 +46,12 @@ class RegistrationInitializer implements IRunnable
 			return null;
 		}
 
-		// Get AuthManager from Registry (must be initialized first by AuthInitializer)
-		$authManager = Registry::getInstance()->get( 'AuthManager' );
+		// Get Authentication from Registry (must be initialized first by AuthInitializer)
+		$authentication = Registry::getInstance()->get( 'Authentication' );
 
-		if( !$authManager )
+		if( !$authentication )
 		{
-			Log::error( "AuthManager not found in Registry, skipping registration initialization" );
+			Log::error( "Authentication not found in Registry, skipping registration initialization" );
 			return null;
 		}
 
@@ -75,8 +75,8 @@ class RegistrationInitializer implements IRunnable
 				$verificationPath = $settings->get( 'member', 'verification_url' ) ?? '/verify-email';
 				$verificationUrl = rtrim( $siteUrl, '/' ) . '/' . ltrim( $verificationPath, '/' );
 
-				// Create EmailVerificationManager
-				$verificationManager = new EmailVerificationManager(
+				// Create EmailVerifier
+				$emailVerifier = new EmailVerifier(
 					$tokenRepository,
 					$userRepository,
 					$settings,
@@ -86,7 +86,7 @@ class RegistrationInitializer implements IRunnable
 
 				// Set token expiration from settings
 				$tokenExpiration = $settings->get( 'member', 'verification_token_expiration_minutes' ) ?? 60;
-				$verificationManager->setTokenExpirationMinutes( $tokenExpiration );
+				$emailVerifier->setTokenExpirationMinutes( $tokenExpiration );
 
 				// Get event emitter if available
 				$emitter = Registry::getInstance()->get( 'EventEmitter' );
@@ -95,7 +95,7 @@ class RegistrationInitializer implements IRunnable
 				$registrationService = new RegistrationService(
 					$userRepository,
 					$passwordHasher,
-					$verificationManager,
+					$emailVerifier,
 					$settings,
 					$emitter
 				);
@@ -103,7 +103,7 @@ class RegistrationInitializer implements IRunnable
 				// Create member authentication filter
 				$requireVerification = $settings->get( 'member', 'require_email_verification' ) ?? true;
 				$memberFilter = new MemberAuthenticationFilter(
-					$authManager,
+					$authentication,
 					'/login',
 					$requireVerification
 				);
@@ -112,10 +112,8 @@ class RegistrationInitializer implements IRunnable
 				$app->getRouter()->registerFilter( 'member', $memberFilter );
 
 				// Store services in Registry for easy access
-				Registry::getInstance()->set( 'EmailVerificationManager', $verificationManager );
+				Registry::getInstance()->set( 'EmailVerifier', $emailVerifier );
 				Registry::getInstance()->set( 'RegistrationService', $registrationService );
-
-				Log::info( "Registration system initialized successfully" );
 			}
 		}
 		catch( \Exception $e )

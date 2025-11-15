@@ -6,7 +6,7 @@ use Neuron\Cms\Controllers\Content;
 use Neuron\Cms\Repositories\DatabaseUserRepository;
 use Neuron\Cms\Services\User\Updater;
 use Neuron\Cms\Auth\PasswordHasher;
-use Neuron\Cms\Auth\CsrfTokenManager;
+use Neuron\Cms\Services\Auth\CsrfToken;
 use Neuron\Data\Setting\SettingManager;
 use Neuron\Mvc\Application;
 use Neuron\Mvc\Requests\Request;
@@ -57,8 +57,8 @@ class Profile extends Content
 		}
 
 		// Generate CSRF token
-		$csrfManager = new CsrfTokenManager( $this->getSessionManager() );
-		Registry::getInstance()->set( 'Auth.CsrfToken', $csrfManager->getToken() );
+		$csrfToken = new CsrfToken( $this->getSessionManager() );
+		Registry::getInstance()->set( 'Auth.CsrfToken', $csrfToken->getToken() );
 
 		// Get available timezones grouped by region
 		$timezones = \DateTimeZone::listIdentifiers();

@@ -2,7 +2,7 @@
 
 namespace Tests\Cms\Auth;
 
-use Neuron\Cms\Auth\AuthManager;
+use Neuron\Cms\Services\Auth\Authentication;
 use Neuron\Cms\Auth\Filters\MemberAuthenticationFilter;
 use Neuron\Cms\Models\User;
 use Neuron\Routing\RouteMap;
@@ -15,7 +15,7 @@ use PHPUnit\Framework\TestCase;
  */
 class MemberAuthenticationFilterTest extends TestCase
 {
-	private AuthManager $_authManager;
+	private Authentication $_authentication;
 	private MemberAuthenticationFilter $_filter;
 	private RouteMap $_route;
 
@@ -24,10 +24,10 @@ class MemberAuthenticationFilterTest extends TestCase
 		parent::setUp();
 
 		// Create mock auth manager
-		$this->_authManager = $this->createMock( AuthManager::class );
+		$this->_authentication = $this->createMock( Authentication::class );
 
 		// Create filter
-		$this->_filter = new MemberAuthenticationFilter( $this->_authManager, '/login', true );
+		$this->_filter = new MemberAuthenticationFilter( $this->_authentication, '/login', true );
 
 		// Create mock route
 		$this->_route = $this->createMock( RouteMap::class );
@@ -75,7 +75,7 @@ class MemberAuthenticationFilterTest extends TestCase
 		$user->setEmailVerified( true );
 
 		// Auth manager returns user
-		$this->_authManager
+		$this->_authentication
 			->method( 'user' )
 			->willReturn( $user );
 
@@ -94,14 +94,14 @@ class MemberAuthenticationFilterTest extends TestCase
 	public function testBeforeWithUnauthenticatedUser(): void
 	{
 		// Auth manager returns null (no user)
-		$this->_authManager
+		$this->_authentication
 			->method( 'user' )
 			->willReturn( null );
 
 		// We can't easily test exit() behavior, but we can verify the condition
 		// In a real scenario, this would redirect and exit
 		// For testing, we just verify the user() method is called
-		$this->assertNull( $this->_authManager->user() );
+		$this->assertNull( $this->_authentication->user() );
 
 		// Note: In production, calling $this->_filter->pre() would trigger redirect and exit
 		// We skip that here to avoid process termination in tests
@@ -121,12 +121,12 @@ class MemberAuthenticationFilterTest extends TestCase
 		$user->setEmailVerified( false );
 
 		// Auth manager returns unverified user
-		$this->_authManager
+		$this->_authentication
 			->method( 'user' )
 			->willReturn( $user );
 
 		// Filter requires verification
-		$filter = new MemberAuthenticationFilter( $this->_authManager, '/login', true );
+		$filter = new MemberAuthenticationFilter( $this->_authentication, '/login', true );
 
 		// Verify user is unverified and filter requires verification
 		$this->assertFalse( $user->isEmailVerified() );
@@ -145,12 +145,12 @@ class MemberAuthenticationFilterTest extends TestCase
 		$user->setEmailVerified( false );
 
 		// Auth manager returns unverified user
-		$this->_authManager
+		$this->_authentication
 			->method( 'user' )
 			->willReturn( $user );
 
 		// Filter doesn't require verification
-		$filter = new MemberAuthenticationFilter( $this->_authManager, '/login', false );
+		$filter = new MemberAuthenticationFilter( $this->_authentication, '/login', false );
 
 		// This should NOT redirect, even though user is unverified
 		$filter->pre( $this->_route );

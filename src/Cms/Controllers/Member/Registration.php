@@ -3,8 +3,9 @@
 namespace Neuron\Cms\Controllers\Member;
 
 use Neuron\Cms\Controllers\Content;
-use Neuron\Cms\Auth\CsrfTokenManager;
-use Neuron\Cms\Auth\EmailVerificationManager;
+use Neuron\Cms\Controllers\Traits\UsesDtos;
+use Neuron\Cms\Services\Auth\CsrfToken;
+use Neuron\Cms\Services\Auth\EmailVerifier;
 use Neuron\Cms\Auth\ResendVerificationThrottle;
 use Neuron\Cms\Services\Member\RegistrationService;
 use Neuron\Core\Exceptions\NotFound;
@@ -25,9 +26,10 @@ use Exception;
  */
 class Registration extends Content
 {
+	use UsesDtos;
 	private RegistrationService $_registrationService;
-	private EmailVerificationManager $_verificationManager;
-	private CsrfTokenManager $_csrfManager;
+	private EmailVerifier $_emailVerifier;
+	private CsrfToken $_csrfToken;
 	private ResendVerificationThrottle $_resendThrottle;
 	private IIpResolver $_ipResolver;
 
@@ -41,15 +43,15 @@ class Registration extends Content
 
 		// Get services from Registry
 		$this->_registrationService = Registry::getInstance()->get( 'RegistrationService' );
-		$this->_verificationManager = Registry::getInstance()->get( 'EmailVerificationManager' );
+		$this->_emailVerifier = Registry::getInstance()->get( 'EmailVerifier' );
 
-		if( !$this->_registrationService || !$this->_verificationManager )
+		if( !$this->_registrationService || !$this->_emailVerifier )
 		{
 			throw new \RuntimeException( 'Registration services not found in Registry.' );
 		}
 
 		// Initialize CSRF manager
-		$this->_csrfManager = new CsrfTokenManager( $this->getSessionManager() );
+		$this->_csrfToken = new CsrfToken( $this->getSessionManager() );
 
 		// Initialize resend verification throttle
 		$this->_resendThrottle = new ResendVerificationThrottle();
@@ -83,7 +85,7 @@ class Registration extends Content
 		}
 
 		// Set CSRF token in Registry
-		Registry::getInstance()->set( 'Auth.CsrfToken', $this->_csrfManager->getToken() );
+		Registry::getInstance()->set( 'Auth.CsrfToken', $this->_csrfToken->getToken() );
 
 		$viewData = [
 			'Title' => 'Register | ' . $this->getName(),
@@ -110,26 +112,21 @@ class Registration extends Content
 		// Validate CSRF token
 		$token = $request->post( 'csrf_token' );
 
-		if( !$this->_csrfManager->validate( $token ) )
+		if( !$this->_csrfToken->validate( $token ) )
 		{
 			$this->redirect( 'register', [], ['error', 'Invalid CSRF token. Please try again.'] );
 		}
 
-		// Get form data
-		$username = $request->post( 'username' ) ?? '';
-		$email = $request->post( 'email' ) ?? '';
-		$password = $request->post( 'password' ) ?? '';
-		$passwordConfirmation = $request->post( 'password_confirmation' ) ?? '';
-
 		try
 		{
-			// Register user
-			$user = $this->_registrationService->register(
-				$username,
-				$email,
-				$password,
-				$passwordConfirmation
-			);
+			// Create and populate RegisterUser DTO from request
+			$dto = $this->createDtoFromRequest( 'RegisterUser', $request );
+
+			// Validate the DTO
+			$this->validateDtoOrFail( $dto );
+
+			// Register user using DTO
+			$user = $this->_registrationService->registerWithDto( $dto );
 
 			// Check if verification is required
 			$settings = Registry::getInstance()->get( 'Settings' );
@@ -208,7 +205,7 @@ class Registration extends Content
 		try
 		{
 			// Verify the token
-			$success = $this->_verificationManager->verifyEmail( $token );
+			$success = $this->_emailVerifier->verifyEmail( $token );
 
 			if( $success )
 			{
@@ -272,7 +269,7 @@ class Registration extends Content
 		// Validate CSRF token
 		$token = $request->post( 'csrf_token' );
 
-		if( !$this->_csrfManager->validate( $token ) )
+		if( !$this->_csrfToken->validate( $token ) )
 		{
 			$this->redirect( 'register', [], ['error', 'Invalid CSRF token. Please try again.'] );
 		}
@@ -297,7 +294,7 @@ class Registration extends Content
 		try
 		{
 			// Resend verification email
-			$this->_verificationManager->resendVerification( $email );
+			$this->_emailVerifier->resendVerification( $email );
 
 			// Always show success message (don't reveal if email exists)
 			$this->redirect( 'verify_email_sent', [], ['success', 'If an account exists with that email, a verification email has been sent.'] );

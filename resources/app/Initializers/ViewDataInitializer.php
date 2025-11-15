@@ -65,8 +65,8 @@ class ViewDataInitializer implements IRunnable
 
 		// Check if user is authenticated (convenience helper)
 		$provider->share( 'isAuthenticated', function() use ( $registry ) {
-			$authManager = $registry->get( 'AuthManager' );
-			return $authManager && $authManager->check();
+			$authentication = $registry->get( 'Authentication' );
+			return $authentication && $authentication->check();
 		});
 
 		return null;

@@ -1,16 +1,18 @@
 <?php
 
-namespace Neuron\Cms\Auth;
+namespace Neuron\Cms\Services\Auth;
+
+use Neuron\Cms\Auth\SessionManager;
 
 /**
- * CSRF token manager.
+ * CSRF token service.
  *
  * Generates and validates CSRF tokens to prevent
  * Cross-Site Request Forgery attacks.
  *
- * @package Neuron\Cms\Auth
+ * @package Neuron\Cms\Services\Auth
  */
-class CsrfTokenManager
+class CsrfToken
 {
 	private SessionManager $_sessionManager;
 	private string $_tokenKey = 'csrf_token';
