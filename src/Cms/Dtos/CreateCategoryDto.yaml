@@ -8,6 +8,9 @@ dto:
   slug:
     type: string
     required: true
+    length:
+      min: 2
+      max: 100
   description:
     type: string
     required: false

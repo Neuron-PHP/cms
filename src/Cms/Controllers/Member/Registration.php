@@ -109,8 +109,15 @@ class Registration extends Content
 	 */
 	public function processRegistration( Request $request ): never
 	{
-		// Validate CSRF token
-		$token = $request->post( 'csrf_token' );
+		// Validate CSRF token - defensively handle null/non-string values
+		$tokenRaw = $request->post( 'csrf_token' );
+
+		if( $tokenRaw === null || $tokenRaw === '' )
+		{
+			$this->redirect( 'register', [], ['error', 'Invalid CSRF token. Please try again.'] );
+		}
+
+		$token = (string)$tokenRaw;
 
 		if( !$this->_csrfToken->validate( $token ) )
 		{
@@ -266,8 +273,15 @@ class Registration extends Content
 	 */
 	public function resendVerification( Request $request ): never
 	{
-		// Validate CSRF token
-		$token = $request->post( 'csrf_token' );
+		// Validate CSRF token - defensively handle null/non-string values
+		$tokenRaw = $request->post( 'csrf_token' );
+
+		if( $tokenRaw === null || $tokenRaw === '' )
+		{
+			$this->redirect( 'register', [], ['error', 'Invalid CSRF token. Please try again.'] );
+		}
+
+		$token = (string)$tokenRaw;
 
 		if( !$this->_csrfToken->validate( $token ) )
 		{

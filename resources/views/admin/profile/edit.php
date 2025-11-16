@@ -49,42 +49,15 @@
 						<div class="mb-3">
 							<label for="timezone" class="form-label">Timezone</label>
 							<select class="form-select" id="timezone" name="timezone">
-								<?php
-								$currentTimezone = $User->getTimezone();
-								$grouped = [];
-
-								// Group timezones by region
-								$grouped['Other'] = [];
-								foreach( $timezones as $timezone )
-								{
-									$parts = explode( '/', $timezone, 2 );
-									if( count( $parts ) === 2 )
-									{
-										$region = $parts[0];
-										if( !isset( $grouped[$region] ) )
-										{
-											$grouped[$region] = [];
-										}
-										$grouped[$region][] = $timezone;
-									}
-									else
-									{
-										$grouped['Other'][] = $timezone;
-									}
-								}
-
-								// Display grouped timezones
-								foreach( $grouped as $region => $tzList )
-								{
-									echo '<optgroup label="' . htmlspecialchars( $region ) . '">';
-									foreach( $tzList as $timezone )
-									{
-										$selected = $timezone === $currentTimezone ? ' selected' : '';
-										echo '<option value="' . htmlspecialchars( $timezone ) . '"' . $selected . '>' . htmlspecialchars( $timezone ) . '</option>';
-									}
-									echo '</optgroup>';
-								}
-								?>
+								<?php foreach( $groupedTimezones as $region => $timezones ): ?>
+									<optgroup label="<?= htmlspecialchars( $region ) ?>">
+										<?php foreach( $timezones as $tz ): ?>
+											<option value="<?= htmlspecialchars( $tz['value'] ) ?>" <?= $tz['selected'] ? 'selected' : '' ?>>
+												<?= htmlspecialchars( $tz['label'] ) ?>
+											</option>
+										<?php endforeach; ?>
+									</optgroup>
+								<?php endforeach; ?>
 							</select>
 							<small class="form-text text-muted">All dates and times will be displayed in your selected timezone</small>
 						</div>
@@ -109,8 +82,6 @@
 					<form method="POST" action="<?= route_path('admin_profile_update') ?>">
 						<input type="hidden" name="_method" value="PUT">
 						<?= csrf_field() ?>
-
-						<input type="hidden" name="email" value="<?= htmlspecialchars( $User->getEmail() ) ?>">
 
 						<div class="mb-3">
 							<label for="current_password" class="form-label">Current Password</label>

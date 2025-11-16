@@ -77,7 +77,7 @@ class PasswordReset extends Content
 	/**
 	 * Process forgot password request
 	 *
-	 * @param array $parameters
+	 * @param Request $request
 	 * @return string
 	 */
 	public function requestReset( Request $request ): string
@@ -97,7 +97,7 @@ class PasswordReset extends Content
 		// Validate input
 		if( empty( $email ) || !filter_var( $email, FILTER_VALIDATE_EMAIL ) )
 		{
-			$this->redirect( 'admin_posts', [], ['error', 'Please enter a valid email address.'] );
+			$this->redirect( 'forgot_password', [], ['error', 'Please enter a valid email address.'] );
 		}
 
 		try
@@ -186,7 +186,7 @@ class PasswordReset extends Content
 		$csrfToken = $request->post( 'csrf_token', '' );
 		if( !$this->_csrfToken->validate( $csrfToken ) )
 		{
-			$this->redirect( 'admin_posts', [], ['error', 'Invalid CSRF token.'] );
+			$this->redirect( 'forgot_password', [], ['error', 'Invalid CSRF token.'] );
 		}
 
 		// Get form data

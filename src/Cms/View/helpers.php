@@ -203,3 +203,55 @@ if (!function_exists('get_timezones')) {
 		return $grouped;
 	}
 }
+
+if (!function_exists('group_timezones_for_select')) {
+	/**
+	 * Prepare timezones for select dropdown with selection state
+	 *
+	 * Groups timezones by region and returns a structured array ready for rendering
+	 * in a select dropdown. Each timezone includes value, label, and selected state.
+	 *
+	 * @param array $timezones List of timezone identifiers
+	 * @param string|null $currentTimezone Currently selected timezone
+	 * @return array<string, array<array{value: string, label: string, selected: bool}>> Grouped timezones
+	 *
+	 * @example
+	 * $grouped = group_timezones_for_select($timezones, 'America/New_York');
+	 * // Returns:
+	 * // [
+	 * //   'America' => [
+	 * //     ['value' => 'America/New_York', 'label' => 'America/New_York', 'selected' => true],
+	 * //     ['value' => 'America/Chicago', 'label' => 'America/Chicago', 'selected' => false],
+	 * //   ],
+	 * //   'Other' => [...]
+	 * // ]
+	 */
+	function group_timezones_for_select(array $timezones, ?string $currentTimezone = null): array
+	{
+		$grouped = ['Other' => []];
+
+		// Group timezones by region
+		foreach ($timezones as $timezone) {
+			$parts = explode('/', $timezone, 2);
+			if (count($parts) === 2) {
+				$region = $parts[0];
+				if (!isset($grouped[$region])) {
+					$grouped[$region] = [];
+				}
+				$grouped[$region][] = [
+					'value' => $timezone,
+					'label' => $timezone,
+					'selected' => $timezone === $currentTimezone
+				];
+			} else {
+				$grouped['Other'][] = [
+					'value' => $timezone,
+					'label' => $timezone,
+					'selected' => $timezone === $currentTimezone
+				];
+			}
+		}
+
+		return $grouped;
+	}
+}
