@@ -61,8 +61,11 @@ class Login extends Content
 		// Set CSRF token in Registry so csrf_field() helper works
 		Registry::getInstance()->set( 'Auth.CsrfToken', $this->_csrfToken->getToken() );
 
-		$defaultRedirect = $this->urlFor( 'admin_dashboard' ) ?? '/admin/dashboard';
-		$requestedRedirect = $request->get( 'redirect', $defaultRedirect );
+		// Get redirect parameter from URL or default to admin dashboard
+		$defaultRedirect = $this->urlFor( 'admin_dashboard', [], '/admin/dashboard' ) ?? '/admin/dashboard';
+		$requestedRedirect = $request->get( 'redirect', $defaultRedirect ) ?? $defaultRedirect;
+
+		// Validate and use requested redirect, fallback to default if invalid
 		$redirectUrl = $this->isValidRedirectUrl( $requestedRedirect )
 			? $requestedRedirect
 			: $defaultRedirect;
@@ -117,8 +120,10 @@ class Login extends Content
 		}
 
 		// Successful login - redirect to intended URL or dashboard
-		$defaultRedirect = $this->urlFor( 'admin_dashboard' ) ?? '/admin/dashboard';
-		$requestedRedirect = $request->post('redirect_url', $defaultRedirect );
+		$defaultRedirect = $this->urlFor( 'admin_dashboard', [], '/admin/dashboard' ) ?? '/admin/dashboard';
+		$requestedRedirect = $request->post( 'redirect_url', $defaultRedirect ) ?? $defaultRedirect;
+
+		// Validate and use requested redirect, fallback to default if invalid
 		$redirectUrl = $this->isValidRedirectUrl( $requestedRedirect )
 			? $requestedRedirect
 			: $defaultRedirect;
@@ -134,7 +139,7 @@ class Login extends Content
 	public function logout( Request $request ): never
 	{
 		$this->_authentication->logout();
-		$this->redirect( 'login', [], ['success', 'You have been logged out successfully.'] );
+		$this->redirect( 'home', [], ['success', 'You have been logged out successfully.'] );
 	}
 
 	/**

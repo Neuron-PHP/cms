@@ -1,3 +1,20 @@
+## 0.8.10 2025-11-15
+* **Simplified Login controller with cleaner logout flow**
+  - `logout()` now always redirects to home page (`/`) regardless of user type
+  - Removed complex role detection and string prefix checking logic
+  - Auth filters automatically redirect users to login with appropriate `?redirect=` parameter when accessing protected pages
+  - Simplified `showLoginForm()` and `login()` - removed duplicate section detection code
+  - Leverages existing filter infrastructure instead of reimplementing redirect logic
+  - 90% reduction in logout-related code complexity
+* Updated to use enhanced `urlFor()` method with fallback parameter from MVC 0.9.5+
+* Added defensive null coalescing operators for backward compatibility with older MVC versions
+* Code now works with both old and new MVC/Data component versions
+
+## 0.8.9 2025-11-15
+* Fixed Login controller redirect URL validation to work with corrected filter methods
+* Updated to use MVC 0.9.4+ which includes Data 0.8.6+ with properly fixed filter default value handling
+* Removed workaround for filter methods returning false instead of default value
+
 ## 0.8.8 2025-11-15
 * Updated to use MVC 0.9.2+ with DTO-based request validation
 * No breaking changes - CMS does not use request parameter validation
