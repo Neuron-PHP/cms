@@ -1,3 +1,5 @@
+## 0.8.9
+
 ## 0.8.8 2025-11-16
 
 * Refactored requests to use the new dto component powered format.
