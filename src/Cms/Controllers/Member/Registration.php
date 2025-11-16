@@ -126,8 +126,7 @@ class Registration extends Content
 			$this->validateDtoOrFail( $dto );
 
 			// Register user using DTO
-			$user = $this->_registrationService->registerWithDto( $dto );
-
+			$this->_registrationService->registerWithDto( $dto );
 			// Check if verification is required
 			$settings = Registry::getInstance()->get( 'Settings' );
 			$requireVerification = $settings->get( 'member', 'require_email_verification' ) ?? true;
