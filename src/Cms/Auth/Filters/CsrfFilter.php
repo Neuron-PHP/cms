@@ -4,7 +4,7 @@ namespace Neuron\Cms\Auth\Filters;
 
 use Neuron\Routing\Filter;
 use Neuron\Routing\RouteMap;
-use Neuron\Cms\Auth\CsrfTokenManager;
+use Neuron\Cms\Services\Auth\CsrfToken;
 use Neuron\Log\Log;
 
 /**
@@ -17,12 +17,12 @@ use Neuron\Log\Log;
  */
 class CsrfFilter extends Filter
 {
-	private CsrfTokenManager $_csrfManager;
+	private CsrfToken $_csrfToken;
 	private array $_exemptMethods = ['GET', 'HEAD', 'OPTIONS'];
 
-	public function __construct( CsrfTokenManager $csrfManager )
+	public function __construct( CsrfToken $csrfToken )
 	{
-		$this->_csrfManager = $csrfManager;
+		$this->_csrfToken = $csrfToken;
 
 		parent::__construct(
 			function( RouteMap $route ) { $this->validateCsrfToken( $route ); },
@@ -53,7 +53,7 @@ class CsrfFilter extends Filter
 		}
 
 		// Validate token
-		if( !$this->_csrfManager->validate( $token ) )
+		if( !$this->_csrfToken->validate( $token ) )
 		{
 			Log::warning( 'Invalid CSRF token' );
 			$this->respondForbidden( 'Invalid CSRF token' );

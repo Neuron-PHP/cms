@@ -1,6 +1,6 @@
 <?php
 
-namespace Neuron\Cms\Auth;
+namespace Neuron\Cms\Services\Auth;
 
 use Neuron\Cms\Models\EmailVerificationToken;
 use Neuron\Cms\Models\User;
@@ -12,13 +12,13 @@ use Neuron\Log\Log;
 use Exception;
 
 /**
- * Email verification manager.
+ * Email verification service.
  *
  * Handles email verification token generation, validation, and account activation.
  *
- * @package Neuron\Cms\Auth
+ * @package Neuron\Cms\Services\Auth
  */
-class EmailVerificationManager
+class EmailVerifier
 {
 	private IEmailVerificationTokenRepository $_tokenRepository;
 	private IUserRepository $_userRepository;

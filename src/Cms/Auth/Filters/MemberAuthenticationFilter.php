@@ -4,7 +4,7 @@ namespace Neuron\Cms\Auth\Filters;
 
 use Neuron\Routing\Filter;
 use Neuron\Routing\RouteMap;
-use Neuron\Cms\Auth\AuthManager;
+use Neuron\Cms\Services\Auth\Authentication;
 use Neuron\Patterns\Registry;
 
 /**
@@ -18,19 +18,19 @@ use Neuron\Patterns\Registry;
  */
 class MemberAuthenticationFilter extends Filter
 {
-	private AuthManager $_authManager;
+	private Authentication $_authentication;
 	private string $_loginUrl = '/login';
 	private string $_verifyEmailUrl = '/verify-email-required';
 	private string $_redirectParam = 'redirect';
 	private bool $_requireEmailVerification = true;
 
 	public function __construct(
-		AuthManager $authManager,
+		Authentication $authentication,
 		string $loginUrl = '/login',
 		bool $requireEmailVerification = true
 	)
 	{
-		$this->_authManager = $authManager;
+		$this->_authentication = $authentication;
 		$this->_loginUrl = $loginUrl;
 		$this->_requireEmailVerification = $requireEmailVerification;
 
@@ -45,7 +45,7 @@ class MemberAuthenticationFilter extends Filter
 	 */
 	protected function checkAuthentication( RouteMap $route ): void
 	{
-		$user = $this->_authManager->user();
+		$user = $this->_authentication->user();
 
 		// Check if user is authenticated
 		if( !$user )

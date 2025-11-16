@@ -3,7 +3,7 @@
 namespace Neuron\Cms\Controllers\Member;
 
 use Neuron\Cms\Controllers\Content;
-use Neuron\Cms\Auth\CsrfTokenManager;
+use Neuron\Cms\Services\Auth\CsrfToken;
 use Neuron\Core\Exceptions\NotFound;
 use Neuron\Mvc\Application;
 use Neuron\Mvc\Requests\Request;
@@ -45,8 +45,8 @@ class Dashboard extends Content
 		}
 
 		// Generate CSRF token and store in Registry
-		$csrfManager = new CsrfTokenManager( $this->getSessionManager() );
-		Registry::getInstance()->set( 'Auth.CsrfToken', $csrfManager->getToken() );
+		$csrfToken = new CsrfToken( $this->getSessionManager() );
+		Registry::getInstance()->set( 'Auth.CsrfToken', $csrfToken->getToken() );
 
 		$viewData = [
 			'Title' => 'Member Dashboard | ' . $this->getName(),
@@ -58,7 +58,7 @@ class Dashboard extends Content
 			HttpResponseStatus::OK,
 			$viewData,
 			'index',
-			'member/dashboard'
+			'member'
 		);
 	}
 }

@@ -3,8 +3,8 @@
 namespace Neuron\Cms\Controllers\Auth;
 
 use Neuron\Cms\Controllers\Content;
-use Neuron\Cms\Auth\AuthManager;
-use Neuron\Cms\Auth\CsrfTokenManager;
+use Neuron\Cms\Services\Auth\Authentication;
+use Neuron\Cms\Services\Auth\CsrfToken;
 use Neuron\Core\Exceptions\NotFound;
 use Neuron\Mvc\Application;
 use Neuron\Mvc\Responses\HttpResponseStatus;
@@ -20,8 +20,8 @@ use Neuron\Mvc\Requests\Request;
  */
 class Login extends Content
 {
-	private ?AuthManager $_authManager;
-	private CsrfTokenManager $_csrfManager;
+	private ?Authentication $_authentication;
+	private CsrfToken $_csrfToken;
 
 	/**
 	 * @param Application|null $app
@@ -31,16 +31,16 @@ class Login extends Content
 	{
 		parent::__construct( $app );
 
-		// Get AuthManager from Registry (set up by AuthInitializer)
-		$this->_authManager = Registry::getInstance()->get( 'AuthManager' );
+		// Get Authentication from Registry (set up by AuthInitializer)
+		$this->_authentication = Registry::getInstance()->get( 'Authentication' );
 
-		if( !$this->_authManager )
+		if( !$this->_authentication )
 		{
-			throw new \RuntimeException( 'AuthManager not found in Registry.' );
+			throw new \RuntimeException( 'Authentication not found in Registry.' );
 		}
 
 		// Initialize CSRF manager with parent's session manager
-		$this->_csrfManager = new CsrfTokenManager( $this->getSessionManager() );
+		$this->_csrfToken = new CsrfToken( $this->getSessionManager() );
 	}
 
 	/**
@@ -53,16 +53,19 @@ class Login extends Content
 	public function showLoginForm( Request $request ): string
 	{
 		// If already logged in, redirect to the dashboard
-		if( $this->_authManager->check() )
+		if( $this->_authentication->check() )
 		{
 			$this->redirect( 'admin_dashboard' );
 		}
 
 		// Set CSRF token in Registry so csrf_field() helper works
-		Registry::getInstance()->set( 'Auth.CsrfToken', $this->_csrfManager->getToken() );
+		Registry::getInstance()->set( 'Auth.CsrfToken', $this->_csrfToken->getToken() );
 
-		$defaultRedirect = $this->urlFor( 'admin_dashboard' ) ?? '/admin/dashboard';
-		$requestedRedirect = $request->get( 'redirect', $defaultRedirect );
+		// Get redirect parameter from URL or default to admin dashboard
+		$defaultRedirect = $this->urlFor( 'admin_dashboard', [], '/admin/dashboard' ) ?? '/admin/dashboard';
+		$requestedRedirect = $request->get( 'redirect', $defaultRedirect ) ?? $defaultRedirect;
+
+		// Validate and use requested redirect, fallback to default if invalid
 		$redirectUrl = $this->isValidRedirectUrl( $requestedRedirect )
 			? $requestedRedirect
 			: $defaultRedirect;
@@ -94,7 +97,7 @@ class Login extends Content
 		// Validate CSRF token
 		$token = $request->post( 'csrf_token' );
 
-		if( !$this->_csrfManager->validate( $token ) )
+		if( !$this->_csrfToken->validate( $token ) )
 		{
 			$this->redirect( 'login', [], ['error', 'Invalid CSRF token. Please try again.'] );
 		}
@@ -111,14 +114,16 @@ class Login extends Content
 		}
 
 		// Attempt authentication
-		if( !$this->_authManager->attempt( $username, $password, $remember ) )
+		if( !$this->_authentication->attempt( $username, $password, $remember ) )
 		{
 			$this->redirect( 'login', [], ['error', 'Invalid username or password.'] );
 		}
 
 		// Successful login - redirect to intended URL or dashboard
-		$defaultRedirect = $this->urlFor( 'admin_dashboard' ) ?? '/admin/dashboard';
-		$requestedRedirect = $_POST['redirect_url'] ?? $defaultRedirect;
+		$defaultRedirect = $this->urlFor( 'admin_dashboard', [], '/admin/dashboard' ) ?? '/admin/dashboard';
+		$requestedRedirect = $request->post( 'redirect_url', $defaultRedirect ) ?? $defaultRedirect;
+
+		// Validate and use requested redirect, fallback to default if invalid
 		$redirectUrl = $this->isValidRedirectUrl( $requestedRedirect )
 			? $requestedRedirect
 			: $defaultRedirect;
@@ -133,8 +138,8 @@ class Login extends Content
 	 */
 	public function logout( Request $request ): never
 	{
-		$this->_authManager->logout();
-		$this->redirect( 'login', [], ['success', 'You have been logged out successfully.'] );
+		$this->_authentication->logout();
+		$this->redirect( 'home', [], ['success', 'You have been logged out successfully.'] );
 	}
 
 	/**

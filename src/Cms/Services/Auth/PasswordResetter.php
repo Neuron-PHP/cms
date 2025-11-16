@@ -1,7 +1,8 @@
 <?php
 
-namespace Neuron\Cms\Auth;
+namespace Neuron\Cms\Services\Auth;
 
+use Neuron\Cms\Auth\PasswordHasher;
 use Neuron\Cms\Models\PasswordResetToken;
 use Neuron\Cms\Repositories\IPasswordResetTokenRepository;
 use Neuron\Cms\Repositories\IUserRepository;
@@ -11,13 +12,13 @@ use Neuron\Log\Log;
 use Exception;
 
 /**
- * Password reset manager.
+ * Password reset service.
  *
  * Handles password reset token generation, validation, and password updates.
  *
- * @package Neuron\Cms\Auth
+ * @package Neuron\Cms\Services\Auth
  */
-class PasswordResetManager
+class PasswordResetter
 {
 	private IPasswordResetTokenRepository $_tokenRepository;
 	private IUserRepository $_userRepository;

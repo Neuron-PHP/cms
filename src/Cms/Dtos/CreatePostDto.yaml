@@ -1,24 +1,18 @@
-properties:
+dto:
   title:
     type: string
     required: true
-    validators:
-      - IsNotEmpty
-      - IsStringLength:
-          min: 5
-          max: 255
+    length:
+      min: 5
+      max: 255
   body:
     type: string
     required: true
-    validators:
-      - IsNotEmpty
-      - IsStringLength:
-          min: 10
+    length:
+      min: 10
   status:
     type: string
     required: true
-    validators:
-      - IsNotEmpty
   slug:
     type: string
     required: false
@@ -31,6 +25,8 @@ properties:
   categoryIds:
     type: array
     required: false
+    items:
+      type: integer
   tags:
     type: string
     required: false

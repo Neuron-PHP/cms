@@ -12,10 +12,11 @@
     "require": {
         "ext-curl": "*",
         "ext-json": "*",
-        "neuron-php/mvc": "0.9.*",
+        "neuron-php/mvc": "^0.9.5",
         "neuron-php/cli": "0.8.*",
         "neuron-php/jobs": "0.2.*",
         "neuron-php/orm": "0.1.*",
+        "neuron-php/dto": "0.0.*",
         "phpmailer/phpmailer": "^6.9"
     },
     "require-dev": {

@@ -1,4 +1,5 @@
 ## 0.8.8
+* Refactored requests to use the now dto powered format.
 
 ## 0.8.7 2025-11-14
 * Refactored all controllers to support the new method signature.
@@ -7,9 +8,7 @@
 * Cleanup and minor fixes.
 
 ## 0.8.5 2025-11-12
-
 ## 0.8.4 2025-11-12
-
 ## 0.8.3 2025-11-12
 
 * Large refactoring.

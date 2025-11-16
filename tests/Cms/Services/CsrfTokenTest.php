@@ -1,18 +1,18 @@
 <?php
 
-namespace Tests\Cms\Auth;
+namespace Tests\Cms\Services;
 
 use PHPUnit\Framework\TestCase;
-use Neuron\Cms\Auth\CsrfTokenManager;
+use Neuron\Cms\Services\Auth\CsrfToken;
 use Neuron\Cms\Auth\SessionManager;
 
 /**
  * @runTestsInSeparateProcesses
  * @preserveGlobalState disabled
  */
-class CsrfTokenManagerTest extends TestCase
+class CsrfTokenTest extends TestCase
 {
-	private CsrfTokenManager $csrfManager;
+	private CsrfToken $_csrfToken;
 	private SessionManager $sessionManager;
 
 	protected function setUp(): void
@@ -20,7 +20,7 @@ class CsrfTokenManagerTest extends TestCase
 		$this->sessionManager = new SessionManager([
 			'cookie_secure' => false  // Disable HTTPS requirement for tests
 		]);
-		$this->csrfManager = new CsrfTokenManager($this->sessionManager);
+		$this->_csrfToken = new CsrfToken($this->sessionManager);
 
 		$_SESSION = []; // Clear session data
 	}
@@ -32,7 +32,7 @@ class CsrfTokenManagerTest extends TestCase
 
 	public function testGenerateToken(): void
 	{
-		$token = $this->csrfManager->generate();
+		$token = $this->_csrfToken->generate();
 
 		$this->assertNotEmpty($token);
 		$this->assertIsString($token);
@@ -41,7 +41,7 @@ class CsrfTokenManagerTest extends TestCase
 
 	public function testGenerateTokenStoresInSession(): void
 	{
-		$token = $this->csrfManager->generate();
+		$token = $this->_csrfToken->generate();
 
 		$storedToken = $this->sessionManager->get('csrf_token');
 
@@ -50,28 +50,28 @@ class CsrfTokenManagerTest extends TestCase
 
 	public function testGenerateTokenIsRandom(): void
 	{
-		$token1 = $this->csrfManager->generate();
+		$token1 = $this->_csrfToken->generate();
 
 		// Clear session to force new token
 		$_SESSION = [];
 
-		$token2 = $this->csrfManager->generate();
+		$token2 = $this->_csrfToken->generate();
 
 		$this->assertNotEquals($token1, $token2);
 	}
 
 	public function testGetTokenReturnsExistingToken(): void
 	{
-		$generated = $this->csrfManager->generate();
+		$generated = $this->_csrfToken->generate();
 
-		$retrieved = $this->csrfManager->getToken();
+		$retrieved = $this->_csrfToken->getToken();
 
 		$this->assertEquals($generated, $retrieved);
 	}
 
 	public function testGetTokenGeneratesTokenIfNotExists(): void
 	{
-		$token = $this->csrfManager->getToken();
+		$token = $this->_csrfToken->getToken();
 
 		$this->assertNotEmpty($token);
 		$this->assertIsString($token);
@@ -79,27 +79,27 @@ class CsrfTokenManagerTest extends TestCase
 
 	public function testValidateWithCorrectToken(): void
 	{
-		$token = $this->csrfManager->generate();
+		$token = $this->_csrfToken->generate();
 
-		$result = $this->csrfManager->validate($token);
+		$result = $this->_csrfToken->validate($token);
 
 		$this->assertTrue($result);
 	}
 
 	public function testValidateWithIncorrectToken(): void
 	{
-		$this->csrfManager->generate();
+		$this->_csrfToken->generate();
 
-		$result = $this->csrfManager->validate('incorrect_token');
+		$result = $this->_csrfToken->validate('incorrect_token');
 
 		$this->assertFalse($result);
 	}
 
 	public function testValidateWithEmptyToken(): void
 	{
-		$this->csrfManager->generate();
+		$this->_csrfToken->generate();
 
-		$result = $this->csrfManager->validate('');
+		$result = $this->_csrfToken->validate('');
 
 		$this->assertFalse($result);
 	}
@@ -108,7 +108,7 @@ class CsrfTokenManagerTest extends TestCase
 	{
 		// Don't generate a token first
 
-		$result = $this->csrfManager->validate('some_token');
+		$result = $this->_csrfToken->validate('some_token');
 
 		$this->assertFalse($result);
 	}
@@ -118,41 +118,41 @@ class CsrfTokenManagerTest extends TestCase
 		// This test verifies that validation uses hash_equals (timing-attack safe)
 		// We can't directly test timing, but we verify it accepts exact matches only
 
-		$token = $this->csrfManager->generate();
+		$token = $this->_csrfToken->generate();
 
 		// Slightly modified tokens should fail
 		$almostToken = substr($token, 0, -1) . 'x';
 
-		$this->assertTrue($this->csrfManager->validate($token));
-		$this->assertFalse($this->csrfManager->validate($almostToken));
+		$this->assertTrue($this->_csrfToken->validate($token));
+		$this->assertFalse($this->_csrfToken->validate($almostToken));
 	}
 
 	public function testRegenerateToken(): void
 	{
-		$firstToken = $this->csrfManager->generate();
+		$firstToken = $this->_csrfToken->generate();
 
-		$secondToken = $this->csrfManager->regenerate();
+		$secondToken = $this->_csrfToken->regenerate();
 
 		$this->assertNotEquals($firstToken, $secondToken);
-		$this->assertEquals($secondToken, $this->csrfManager->getToken());
+		$this->assertEquals($secondToken, $this->_csrfToken->getToken());
 	}
 
 	public function testRegenerateTokenInvalidatesOldToken(): void
 	{
-		$oldToken = $this->csrfManager->generate();
+		$oldToken = $this->_csrfToken->generate();
 
-		$newToken = $this->csrfManager->regenerate();
+		$newToken = $this->_csrfToken->regenerate();
 
 		// Old token should no longer be valid
-		$this->assertFalse($this->csrfManager->validate($oldToken));
+		$this->assertFalse($this->_csrfToken->validate($oldToken));
 
 		// New token should be valid
-		$this->assertTrue($this->csrfManager->validate($newToken));
+		$this->assertTrue($this->_csrfToken->validate($newToken));
 	}
 
 	public function testTokenLength(): void
 	{
-		$token = $this->csrfManager->generate();
+		$token = $this->_csrfToken->generate();
 
 		// Token should be URL-safe and reasonably long
 		$this->assertGreaterThanOrEqual(32, strlen($token));
@@ -161,20 +161,20 @@ class CsrfTokenManagerTest extends TestCase
 
 	public function testTokenPersistsAcrossMultipleValidations(): void
 	{
-		$token = $this->csrfManager->generate();
+		$token = $this->_csrfToken->generate();
 
 		// Validate multiple times
-		$this->assertTrue($this->csrfManager->validate($token));
-		$this->assertTrue($this->csrfManager->validate($token));
-		$this->assertTrue($this->csrfManager->validate($token));
+		$this->assertTrue($this->_csrfToken->validate($token));
+		$this->assertTrue($this->_csrfToken->validate($token));
+		$this->assertTrue($this->_csrfToken->validate($token));
 
 		// Token should still be valid
-		$this->assertEquals($token, $this->csrfManager->getToken());
+		$this->assertEquals($token, $this->_csrfToken->getToken());
 	}
 
 	public function testTokenIsUrlSafe(): void
 	{
-		$token = $this->csrfManager->generate();
+		$token = $this->_csrfToken->generate();
 
 		// Encode and decode should return same token
 		$encoded = urlencode($token);

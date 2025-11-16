@@ -1,28 +1,22 @@
-properties:
+dto:
   username:
     type: string
     required: true
-    validators:
-      - IsNotEmpty
-      - IsStringLength:
-          min: 3
-          max: 50
-      - IsAlphanumeric
+    length:
+      min: 3
+      max: 50
   email:
-    type: string
+    type: email
     required: true
-    validators:
-      - IsNotEmpty
-      - IsEmail
   password:
     type: string
     required: true
-    validators:
-      - IsNotEmpty
-      - IsStringLength:
-          min: 8
+    length:
+      min: 8
+      max: 255
   password_confirmation:
     type: string
     required: true
-    validators:
-      - IsNotEmpty
+    length:
+      min: 8
+      max: 255

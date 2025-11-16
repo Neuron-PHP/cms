@@ -4,7 +4,7 @@ namespace Neuron\Cms\Auth\Filters;
 
 use Neuron\Routing\Filter;
 use Neuron\Routing\RouteMap;
-use Neuron\Cms\Auth\AuthManager;
+use Neuron\Cms\Services\Auth\Authentication;
 use Neuron\Patterns\Registry;
 
 /**
@@ -17,13 +17,13 @@ use Neuron\Patterns\Registry;
  */
 class AuthenticationFilter extends Filter
 {
-	private AuthManager $_authManager;
+	private Authentication $_authentication;
 	private string $_loginUrl = '/login';
 	private string $_redirectParam = 'redirect';
 
-	public function __construct( AuthManager $authManager, string $loginUrl = '/login' )
+	public function __construct( Authentication $authentication, string $loginUrl = '/login' )
 	{
-		$this->_authManager = $authManager;
+		$this->_authentication = $authentication;
 		$this->_loginUrl = $loginUrl;
 
 		parent::__construct(
@@ -37,7 +37,7 @@ class AuthenticationFilter extends Filter
 	 */
 	protected function checkAuthentication( RouteMap $route ): void
 	{
-		$user = $this->_authManager->user();
+		$user = $this->_authentication->user();
 		if( !$user )
 		{
 			// Store intended URL for post-login redirect
