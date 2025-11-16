@@ -1,9 +1,9 @@
 <?php
 
-namespace Tests\Cms\Auth;
+namespace Tests\Cms\Services;
 
 use Neuron\Cms\Auth\PasswordHasher;
-use Neuron\Cms\Auth\PasswordResetManager;
+use Neuron\Cms\Services\Auth\PasswordResetter;
 use Neuron\Cms\Models\PasswordResetToken;
 use Neuron\Cms\Models\User;
 use Neuron\Cms\Repositories\IPasswordResetTokenRepository;
@@ -12,7 +12,7 @@ use Neuron\Data\Setting\Source\Memory;
 use Neuron\Data\Setting\SettingManager;
 use PHPUnit\Framework\TestCase;
 
-class PasswordResetManagerTest extends TestCase
+class PasswordResetterTest extends TestCase
 {
 	private IPasswordResetTokenRepository $_tokenRepository;
 	private IUserRepository $_userRepository;
@@ -20,7 +20,7 @@ class PasswordResetManagerTest extends TestCase
 	private SettingManager $_settings;
 	private string $_basePath;
 	private string $_resetUrl;
-	private PasswordResetManager $_manager;
+	private PasswordResetter $_manager;
 
 	protected function setUp(): void
 	{
@@ -44,7 +44,7 @@ class PasswordResetManagerTest extends TestCase
 		$this->_resetUrl = 'http://test.com/reset-password';
 
 		// Create manager
-		$this->_manager = new PasswordResetManager(
+		$this->_manager = new PasswordResetter(
 			$this->_tokenRepository,
 			$this->_userRepository,
 			$this->_passwordHasher,
@@ -56,13 +56,13 @@ class PasswordResetManagerTest extends TestCase
 
 	public function testConstructorSetsProperties(): void
 	{
-		$this->assertInstanceOf( PasswordResetManager::class, $this->_manager );
+		$this->assertInstanceOf( PasswordResetter::class, $this->_manager );
 	}
 
 	public function testSetTokenExpirationMinutes(): void
 	{
 		$result = $this->_manager->setTokenExpirationMinutes( 120 );
-		$this->assertInstanceOf( PasswordResetManager::class, $result );
+		$this->assertInstanceOf( PasswordResetter::class, $result );
 	}
 
 	public function testRequestResetWithNonexistentUser(): void

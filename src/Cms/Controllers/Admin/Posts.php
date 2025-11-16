@@ -11,9 +11,7 @@ use Neuron\Cms\Services\Post\Creator;
 use Neuron\Cms\Services\Post\Updater;
 use Neuron\Cms\Services\Post\Deleter;
 use Neuron\Cms\Services\Tag\Resolver as TagResolver;
-use Neuron\Cms\Auth\CsrfTokenManager;
-use Neuron\Cms\Auth\SessionManager;
-use Neuron\Data\Setting\SettingManager;
+use Neuron\Cms\Services\Auth\CsrfToken;
 use Neuron\Mvc\Application;
 use Neuron\Mvc\Requests\Request;
 use Neuron\Mvc\Responses\HttpResponseStatus;
@@ -87,8 +85,8 @@ class Posts extends Content
 
 		// Generate CSRF token
 		$sessionManager = $this->getSessionManager();
-		$csrfManager = new CsrfTokenManager( $sessionManager );
-		Registry::getInstance()->set( 'Auth.CsrfToken', $csrfManager->getToken() );
+		$csrfToken = new CsrfToken( $sessionManager );
+		Registry::getInstance()->set( 'Auth.CsrfToken', $csrfToken->getToken() );
 
 		// Get all posts or filter by author if not admin
 		if( $user->isAdmin() || $user->isEditor() )
@@ -133,8 +131,8 @@ class Posts extends Content
 		}
 
 		// Generate CSRF token
-		$csrfManager = new CsrfTokenManager( $this->getSessionManager() );
-		Registry::getInstance()->set( 'Auth.CsrfToken', $csrfManager->getToken() );
+		$csrfToken = new CsrfToken( $this->getSessionManager() );
+		Registry::getInstance()->set( 'Auth.CsrfToken', $csrfToken->getToken() );
 
 		$viewData = [
 			'Title' => 'Create Post | ' . $this->getName(),
@@ -169,14 +167,14 @@ class Posts extends Content
 		try
 		{
 			// Get form data
-			$title = $_POST['title'] ?? '';
-			$slug = $_POST['slug'] ?? '';
-			$content = $_POST['content'] ?? '';
-			$excerpt = $_POST['excerpt'] ?? '';
-			$featuredImage = $_POST['featured_image'] ?? '';
-			$status = $_POST['status'] ?? Post::STATUS_DRAFT;
-			$categoryIds = $_POST['categories'] ?? [];
-			$tagNames = $_POST['tags'] ?? '';
+			$title = $request->post('title', '' );
+			$slug = $request->post( 'slug', '' );
+			$content = $request->post('content', '' );
+			$excerpt = $request->post( 'excerpt', '' );
+			$featuredImage = $request->post('featured_image', '' );
+			$status = $request->post( 'status', Post::STATUS_DRAFT );
+			$categoryIds = $request->post( 'categories', [] );
+			$tagNames = $request->post( 'tags', '' );
 
 			// Create post using service
 			$this->_postCreator->create(
@@ -229,8 +227,8 @@ class Posts extends Content
 		}
 
 		// Generate CSRF token
-		$csrfManager = new CsrfTokenManager( $this->getSessionManager() );
-		Registry::getInstance()->set( 'Auth.CsrfToken', $csrfManager->getToken() );
+		$csrfToken = new CsrfToken( $this->getSessionManager() );
+		Registry::getInstance()->set( 'Auth.CsrfToken', $csrfToken->getToken() );
 
 		$viewData = [
 			'Title' => 'Edit Post | ' . $this->getName(),

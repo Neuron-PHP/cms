@@ -1,8 +1,8 @@
 <?php
 
-namespace Tests\Cms\Auth;
+namespace Tests\Cms\Services;
 
-use Neuron\Cms\Auth\EmailVerificationManager;
+use Neuron\Cms\Services\Auth\EmailVerifier;
 use Neuron\Cms\Models\EmailVerificationToken;
 use Neuron\Cms\Models\User;
 use Neuron\Cms\Repositories\IEmailVerificationTokenRepository;
@@ -11,14 +11,14 @@ use Neuron\Data\Setting\Source\Memory;
 use Neuron\Data\Setting\SettingManager;
 use PHPUnit\Framework\TestCase;
 
-class EmailVerificationManagerTest extends TestCase
+class EmailVerifierTest extends TestCase
 {
 	private IEmailVerificationTokenRepository $_tokenRepository;
 	private IUserRepository $_userRepository;
 	private SettingManager $_settings;
 	private string $_basePath;
 	private string $_verificationUrl;
-	private EmailVerificationManager $_manager;
+	private EmailVerifier $_manager;
 
 	protected function setUp(): void
 	{
@@ -41,7 +41,7 @@ class EmailVerificationManagerTest extends TestCase
 		$this->_verificationUrl = 'http://test.com/verify-email';
 
 		// Create manager
-		$this->_manager = new EmailVerificationManager(
+		$this->_manager = new EmailVerifier(
 			$this->_tokenRepository,
 			$this->_userRepository,
 			$this->_settings,
@@ -52,13 +52,13 @@ class EmailVerificationManagerTest extends TestCase
 
 	public function testConstructorSetsProperties(): void
 	{
-		$this->assertInstanceOf( EmailVerificationManager::class, $this->_manager );
+		$this->assertInstanceOf( EmailVerifier::class, $this->_manager );
 	}
 
 	public function testSetTokenExpirationMinutes(): void
 	{
 		$result = $this->_manager->setTokenExpirationMinutes( 120 );
-		$this->assertInstanceOf( EmailVerificationManager::class, $result );
+		$this->assertInstanceOf( EmailVerifier::class, $result );
 	}
 
 	public function testSendVerificationEmail(): void

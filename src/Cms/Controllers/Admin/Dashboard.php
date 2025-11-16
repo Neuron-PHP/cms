@@ -3,7 +3,7 @@
 namespace Neuron\Cms\Controllers\Admin;
 
 use Neuron\Cms\Controllers\Content;
-use Neuron\Cms\Auth\CsrfTokenManager;
+use Neuron\Cms\Services\Auth\CsrfToken;
 use Neuron\Cms\Auth\SessionManager;
 use Neuron\Core\Exceptions\NotFound;
 use Neuron\Mvc\Application;
@@ -48,8 +48,8 @@ class Dashboard extends Content
 		// Generate CSRF token and store in Registry for helper functions
 		$sessionManager = new SessionManager();
 		$sessionManager->start();
-		$csrfManager = new CsrfTokenManager( $sessionManager );
-		Registry::getInstance()->set( 'Auth.CsrfToken', $csrfManager->getToken() );
+		$csrfToken = new CsrfToken( $sessionManager );
+		Registry::getInstance()->set( 'Auth.CsrfToken', $csrfToken->getToken() );
 
 		$viewData = [
 			'Title' => 'Dashboard | ' . $this->getName(),

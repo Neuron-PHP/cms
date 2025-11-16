@@ -1,17 +1,16 @@
-properties:
+dto:
   name:
     type: string
     required: true
-    validators:
-      - IsNotEmpty
-      - IsStringLength:
-          min: 2
-          max: 100
+    length:
+      min: 2
+      max: 100
   slug:
     type: string
     required: true
-    validators:
-      - IsNotEmpty
+    length:
+      min: 2
+      max: 100
   description:
     type: string
     required: false

@@ -2,7 +2,7 @@
 
 namespace App\Initializers;
 
-use Neuron\Cms\Auth\AuthManager;
+use Neuron\Cms\Services\Auth\Authentication;
 use Neuron\Cms\Auth\Filters\AuthenticationFilter;
 use Neuron\Cms\Auth\PasswordHasher;
 use Neuron\Cms\Auth\SessionManager;
@@ -55,16 +55,16 @@ class AuthInitializer implements IRunnable
 				$userRepository = new DatabaseUserRepository( $settings );
 				$sessionManager = new SessionManager();
 				$passwordHasher = new PasswordHasher();
-				$authManager = new AuthManager( $userRepository, $sessionManager, $passwordHasher );
+				$authentication = new Authentication( $userRepository, $sessionManager, $passwordHasher );
 
 				// Create authentication filter
-				$authFilter = new AuthenticationFilter( $authManager, '/login' );
+				$authFilter = new AuthenticationFilter( $authentication, '/login' );
 
 				// Register the auth filter with the Router
 				$app->getRouter()->registerFilter( 'auth', $authFilter );
 
-				// Store AuthManager in Registry for easy access
-				Registry::getInstance()->set( 'AuthManager', $authManager );
+				// Store Authentication in Registry for easy access
+				Registry::getInstance()->set( 'Authentication', $authentication );
 			}
 		}
 		catch( \Exception $e )

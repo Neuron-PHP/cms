@@ -1,13 +1,18 @@
+## 0.8.8 2025-11-16
+
+* Refactored requests to use the new dto component powered format.
+* Security improvements.
+
 ## 0.8.7 2025-11-14
+
 * Refactored all controllers to support the new method signature.
 
 ## 0.8.6 2025-11-13
+
 * Cleanup and minor fixes.
 
 ## 0.8.5 2025-11-12
-
 ## 0.8.4 2025-11-12
-
 ## 0.8.3 2025-11-12
 
 * Large refactoring.
@@ -42,16 +47,20 @@
 
 ## 0.2.3 2025-11-04
 ## 0.2.2 2025-08-21
+
 * Now requires the cli component.
 
 ## 0.2.1 2025-08-14
+
 * Fixed constructors.
 
 ## 0.2.0 2025-08-14
+
 * Upgraded to mvc 0.7
 
 ## 0.1.4 2025-08-11
 ## 0.1.3 2025-08-11
+
 * Renamed boot function.
 * Updated mvc component.
 * Updated blog controller tests.

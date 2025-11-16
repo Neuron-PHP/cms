@@ -6,7 +6,7 @@ use Neuron\Cms\Controllers\Content;
 use Neuron\Cms\Repositories\DatabaseUserRepository;
 use Neuron\Cms\Services\User\Updater;
 use Neuron\Cms\Auth\PasswordHasher;
-use Neuron\Cms\Auth\CsrfTokenManager;
+use Neuron\Cms\Services\Auth\CsrfToken;
 use Neuron\Mvc\Application;
 use Neuron\Mvc\Requests\Request;
 use Neuron\Mvc\Responses\HttpResponseStatus;
@@ -57,17 +57,18 @@ class Profile extends Content
 		}
 
 		// Generate CSRF token
-		$csrfManager = new CsrfTokenManager( $this->getSessionManager() );
-		Registry::getInstance()->set( 'Auth.CsrfToken', $csrfManager->getToken() );
+		$csrfToken = new CsrfToken( $this->getSessionManager() );
+		Registry::getInstance()->set( 'Auth.CsrfToken', $csrfToken->getToken() );
 
-		// Get available timezones grouped by region
+		// Get available timezones grouped by region with selection state
 		$timezones = \DateTimeZone::listIdentifiers();
+		$groupedTimezones = group_timezones_for_select( $timezones, $user->getTimezone() );
 
 		$viewData = [
 			'Title' => 'Profile | ' . $this->getName(),
 			'Description' => 'Edit Your Profile',
 			'User' => $user,
-			'timezones' => $timezones,
+			'groupedTimezones' => $groupedTimezones,
 			'success' => $this->getSessionManager()->getFlash( 'success' ),
 			'error' => $this->getSessionManager()->getFlash( 'error' )
 		];
@@ -76,7 +77,7 @@ class Profile extends Content
 			HttpResponseStatus::OK,
 			$viewData,
 			'edit',
-			'member/profile'
+			'member'
 		);
 	}
 
@@ -96,7 +97,9 @@ class Profile extends Content
 			throw new \RuntimeException( 'Authenticated user not found' );
 		}
 
-		$email = $request->post( 'email',  '' );
+		// Security: Only use email from POST if provided by Account Information form
+		// Password change form doesn't include email field, preventing email hijacking attacks
+		$email = $request->post( 'email', $user->getEmail() );
 		$timezone = $request->post( 'timezone', '' );
 		$currentPassword = $request->post( 'current_password', '' );
 		$newPassword = $request->post( 'new_password', '' );

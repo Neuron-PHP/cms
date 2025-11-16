@@ -9,7 +9,7 @@ use Neuron\Cms\Services\User\Creator;
 use Neuron\Cms\Services\User\Updater;
 use Neuron\Cms\Services\User\Deleter;
 use Neuron\Cms\Auth\PasswordHasher;
-use Neuron\Cms\Auth\CsrfTokenManager;
+use Neuron\Cms\Services\Auth\CsrfToken;
 use Neuron\Data\Setting\SettingManager;
 use Neuron\Mvc\Application;
 use Neuron\Mvc\Requests\Request;
@@ -58,8 +58,8 @@ class Users extends Content
 		$user = Registry::getInstance()->get( 'Auth.User' );
 
 		// Generate CSRF token
-		$csrfManager = new CsrfTokenManager( $this->getSessionManager() );
-		Registry::getInstance()->set( 'Auth.CsrfToken', $csrfManager->getToken() );
+		$csrfToken = new CsrfToken( $this->getSessionManager() );
+		Registry::getInstance()->set( 'Auth.CsrfToken', $csrfToken->getToken() );
 
 		$users = $this->_repository->all();
 
@@ -91,8 +91,8 @@ class Users extends Content
 		$user = Registry::getInstance()->get( 'Auth.User' );
 
 		// Generate CSRF token
-		$csrfManager = new CsrfTokenManager( $this->getSessionManager() );
-		Registry::getInstance()->set( 'Auth.CsrfToken', $csrfManager->getToken() );
+		$csrfToken = new CsrfToken( $this->getSessionManager() );
+		Registry::getInstance()->set( 'Auth.CsrfToken', $csrfToken->getToken() );
 
 		$viewData = [
 			'Title' => 'Create User | ' . $this->getName(),
@@ -143,10 +143,10 @@ class Users extends Content
 	 * Show edit user form
 	 *
 	 * @param Request $request
-	 * @return string|never
+	 * @return string
 	 * @throws \Exception
 	 */
-	public function edit( Request $request ) : string|never
+	public function edit( Request $request ): string
 	{
 		$id = (int)$request->getRouteParameter( 'id' );
 		$currentUser = Registry::getInstance()->get( 'Auth.User' );
@@ -158,8 +158,8 @@ class Users extends Content
 		}
 
 		// Generate CSRF token
-		$csrfManager = new CsrfTokenManager( $this->getSessionManager() );
-		Registry::getInstance()->set( 'Auth.CsrfToken', $csrfManager->getToken() );
+		$csrfToken = new CsrfToken( $this->getSessionManager() );
+		Registry::getInstance()->set( 'Auth.CsrfToken', $csrfToken->getToken() );
 
 		$viewData = [
 			'Title' => 'Edit User | ' . $this->getName(),
@@ -205,8 +205,8 @@ class Users extends Content
 			$this->redirect( 'admin_users_edit', ['id' => $id], ['error', 'Username and email are required'] );
 		}
 
-		$role = $_POST['role'] ?? $user->getRole();
-		$password = $_POST['password'] ?? null;
+		$role = $request->post( 'role', $user->getRole() );
+		$password = $request->post( 'password', null );
 
 		try
 		{
