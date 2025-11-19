@@ -1,0 +1,85 @@
+<?php
+
+namespace Neuron\Cms\Services\Page;
+
+use Neuron\Cms\Models\Page;
+use Neuron\Cms\Repositories\IPageRepository;
+use DateTimeImmutable;
+
+/**
+ * Page creation service.
+ *
+ * Creates new pages with validation and slug generation.
+ *
+ * @package Neuron\Cms\Services\Page
+ */
+class Creator
+{
+	private IPageRepository $_pageRepository;
+
+	public function __construct( IPageRepository $pageRepository )
+	{
+		$this->_pageRepository = $pageRepository;
+	}
+
+	/**
+	 * Create a new page
+	 *
+	 * @param string $title Page title
+	 * @param string $content Editor.js JSON content
+	 * @param int $authorId Author user ID
+	 * @param string $status Page status (draft, published)
+	 * @param string|null $slug Optional custom slug (auto-generated if not provided)
+	 * @param string $template Template name
+	 * @param string|null $metaTitle SEO meta title
+	 * @param string|null $metaDescription SEO meta description
+	 * @param string|null $metaKeywords SEO meta keywords
+	 * @return Page
+	 */
+	public function create(
+		string $title,
+		string $content,
+		int $authorId,
+		string $status,
+		?string $slug = null,
+		string $template = Page::TEMPLATE_DEFAULT,
+		?string $metaTitle = null,
+		?string $metaDescription = null,
+		?string $metaKeywords = null
+	): Page
+	{
+		$page = new Page();
+		$page->setTitle( $title );
+		$page->setSlug( $slug ?: $this->generateSlug( $title ) );
+		$page->setContent( $content );
+		$page->setTemplate( $template );
+		$page->setMetaTitle( $metaTitle );
+		$page->setMetaDescription( $metaDescription );
+		$page->setMetaKeywords( $metaKeywords );
+		$page->setAuthorId( $authorId );
+		$page->setStatus( $status );
+		$page->setCreatedAt( new DateTimeImmutable() );
+
+		// Business rule: auto-set published date for published pages
+		if( $status === Page::STATUS_PUBLISHED )
+		{
+			$page->setPublishedAt( new DateTimeImmutable() );
+		}
+
+		return $this->_pageRepository->create( $page );
+	}
+
+	/**
+	 * Generate URL-friendly slug from title
+	 *
+	 * @param string $title
+	 * @return string
+	 */
+	private function generateSlug( string $title ): string
+	{
+		$slug = strtolower( trim( $title ) );
+		$slug = preg_replace( '/[^a-z0-9-]/', '-', $slug );
+		$slug = preg_replace( '/-+/', '-', $slug );
+		return trim( $slug, '-' );
+	}
+}
