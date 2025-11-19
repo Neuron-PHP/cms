@@ -51,10 +51,14 @@
 									</td>
 									<td>
 										<span class="badge bg-<?= $page->getStatus() === 'published' ? 'success' : 'secondary' ?>">
-											<?= ucfirst($page->getStatus()) ?>
+											<?= htmlspecialchars(ucfirst($page->getStatus()), ENT_QUOTES, 'UTF-8') ?>
 										</span>
 									</td>
-									<td><?= $page->getAuthor()?->getUsername() ?? 'N/A' ?></td>
+									<td>
+										<?= $page->getAuthor()
+											? htmlspecialchars($page->getAuthor()->getUsername(), ENT_QUOTES, 'UTF-8')
+											: 'N/A' ?>
+									</td>
 									<td><span class="badge bg-info"><?= htmlspecialchars($page->getTemplate()) ?></span></td>
 									<td><?= $page->getViewCount() ?></td>
 									<td>
