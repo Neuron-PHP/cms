@@ -131,10 +131,21 @@ class Page extends Model
 
 	/**
 	 * Set content from array (will be JSON encoded)
+	 * @param array $content Content array to encode
+	 * @return self
+	 * @throws \JsonException If JSON encoding fails
 	 */
 	public function setContentArray( array $content ): self
 	{
-		$this->_contentRaw = json_encode( $content );
+		$encoded = json_encode( $content );
+
+		if( $encoded === false )
+		{
+			$error = json_last_error_msg();
+			throw new \JsonException( "Failed to encode content array to JSON: {$error}" );
+		}
+
+		$this->_contentRaw = $encoded;
 		return $this;
 	}
 

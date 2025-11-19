@@ -13,6 +13,7 @@ use Neuron\Mvc\Application;
 use Neuron\Mvc\Requests\Request;
 use Neuron\Mvc\Responses\HttpResponseStatus;
 use Neuron\Patterns\Registry;
+use Neuron\Log\Log;
 
 /**
  * Admin page management controller.
@@ -141,6 +142,16 @@ class Pages extends Content
 			throw new \RuntimeException( 'Authenticated user not found' );
 		}
 
+		// Validate CSRF token
+		$csrfToken = new CsrfToken( $this->getSessionManager() );
+		$submittedToken = $request->post( 'csrf_token', '' );
+
+		if( !$csrfToken->validate( $submittedToken ) )
+		{
+			Log::warning( "CSRF validation failed for page creation by user {$user->getId()}" );
+			$this->redirect( 'admin_pages_create', [], ['error', 'Invalid security token. Please try again.'] );
+		}
+
 		try
 		{
 			// Get form data
@@ -154,7 +165,7 @@ class Pages extends Content
 			$status = $request->post( 'status', Page::STATUS_DRAFT );
 
 			// Create page using service
-			$this->_pageCreator->create(
+			$page = $this->_pageCreator->create(
 				$title,
 				$content,
 				$user->getId(),
@@ -166,11 +177,22 @@ class Pages extends Content
 				$metaKeywords ?: null
 			);
 
+			if( !$page )
+			{
+				Log::error( "Page creation failed for user {$user->getId()}, title: {$title}" );
+				$this->redirect( 'admin_pages_create', [], ['error', 'Failed to create page. Please try again.'] );
+			}
+
+			Log::info( "Page created successfully: ID {$page->getId()}, title: {$title}, by user {$user->getId()}" );
 			$this->redirect( 'admin_pages', [], ['success', 'Page created successfully'] );
 		}
 		catch( \Exception $e )
 		{
-			$this->redirect( 'admin_pages_create', [], ['error', 'Failed to create page: ' . $e->getMessage()] );
+			Log::error( "Exception during page creation by user {$user->getId()}: {$e->getMessage()}", [
+				'exception' => $e,
+				'trace' => $e->getTraceAsString()
+			] );
+			$this->redirect( 'admin_pages_create', [], ['error', 'Failed to create page. Please try again.'] );
 		}
 	}
 
@@ -248,7 +270,18 @@ class Pages extends Content
 		// Check permissions
 		if( !$user->isAdmin() && !$user->isEditor() && $page->getAuthorId() !== $user->getId() )
 		{
-			throw new \RuntimeException( 'Unauthorized to edit this page' );
+			Log::warning( "Unauthorized page update attempt: User {$user->getId()} tried to edit page {$pageId}" );
+			$this->redirect( 'admin_pages', [], ['error', 'Unauthorized to edit this page'] );
+		}
+
+		// Validate CSRF token
+		$csrfToken = new CsrfToken( $this->getSessionManager() );
+		$submittedToken = $request->post( 'csrf_token', '' );
+
+		if( !$csrfToken->validate( $submittedToken ) )
+		{
+			Log::warning( "CSRF validation failed for page update: Page {$pageId}, user {$user->getId()}" );
+			$this->redirect( 'admin_pages_edit', ['id' => $pageId], ['error', 'Invalid security token. Please try again.'] );
 		}
 
 		try
@@ -264,7 +297,7 @@ class Pages extends Content
 			$status = $request->post( 'status', Page::STATUS_DRAFT );
 
 			// Update page using service
-			$this->_pageUpdater->update(
+			$success = $this->_pageUpdater->update(
 				$page,
 				$title,
 				$content,
@@ -276,11 +309,22 @@ class Pages extends Content
 				$metaKeywords ?: null
 			);
 
+			if( !$success )
+			{
+				Log::error( "Page update failed: Page {$pageId}, user {$user->getId()}, title: {$title}" );
+				$this->redirect( 'admin_pages_edit', ['id' => $pageId], ['error', 'Failed to update page. Please try again.'] );
+			}
+
+			Log::info( "Page updated successfully: Page {$pageId}, title: {$title}, by user {$user->getId()}" );
 			$this->redirect( 'admin_pages', [], ['success', 'Page updated successfully'] );
 		}
 		catch( \Exception $e )
 		{
-			$this->redirect( 'admin_pages_edit', ['id' => $pageId], ['error', 'Failed to update page: ' . $e->getMessage()] );
+			Log::error( "Exception during page update: Page {$pageId}, user {$user->getId()}: {$e->getMessage()}", [
+				'exception' => $e,
+				'trace' => $e->getTraceAsString()
+			] );
+			$this->redirect( 'admin_pages_edit', ['id' => $pageId], ['error', 'Failed to update page. Please try again.'] );
 		}
 	}
 
@@ -309,17 +353,42 @@ class Pages extends Content
 		// Check permissions
 		if( !$user->isAdmin() && !$user->isEditor() && $page->getAuthorId() !== $user->getId() )
 		{
+			Log::warning( "Unauthorized page deletion attempt: User {$user->getId()} tried to delete page {$pageId}" );
 			$this->redirect( 'admin_pages', [], ['error', 'Unauthorized to delete this page'] );
+		}
+
+		// Validate CSRF token
+		$csrfToken = new CsrfToken( $this->getSessionManager() );
+		$submittedToken = $request->post( 'csrf_token', '' );
+
+		if( !$csrfToken->validate( $submittedToken ) )
+		{
+			Log::warning( "CSRF validation failed for page deletion: Page {$pageId}, user {$user->getId()}" );
+			$this->redirect( 'admin_pages', [], ['error', 'Invalid security token. Please try again.'] );
 		}
 
 		try
 		{
-			$this->_pageDeleter->delete( $page );
+			$pageTitle = $page->getTitle(); // Store for logging before deletion
+
+			$success = $this->_pageDeleter->delete( $page );
+
+			if( !$success )
+			{
+				Log::error( "Page deletion failed: Page {$pageId}, user {$user->getId()}" );
+				$this->redirect( 'admin_pages', [], ['error', 'Failed to delete page. Please try again.'] );
+			}
+
+			Log::info( "Page deleted successfully: Page {$pageId}, title: {$pageTitle}, by user {$user->getId()}" );
 			$this->redirect( 'admin_pages', [], ['success', 'Page deleted successfully'] );
 		}
 		catch( \Exception $e )
 		{
-			$this->redirect( 'admin_pages', [], ['error', 'Failed to delete page: ' . $e->getMessage()] );
+			Log::error( "Exception during page deletion: Page {$pageId}, user {$user->getId()}: {$e->getMessage()}", [
+				'exception' => $e,
+				'trace' => $e->getTraceAsString()
+			] );
+			$this->redirect( 'admin_pages', [], ['error', 'Failed to delete page. Please try again.'] );
 		}
 	}
 }

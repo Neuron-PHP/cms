@@ -66,7 +66,10 @@ class EditorJsRenderer
 	 */
 	private function renderHeader( array $data ): string
 	{
-		$level = $data['level'] ?? 2;
+		// Sanitize header level: coerce to int and clamp to valid range (1-6)
+		$rawLevel = $data['level'] ?? 2;
+		$level = max( 1, min( 6, intval( $rawLevel ) ) );
+
 		$text = $this->parseInlineContent( $data['text'] ?? '' );
 
 		return "<h{$level} class='my-4'>{$text}</h{$level}>\n";

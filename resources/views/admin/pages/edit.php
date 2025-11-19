@@ -134,8 +134,16 @@
 <script src="https://cdn.jsdelivr.net/npm/@editorjs/raw@latest"></script>
 
 <script>
-// Load existing content
-const existingContent = <?= $page->getContentRaw() ?>;
+// Load existing content safely
+const existingContentJson = <?= json_encode($page->getContentRaw(), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
+
+let existingContent;
+try {
+	existingContent = JSON.parse(existingContentJson);
+} catch (error) {
+	console.error('Failed to parse existing content:', error);
+	existingContent = { blocks: [] };
+}
 
 const editor = new EditorJS({
 	holder: 'editorjs',
