@@ -35,7 +35,6 @@ class WidgetRenderer
 		return match( $widgetType )
 		{
 			'latest-posts' => $this->renderLatestPosts( $config ),
-			'contact-form' => $this->renderContactForm( $config ),
 			default => $this->renderUnknownWidget( $widgetType )
 		};
 	}
@@ -89,52 +88,6 @@ class WidgetRenderer
 		}
 
 		$html .= "  </div>\n";
-		$html .= "</div>\n";
-
-		return $html;
-	}
-
-	/**
-	 * Render contact form widget
-	 *
-	 * Attributes:
-	 * - form_id: Form identifier (default: 'contact')
-	 * - recipient: Email recipient (optional)
-	 * - title: Form title (default: 'Contact Us')
-	 */
-	private function renderContactForm( array $config ): string
-	{
-		$formId = htmlspecialchars( $config['form_id'] ?? 'contact' );
-		$recipient = htmlspecialchars( $config['recipient'] ?? '' );
-		$title = htmlspecialchars( $config['title'] ?? 'Contact Us' );
-
-		$html = "<div class='contact-form-widget'>\n";
-		$html .= "  <h3 class='mb-4'>{$title}</h3>\n";
-		$html .= "  <form method='POST' action='/contact/submit' class='needs-validation'>\n";
-		$html .= "    <input type='hidden' name='form_id' value='{$formId}'>\n";
-
-		if( $recipient )
-		{
-			$html .= "    <input type='hidden' name='recipient' value='{$recipient}'>\n";
-		}
-
-		$html .= "    <div class='mb-3'>\n";
-		$html .= "      <label for='name' class='form-label'>Name</label>\n";
-		$html .= "      <input type='text' id='name' name='name' class='form-control' required>\n";
-		$html .= "    </div>\n";
-
-		$html .= "    <div class='mb-3'>\n";
-		$html .= "      <label for='email' class='form-label'>Email</label>\n";
-		$html .= "      <input type='email' id='email' name='email' class='form-control' required>\n";
-		$html .= "    </div>\n";
-
-		$html .= "    <div class='mb-3'>\n";
-		$html .= "      <label for='message' class='form-label'>Message</label>\n";
-		$html .= "      <textarea id='message' name='message' class='form-control' rows='5' required></textarea>\n";
-		$html .= "    </div>\n";
-
-		$html .= "    <button type='submit' class='btn btn-primary'>Send Message</button>\n";
-		$html .= "  </form>\n";
 		$html .= "</div>\n";
 
 		return $html;

@@ -64,7 +64,8 @@ class ShortcodeParser
 	public function parse( string $content ): string
 	{
 		// Match [shortcode attr="value" attr2="value2"]
-		$pattern = '/\[(\w+)((?:\s+\w+=["\'][^"\']*["\'])*)\]/';
+		// Supports hyphens in shortcode names and attribute names
+		$pattern = '/\[([\w-]+)((?:\s+[\w-]+=["\'][^"\']*["\'])*)\]/';
 
 		return preg_replace_callback( $pattern, function( $matches )
 		{
@@ -91,7 +92,8 @@ class ShortcodeParser
 		$attrs = [];
 
 		// Match attr="value" or attr='value'
-		preg_match_all( '/(\w+)=["\']([^"\']*)["\']/', $attrString, $matches, PREG_SET_ORDER );
+		// Supports hyphens in attribute names (e.g., data-id="value")
+		preg_match_all( '/([\w-]+)=["\']([^"\']*)["\']/', $attrString, $matches, PREG_SET_ORDER );
 
 		foreach( $matches as $match )
 		{
@@ -149,12 +151,7 @@ class ShortcodeParser
 			{
 				return match( $shortcode )
 				{
-					'calendar' => $this->_widgetRenderer->render( 'calendar', $attrs ),
 					'latest-posts' => $this->_widgetRenderer->render( 'latest-posts', $attrs ),
-					'contact-form' => $this->_widgetRenderer->render( 'contact-form', $attrs ),
-					'pricing' => $this->_widgetRenderer->render( 'pricing-table', $attrs ),
-					'team' => $this->_widgetRenderer->render( 'team-members', $attrs ),
-					'testimonials' => $this->_widgetRenderer->render( 'testimonials', $attrs ),
 					default => "<!-- Unknown shortcode: [{$shortcode}] -->"
 				};
 			}
@@ -176,13 +173,6 @@ class ShortcodeParser
 	 */
 	private function hasBuiltInShortcode( string $shortcode ): bool
 	{
-		return in_array( $shortcode, [
-			'calendar',
-			'latest-posts',
-			'contact-form',
-			'pricing',
-			'team',
-			'testimonials'
-		] );
+		return $shortcode === 'latest-posts';
 	}
 }

@@ -85,6 +85,9 @@ class Updater
 	/**
 	 * Generate URL-friendly slug from title
 	 *
+	 * For titles with only non-ASCII characters (e.g., "你好", "مرحبا"),
+	 * generates a fallback slug using uniqid().
+	 *
 	 * @param string $title
 	 * @return string
 	 */
@@ -93,6 +96,14 @@ class Updater
 		$slug = strtolower( trim( $title ) );
 		$slug = preg_replace( '/[^a-z0-9-]/', '-', $slug );
 		$slug = preg_replace( '/-+/', '-', $slug );
-		return trim( $slug, '-' );
+		$slug = trim( $slug, '-' );
+
+		// Fallback for titles with no ASCII characters
+		if( $slug === '' )
+		{
+			$slug = 'post-' . uniqid();
+		}
+
+		return $slug;
 	}
 }

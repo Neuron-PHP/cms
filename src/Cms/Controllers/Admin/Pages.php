@@ -222,7 +222,8 @@ class Pages extends Content
 		// Check permissions
 		if( !$user->isAdmin() && !$user->isEditor() && $page->getAuthorId() !== $user->getId() )
 		{
-			throw new \RuntimeException( 'Unauthorized to edit this page' );
+			Log::warning( "Unauthorized edit attempt by user {$user->getId()} on page {$pageId}" );
+			$this->redirect( 'admin_pages', [], ['error', 'Unauthorized to edit this page'] );
 		}
 
 		// Generate CSRF token
