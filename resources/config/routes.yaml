@@ -214,6 +214,43 @@ routes:
     controller: Neuron\Cms\Controllers\Admin\Tags@destroy
     filter: auth
 
+  # Page Management
+  admin_pages:
+    method: GET
+    route: /admin/pages
+    controller: Neuron\Cms\Controllers\Admin\Pages@index
+    filter: auth
+
+  admin_pages_create:
+    method: GET
+    route: /admin/pages/create
+    controller: Neuron\Cms\Controllers\Admin\Pages@create
+    filter: auth
+
+  admin_pages_store:
+    method: POST
+    route: /admin/pages
+    controller: Neuron\Cms\Controllers\Admin\Pages@store
+    filter: auth
+
+  admin_pages_edit:
+    method: GET
+    route: /admin/pages/:id/edit
+    controller: Neuron\Cms\Controllers\Admin\Pages@edit
+    filter: auth
+
+  admin_pages_update:
+    method: PUT
+    route: /admin/pages/:id
+    controller: Neuron\Cms\Controllers\Admin\Pages@update
+    filter: auth
+
+  admin_pages_destroy:
+    method: DELETE
+    route: /admin/pages/:id
+    controller: Neuron\Cms\Controllers\Admin\Pages@destroy
+    filter: auth
+
   # Homepage
   home:
     method: GET
@@ -250,6 +287,12 @@ routes:
     method: GET
     route: /rss
     controller: Neuron\Cms\Controllers\Blog@feed
+
+  # Public Pages
+  page_show:
+    method: GET
+    route: /pages/:slug
+    controller: Neuron\Cms\Controllers\Pages@show
 
   # Member Registration Routes
   register:
