@@ -36,7 +36,7 @@ class Creator
 	 * Create a new post
 	 *
 	 * @param string $title Post title
-	 * @param string $body Post body content
+	 * @param string $content Editor.js JSON content
 	 * @param int $authorId Author user ID
 	 * @param string $status Post status (draft, published, scheduled)
 	 * @param string|null $slug Optional custom slug (auto-generated if not provided)
@@ -48,7 +48,7 @@ class Creator
 	 */
 	public function create(
 		string $title,
-		string $body,
+		string $content,
 		int $authorId,
 		string $status,
 		?string $slug = null,
@@ -61,7 +61,7 @@ class Creator
 		$post = new Post();
 		$post->setTitle( $title );
 		$post->setSlug( $slug ?: $this->generateSlug( $title ) );
-		$post->setBody( $body );
+		$post->setContent( $content );
 		$post->setExcerpt( $excerpt );
 		$post->setFeaturedImage( $featuredImage );
 		$post->setAuthorId( $authorId );
