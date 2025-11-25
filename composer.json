@@ -21,7 +21,8 @@
     },
     "require-dev": {
         "phpunit/phpunit": "9.*",
-        "mikey179/vfsstream": "^1.6"
+        "mikey179/vfsstream": "^1.6",
+        "neuron-php/scaffolding": "0.8.*"
     },
     "autoload": {
         "psr-4": {
@@ -37,11 +38,6 @@
     "autoload-dev": {
         "psr-4": {
             "Tests\\": "tests/"
-        }
-    },
-    "extra": {
-        "neuron": {
-            "cli-provider": "Neuron\\Cms\\Cli\\Provider"
         }
     }
 }
