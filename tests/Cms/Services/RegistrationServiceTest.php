@@ -7,8 +7,8 @@ use Neuron\Cms\Auth\PasswordHasher;
 use Neuron\Cms\Models\User;
 use Neuron\Cms\Repositories\IUserRepository;
 use Neuron\Cms\Services\Member\RegistrationService;
-use Neuron\Data\Setting\Source\Memory;
-use Neuron\Data\Setting\SettingManager;
+use Neuron\Data\Settings\Source\Memory;
+use Neuron\Data\Settings\SettingManager;
 use Neuron\Events\Emitter;
 use PHPUnit\Framework\TestCase;
 

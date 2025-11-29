@@ -8,8 +8,8 @@ use Neuron\Cms\Models\PasswordResetToken;
 use Neuron\Cms\Models\User;
 use Neuron\Cms\Repositories\IPasswordResetTokenRepository;
 use Neuron\Cms\Repositories\IUserRepository;
-use Neuron\Data\Setting\Source\Memory;
-use Neuron\Data\Setting\SettingManager;
+use Neuron\Data\Settings\Source\Memory;
+use Neuron\Data\Settings\SettingManager;
 use PHPUnit\Framework\TestCase;
 
 class PasswordResetterTest extends TestCase

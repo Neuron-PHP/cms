@@ -5,7 +5,7 @@ namespace Neuron\Cms\Tests\Repositories;
 use PHPUnit\Framework\TestCase;
 use Neuron\Cms\Repositories\DatabaseUserRepository;
 use Neuron\Cms\Models\User;
-use Neuron\Data\Setting\SettingManager;
+use Neuron\Data\Settings\SettingManager;
 use PDO;
 use DateTimeImmutable;
 

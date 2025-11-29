@@ -8,7 +8,7 @@ use Neuron\Cms\Services\Category\Creator;
 use Neuron\Cms\Services\Category\Updater;
 use Neuron\Cms\Services\Category\Deleter;
 use Neuron\Core\Exceptions\NotFound;
-use Neuron\Data\Setting\SettingManager;
+use Neuron\Data\Settings\SettingManager;
 use Neuron\Mvc\Application;
 use Neuron\Mvc\Requests\Request;
 use Neuron\Mvc\Responses\HttpResponseStatus;

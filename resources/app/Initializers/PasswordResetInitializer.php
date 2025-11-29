@@ -6,7 +6,7 @@ use Neuron\Cms\Auth\PasswordHasher;
 use Neuron\Cms\Services\Auth\PasswordResetter;
 use Neuron\Cms\Repositories\DatabasePasswordResetTokenRepository;
 use Neuron\Cms\Repositories\DatabaseUserRepository;
-use Neuron\Data\Setting\SettingManager;
+use Neuron\Data\Settings\SettingManager;
 use Neuron\Log\Log;
 use Neuron\Patterns\Registry;
 use Neuron\Patterns\IRunnable;

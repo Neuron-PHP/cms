@@ -7,7 +7,7 @@ use Neuron\Cms\Models\User;
 use Neuron\Cms\Repositories\IEmailVerificationTokenRepository;
 use Neuron\Cms\Repositories\IUserRepository;
 use Neuron\Cms\Services\Email\Sender;
-use Neuron\Data\Setting\SettingManager;
+use Neuron\Data\Settings\SettingManager;
 use Neuron\Log\Log;
 use Exception;
 
@@ -159,6 +159,9 @@ class EmailVerifier
 		$this->_tokenRepository->deleteByToken( hash( 'sha256', $plainToken ) );
 
 		Log::info( "Email verified for user: {$user->getUsername()}" );
+
+		// Emit email verified event
+		\Neuron\Application\CrossCutting\Event::emit( new \Neuron\Cms\Events\EmailVerifiedEvent( $user ) );
 
 		return true;
 	}

@@ -7,7 +7,7 @@ use Neuron\Cms\Models\PasswordResetToken;
 use Neuron\Cms\Repositories\IPasswordResetTokenRepository;
 use Neuron\Cms\Repositories\IUserRepository;
 use Neuron\Cms\Services\Email\Sender;
-use Neuron\Data\Setting\SettingManager;
+use Neuron\Data\Settings\SettingManager;
 use Neuron\Log\Log;
 use Exception;
 
@@ -103,6 +103,12 @@ class PasswordResetter
 		// Send reset email
 		$this->sendResetEmail( $email, $plainToken );
 
+		// Emit password reset requested event
+		\Neuron\Application\CrossCutting\Event::emit( new \Neuron\Cms\Events\PasswordResetRequestedEvent(
+			$user,
+			$_SERVER['REMOTE_ADDR'] ?? 'unknown'
+		) );
+
 		return true;
 	}
 
@@ -165,6 +171,12 @@ class PasswordResetter
 
 		// Delete the token
 		$this->_tokenRepository->deleteByToken( hash( 'sha256', $plainToken ) );
+
+		// Emit password reset completed event
+		\Neuron\Application\CrossCutting\Event::emit( new \Neuron\Cms\Events\PasswordResetCompletedEvent(
+			$user,
+			$_SERVER['REMOTE_ADDR'] ?? 'unknown'
+		) );
 
 		return true;
 	}

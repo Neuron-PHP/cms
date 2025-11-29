@@ -29,7 +29,7 @@ class AuthInitializer implements IRunnable
 		// Get Settings from Registry
 		$settings = Registry::getInstance()->get( 'Settings' );
 
-		if( !$settings || !$settings instanceof \Neuron\Data\Setting\SettingManager )
+		if( !$settings || !$settings instanceof \Neuron\Data\Settings\SettingManager )
 		{
 			Log::error( "Settings not found in Registry, skipping auth initialization" );
 			return null;

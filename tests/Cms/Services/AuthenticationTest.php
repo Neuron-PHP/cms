@@ -8,7 +8,7 @@ use Neuron\Cms\Auth\SessionManager;
 use Neuron\Cms\Auth\PasswordHasher;
 use Neuron\Cms\Models\User;
 use Neuron\Cms\Repositories\DatabaseUserRepository;
-use Neuron\Data\Setting\SettingManager;
+use Neuron\Data\Settings\SettingManager;
 use DateTimeImmutable;
 use PDO;
 

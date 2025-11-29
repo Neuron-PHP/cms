@@ -3,7 +3,7 @@
 namespace Tests\Cms;
 
 use Neuron\Cms\Controllers\Content;
-use Neuron\Data\Setting\Source\Memory;
+use Neuron\Data\Settings\Source\Memory;
 use Neuron\Mvc\Requests\Request;
 use Neuron\Mvc\Responses\HttpResponseStatus;
 use Neuron\Patterns\Registry;
