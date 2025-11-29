@@ -1,7 +1,7 @@
 <?php
 
 use Neuron\Cms\Services\Email\Sender;
-use Neuron\Data\Setting\ISettingSource;
+use Neuron\Data\Settings\ISettingSource;
 
 if( !function_exists( 'sendEmail' ) )
 {

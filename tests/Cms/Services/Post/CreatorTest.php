@@ -42,11 +42,14 @@ class CreatorTest extends TestCase
 			->method( 'resolveFromString' )
 			->willReturn( [] );
 
+		$editorJsContent = '{"blocks":[{"type":"paragraph","data":{"text":"Test body content"}}]}';
+
 		$this->_mockPostRepository
 			->expects( $this->once() )
 			->method( 'create' )
-			->with( $this->callback( function( Post $post ) {
+			->with( $this->callback( function( Post $post ) use ( $editorJsContent ) {
 				return $post->getTitle() === 'Test Post'
+					&& $post->getContentRaw() === $editorJsContent
 					&& $post->getBody() === 'Test body content'
 					&& $post->getAuthorId() === 1
 					&& $post->getStatus() === Post::STATUS_DRAFT
@@ -56,12 +59,13 @@ class CreatorTest extends TestCase
 
 		$result = $this->_creator->create(
 			'Test Post',
-			'Test body content',
+			$editorJsContent,
 			1,
 			Post::STATUS_DRAFT
 		);
 
 		$this->assertEquals( 'Test Post', $result->getTitle() );
+		$this->assertEquals( $editorJsContent, $result->getContentRaw() );
 		$this->assertEquals( 'Test body content', $result->getBody() );
 	}
 
@@ -85,7 +89,7 @@ class CreatorTest extends TestCase
 
 		$result = $this->_creator->create(
 			'Test Post Title',
-			'Body',
+			'{"blocks":[{"type":"paragraph","data":{"text":"Body"}}]}',
 			1,
 			Post::STATUS_DRAFT
 		);
@@ -113,7 +117,7 @@ class CreatorTest extends TestCase
 
 		$result = $this->_creator->create(
 			'Test Post',
-			'Body',
+			'{"blocks":[{"type":"paragraph","data":{"text":"Body"}}]}',
 			1,
 			Post::STATUS_DRAFT,
 			'custom-slug'
@@ -143,7 +147,7 @@ class CreatorTest extends TestCase
 
 		$result = $this->_creator->create(
 			'Published Post',
-			'Body',
+			'{"blocks":[{"type":"paragraph","data":{"text":"Body"}}]}',
 			1,
 			Post::STATUS_PUBLISHED
 		);
@@ -172,7 +176,7 @@ class CreatorTest extends TestCase
 
 		$result = $this->_creator->create(
 			'Draft Post',
-			'Body',
+			'{"blocks":[{"type":"paragraph","data":{"text":"Body"}}]}',
 			1,
 			Post::STATUS_DRAFT
 		);
@@ -213,7 +217,7 @@ class CreatorTest extends TestCase
 
 		$result = $this->_creator->create(
 			'Test Post',
-			'Body',
+			'{"blocks":[{"type":"paragraph","data":{"text":"Body"}}]}',
 			1,
 			Post::STATUS_DRAFT,
 			null,
@@ -258,7 +262,7 @@ class CreatorTest extends TestCase
 
 		$result = $this->_creator->create(
 			'Test Post',
-			'Body',
+			'{"blocks":[{"type":"paragraph","data":{"text":"Body"}}]}',
 			1,
 			Post::STATUS_DRAFT,
 			null,
@@ -292,7 +296,7 @@ class CreatorTest extends TestCase
 
 		$result = $this->_creator->create(
 			'Test Post',
-			'Body',
+			'{"blocks":[{"type":"paragraph","data":{"text":"Body"}}]}',
 			1,
 			Post::STATUS_DRAFT,
 			null,

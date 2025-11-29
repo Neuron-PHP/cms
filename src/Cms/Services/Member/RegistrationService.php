@@ -6,7 +6,7 @@ use Neuron\Cms\Services\Auth\EmailVerifier;
 use Neuron\Cms\Auth\PasswordHasher;
 use Neuron\Cms\Models\User;
 use Neuron\Cms\Repositories\IUserRepository;
-use Neuron\Data\Setting\SettingManager;
+use Neuron\Data\Settings\SettingManager;
 use Neuron\Dto\Dto;
 use Neuron\Events\Emitter;
 use Neuron\Cms\Events\UserCreatedEvent;

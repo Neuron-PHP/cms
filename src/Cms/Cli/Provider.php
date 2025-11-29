@@ -55,17 +55,5 @@ class Provider
 			'cms:maintenance:status',
 			'Neuron\\Cms\\Cli\\Commands\\Maintenance\\StatusCommand'
 		);
-
-		// Email template generator
-		$registry->register(
-			'mail:generate',
-			'Neuron\\Cms\\Cli\\Commands\\Generate\\EmailCommand'
-		);
-
-		// Queue installation
-		$registry->register(
-			'queue:install',
-			'Neuron\\Cms\\Cli\\Commands\\Queue\\InstallCommand'
-		);
 	}
 }

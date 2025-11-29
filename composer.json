@@ -12,7 +12,8 @@
     "require": {
         "ext-curl": "*",
         "ext-json": "*",
-        "neuron-php/mvc": "^0.9.5",
+        "neuron-php/mvc": "0.9.*",
+        "neuron-php/data": "0.9.*",
         "neuron-php/cli": "0.8.*",
         "neuron-php/jobs": "0.2.*",
         "neuron-php/orm": "0.1.*",
@@ -21,7 +22,8 @@
     },
     "require-dev": {
         "phpunit/phpunit": "9.*",
-        "mikey179/vfsstream": "^1.6"
+        "mikey179/vfsstream": "^1.6",
+        "neuron-php/scaffolding": "0.8.*"
     },
     "autoload": {
         "psr-4": {
@@ -37,11 +39,6 @@
     "autoload-dev": {
         "psr-4": {
             "Tests\\": "tests/"
-        }
-    },
-    "extra": {
-        "neuron": {
-            "cli-provider": "Neuron\\Cms\\Cli\\Provider"
         }
     }
 }

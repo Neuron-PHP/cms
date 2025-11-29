@@ -3,7 +3,7 @@
 namespace Tests\Cms\Maintenance;
 
 use Neuron\Cms\Maintenance\MaintenanceConfig;
-use Neuron\Data\Setting\Source\Yaml;
+use Neuron\Data\Settings\Source\Yaml;
 use org\bovigo\vfs\vfsStream;
 use PHPUnit\Framework\TestCase;
 

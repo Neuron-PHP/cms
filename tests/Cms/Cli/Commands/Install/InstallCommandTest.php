@@ -5,8 +5,8 @@ namespace Tests\Cms\Cli\Commands\Install;
 use PHPUnit\Framework\TestCase;
 use Neuron\Cms\Cli\Commands\Install\InstallCommand;
 use org\bovigo\vfs\vfsStream;
-use Neuron\Data\Setting\SettingManager;
-use Neuron\Data\Setting\Source\Yaml;
+use Neuron\Data\Settings\SettingManager;
+use Neuron\Data\Settings\Source\Yaml;
 
 class InstallCommandTest extends TestCase
 {

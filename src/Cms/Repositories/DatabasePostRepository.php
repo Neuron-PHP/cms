@@ -7,7 +7,7 @@ use Neuron\Cms\Models\Post;
 use Neuron\Cms\Models\User;
 use Neuron\Cms\Models\Category;
 use Neuron\Cms\Models\Tag;
-use Neuron\Data\Setting\SettingManager;
+use Neuron\Data\Settings\SettingManager;
 use PDO;
 use Exception;
 use DateTimeImmutable;

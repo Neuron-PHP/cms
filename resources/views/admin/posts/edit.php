@@ -6,7 +6,7 @@
 
 	<div class="card">
 		<div class="card-body">
-			<form method="POST" action="<?= route_path('admin_posts_update', ['id' => $post->getId()]) ?>">
+			<form method="POST" action="<?= route_path('admin_posts_update', ['id' => $post->getId()]) ?>" id="post-form">
 				<input type="hidden" name="_method" value="PUT">
 				<?= csrf_field() ?>
 
@@ -22,9 +22,12 @@
 				</div>
 
 				<div class="mb-3">
-					<label for="content" class="form-label">Content</label>
-					<textarea class="form-control" id="content" name="content" rows="15" required><?= htmlspecialchars( $post->getBody() ) ?></textarea>
-					<small class="form-text text-muted">Markdown supported</small>
+					<label class="form-label">Content</label>
+					<div id="editorjs" style="border: 1px solid #ddd; border-radius: 0.25rem; padding: 20px; min-height: 400px; background: #fff;"></div>
+					<input type="hidden" name="content" id="content-json">
+					<small class="form-text text-muted">
+						Use shortcodes for dynamic content: <code>[latest-posts limit="5"]</code>
+					</small>
 				</div>
 
 				<div class="mb-3">
@@ -75,3 +78,87 @@
 		</div>
 	</div>
 </div>
+
+<!-- Load Editor.js -->
+<script src="https://cdn.jsdelivr.net/npm/@editorjs/editorjs@latest"></script>
+<script src="https://cdn.jsdelivr.net/npm/@editorjs/header@latest"></script>
+<script src="https://cdn.jsdelivr.net/npm/@editorjs/list@latest"></script>
+<script src="https://cdn.jsdelivr.net/npm/@editorjs/image@latest"></script>
+<script src="https://cdn.jsdelivr.net/npm/@editorjs/quote@latest"></script>
+<script src="https://cdn.jsdelivr.net/npm/@editorjs/code@latest"></script>
+<script src="https://cdn.jsdelivr.net/npm/@editorjs/delimiter@latest"></script>
+<script src="https://cdn.jsdelivr.net/npm/@editorjs/raw@latest"></script>
+
+<script>
+// Load existing content safely
+const existingContentJson = <?= json_encode($post->getContentRaw(), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
+
+let existingContent;
+try {
+	existingContent = JSON.parse(existingContentJson);
+} catch (error) {
+	console.error('Failed to parse existing content:', error);
+	existingContent = { blocks: [] };
+}
+
+const editor = new EditorJS({
+	holder: 'editorjs',
+
+	data: existingContent,
+
+	placeholder: 'Start writing your post content...',
+
+	tools: {
+		header: {
+			class: Header,
+			config: {
+				levels: [2, 3, 4],
+				defaultLevel: 2
+			}
+		},
+		list: {
+			class: List,
+			inlineToolbar: true
+		},
+		image: {
+			class: ImageTool,
+			config: {
+				endpoints: {
+					byFile: '/admin/upload/image'
+				}
+			}
+		},
+		quote: {
+			class: Quote,
+			inlineToolbar: true
+		},
+		code: CodeTool,
+		delimiter: Delimiter,
+		raw: {
+			class: RawTool,
+			config: {
+				placeholder: 'Enter HTML or shortcodes like [latest-posts limit="5"]'
+			}
+		}
+	},
+
+	onChange: async () => {
+		const savedData = await editor.save();
+		document.getElementById('content-json').value = JSON.stringify(savedData);
+	}
+});
+
+// Save content before submit
+document.getElementById('post-form').addEventListener('submit', async (e) => {
+	e.preventDefault();
+
+	try {
+		const savedData = await editor.save();
+		document.getElementById('content-json').value = JSON.stringify(savedData);
+		e.target.submit();
+	} catch (error) {
+		console.error('Error saving editor content:', error);
+		alert('Error preparing content. Please try again.');
+	}
+});
+</script>

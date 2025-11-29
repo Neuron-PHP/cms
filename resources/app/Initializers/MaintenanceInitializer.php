@@ -44,7 +44,7 @@ class MaintenanceInitializer implements IRunnable
 		$config = null;
 		$settings = Registry::getInstance()->get( 'Settings' );
 
-		if( $settings && $settings instanceof \Neuron\Data\Setting\SettingManager )
+		if( $settings && $settings instanceof \Neuron\Data\Settings\SettingManager )
 		{
 			try
 			{

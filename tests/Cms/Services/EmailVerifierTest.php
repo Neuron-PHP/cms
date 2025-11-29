@@ -7,8 +7,8 @@ use Neuron\Cms\Models\EmailVerificationToken;
 use Neuron\Cms\Models\User;
 use Neuron\Cms\Repositories\IEmailVerificationTokenRepository;
 use Neuron\Cms\Repositories\IUserRepository;
-use Neuron\Data\Setting\Source\Memory;
-use Neuron\Data\Setting\SettingManager;
+use Neuron\Data\Settings\Source\Memory;
+use Neuron\Data\Settings\SettingManager;
 use PHPUnit\Framework\TestCase;
 
 class EmailVerifierTest extends TestCase

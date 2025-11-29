@@ -5,7 +5,7 @@ namespace Neuron\Cms\Tests\Repositories;
 use PHPUnit\Framework\TestCase;
 use Neuron\Cms\Repositories\DatabaseEmailVerificationTokenRepository;
 use Neuron\Cms\Models\EmailVerificationToken;
-use Neuron\Data\Setting\SettingManager;
+use Neuron\Data\Settings\SettingManager;
 use PDO;
 use DateTimeImmutable;
 

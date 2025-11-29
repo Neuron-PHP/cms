@@ -36,7 +36,9 @@ class UpdaterTest extends TestCase
 		$post = new Post();
 		$post->setId( 1 );
 		$post->setTitle( 'Original Title' );
-		$post->setBody( 'Original Body' );
+		$post->setContent( '{"blocks":[{"type":"paragraph","data":{"text":"Original Body"}}]}' );
+
+		$updatedContent = '{"blocks":[{"type":"paragraph","data":{"text":"Updated Body"}}]}';
 
 		$this->_mockCategoryRepository
 			->method( 'findByIds' )
@@ -49,8 +51,9 @@ class UpdaterTest extends TestCase
 		$this->_mockPostRepository
 			->expects( $this->once() )
 			->method( 'update' )
-			->with( $this->callback( function( Post $p ) {
+			->with( $this->callback( function( Post $p ) use ( $updatedContent ) {
 				return $p->getTitle() === 'Updated Title'
+					&& $p->getContentRaw() === $updatedContent
 					&& $p->getBody() === 'Updated Body'
 					&& $p->getStatus() === Post::STATUS_PUBLISHED;
 			} ) );
@@ -58,11 +61,12 @@ class UpdaterTest extends TestCase
 		$result = $this->_updater->update(
 			$post,
 			'Updated Title',
-			'Updated Body',
+			$updatedContent,
 			Post::STATUS_PUBLISHED
 		);
 
 		$this->assertEquals( 'Updated Title', $result->getTitle() );
+		$this->assertEquals( $updatedContent, $result->getContentRaw() );
 		$this->assertEquals( 'Updated Body', $result->getBody() );
 		$this->assertEquals( Post::STATUS_PUBLISHED, $result->getStatus() );
 	}
@@ -90,7 +94,7 @@ class UpdaterTest extends TestCase
 		$result = $this->_updater->update(
 			$post,
 			'New Post Title',
-			'Body',
+			'{"blocks":[{"type":"paragraph","data":{"text":"Body"}}]}',
 			Post::STATUS_DRAFT
 		);
 
@@ -120,7 +124,7 @@ class UpdaterTest extends TestCase
 		$result = $this->_updater->update(
 			$post,
 			'Title',
-			'Body',
+			'{"blocks":[{"type":"paragraph","data":{"text":"Body"}}]}',
 			Post::STATUS_DRAFT,
 			'custom-slug'
 		);
@@ -164,7 +168,7 @@ class UpdaterTest extends TestCase
 		$result = $this->_updater->update(
 			$post,
 			'Title',
-			'Body',
+			'{"blocks":[{"type":"paragraph","data":{"text":"Body"}}]}',
 			Post::STATUS_DRAFT,
 			null,
 			null,
@@ -211,7 +215,7 @@ class UpdaterTest extends TestCase
 		$result = $this->_updater->update(
 			$post,
 			'Title',
-			'Body',
+			'{"blocks":[{"type":"paragraph","data":{"text":"Body"}}]}',
 			Post::STATUS_DRAFT,
 			null,
 			null,
@@ -247,7 +251,7 @@ class UpdaterTest extends TestCase
 		$result = $this->_updater->update(
 			$post,
 			'Title',
-			'Body',
+			'{"blocks":[{"type":"paragraph","data":{"text":"Body"}}]}',
 			Post::STATUS_DRAFT,
 			null,
 			'New excerpt',
@@ -278,7 +282,7 @@ class UpdaterTest extends TestCase
 		$result = $this->_updater->update(
 			$post,
 			'Updated',
-			'Body',
+			'{"blocks":[{"type":"paragraph","data":{"text":"Body"}}]}',
 			Post::STATUS_DRAFT
 		);
 
@@ -314,7 +318,7 @@ class UpdaterTest extends TestCase
 		$result = $this->_updater->update(
 			$post,
 			'Published Post',
-			'Body',
+			'{"blocks":[{"type":"paragraph","data":{"text":"Body"}}]}',
 			Post::STATUS_PUBLISHED
 		);
 
@@ -350,7 +354,7 @@ class UpdaterTest extends TestCase
 		$result = $this->_updater->update(
 			$post,
 			'Updated Published Post',
-			'Body',
+			'{"blocks":[{"type":"paragraph","data":{"text":"Body"}}]}',
 			Post::STATUS_PUBLISHED
 		);
 

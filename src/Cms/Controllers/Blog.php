@@ -6,6 +6,9 @@ use Neuron\Cms\Models\Post;
 use Neuron\Cms\Repositories\DatabasePostRepository;
 use Neuron\Cms\Repositories\DatabaseCategoryRepository;
 use Neuron\Cms\Repositories\DatabaseTagRepository;
+use Neuron\Cms\Services\Content\EditorJsRenderer;
+use Neuron\Cms\Services\Content\ShortcodeParser;
+use Neuron\Cms\Services\Widget\WidgetRenderer;
 use Neuron\Core\Exceptions\NotFound;
 use Neuron\Mvc\Application;
 use Neuron\Mvc\Requests\Request;
@@ -17,6 +20,7 @@ class Blog extends Content
 	private DatabasePostRepository $_postRepository;
 	private DatabaseCategoryRepository $_categoryRepository;
 	private DatabaseTagRepository $_tagRepository;
+	private EditorJsRenderer $_renderer;
 
 	/**
 	 * @param Application|null $app
@@ -33,6 +37,11 @@ class Blog extends Content
 		$this->_postRepository = new DatabasePostRepository( $settings );
 		$this->_categoryRepository = new DatabaseCategoryRepository( $settings );
 		$this->_tagRepository = new DatabaseTagRepository( $settings );
+
+		// Initialize renderer with shortcode support
+		$widgetRenderer = new WidgetRenderer( $this->_postRepository );
+		$shortcodeParser = new ShortcodeParser( $widgetRenderer );
+		$this->_renderer = new EditorJsRenderer( $shortcodeParser );
 	}
 
 	/**
@@ -94,12 +103,17 @@ class Blog extends Content
 		$categories = $this->_categoryRepository->all();
 		$tags = $this->_tagRepository->all();
 
+		// Render content from Editor.js JSON
+		$content = $post->getContent();
+		$renderedContent = $this->_renderer->render( $content );
+
 		return $this->renderHtml(
 			HttpResponseStatus::OK,
 			[
 				'Categories' => $categories,
 				'Tags'        => $tags,
 				'Post'        => $post,
+				'renderedContent' => $renderedContent,
 				'Title'       => $post->getTitle() . ' | ' . $this->getName()
 			],
 			'show'

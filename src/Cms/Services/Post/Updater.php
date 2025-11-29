@@ -36,7 +36,7 @@ class Updater
 	 *
 	 * @param Post $post The post to update
 	 * @param string $title Post title
-	 * @param string $body Post body content
+	 * @param string $content Editor.js JSON content
 	 * @param string $status Post status
 	 * @param string|null $slug Custom slug
 	 * @param string|null $excerpt Excerpt
@@ -48,7 +48,7 @@ class Updater
 	public function update(
 		Post $post,
 		string $title,
-		string $body,
+		string $content,
 		string $status,
 		?string $slug = null,
 		?string $excerpt = null,
@@ -59,7 +59,7 @@ class Updater
 	{
 		$post->setTitle( $title );
 		$post->setSlug( $slug ?: $this->generateSlug( $title ) );
-		$post->setBody( $body );
+		$post->setContent( $content );
 		$post->setExcerpt( $excerpt );
 		$post->setFeaturedImage( $featuredImage );
 		$post->setStatus( $status );
