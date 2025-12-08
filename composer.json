@@ -18,7 +18,8 @@
         "neuron-php/jobs": "0.2.*",
         "neuron-php/orm": "0.1.*",
         "neuron-php/dto": "0.0.*",
-        "phpmailer/phpmailer": "^6.9"
+        "phpmailer/phpmailer": "^6.9",
+        "cloudinary/cloudinary_php": "^2.0"
     },
     "require-dev": {
         "phpunit/phpunit": "9.*",
@@ -40,5 +41,19 @@
         "psr-4": {
             "Tests\\": "tests/"
         }
+    },
+    "extra": {
+        "neuron": {
+            "cli-provider": "Neuron\\Cms\\Cli\\Provider"
+        }
+    },
+    "scripts": {
+        "post-update-cmd": [
+            "@php -r \"echo '\\n╔════════════════════════════════════════════════╗\\n';\"",
+            "@php -r \"echo '║  Neuron CMS Updated                            ║\\n';\"",
+            "@php -r \"echo '╚════════════════════════════════════════════════╝\\n';\"",
+            "@php -r \"echo '\\n⚠️  Run upgrade command to apply changes:\\n';\"",
+            "@php -r \"echo '   php neuron cms:upgrade\\n\\n';\""
+        ]
     }
 }

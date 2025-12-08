@@ -22,6 +22,7 @@ class CreateUsersTable extends AbstractMigration
 			->addColumn( 'status', 'string', [ 'limit' => 50, 'default' => 'active' ] )
 			->addColumn( 'email_verified', 'boolean', [ 'default' => false ] )
 			->addColumn( 'two_factor_secret', 'string', [ 'limit' => 255, 'null' => true ] )
+			->addColumn( 'two_factor_recovery_codes', 'text', [ 'null' => true ] )
 			->addColumn( 'remember_token', 'string', [ 'limit' => 255, 'null' => true ] )
 			->addColumn( 'failed_login_attempts', 'integer', [ 'default' => 0 ] )
 			->addColumn( 'locked_until', 'timestamp', [ 'null' => true ] )

@@ -496,30 +496,40 @@ class Post extends Model
 
 		$post->setTitle( $data['title'] ?? '' );
 		$post->setSlug( $data['slug'] ?? '' );
-		$post->setBody( $data['body'] ?? '' );
 
-		// Handle content (could be JSON string or array)
+		// Handle content_raw first (without extracting plain text to body yet)
 		if( isset( $data['content_raw'] ) )
 		{
 			if( is_string( $data['content_raw'] ) )
 			{
-				$post->setContent( $data['content_raw'] );
+				$post->_contentRaw = $data['content_raw'];
 			}
 			elseif( is_array( $data['content_raw'] ) )
 			{
-				$post->setContentArray( $data['content_raw'] );
+				$post->_contentRaw = json_encode( $data['content_raw'] );
 			}
 		}
 		elseif( isset( $data['content'] ) )
 		{
 			if( is_string( $data['content'] ) )
 			{
-				$post->setContent( $data['content'] );
+				$post->_contentRaw = $data['content'];
 			}
 			elseif( is_array( $data['content'] ) )
 			{
-				$post->setContentArray( $data['content'] );
+				$post->_contentRaw = json_encode( $data['content'] );
 			}
+		}
+
+		// Set body - if explicitly provided, use it; otherwise extract from content_raw
+		if( isset( $data['body'] ) && $data['body'] !== '' )
+		{
+			$post->setBody( $data['body'] );
+		}
+		else
+		{
+			// Extract plain text from content_raw as fallback
+			$post->setBody( $post->extractPlainText( $post->_contentRaw ) );
 		}
 
 		$post->setExcerpt( $data['excerpt'] ?? null );

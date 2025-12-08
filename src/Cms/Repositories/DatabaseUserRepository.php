@@ -7,18 +7,17 @@ use Neuron\Cms\Models\User;
 use Neuron\Data\Settings\SettingManager;
 use PDO;
 use Exception;
-use DateTimeImmutable;
 
 /**
- * Database-backed user repository.
+ * Database-backed user repository using ORM.
  *
- * Works with SQLite, MySQL, and PostgreSQL via PDO.
+ * Works with SQLite, MySQL, and PostgreSQL via the Neuron ORM.
  *
  * @package Neuron\Cms\Repositories
  */
 class DatabaseUserRepository implements IUserRepository
 {
-	private PDO $_pdo;
+	private ?PDO $_pdo = null;
 
 	/**
 	 * Constructor
@@ -28,6 +27,7 @@ class DatabaseUserRepository implements IUserRepository
 	 */
 	public function __construct( SettingManager $settings )
 	{
+		// Keep PDO property for backwards compatibility with tests
 		$this->_pdo = ConnectionFactory::createFromSettings( $settings );
 	}
 
@@ -36,12 +36,7 @@ class DatabaseUserRepository implements IUserRepository
 	 */
 	public function findById( int $id ): ?User
 	{
-		$stmt = $this->_pdo->prepare( "SELECT * FROM users WHERE id = ? LIMIT 1" );
-		$stmt->execute( [ $id ] );
-
-		$row = $stmt->fetch();
-
-		return $row ? $this->mapRowToUser( $row ) : null;
+		return User::find( $id );
 	}
 
 	/**
@@ -49,12 +44,7 @@ class DatabaseUserRepository implements IUserRepository
 	 */
 	public function findByUsername( string $username ): ?User
 	{
-		$stmt = $this->_pdo->prepare( "SELECT * FROM users WHERE username = ? LIMIT 1" );
-		$stmt->execute( [ $username ] );
-
-		$row = $stmt->fetch();
-
-		return $row ? $this->mapRowToUser( $row ) : null;
+		return User::where( 'username', $username )->first();
 	}
 
 	/**
@@ -62,12 +52,7 @@ class DatabaseUserRepository implements IUserRepository
 	 */
 	public function findByEmail( string $email ): ?User
 	{
-		$stmt = $this->_pdo->prepare( "SELECT * FROM users WHERE email = ? LIMIT 1" );
-		$stmt->execute( [ $email ] );
-
-		$row = $stmt->fetch();
-
-		return $row ? $this->mapRowToUser( $row ) : null;
+		return User::where( 'email', $email )->first();
 	}
 
 	/**
@@ -75,12 +60,7 @@ class DatabaseUserRepository implements IUserRepository
 	 */
 	public function findByRememberToken( string $token ): ?User
 	{
-		$stmt = $this->_pdo->prepare( "SELECT * FROM users WHERE remember_token = ? LIMIT 1" );
-		$stmt->execute( [ $token ] );
-
-		$row = $stmt->fetch();
-
-		return $row ? $this->mapRowToUser( $row ) : null;
+		return User::where( 'remember_token', $token )->first();
 	}
 
 	/**
@@ -100,32 +80,11 @@ class DatabaseUserRepository implements IUserRepository
 			throw new Exception( 'Email already exists' );
 		}
 
-		$stmt = $this->_pdo->prepare(
-			"INSERT INTO users (
-				username, email, password_hash, role, status, email_verified,
-				two_factor_secret, remember_token, failed_login_attempts,
-				locked_until, last_login_at, timezone, created_at, updated_at
-			) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
-		);
+		// Use ORM create method
+		$createdUser = User::create( $user->toArray() );
 
-		$stmt->execute([
-			$user->getUsername(),
-			$user->getEmail(),
-			$user->getPasswordHash(),
-			$user->getRole(),
-			$user->getStatus(),
-			$user->isEmailVerified() ? 1 : 0,
-			$user->getTwoFactorSecret(),
-			$user->getRememberToken(),
-			$user->getFailedLoginAttempts(),
-			$user->getLockedUntil() ? $user->getLockedUntil()->format( 'Y-m-d H:i:s' ) : null,
-			$user->getLastLoginAt() ? $user->getLastLoginAt()->format( 'Y-m-d H:i:s' ) : null,
-			$user->getTimezone(),
-			$user->getCreatedAt()->format( 'Y-m-d H:i:s' ),
-			(new DateTimeImmutable())->format( 'Y-m-d H:i:s' )
-		]);
-
-		$user->setId( (int)$this->_pdo->lastInsertId() );
+		// Update the original user with the new ID
+		$user->setId( $createdUser->getId() );
 
 		return $user;
 	}
@@ -154,40 +113,8 @@ class DatabaseUserRepository implements IUserRepository
 			throw new Exception( 'Email already exists' );
 		}
 
-		$stmt = $this->_pdo->prepare(
-			"UPDATE users SET
-				username = ?,
-				email = ?,
-				password_hash = ?,
-				role = ?,
-				status = ?,
-				email_verified = ?,
-				two_factor_secret = ?,
-				remember_token = ?,
-				failed_login_attempts = ?,
-				locked_until = ?,
-				last_login_at = ?,
-				timezone = ?,
-				updated_at = ?
-			WHERE id = ?"
-		);
-
-		return $stmt->execute([
-			$user->getUsername(),
-			$user->getEmail(),
-			$user->getPasswordHash(),
-			$user->getRole(),
-			$user->getStatus(),
-			$user->isEmailVerified() ? 1 : 0,
-			$user->getTwoFactorSecret(),
-			$user->getRememberToken(),
-			$user->getFailedLoginAttempts(),
-			$user->getLockedUntil() ? $user->getLockedUntil()->format( 'Y-m-d H:i:s' ) : null,
-			$user->getLastLoginAt() ? $user->getLastLoginAt()->format( 'Y-m-d H:i:s' ) : null,
-			$user->getTimezone(),
-			(new DateTimeImmutable())->format( 'Y-m-d H:i:s' ),
-			$user->getId()
-		]);
+		// Use ORM save method
+		return $user->save();
 	}
 
 	/**
@@ -195,10 +122,9 @@ class DatabaseUserRepository implements IUserRepository
 	 */
 	public function delete( int $id ): bool
 	{
-		$stmt = $this->_pdo->prepare( "DELETE FROM users WHERE id = ?" );
-		$stmt->execute( [ $id ] );
+		$deletedCount = User::query()->where( 'id', $id )->delete();
 
-		return $stmt->rowCount() > 0;
+		return $deletedCount > 0;
 	}
 
 	/**
@@ -206,10 +132,7 @@ class DatabaseUserRepository implements IUserRepository
 	 */
 	public function all(): array
 	{
-		$stmt = $this->_pdo->query( "SELECT * FROM users ORDER BY created_at DESC" );
-		$rows = $stmt->fetchAll();
-
-		return array_map( [ $this, 'mapRowToUser' ], $rows );
+		return User::orderBy( 'created_at', 'DESC' )->all();
 	}
 
 	/**
@@ -217,47 +140,6 @@ class DatabaseUserRepository implements IUserRepository
 	 */
 	public function count(): int
 	{
-		$stmt = $this->_pdo->query( "SELECT COUNT(*) as total FROM users" );
-		$row = $stmt->fetch();
-
-		return (int)$row['total'];
-	}
-
-	/**
-	 * Map database row to User object
-	 *
-	 * @param array $row Database row
-	 * @return User
-	 */
-	private function mapRowToUser( array $row ): User
-	{
-		$emailVerifiedRaw = $row['email_verified'] ?? null;
-		$emailVerified = is_bool( $emailVerifiedRaw )
-			? $emailVerifiedRaw
-			: in_array(
-				strtolower( (string)$emailVerifiedRaw ),
-				[ '1', 'true', 't', 'yes', 'on' ],
-				true
-			);
-
-		$data = [
-			'id' => (int)$row['id'],
-			'username' => $row['username'],
-			'email' => $row['email'],
-			'password_hash' => $row['password_hash'],
-			'role' => $row['role'],
-			'status' => $row['status'],
-			'email_verified' => $emailVerified,
-			'two_factor_secret' => $row['two_factor_secret'],
-			'remember_token' => $row['remember_token'],
-			'failed_login_attempts' => (int)$row['failed_login_attempts'],
-			'locked_until' => $row['locked_until'] ?? null,
-			'last_login_at' => $row['last_login_at'] ?? null,
-			'timezone' => $row['timezone'] ?? 'UTC',
-			'created_at' => $row['created_at'],
-			'updated_at' => $row['updated_at'] ?? null,
-		];
-
-		return User::fromArray( $data );
+		return User::query()->count();
 	}
 }

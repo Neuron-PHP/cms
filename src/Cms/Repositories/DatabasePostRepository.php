@@ -4,18 +4,16 @@ namespace Neuron\Cms\Repositories;
 
 use Neuron\Cms\Database\ConnectionFactory;
 use Neuron\Cms\Models\Post;
-use Neuron\Cms\Models\User;
 use Neuron\Cms\Models\Category;
 use Neuron\Cms\Models\Tag;
 use Neuron\Data\Settings\SettingManager;
 use PDO;
 use Exception;
-use DateTimeImmutable;
 
 /**
- * Database-backed post repository.
+ * Database-backed post repository using ORM.
  *
- * Works with SQLite, MySQL, and PostgreSQL via PDO.
+ * Works with SQLite, MySQL, and PostgreSQL via the Neuron ORM.
  *
  * @package Neuron\Cms\Repositories
  */
@@ -31,6 +29,7 @@ class DatabasePostRepository implements IPostRepository
 	 */
 	public function __construct( SettingManager $settings )
 	{
+		// Keep PDO for methods that need raw SQL queries (getByCategory, getByTag)
 		$this->_pdo = ConnectionFactory::createFromSettings( $settings );
 	}
 
@@ -39,9 +38,8 @@ class DatabasePostRepository implements IPostRepository
 	 */
 	public function findById( int $id ): ?Post
 	{
-		$stmt = $this->_pdo->prepare( "SELECT * FROM posts WHERE id = ? LIMIT 1" );
+		$stmt = $this->_pdo->prepare( "SELECT * FROM posts WHERE id = ?" );
 		$stmt->execute( [ $id ] );
-
 		$row = $stmt->fetch();
 
 		if( !$row )
@@ -49,7 +47,10 @@ class DatabasePostRepository implements IPostRepository
 			return null;
 		}
 
-		return $this->mapRowToPost( $row );
+		$post = Post::fromArray( $row );
+		$this->loadRelations( $post );
+
+		return $post;
 	}
 
 	/**
@@ -57,9 +58,8 @@ class DatabasePostRepository implements IPostRepository
 	 */
 	public function findBySlug( string $slug ): ?Post
 	{
-		$stmt = $this->_pdo->prepare( "SELECT * FROM posts WHERE slug = ? LIMIT 1" );
+		$stmt = $this->_pdo->prepare( "SELECT * FROM posts WHERE slug = ?" );
 		$stmt->execute( [ $slug ] );
-
 		$row = $stmt->fetch();
 
 		if( !$row )
@@ -67,7 +67,46 @@ class DatabasePostRepository implements IPostRepository
 			return null;
 		}
 
-		return $this->mapRowToPost( $row );
+		$post = Post::fromArray( $row );
+		$this->loadRelations( $post );
+
+		return $post;
+	}
+
+	/**
+	 * Load categories and tags for a post
+	 */
+	private function loadRelations( Post $post ): void
+	{
+		// Load categories
+		$stmt = $this->_pdo->prepare(
+			"SELECT c.* FROM categories c
+			INNER JOIN post_categories pc ON c.id = pc.category_id
+			WHERE pc.post_id = ?"
+		);
+		$stmt->execute( [ $post->getId() ] );
+		$categoryRows = $stmt->fetchAll();
+
+		$categories = array_map(
+			fn( $row ) => Category::fromArray( $row ),
+			$categoryRows
+		);
+		$post->setCategories( $categories );
+
+		// Load tags
+		$stmt = $this->_pdo->prepare(
+			"SELECT t.* FROM tags t
+			INNER JOIN post_tags pt ON t.id = pt.tag_id
+			WHERE pt.post_id = ?"
+		);
+		$stmt->execute( [ $post->getId() ] );
+		$tagRows = $stmt->fetchAll();
+
+		$tags = array_map(
+			fn( $row ) => Tag::fromArray( $row ),
+			$tagRows
+		);
+		$post->setTags( $tags );
 	}
 
 	/**
@@ -81,41 +120,24 @@ class DatabasePostRepository implements IPostRepository
 			throw new Exception( 'Slug already exists' );
 		}
 
-		$stmt = $this->_pdo->prepare(
-			"INSERT INTO posts (
-				title, slug, body, excerpt, featured_image, author_id,
-				status, published_at, view_count, created_at, updated_at
-			) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
-		);
+		// Use ORM create method - only save the post data without relations
+		$createdPost = Post::create( $post->toArray() );
 
-		$stmt->execute([
-			$post->getTitle(),
-			$post->getSlug(),
-			$post->getBody(),
-			$post->getExcerpt(),
-			$post->getFeaturedImage(),
-			$post->getAuthorId(),
-			$post->getStatus(),
-			$post->getPublishedAt() ? $post->getPublishedAt()->format( 'Y-m-d H:i:s' ) : null,
-			$post->getViewCount(),
-			$post->getCreatedAt()->format( 'Y-m-d H:i:s' ),
-			(new DateTimeImmutable())->format( 'Y-m-d H:i:s' )
-		]);
+		// Update the original post with the new ID
+		$post->setId( $createdPost->getId() );
 
-		$post->setId( (int)$this->_pdo->lastInsertId() );
-
-		// Handle categories
+		// Sync categories using raw SQL (vendor ORM doesn't have relation() method yet)
 		if( count( $post->getCategories() ) > 0 )
 		{
 			$categoryIds = array_map( fn( $c ) => $c->getId(), $post->getCategories() );
-			$this->attachCategories( $post->getId(), $categoryIds );
+			$this->syncCategories( $post->getId(), $categoryIds );
 		}
 
-		// Handle tags
+		// Sync tags using raw SQL
 		if( count( $post->getTags() ) > 0 )
 		{
 			$tagIds = array_map( fn( $t ) => $t->getId(), $post->getTags() );
-			$this->attachTags( $post->getId(), $tagIds );
+			$this->syncTags( $post->getId(), $tagIds );
 		}
 
 		return $post;
@@ -138,50 +160,48 @@ class DatabasePostRepository implements IPostRepository
 			throw new Exception( 'Slug already exists' );
 		}
 
-		$stmt = $this->_pdo->prepare(
-			"UPDATE posts SET
-				title = ?,
-				slug = ?,
-				body = ?,
-				excerpt = ?,
-				featured_image = ?,
-				author_id = ?,
-				status = ?,
-				published_at = ?,
-				view_count = ?,
-				updated_at = ?
-			WHERE id = ?"
-		);
+		// Update using raw SQL because Post model uses private properties
+		// that aren't tracked by ORM's attribute system
+		$data = $post->toArray();
+		$data['updated_at'] = ( new \DateTimeImmutable() )->format( 'Y-m-d H:i:s' );
 
-		$result = $stmt->execute([
-			$post->getTitle(),
-			$post->getSlug(),
-			$post->getBody(),
-			$post->getExcerpt(),
-			$post->getFeaturedImage(),
-			$post->getAuthorId(),
-			$post->getStatus(),
-			$post->getPublishedAt() ? $post->getPublishedAt()->format( 'Y-m-d H:i:s' ) : null,
-			$post->getViewCount(),
-			(new DateTimeImmutable())->format( 'Y-m-d H:i:s' ),
+		$sql = "UPDATE posts SET
+			title = ?,
+			slug = ?,
+			body = ?,
+			content_raw = ?,
+			excerpt = ?,
+			featured_image = ?,
+			author_id = ?,
+			status = ?,
+			published_at = ?,
+			view_count = ?,
+			updated_at = ?
+		WHERE id = ?";
+
+		$stmt = $this->_pdo->prepare( $sql );
+		$result = $stmt->execute( [
+			$data['title'],
+			$data['slug'],
+			$data['body'],
+			$data['content_raw'],
+			$data['excerpt'],
+			$data['featured_image'],
+			$data['author_id'],
+			$data['status'],
+			$data['published_at'],
+			$data['view_count'],
+			$data['updated_at'],
 			$post->getId()
-		]);
+		] );
 
-		// Update categories
-		$this->detachCategories( $post->getId() );
-		if( count( $post->getCategories() ) > 0 )
-		{
-			$categoryIds = array_map( fn( $c ) => $c->getId(), $post->getCategories() );
-			$this->attachCategories( $post->getId(), $categoryIds );
-		}
+		// Sync categories using raw SQL
+		$categoryIds = array_map( fn( $c ) => $c->getId(), $post->getCategories() );
+		$this->syncCategories( $post->getId(), $categoryIds );
 
-		// Update tags
-		$this->detachTags( $post->getId() );
-		if( count( $post->getTags() ) > 0 )
-		{
-			$tagIds = array_map( fn( $t ) => $t->getId(), $post->getTags() );
-			$this->attachTags( $post->getId(), $tagIds );
-		}
+		// Sync tags using raw SQL
+		$tagIds = array_map( fn( $t ) => $t->getId(), $post->getTags() );
+		$this->syncTags( $post->getId(), $tagIds );
 
 		return $result;
 	}
@@ -192,10 +212,9 @@ class DatabasePostRepository implements IPostRepository
 	public function delete( int $id ): bool
 	{
 		// Foreign key constraints will handle cascade delete of relationships
-		$stmt = $this->_pdo->prepare( "DELETE FROM posts WHERE id = ?" );
-		$stmt->execute( [ $id ] );
+		$deletedCount = Post::query()->where( 'id', $id )->delete();
 
-		return $stmt->rowCount() > 0;
+		return $deletedCount > 0;
 	}
 
 	/**
@@ -203,29 +222,21 @@ class DatabasePostRepository implements IPostRepository
 	 */
 	public function all( ?string $status = null, int $limit = 0, int $offset = 0 ): array
 	{
-		$sql = "SELECT * FROM posts";
-		$params = [];
+		$query = Post::query();
 
 		if( $status )
 		{
-			$sql .= " WHERE status = ?";
-			$params[] = $status;
+			$query->where( 'status', $status );
 		}
 
-		$sql .= " ORDER BY created_at DESC";
+		$query->orderBy( 'created_at', 'DESC' );
 
 		if( $limit > 0 )
 		{
-			$sql .= " LIMIT ? OFFSET ?";
-			$params[] = $limit;
-			$params[] = $offset;
+			$query->limit( $limit )->offset( $offset );
 		}
 
-		$stmt = $this->_pdo->prepare( $sql );
-		$stmt->execute( $params );
-		$rows = $stmt->fetchAll();
-
-		return array_map( [ $this, 'mapRowToPost' ], $rows );
+		return $query->get();
 	}
 
 	/**
@@ -233,22 +244,14 @@ class DatabasePostRepository implements IPostRepository
 	 */
 	public function getByAuthor( int $authorId, ?string $status = null ): array
 	{
-		$sql = "SELECT * FROM posts WHERE author_id = ?";
-		$params = [ $authorId ];
+		$query = Post::query()->where( 'author_id', $authorId );
 
 		if( $status )
 		{
-			$sql .= " AND status = ?";
-			$params[] = $status;
+			$query->where( 'status', $status );
 		}
 
-		$sql .= " ORDER BY created_at DESC";
-
-		$stmt = $this->_pdo->prepare( $sql );
-		$stmt->execute( $params );
-		$rows = $stmt->fetchAll();
-
-		return array_map( [ $this, 'mapRowToPost' ], $rows );
+		return $query->orderBy( 'created_at', 'DESC' )->get();
 	}
 
 	/**
@@ -256,6 +259,8 @@ class DatabasePostRepository implements IPostRepository
 	 */
 	public function getByCategory( int $categoryId, ?string $status = null ): array
 	{
+		// This still uses raw SQL for the JOIN
+		// TODO: Add JOIN support to ORM QueryBuilder
 		$sql = "SELECT p.* FROM posts p
 				INNER JOIN post_categories pc ON p.id = pc.post_id
 				WHERE pc.category_id = ?";
@@ -273,7 +278,7 @@ class DatabasePostRepository implements IPostRepository
 		$stmt->execute( $params );
 		$rows = $stmt->fetchAll();
 
-		return array_map( [ $this, 'mapRowToPost' ], $rows );
+		return array_map( fn( $row ) => Post::fromArray( $row ), $rows );
 	}
 
 	/**
@@ -281,6 +286,8 @@ class DatabasePostRepository implements IPostRepository
 	 */
 	public function getByTag( int $tagId, ?string $status = null ): array
 	{
+		// This still uses raw SQL for the JOIN
+		// TODO: Add JOIN support to ORM QueryBuilder
 		$sql = "SELECT p.* FROM posts p
 				INNER JOIN post_tags pt ON p.id = pt.post_id
 				WHERE pt.tag_id = ?";
@@ -298,7 +305,7 @@ class DatabasePostRepository implements IPostRepository
 		$stmt->execute( $params );
 		$rows = $stmt->fetchAll();
 
-		return array_map( [ $this, 'mapRowToPost' ], $rows );
+		return array_map( fn( $row ) => Post::fromArray( $row ), $rows );
 	}
 
 	/**
@@ -330,20 +337,14 @@ class DatabasePostRepository implements IPostRepository
 	 */
 	public function count( ?string $status = null ): int
 	{
-		$sql = "SELECT COUNT(*) as total FROM posts";
-		$params = [];
+		$query = Post::query();
 
 		if( $status )
 		{
-			$sql .= " WHERE status = ?";
-			$params[] = $status;
+			$query->where( 'status', $status );
 		}
 
-		$stmt = $this->_pdo->prepare( $sql );
-		$stmt->execute( $params );
-		$row = $stmt->fetch();
-
-		return (int)$row['total'];
+		return $query->count();
 	}
 
 	/**
@@ -351,10 +352,57 @@ class DatabasePostRepository implements IPostRepository
 	 */
 	public function incrementViewCount( int $id ): bool
 	{
-		$stmt = $this->_pdo->prepare( "UPDATE posts SET view_count = view_count + 1 WHERE id = ?" );
-		$stmt->execute( [ $id ] );
+		$post = Post::find( $id );
 
-		return $stmt->rowCount() > 0;
+		if( !$post )
+		{
+			return false;
+		}
+
+		$post->incrementViewCount();
+		return $post->save();
+	}
+
+	/**
+	 * Sync categories for a post (removes old, adds new)
+	 */
+	private function syncCategories( int $postId, array $categoryIds ): void
+	{
+		// Delete existing categories
+		$this->_pdo->prepare( "DELETE FROM post_categories WHERE post_id = ?" )
+			->execute( [ $postId ] );
+
+		// Insert new categories
+		if( !empty( $categoryIds ) )
+		{
+			$stmt = $this->_pdo->prepare( "INSERT INTO post_categories (post_id, category_id, created_at) VALUES (?, ?, ?)" );
+			$now = ( new \DateTimeImmutable() )->format( 'Y-m-d H:i:s' );
+			foreach( $categoryIds as $categoryId )
+			{
+				$stmt->execute( [ $postId, $categoryId, $now ] );
+			}
+		}
+	}
+
+	/**
+	 * Sync tags for a post (removes old, adds new)
+	 */
+	private function syncTags( int $postId, array $tagIds ): void
+	{
+		// Delete existing tags
+		$this->_pdo->prepare( "DELETE FROM post_tags WHERE post_id = ?" )
+			->execute( [ $postId ] );
+
+		// Insert new tags
+		if( !empty( $tagIds ) )
+		{
+			$stmt = $this->_pdo->prepare( "INSERT INTO post_tags (post_id, tag_id, created_at) VALUES (?, ?, ?)" );
+			$now = ( new \DateTimeImmutable() )->format( 'Y-m-d H:i:s' );
+			foreach( $tagIds as $tagId )
+			{
+				$stmt->execute( [ $postId, $tagId, $now ] );
+			}
+		}
 	}
 
 	/**
@@ -367,17 +415,11 @@ class DatabasePostRepository implements IPostRepository
 			return true;
 		}
 
-		$stmt = $this->_pdo->prepare(
-			"INSERT INTO post_categories (post_id, category_id, created_at) VALUES (?, ?, ?)"
-		);
-
+		$stmt = $this->_pdo->prepare( "INSERT INTO post_categories (post_id, category_id, created_at) VALUES (?, ?, ?)" );
+		$now = ( new \DateTimeImmutable() )->format( 'Y-m-d H:i:s' );
 		foreach( $categoryIds as $categoryId )
 		{
-			$stmt->execute([
-				$postId,
-				$categoryId,
-				(new DateTimeImmutable())->format( 'Y-m-d H:i:s' )
-			]);
+			$stmt->execute( [ $postId, $categoryId, $now ] );
 		}
 
 		return true;
@@ -391,7 +433,7 @@ class DatabasePostRepository implements IPostRepository
 		$stmt = $this->_pdo->prepare( "DELETE FROM post_categories WHERE post_id = ?" );
 		$stmt->execute( [ $postId ] );
 
-		return true;
+		return $stmt->rowCount() > 0;
 	}
 
 	/**
@@ -404,17 +446,11 @@ class DatabasePostRepository implements IPostRepository
 			return true;
 		}
 
-		$stmt = $this->_pdo->prepare(
-			"INSERT INTO post_tags (post_id, tag_id, created_at) VALUES (?, ?, ?)"
-		);
-
+		$stmt = $this->_pdo->prepare( "INSERT INTO post_tags (post_id, tag_id, created_at) VALUES (?, ?, ?)" );
+		$now = ( new \DateTimeImmutable() )->format( 'Y-m-d H:i:s' );
 		foreach( $tagIds as $tagId )
 		{
-			$stmt->execute([
-				$postId,
-				$tagId,
-				(new DateTimeImmutable())->format( 'Y-m-d H:i:s' )
-			]);
+			$stmt->execute( [ $postId, $tagId, $now ] );
 		}
 
 		return true;
@@ -428,107 +464,6 @@ class DatabasePostRepository implements IPostRepository
 		$stmt = $this->_pdo->prepare( "DELETE FROM post_tags WHERE post_id = ?" );
 		$stmt->execute( [ $postId ] );
 
-		return true;
-	}
-
-	/**
-	 * Map database row to Post object
-	 *
-	 * @param array $row Database row
-	 * @return Post
-	 */
-	private function mapRowToPost( array $row ): Post
-	{
-		$data = [
-			'id' => (int)$row['id'],
-			'title' => $row['title'],
-			'slug' => $row['slug'],
-			'body' => $row['body'],
-			'excerpt' => $row['excerpt'],
-			'featured_image' => $row['featured_image'],
-			'author_id' => (int)$row['author_id'],
-			'status' => $row['status'],
-			'view_count' => (int)$row['view_count'],
-			'published_at' => $row['published_at'] ?? null,
-			'created_at' => $row['created_at'],
-			'updated_at' => $row['updated_at'] ?? null,
-		];
-
-		$post = Post::fromArray( $data );
-
-		// Load relationships
-		$post->setAuthor( $this->loadAuthor( $post->getAuthorId() ) );
-		$post->setCategories( $this->loadCategories( $post->getId() ) );
-		$post->setTags( $this->loadTags( $post->getId() ) );
-
-		return $post;
-	}
-
-	/**
-	 * Load categories for a post
-	 *
-	 * @param int $postId
-	 * @return Category[]
-	 */
-	private function loadCategories( int $postId ): array
-	{
-		$stmt = $this->_pdo->prepare(
-			"SELECT c.* FROM categories c
-			INNER JOIN post_categories pc ON c.id = pc.category_id
-			WHERE pc.post_id = ?
-			ORDER BY c.name ASC"
-		);
-		$stmt->execute( [ $postId ] );
-		$rows = $stmt->fetchAll();
-
-		return array_map( fn( $row ) => Category::fromArray( $row ), $rows );
-	}
-
-	/**
-	 * Load tags for a post
-	 *
-	 * @param int $postId
-	 * @return Tag[]
-	 */
-	private function loadTags( int $postId ): array
-	{
-		$stmt = $this->_pdo->prepare(
-			"SELECT t.* FROM tags t
-			INNER JOIN post_tags pt ON t.id = pt.tag_id
-			WHERE pt.post_id = ?
-			ORDER BY t.name ASC"
-		);
-		$stmt->execute( [ $postId ] );
-		$rows = $stmt->fetchAll();
-
-		return array_map( fn( $row ) => Tag::fromArray( $row ), $rows );
-	}
-
-	/**
-	 * Load author for a post
-	 *
-	 * @param int $authorId
-	 * @return User|null
-	 */
-	private function loadAuthor( int $authorId ): ?User
-	{
-		try
-		{
-			$stmt = $this->_pdo->prepare( "SELECT * FROM users WHERE id = ? LIMIT 1" );
-			$stmt->execute( [ $authorId ] );
-			$row = $stmt->fetch();
-
-			if( !$row )
-			{
-				return null;
-			}
-
-			return User::fromArray( $row );
-		}
-		catch( \PDOException $e )
-		{
-			// Users table may not exist in test environments
-			return null;
-		}
+		return $stmt->rowCount() > 0;
 	}
 }

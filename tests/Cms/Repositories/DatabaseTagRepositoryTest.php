@@ -5,6 +5,7 @@ namespace Tests\Cms\Repositories;
 use DateTimeImmutable;
 use Neuron\Cms\Models\Tag;
 use Neuron\Cms\Repositories\DatabaseTagRepository;
+use Neuron\Orm\Model;
 use PHPUnit\Framework\TestCase;
 use PDO;
 
@@ -28,6 +29,9 @@ class DatabaseTagRepositoryTest extends TestCase
 
 		// Create tables
 		$this->createTables();
+
+		// Initialize ORM with the PDO connection
+		Model::setPdo( $this->_PDO );
 
 		// Initialize repository with in-memory database
 		// Create a test subclass that allows PDO injection

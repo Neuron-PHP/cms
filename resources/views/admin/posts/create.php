@@ -72,72 +72,124 @@
 </div>
 
 <!-- Load Editor.js -->
-<script src="https://cdn.jsdelivr.net/npm/@editorjs/editorjs@latest"></script>
-<script src="https://cdn.jsdelivr.net/npm/@editorjs/header@latest"></script>
-<script src="https://cdn.jsdelivr.net/npm/@editorjs/list@latest"></script>
-<script src="https://cdn.jsdelivr.net/npm/@editorjs/image@latest"></script>
-<script src="https://cdn.jsdelivr.net/npm/@editorjs/quote@latest"></script>
-<script src="https://cdn.jsdelivr.net/npm/@editorjs/code@latest"></script>
-<script src="https://cdn.jsdelivr.net/npm/@editorjs/delimiter@latest"></script>
-<script src="https://cdn.jsdelivr.net/npm/@editorjs/raw@latest"></script>
+<script src="https://cdn.jsdelivr.net/npm/@editorjs/editorjs@2.29.1/dist/editorjs.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@editorjs/header@2.8.1/dist/header.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@editorjs/list@1.9.0/dist/list.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@editorjs/image@2.9.0/dist/image.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@editorjs/quote@2.6.0/dist/quote.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@editorjs/code@2.9.0/dist/code.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@editorjs/delimiter@1.4.0/dist/delimiter.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@editorjs/raw@2.5.0/dist/raw.umd.min.js"></script>
 
 <script>
-const editor = new EditorJS({
-	holder: 'editorjs',
+let editor;
 
-	placeholder: 'Start writing your post content...',
+// Wait for all scripts to load before initializing editor
+window.addEventListener('load', function() {
+	console.log('Page loaded, checking for Editor.js...');
 
-	tools: {
-		header: {
-			class: Header,
-			config: {
-				levels: [2, 3, 4],
-				defaultLevel: 2
-			}
-		},
-		list: {
-			class: List,
-			inlineToolbar: true
-		},
-		image: {
-			class: ImageTool,
-			config: {
-				endpoints: {
-					byFile: '/admin/upload/image'
+	// Check if all required classes are loaded
+	const checkPluginsLoaded = setInterval(() => {
+		console.log('Checking plugins...', {
+			EditorJS: typeof EditorJS !== 'undefined',
+			Header: typeof Header !== 'undefined',
+			List: typeof List !== 'undefined'
+		});
+
+		if (typeof EditorJS !== 'undefined' &&
+		    typeof Header !== 'undefined' &&
+		    typeof List !== 'undefined') {
+			clearInterval(checkPluginsLoaded);
+			console.log('All plugins loaded, initializing editor...');
+			initializeEditor();
+		}
+	}, 100);
+
+	// Timeout after 5 seconds
+	setTimeout(() => {
+		clearInterval(checkPluginsLoaded);
+		if (typeof EditorJS === 'undefined') {
+			console.error('Failed to load Editor.js');
+			alert('Editor failed to load. Please refresh the page.');
+		}
+	}, 5000);
+});
+
+function initializeEditor() {
+	try {
+		editor = new EditorJS({
+			holder: 'editorjs',
+
+			autofocus: true,
+
+			placeholder: 'Click here to start writing your post content...',
+
+			tools: {
+				header: {
+					class: Header,
+					config: {
+						levels: [2, 3, 4],
+						defaultLevel: 2
+					}
+				},
+				list: {
+					class: List,
+					inlineToolbar: true
+				},
+				image: {
+					class: ImageTool,
+					config: {
+						endpoints: {
+							byFile: '/admin/upload/image'
+						}
+					}
+				},
+				quote: {
+					class: Quote,
+					inlineToolbar: true
+				},
+				code: CodeTool,
+				delimiter: Delimiter,
+				raw: {
+					class: RawTool,
+					config: {
+						placeholder: 'Enter HTML or shortcodes like [latest-posts limit="5"]'
+					}
+				}
+			},
+
+			onReady: () => {
+				console.log('Editor.js is ready!');
+			},
+
+			onChange: async (api, event) => {
+				console.log('Content changed');
+				try {
+					const savedData = await editor.save();
+					document.getElementById('content-json').value = JSON.stringify(savedData);
+				} catch (error) {
+					console.error('Error saving content:', error);
 				}
 			}
-		},
-		quote: {
-			class: Quote,
-			inlineToolbar: true
-		},
-		code: CodeTool,
-		delimiter: Delimiter,
-		raw: {
-			class: RawTool,
-			config: {
-				placeholder: 'Enter HTML or shortcodes like [latest-posts limit="5"]'
+		});
+
+		// Save content before submit
+		document.getElementById('post-form').addEventListener('submit', async (e) => {
+			e.preventDefault();
+
+			try {
+				const savedData = await editor.save();
+				console.log('Saved data:', savedData);
+				document.getElementById('content-json').value = JSON.stringify(savedData);
+				e.target.submit();
+			} catch (error) {
+				console.error('Error saving editor content:', error);
+				alert('Error preparing content. Please try again.');
 			}
-		}
-	},
-
-	onChange: async () => {
-		const savedData = await editor.save();
-		document.getElementById('content-json').value = JSON.stringify(savedData);
-	}
-});
-
-// Save content before submit
-document.getElementById('post-form').addEventListener('submit', async (e) => {
-	e.preventDefault();
-
-	try {
-		const savedData = await editor.save();
-		document.getElementById('content-json').value = JSON.stringify(savedData);
-		e.target.submit();
+		});
 	} catch (error) {
-		console.error('Error saving editor content:', error);
-		alert('Error preparing content. Please try again.');
+		console.error('Error initializing editor:', error);
+		alert('Failed to initialize editor: ' + error.message);
 	}
-});
+}
 </script>

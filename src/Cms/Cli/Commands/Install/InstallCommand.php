@@ -182,6 +182,8 @@ class InstallCommand extends Command
 			'/storage',
 			'/storage/logs',
 			'/storage/cache',
+			'/storage/uploads',
+			'/storage/uploads/temp',
 
 			// Database directories
 			'/db',

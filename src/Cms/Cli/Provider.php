@@ -18,10 +18,15 @@ class Provider
 	 */
 	public static function register( Registry $registry ): void
 	{
-		// Installation command
+		// Installation commands
 		$registry->register(
 			'cms:install',
 			'Neuron\\Cms\\Cli\\Commands\\Install\\InstallCommand'
+		);
+
+		$registry->register(
+			'cms:upgrade',
+			'Neuron\\Cms\\Cli\\Commands\\Install\\UpgradeCommand'
 		);
 
 		// User management commands

@@ -251,6 +251,19 @@ routes:
     controller: Neuron\Cms\Controllers\Admin\Pages@destroy
     filter: auth
 
+  # Media Upload Routes
+  admin_media_upload:
+    method: POST
+    route: /admin/upload/image
+    controller: Neuron\Cms\Controllers\Admin\Media@uploadImage
+    filter: auth
+
+  admin_media_featured_upload:
+    method: POST
+    route: /admin/upload/featured-image
+    controller: Neuron\Cms\Controllers\Admin\Media@uploadFeaturedImage
+    filter: auth
+
   # Homepage
   home:
     method: GET

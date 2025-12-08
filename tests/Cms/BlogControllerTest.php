@@ -13,6 +13,7 @@ use Neuron\Cms\Repositories\DatabaseTagRepository;
 use Neuron\Data\Settings\Source\Memory;
 use Neuron\Data\Settings\SettingManager;
 use Neuron\Mvc\Requests\Request;
+use Neuron\Orm\Model;
 use Neuron\Patterns\Registry;
 use PDO;
 use PHPUnit\Framework\TestCase;
@@ -49,6 +50,9 @@ class BlogControllerTest extends TestCase
 
 		// Create tables
 		$this->createTables();
+
+		// Initialize ORM with the PDO connection
+		Model::setPdo( $this->_pdo );
 
 		// Set up Settings with database config
 		$settings = new Memory();
@@ -93,6 +97,28 @@ class BlogControllerTest extends TestCase
 
 	private function createTables(): void
 	{
+		// Create users table
+		$this->_pdo->exec( "
+			CREATE TABLE users (
+				id INTEGER PRIMARY KEY AUTOINCREMENT,
+				username VARCHAR(255) UNIQUE NOT NULL,
+				email VARCHAR(255) UNIQUE NOT NULL,
+				password_hash VARCHAR(255) NOT NULL,
+				role VARCHAR(50) DEFAULT 'subscriber',
+				status VARCHAR(50) DEFAULT 'active',
+				email_verified BOOLEAN DEFAULT 0,
+				two_factor_secret VARCHAR(255) NULL,
+				two_factor_recovery_codes TEXT NULL,
+				remember_token VARCHAR(255) NULL,
+				failed_login_attempts INTEGER DEFAULT 0,
+				locked_until TIMESTAMP NULL,
+				last_login_at TIMESTAMP NULL,
+				timezone VARCHAR(50) DEFAULT 'UTC',
+				created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+				updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+			)
+		" );
+
 		// Create posts table
 		$this->_pdo->exec( "
 			CREATE TABLE posts (
@@ -100,6 +126,7 @@ class BlogControllerTest extends TestCase
 				title VARCHAR(255) NOT NULL,
 				slug VARCHAR(255) NOT NULL UNIQUE,
 				body TEXT NOT NULL,
+				content_raw TEXT DEFAULT '{\"blocks\":[]}',
 				excerpt TEXT,
 				featured_image VARCHAR(255),
 				author_id INTEGER NOT NULL,

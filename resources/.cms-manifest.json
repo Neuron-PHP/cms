@@ -1,0 +1,41 @@
+{
+  "version": "2025.12.5",
+  "release_date": "2025-12-05",
+  "migrations": [
+    "20250111000000_create_users_table.php",
+    "20250112000000_create_email_verification_tokens_table.php",
+    "20250113000000_create_pages_table.php",
+    "20250114000000_create_categories_table.php",
+    "20250115000000_create_tags_table.php",
+    "20250116000000_create_posts_table.php",
+    "20250117000000_create_post_categories_table.php",
+    "20250118000000_create_post_tags_table.php",
+    "20251119224525_add_content_raw_to_posts.php",
+    "20251205000000_add_two_factor_and_timezone_to_users.php"
+  ],
+  "config_files": [
+    "auth.yaml",
+    "event-listeners.yaml",
+    "neuron.yaml",
+    "neuron.yaml.example",
+    "routes.yaml"
+  ],
+  "view_directories": [
+    "admin",
+    "auth",
+    "blog",
+    "content",
+    "emails",
+    "home",
+    "http_codes",
+    "layouts",
+    "member"
+  ],
+  "public_assets": [
+    "index.php",
+    ".htaccess"
+  ],
+  "breaking_changes": [],
+  "deprecations": [],
+  "upgrade_notes": "See UPGRADE_NOTES.md for detailed upgrade instructions"
+}

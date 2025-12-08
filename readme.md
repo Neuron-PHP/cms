@@ -1,4 +1,5 @@
 [![CI](https://github.com/Neuron-PHP/cms/actions/workflows/ci.yml/badge.svg)](https://github.com/Neuron-PHP/cms/actions)
+[![codecov](https://codecov.io/gh/Neuron-PHP/cms/graph/badge.svg)](https://codecov.io/gh/Neuron-PHP/cms)
 # Neuron-PHP CMS
 
 A modern, database-backed Content Management System for PHP 8.4+ built on the Neuron framework. Provides a complete blog platform with user authentication, admin panel, and content management.

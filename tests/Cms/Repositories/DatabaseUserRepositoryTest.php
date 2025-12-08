@@ -6,6 +6,7 @@ use PHPUnit\Framework\TestCase;
 use Neuron\Cms\Repositories\DatabaseUserRepository;
 use Neuron\Cms\Models\User;
 use Neuron\Data\Settings\SettingManager;
+use Neuron\Orm\Model;
 use PDO;
 use DateTimeImmutable;
 
@@ -43,6 +44,9 @@ class DatabaseUserRepositoryTest extends TestCase
 		$property->setAccessible( true );
 		$this->pdo = $property->getValue( $this->repository );
 
+		// Initialize ORM with the PDO connection
+		Model::setPdo( $this->pdo );
+
 		// Create users table
 		$this->createUsersTable();
 	}
@@ -59,6 +63,7 @@ class DatabaseUserRepositoryTest extends TestCase
 				status VARCHAR(50) DEFAULT 'active',
 				email_verified BOOLEAN DEFAULT 0,
 				two_factor_secret VARCHAR(255) NULL,
+				two_factor_recovery_codes TEXT NULL,
 				remember_token VARCHAR(255) NULL,
 				failed_login_attempts INTEGER DEFAULT 0,
 				locked_until TIMESTAMP NULL,
