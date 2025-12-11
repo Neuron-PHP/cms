@@ -2,6 +2,7 @@
 
 namespace Tests\Cms\Services;
 
+use Neuron\Core\System\FakeRandom;
 use PHPUnit\Framework\TestCase;
 use Neuron\Cms\Services\Auth\CsrfToken;
 use Neuron\Cms\Auth\SessionManager;
@@ -14,13 +15,20 @@ class CsrfTokenTest extends TestCase
 {
 	private CsrfToken $_csrfToken;
 	private SessionManager $sessionManager;
+	private FakeRandom $random;
 
 	protected function setUp(): void
 	{
 		$this->sessionManager = new SessionManager([
 			'cookie_secure' => false  // Disable HTTPS requirement for tests
 		]);
-		$this->_csrfToken = new CsrfToken($this->sessionManager);
+
+		// Use FakeRandom for deterministic testing
+		// Each string() call will advance through the sequence
+		$this->random = new FakeRandom();
+		$this->random->setSeed(12345); // Seed advances with each call
+
+		$this->_csrfToken = new CsrfToken($this->sessionManager, $this->random);
 
 		$_SESSION = []; // Clear session data
 	}
@@ -48,14 +56,18 @@ class CsrfTokenTest extends TestCase
 		$this->assertEquals($token, $storedToken);
 	}
 
-	public function testGenerateTokenIsRandom(): void
+	public function testGenerateTokenIsDifferentEachTime(): void
 	{
+		// With FakeRandom using a seed, tokens are deterministic but unique
 		$token1 = $this->_csrfToken->generate();
 
 		// Clear session to force new token
 		$_SESSION = [];
 
-		$token2 = $this->_csrfToken->generate();
+		// Create new instance with advanced seed
+		$this->random->setSeed(12346);  // Different seed = different token
+		$csrf2 = new CsrfToken($this->sessionManager, $this->random);
+		$token2 = $csrf2->generate();
 
 		$this->assertNotEquals($token1, $token2);
 	}
@@ -129,25 +141,39 @@ class CsrfTokenTest extends TestCase
 
 	public function testRegenerateToken(): void
 	{
-		$firstToken = $this->_csrfToken->generate();
+		// Set explicit sequence so generate() and regenerate() produce different tokens
+		$this->random = new FakeRandom();
+		$this->random->setSeed(100);
+		$csrf = new CsrfToken($this->sessionManager, $this->random);
 
-		$secondToken = $this->_csrfToken->regenerate();
+		$firstToken = $csrf->generate();
+
+		// Advance seed to get different token
+		$this->random->setSeed(200);
+		$secondToken = $csrf->regenerate();
 
 		$this->assertNotEquals($firstToken, $secondToken);
-		$this->assertEquals($secondToken, $this->_csrfToken->getToken());
+		$this->assertEquals($secondToken, $csrf->getToken());
 	}
 
 	public function testRegenerateTokenInvalidatesOldToken(): void
 	{
-		$oldToken = $this->_csrfToken->generate();
+		// Set explicit sequence so generate() and regenerate() produce different tokens
+		$this->random = new FakeRandom();
+		$this->random->setSeed(300);
+		$csrf = new CsrfToken($this->sessionManager, $this->random);
 
-		$newToken = $this->_csrfToken->regenerate();
+		$oldToken = $csrf->generate();
+
+		// Advance seed to get different token
+		$this->random->setSeed(400);
+		$newToken = $csrf->regenerate();
 
 		// Old token should no longer be valid
-		$this->assertFalse($this->_csrfToken->validate($oldToken));
+		$this->assertFalse($csrf->validate($oldToken));
 
 		// New token should be valid
-		$this->assertTrue($this->_csrfToken->validate($newToken));
+		$this->assertTrue($csrf->validate($newToken));
 	}
 
 	public function testTokenLength(): void

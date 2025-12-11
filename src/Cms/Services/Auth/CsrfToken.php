@@ -3,6 +3,8 @@
 namespace Neuron\Cms\Services\Auth;
 
 use Neuron\Cms\Auth\SessionManager;
+use Neuron\Core\System\IRandom;
+use Neuron\Core\System\RealRandom;
 
 /**
  * CSRF token service.
@@ -16,10 +18,12 @@ class CsrfToken
 {
 	private SessionManager $_sessionManager;
 	private string $_tokenKey = 'csrf_token';
+	private IRandom $random;
 
-	public function __construct( SessionManager $sessionManager )
+	public function __construct( SessionManager $sessionManager, ?IRandom $random = null )
 	{
 		$this->_sessionManager = $sessionManager;
+		$this->random = $random ?? new RealRandom();
 	}
 
 	/**
@@ -27,7 +31,7 @@ class CsrfToken
 	 */
 	public function generate(): string
 	{
-		$token = bin2hex( random_bytes( 32 ) );
+		$token = $this->random->string( 64, 'hex' );
 		$this->_sessionManager->set( $this->_tokenKey, $token );
 		return $token;
 	}
