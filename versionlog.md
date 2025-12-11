@@ -1,4 +1,10 @@
-## 0.8.9
+## 0.8.9 2025-12-11
+* **Security services now use system abstractions** - PasswordResetter and EmailVerifier refactored to use `IRandom` interface
+* Secure token generation now uses abstraction instead of direct random_bytes() calls
+* Services support dependency injection with optional `IRandom` parameter for testability
+* Maintains cryptographic security with RealRandom default (using random_bytes())
+* Maintains full backward compatibility - existing code works without changes
+* All tests passing (24 tests total for both services)
 
 ## 0.8.8 2025-11-16
 
