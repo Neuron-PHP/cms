@@ -4,6 +4,8 @@ namespace Neuron\Cms\Services\Page;
 
 use Neuron\Cms\Models\Page;
 use Neuron\Cms\Repositories\IPageRepository;
+use Neuron\Core\System\IRandom;
+use Neuron\Core\System\RealRandom;
 use DateTimeImmutable;
 
 /**
@@ -16,10 +18,12 @@ use DateTimeImmutable;
 class Creator
 {
 	private IPageRepository $_pageRepository;
+	private IRandom $_random;
 
-	public function __construct( IPageRepository $pageRepository )
+	public function __construct( IPageRepository $pageRepository, ?IRandom $random = null )
 	{
 		$this->_pageRepository = $pageRepository;
+		$this->_random = $random ?? new RealRandom();
 	}
 
 	/**
@@ -73,7 +77,7 @@ class Creator
 	 * Generate URL-friendly slug from title
 	 *
 	 * For titles with only non-ASCII characters (e.g., "你好", "مرحبا"),
-	 * generates a fallback slug using uniqid().
+	 * generates a fallback slug using a unique identifier.
 	 *
 	 * @param string $title
 	 * @return string
@@ -88,7 +92,7 @@ class Creator
 		// Fallback for titles with no ASCII characters
 		if( $slug === '' )
 		{
-			$slug = 'page-' . uniqid();
+			$slug = 'page-' . $this->_random->uniqueId();
 		}
 
 		return $slug;

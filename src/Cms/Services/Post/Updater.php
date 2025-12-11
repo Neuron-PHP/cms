@@ -6,6 +6,8 @@ use Neuron\Cms\Models\Post;
 use Neuron\Cms\Repositories\IPostRepository;
 use Neuron\Cms\Repositories\ICategoryRepository;
 use Neuron\Cms\Services\Tag\Resolver as TagResolver;
+use Neuron\Core\System\IRandom;
+use Neuron\Core\System\RealRandom;
 
 /**
  * Post update service.
@@ -19,16 +21,19 @@ class Updater
 	private IPostRepository $_postRepository;
 	private ICategoryRepository $_categoryRepository;
 	private TagResolver $_tagResolver;
+	private IRandom $_random;
 
 	public function __construct(
 		IPostRepository $postRepository,
 		ICategoryRepository $categoryRepository,
-		TagResolver $tagResolver
+		TagResolver $tagResolver,
+		?IRandom $random = null
 	)
 	{
 		$this->_postRepository = $postRepository;
 		$this->_categoryRepository = $categoryRepository;
 		$this->_tagResolver = $tagResolver;
+		$this->_random = $random ?? new RealRandom();
 	}
 
 	/**
@@ -86,7 +91,7 @@ class Updater
 	 * Generate URL-friendly slug from title
 	 *
 	 * For titles with only non-ASCII characters (e.g., "你好", "مرحبا"),
-	 * generates a fallback slug using uniqid().
+	 * generates a fallback slug using a unique identifier.
 	 *
 	 * @param string $title
 	 * @return string
@@ -101,7 +106,7 @@ class Updater
 		// Fallback for titles with no ASCII characters
 		if( $slug === '' )
 		{
-			$slug = 'post-' . uniqid();
+			$slug = 'post-' . $this->_random->uniqueId();
 		}
 
 		return $slug;

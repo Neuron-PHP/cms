@@ -5,6 +5,8 @@ namespace Neuron\Cms\Services\Category;
 use Neuron\Cms\Models\Category;
 use Neuron\Cms\Repositories\ICategoryRepository;
 use Neuron\Cms\Events\CategoryUpdatedEvent;
+use Neuron\Core\System\IRandom;
+use Neuron\Core\System\RealRandom;
 use Neuron\Patterns\Registry;
 use DateTimeImmutable;
 
@@ -18,10 +20,12 @@ use DateTimeImmutable;
 class Updater
 {
 	private ICategoryRepository $_categoryRepository;
+	private IRandom $_random;
 
-	public function __construct( ICategoryRepository $categoryRepository )
+	public function __construct( ICategoryRepository $categoryRepository, ?IRandom $random = null )
 	{
 		$this->_categoryRepository = $categoryRepository;
+		$this->_random = $random ?? new RealRandom();
 	}
 
 	/**
@@ -68,7 +72,7 @@ class Updater
 	 * Generate URL-friendly slug from name
 	 *
 	 * For names with only non-ASCII characters (e.g., "你好", "مرحبا"),
-	 * generates a fallback slug using uniqid().
+	 * generates a fallback slug using a unique identifier.
 	 *
 	 * @param string $name
 	 * @return string
@@ -83,7 +87,7 @@ class Updater
 		// Fallback for names with no ASCII characters
 		if( $slug === '' )
 		{
-			$slug = 'category-' . uniqid();
+			$slug = 'category-' . $this->_random->uniqueId();
 		}
 
 		return $slug;

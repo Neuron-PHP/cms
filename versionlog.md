@@ -1,4 +1,10 @@
-## 0.8.9 2025-12-11
+## 0.8.9
+* **Slug generation now uses system abstractions** - All content service classes refactored to use `IRandom` interface
+* Refactored 6 service classes: Post/Creator, Post/Updater, Category/Creator, Category/Updater, Page/Creator, Tag/Creator
+* Slug generation fallback now uses `IRandom->uniqueId()` instead of direct `uniqid()` calls
+* Services support dependency injection with optional `IRandom` parameter for testability
+* Maintains full backward compatibility - existing code works without changes
+* All 195 tests passing (slug generation now fully deterministic in tests)
 * **Security services now use system abstractions** - PasswordResetter and EmailVerifier refactored to use `IRandom` interface
 * Secure token generation now uses abstraction instead of direct random_bytes() calls
 * Services support dependency injection with optional `IRandom` parameter for testability
