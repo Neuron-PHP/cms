@@ -14,14 +14,17 @@ jobs:
       uses: shivammathur/setup-php@v2
       with:
         php-version: 8.4
-        extensions: sockets, calendar, pcov
+        extensions: pdo, pdo_sqlite, sockets, calendar, pcov
         coverage: pcov
 
     - name: Install Dependencies
       run: composer install --prefer-dist --no-progress --no-interaction --optimize-autoloader
 
-    - name: Run PHPUnit with Coverage
-      run: vendor/bin/phpunit tests --coverage-clover coverage.xml --coverage-filter src
+    - name: Run Unit Tests with Coverage
+      run: vendor/bin/phpunit -c tests/phpunit.xml --testsuite=unit --coverage-clover coverage.xml --coverage-filter src
+
+    - name: Run Integration Tests
+      run: vendor/bin/phpunit -c tests/phpunit.xml --testsuite=integration
 
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v5

@@ -14,7 +14,7 @@ class DtoFactoryServiceTest extends TestCase
 	protected function setUp(): void
 	{
 		// Point to the actual DTO directory
-		$this->_testDtoPath = __DIR__ . '/../../../../src/Cms/Dtos';
+		$this->_testDtoPath = __DIR__ . '/../../../../../src/Cms/Dtos';
 		$this->_factory = new DtoFactoryService( $this->_testDtoPath );
 	}
 

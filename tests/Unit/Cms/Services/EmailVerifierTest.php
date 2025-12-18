@@ -37,7 +37,7 @@ class EmailVerifierTest extends TestCase
 		$memorySource->set( 'email', 'test_mode', true ); // Enable test mode to prevent actual email sending
 		$this->_settings = new SettingManager( $memorySource );
 
-		$this->_basePath = __DIR__ . '/../../..';
+		$this->_basePath = __DIR__ . '/../../../..';
 		$this->_verificationUrl = 'http://test.com/verify-email';
 
 		// Create manager
