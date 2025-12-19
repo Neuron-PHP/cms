@@ -65,10 +65,11 @@ class CsrfFilter extends Filter
 	 */
 	private function getTokenFromRequest(): ?string
 	{
-		// Check POST data
-		if( isset( $_POST['csrf_token'] ) )
+		// Check POST data (filtered)
+		$token = \Neuron\Data\Filters\Post::filterScalar( 'csrf_token' );
+		if( $token )
 		{
-			return $_POST['csrf_token'];
+			return $token;
 		}
 
 		// Check headers

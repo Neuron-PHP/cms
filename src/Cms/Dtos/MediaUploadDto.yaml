@@ -1,0 +1,19 @@
+# Media Upload DTO Configuration
+# Validation rules for media file uploads
+
+properties:
+  file:
+    type: string
+    required: true
+    validators:
+      - name: NotEmpty
+        message: "File is required"
+
+  folder:
+    type: string
+    required: false
+    validators:
+      - name: Length
+        options:
+          max: 255
+        message: "Folder path must not exceed 255 characters"

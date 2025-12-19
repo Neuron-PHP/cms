@@ -1,0 +1,561 @@
+<?php
+
+namespace Tests\Unit\Cms\Services\Content;
+
+use Neuron\Cms\Services\Content\EditorJsRenderer;
+use Neuron\Cms\Services\Content\ShortcodeParser;
+use PHPUnit\Framework\TestCase;
+
+class EditorJsRendererTest extends TestCase
+{
+	private EditorJsRenderer $renderer;
+
+	protected function setUp(): void
+	{
+		parent::setUp();
+
+		$this->renderer = new EditorJsRenderer();
+	}
+
+	public function testRenderEmptyData(): void
+	{
+		$result = $this->renderer->render( [] );
+
+		$this->assertSame( '', $result );
+	}
+
+	public function testRenderEmptyBlocks(): void
+	{
+		$result = $this->renderer->render( [ 'blocks' => [] ] );
+
+		$this->assertSame( '', $result );
+	}
+
+	public function testRenderParagraphBlock(): void
+	{
+		$data = [
+			'blocks' => [
+				[ 'type' => 'paragraph', 'data' => [ 'text' => 'Hello World' ] ]
+			]
+		];
+
+		$result = $this->renderer->render( $data );
+
+		$this->assertStringContainsString( '<p', $result );
+		$this->assertStringContainsString( 'Hello World', $result );
+		$this->assertStringContainsString( '</p>', $result );
+	}
+
+	public function testRenderHeaderBlock(): void
+	{
+		$data = [
+			'blocks' => [
+				[ 'type' => 'header', 'data' => [ 'text' => 'Title', 'level' => 1 ] ]
+			]
+		];
+
+		$result = $this->renderer->render( $data );
+
+		$this->assertStringContainsString( '<h1', $result );
+		$this->assertStringContainsString( 'Title', $result );
+		$this->assertStringContainsString( '</h1>', $result );
+	}
+
+	public function testRenderHeaderWithDifferentLevels(): void
+	{
+		for( $level = 1; $level <= 6; $level++ )
+		{
+			$data = [
+				'blocks' => [
+					[ 'type' => 'header', 'data' => [ 'text' => "Level {$level}", 'level' => $level ] ]
+				]
+			];
+
+			$result = $this->renderer->render( $data );
+
+			$this->assertStringContainsString( "<h{$level}", $result );
+			$this->assertStringContainsString( "Level {$level}", $result );
+			$this->assertStringContainsString( "</h{$level}>", $result );
+		}
+	}
+
+	public function testRenderHeaderClampsInvalidLevel(): void
+	{
+		// Test level > 6 (should clamp to 6)
+		$data = [
+			'blocks' => [
+				[ 'type' => 'header', 'data' => [ 'text' => 'Test', 'level' => 10 ] ]
+			]
+		];
+
+		$result = $this->renderer->render( $data );
+
+		$this->assertStringContainsString( '<h6', $result );
+
+		// Test level < 1 (should clamp to 1)
+		$data = [
+			'blocks' => [
+				[ 'type' => 'header', 'data' => [ 'text' => 'Test', 'level' => 0 ] ]
+			]
+		];
+
+		$result = $this->renderer->render( $data );
+
+		$this->assertStringContainsString( '<h1', $result );
+	}
+
+	public function testRenderUnorderedList(): void
+	{
+		$data = [
+			'blocks' => [
+				[
+					'type' => 'list',
+					'data' => [
+						'style' => 'unordered',
+						'items' => [ 'Item 1', 'Item 2', 'Item 3' ]
+					]
+				]
+			]
+		];
+
+		$result = $this->renderer->render( $data );
+
+		$this->assertStringContainsString( '<ul', $result );
+		$this->assertStringContainsString( '<li>Item 1</li>', $result );
+		$this->assertStringContainsString( '<li>Item 2</li>', $result );
+		$this->assertStringContainsString( '<li>Item 3</li>', $result );
+		$this->assertStringContainsString( '</ul>', $result );
+	}
+
+	public function testRenderOrderedList(): void
+	{
+		$data = [
+			'blocks' => [
+				[
+					'type' => 'list',
+					'data' => [
+						'style' => 'ordered',
+						'items' => [ 'First', 'Second', 'Third' ]
+					]
+				]
+			]
+		];
+
+		$result = $this->renderer->render( $data );
+
+		$this->assertStringContainsString( '<ol', $result );
+		$this->assertStringContainsString( '<li>First</li>', $result );
+		$this->assertStringContainsString( '<li>Second</li>', $result );
+		$this->assertStringContainsString( '<li>Third</li>', $result );
+		$this->assertStringContainsString( '</ol>', $result );
+	}
+
+	public function testRenderImageBlock(): void
+	{
+		$data = [
+			'blocks' => [
+				[
+					'type' => 'image',
+					'data' => [
+						'file' => [ 'url' => 'https://example.com/image.jpg' ],
+						'caption' => 'Test Image'
+					]
+				]
+			]
+		];
+
+		$result = $this->renderer->render( $data );
+
+		$this->assertStringContainsString( '<figure', $result );
+		$this->assertStringContainsString( '<img', $result );
+		$this->assertStringContainsString( 'https://example.com/image.jpg', $result );
+		$this->assertStringContainsString( 'Test Image', $result );
+		$this->assertStringContainsString( '<figcaption', $result );
+		$this->assertStringContainsString( '</figure>', $result );
+	}
+
+	public function testRenderImageWithoutCaption(): void
+	{
+		$data = [
+			'blocks' => [
+				[
+					'type' => 'image',
+					'data' => [
+						'file' => [ 'url' => 'https://example.com/image.jpg' ]
+					]
+				]
+			]
+		];
+
+		$result = $this->renderer->render( $data );
+
+		$this->assertStringContainsString( '<img', $result );
+		$this->assertStringNotContainsString( '<figcaption', $result );
+	}
+
+	public function testRenderQuoteBlock(): void
+	{
+		$data = [
+			'blocks' => [
+				[
+					'type' => 'quote',
+					'data' => [
+						'text' => 'This is a quote',
+						'caption' => 'Author Name'
+					]
+				]
+			]
+		];
+
+		$result = $this->renderer->render( $data );
+
+		$this->assertStringContainsString( '<blockquote', $result );
+		$this->assertStringContainsString( 'This is a quote', $result );
+		$this->assertStringContainsString( '<footer', $result );
+		$this->assertStringContainsString( 'Author Name', $result );
+		$this->assertStringContainsString( '</blockquote>', $result );
+	}
+
+	public function testRenderQuoteWithAlignment(): void
+	{
+		$alignments = [
+			'left' => '',
+			'center' => 'text-center',
+			'right' => 'text-end'
+		];
+
+		foreach( $alignments as $alignment => $expectedClass )
+		{
+			$data = [
+				'blocks' => [
+					[
+						'type' => 'quote',
+						'data' => [
+							'text' => 'Test quote',
+							'alignment' => $alignment
+						]
+					]
+				]
+			];
+
+			$result = $this->renderer->render( $data );
+
+			if( $expectedClass )
+			{
+				$this->assertStringContainsString( $expectedClass, $result );
+			}
+		}
+	}
+
+	public function testRenderCodeBlock(): void
+	{
+		$data = [
+			'blocks' => [
+				[
+					'type' => 'code',
+					'data' => [
+						'code' => 'function test() { return true; }'
+					]
+				]
+			]
+		];
+
+		$result = $this->renderer->render( $data );
+
+		$this->assertStringContainsString( '<pre', $result );
+		$this->assertStringContainsString( '<code>', $result );
+		$this->assertStringContainsString( 'function test()', $result );
+		$this->assertStringContainsString( '</code>', $result );
+		$this->assertStringContainsString( '</pre>', $result );
+	}
+
+	public function testRenderDelimiterBlock(): void
+	{
+		$data = [
+			'blocks' => [
+				[ 'type' => 'delimiter', 'data' => [] ]
+			]
+		];
+
+		$result = $this->renderer->render( $data );
+
+		$this->assertStringContainsString( '<hr', $result );
+	}
+
+	public function testRenderRawHtmlBlock(): void
+	{
+		$data = [
+			'blocks' => [
+				[
+					'type' => 'raw',
+					'data' => [
+						'html' => '<div>Test Content</div>'
+					]
+				]
+			]
+		];
+
+		$result = $this->renderer->render( $data );
+
+		// Raw HTML should be sanitized (div tags stripped)
+		$this->assertStringContainsString( 'Test Content', $result );
+	}
+
+	public function testRenderUnknownBlockType(): void
+	{
+		$data = [
+			'blocks' => [
+				[ 'type' => 'unknown-type', 'data' => [] ]
+			]
+		];
+
+		$result = $this->renderer->render( $data );
+
+		$this->assertStringContainsString( '<!-- Unknown block type: unknown-type -->', $result );
+	}
+
+	public function testRenderMultipleBlocks(): void
+	{
+		$data = [
+			'blocks' => [
+				[ 'type' => 'header', 'data' => [ 'text' => 'Title', 'level' => 1 ] ],
+				[ 'type' => 'paragraph', 'data' => [ 'text' => 'First paragraph' ] ],
+				[ 'type' => 'paragraph', 'data' => [ 'text' => 'Second paragraph' ] ],
+				[ 'type' => 'delimiter', 'data' => [] ],
+				[ 'type' => 'quote', 'data' => [ 'text' => 'A quote' ] ]
+			]
+		];
+
+		$result = $this->renderer->render( $data );
+
+		$this->assertStringContainsString( '<h1', $result );
+		$this->assertStringContainsString( 'First paragraph', $result );
+		$this->assertStringContainsString( 'Second paragraph', $result );
+		$this->assertStringContainsString( '<hr', $result );
+		$this->assertStringContainsString( '<blockquote', $result );
+	}
+
+	public function testSanitizesHtmlInContent(): void
+	{
+		$data = [
+			'blocks' => [
+				[ 'type' => 'paragraph', 'data' => [ 'text' => '<script>alert("xss")</script>Safe text' ] ]
+			]
+		];
+
+		$result = $this->renderer->render( $data );
+
+		$this->assertStringNotContainsString( '<script>', $result );
+		$this->assertStringContainsString( 'Safe text', $result );
+	}
+
+	public function testAllowsSafeHtmlTags(): void
+	{
+		$data = [
+			'blocks' => [
+				[ 'type' => 'paragraph', 'data' => [ 'text' => 'Text with <strong>bold</strong> and <em>italic</em>' ] ]
+			]
+		];
+
+		$result = $this->renderer->render( $data );
+
+		$this->assertStringContainsString( '<strong>bold</strong>', $result );
+		$this->assertStringContainsString( '<em>italic</em>', $result );
+	}
+
+	public function testRendererWithShortcodeParser(): void
+	{
+		$shortcodeParser = $this->createMock( ShortcodeParser::class );
+		$shortcodeParser->method( 'parse' )->willReturn( 'Parsed shortcode' );
+
+		$renderer = new EditorJsRenderer( $shortcodeParser );
+
+		$data = [
+			'blocks' => [
+				[ 'type' => 'paragraph', 'data' => [ 'text' => '[shortcode]' ] ]
+			]
+		];
+
+		$result = $renderer->render( $data );
+
+		$this->assertStringContainsString( 'Parsed shortcode', $result );
+	}
+
+	public function testBlockWithMissingData(): void
+	{
+		$data = [
+			'blocks' => [
+				[ 'type' => 'paragraph' ], // Missing 'data' key
+			]
+		];
+
+		$result = $this->renderer->render( $data );
+
+		// Should not throw exception, should render empty paragraph
+		$this->assertStringContainsString( '<p', $result );
+	}
+
+	public function testRenderNestedUnorderedList(): void
+	{
+		$data = [
+			'blocks' => [
+				[
+					'type' => 'list',
+					'data' => [
+						'style' => 'unordered',
+						'items' => [
+							'Simple item 1',
+							[
+								'content' => 'Item with nested list',
+								'items' => [
+									'Nested item 1',
+									'Nested item 2'
+								]
+							],
+							'Simple item 2'
+						]
+					]
+				]
+			]
+		];
+
+		$result = $this->renderer->render( $data );
+
+		$this->assertStringContainsString( '<ul', $result );
+		$this->assertStringContainsString( 'Simple item 1', $result );
+		$this->assertStringContainsString( 'Item with nested list', $result );
+		$this->assertStringContainsString( 'Nested item 1', $result );
+		$this->assertStringContainsString( 'Nested item 2', $result );
+		$this->assertStringContainsString( 'Simple item 2', $result );
+
+		// Check for nested <ul> structure
+		$this->assertMatchesRegularExpression( '/<ul[^>]*>.*<ul[^>]*>.*<\/ul>.*<\/ul>/s', $result );
+	}
+
+	public function testRenderNestedOrderedList(): void
+	{
+		$data = [
+			'blocks' => [
+				[
+					'type' => 'list',
+					'data' => [
+						'style' => 'ordered',
+						'items' => [
+							'First item',
+							[
+								'content' => 'Second item with sub-items',
+								'items' => [
+									'Sub-item A',
+									'Sub-item B'
+								]
+							]
+						]
+					]
+				]
+			]
+		];
+
+		$result = $this->renderer->render( $data );
+
+		$this->assertStringContainsString( '<ol', $result );
+		$this->assertStringContainsString( 'First item', $result );
+		$this->assertStringContainsString( 'Second item with sub-items', $result );
+		$this->assertStringContainsString( 'Sub-item A', $result );
+		$this->assertStringContainsString( 'Sub-item B', $result );
+
+		// Check for nested <ol> structure
+		$this->assertMatchesRegularExpression( '/<ol[^>]*>.*<ol[^>]*>.*<\/ol>.*<\/ol>/s', $result );
+	}
+
+	public function testRenderMultiLevelNestedList(): void
+	{
+		$data = [
+			'blocks' => [
+				[
+					'type' => 'list',
+					'data' => [
+						'style' => 'unordered',
+						'items' => [
+							[
+								'content' => 'Level 1 item',
+								'items' => [
+									[
+										'content' => 'Level 2 item',
+										'items' => [
+											'Level 3 item'
+										]
+									]
+								]
+							]
+						]
+					]
+				]
+			]
+		];
+
+		$result = $this->renderer->render( $data );
+
+		$this->assertStringContainsString( 'Level 1 item', $result );
+		$this->assertStringContainsString( 'Level 2 item', $result );
+		$this->assertStringContainsString( 'Level 3 item', $result );
+
+		// Should have multiple nested <ul> tags (3 levels)
+		$ulCount = substr_count( $result, '<ul' );
+		$this->assertGreaterThanOrEqual( 3, $ulCount );
+	}
+
+	public function testRenderNestedListWithEmptyItems(): void
+	{
+		$data = [
+			'blocks' => [
+				[
+					'type' => 'list',
+					'data' => [
+						'style' => 'unordered',
+						'items' => [
+							[
+								'content' => 'Item with empty nested list',
+								'items' => []
+							]
+						]
+					]
+				]
+			]
+		];
+
+		$result = $this->renderer->render( $data );
+
+		$this->assertStringContainsString( 'Item with empty nested list', $result );
+
+		// Should only have one <ul> since nested items array is empty
+		$ulCount = substr_count( $result, '<ul' );
+		$this->assertEquals( 1, $ulCount );
+	}
+
+	public function testRenderNestedListPreservesLegacyFormat(): void
+	{
+		// Old format: all items are simple strings
+		$data = [
+			'blocks' => [
+				[
+					'type' => 'list',
+					'data' => [
+						'style' => 'unordered',
+						'items' => [ 'Item 1', 'Item 2', 'Item 3' ]
+					]
+				]
+			]
+		];
+
+		$result = $this->renderer->render( $data );
+
+		$this->assertStringContainsString( '<ul', $result );
+		$this->assertStringContainsString( '<li>Item 1</li>', $result );
+		$this->assertStringContainsString( '<li>Item 2</li>', $result );
+		$this->assertStringContainsString( '<li>Item 3</li>', $result );
+
+		// Should only have one <ul> (no nesting)
+		$ulCount = substr_count( $result, '<ul' );
+		$this->assertEquals( 1, $ulCount );
+	}
+}

@@ -67,19 +67,44 @@ class MaintenanceManager
 			'enabled_by' => $enabledBy ?? get_current_user()
 		];
 
-		return $this->writeMaintenanceFile( $data );
+		$result = $this->writeMaintenanceFile( $data );
+
+		// Emit maintenance mode enabled event
+		if( $result )
+		{
+			\Neuron\Application\CrossCutting\Event::emit( new \Neuron\Cms\Events\MaintenanceModeEnabledEvent(
+				$data['enabled_by'],
+				$message
+			) );
+		}
+
+		return $result;
 	}
 
 	/**
 	 * Disable maintenance mode
 	 *
+	 * @param string|null $disabledBy User who disabled maintenance mode
 	 * @return bool Success status
 	 */
-	public function disable(): bool
+	public function disable( ?string $disabledBy = null ): bool
 	{
+		// Get who is disabling before we delete the file
+		$disabledByUser = $disabledBy ?? get_current_user();
+
 		if( file_exists( $this->_maintenanceFilePath ) )
 		{
-			return unlink( $this->_maintenanceFilePath );
+			$result = unlink( $this->_maintenanceFilePath );
+
+			// Emit maintenance mode disabled event
+			if( $result )
+			{
+				\Neuron\Application\CrossCutting\Event::emit( new \Neuron\Cms\Events\MaintenanceModeDisabledEvent(
+					$disabledByUser
+				) );
+			}
+
+			return $result;
 		}
 
 		return true;
@@ -177,6 +202,11 @@ class MaintenanceManager
 		}
 
 		$data = json_decode( $contents, true );
+
+		if( json_last_error() !== JSON_ERROR_NONE )
+		{
+			return [];
+		}
 
 		return is_array( $data ) ? $data : [];
 	}

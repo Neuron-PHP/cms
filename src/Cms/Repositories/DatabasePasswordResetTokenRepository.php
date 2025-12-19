@@ -4,7 +4,7 @@ namespace Neuron\Cms\Repositories;
 
 use Neuron\Cms\Database\ConnectionFactory;
 use Neuron\Cms\Models\PasswordResetToken;
-use Neuron\Data\Setting\SettingManager;
+use Neuron\Data\Settings\SettingManager;
 use PDO;
 use Exception;
 use DateTimeImmutable;
@@ -113,5 +113,22 @@ class DatabasePasswordResetTokenRepository implements IPasswordResetTokenReposit
 			'created_at' => $row['created_at'],
 			'expires_at' => $row['expires_at']
 		]);
+	}
+
+	/**
+	 * Handle serialization for PHPUnit process isolation
+	 */
+	public function __sleep(): array
+	{
+		// Don't serialize PDO connection
+		return [];
+	}
+
+	/**
+	 * Handle unserialization for PHPUnit process isolation
+	 */
+	public function __wakeup(): void
+	{
+		// PDO will be re-initialized by test setup
 	}
 }

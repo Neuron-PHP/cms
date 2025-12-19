@@ -2,7 +2,7 @@
 
 namespace Neuron\Cms\Maintenance;
 
-use Neuron\Data\Setting\Source\ISettingSource;
+use Neuron\Data\Settings\Source\ISettingSource;
 
 /**
  * Configuration handler for maintenance mode.

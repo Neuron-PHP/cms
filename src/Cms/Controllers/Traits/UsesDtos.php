@@ -5,13 +5,15 @@ namespace Neuron\Cms\Controllers\Traits;
 use Neuron\Cms\Services\Dto\DtoFactoryService;
 use Neuron\Core\Exceptions\Validation;
 use Neuron\Dto\Dto;
+use Neuron\Dto\Mapper\Request as RequestMapper;
 use Neuron\Mvc\Requests\Request;
 use Neuron\Patterns\Registry;
 
 /**
  * Trait for using DTOs in controllers
  *
- * Provides helper methods for creating, populating, and validating DTOs.
+ * Provides helper methods for creating, populating, and validating DTOs
+ * using proper input filtering through the RequestMapper.
  *
  * @package Neuron\Cms\Controllers\Traits
  */
@@ -38,51 +40,28 @@ trait UsesDtos
 	}
 
 	/**
-	 * Populate a DTO from request data
+	 * Populate a DTO from request data using RequestMapper
 	 *
-	 * Sets DTO properties from POST data. Silently ignores properties
-	 * that don't exist in the DTO.
+	 * Maps filtered POST data to DTO properties using the RequestMapper
+	 * which applies proper input sanitization via Post::filterScalar().
 	 *
 	 * @param Dto $dto DTO to populate
-	 * @param Request $request Request containing form data
+	 * @param Request $request Request containing form data (unused - kept for BC)
 	 * @param array $fields Array of field names to populate (defaults to all POST data)
 	 * @return Dto The populated DTO
 	 */
 	protected function populateDtoFromRequest( Dto $dto, Request $request, array $fields = [] ): Dto
 	{
-		// If no specific fields provided, use all POST data keys
-		if( empty( $fields ) )
+		$mapper = new RequestMapper();
+
+		// If specific fields provided, pass them to mapper
+		// Otherwise mapper will use all POST keys
+		if( !empty( $fields ) )
 		{
-			$fields = array_keys( $_POST );
+			return $mapper->mapFiltered( $dto, $fields );
 		}
 
-		foreach( $fields as $field )
-		{
-			$value = $request->post( $field );
-
-			// Get the property from the DTO
-			$property = $dto->getProperty( $field );
-
-			// Skip if property doesn't exist
-			if( !$property )
-			{
-				continue;
-			}
-
-			// Set the value
-			try
-			{
-				// Use magic setter which handles validation per property
-				$dto->$field = $value;
-			}
-			catch( Validation $e )
-			{
-				// Property-level validation errors are collected
-				// They'll be returned when validate() is called on the DTO
-			}
-		}
-
-		return $dto;
+		return $mapper->map( $dto );
 	}
 
 	/**

@@ -98,11 +98,58 @@ class EditorJsRenderer
 		$html = "<{$tag} class='mb-3'>\n";
 		foreach( $items as $item )
 		{
-			$html .= "  <li>" . $this->parseInlineContent( $item ) . "</li>\n";
+			$html .= $this->renderListItem( $item, $style );
 		}
 		$html .= "</{$tag}>\n";
 
 		return $html;
+	}
+
+	/**
+	 * Render a single list item (handles both strings and nested structures)
+	 *
+	 * Editor.js List v1.9+ supports nested lists where items can be:
+	 * - Simple strings: "Item text"
+	 * - Objects with nested items: { "content": "Item text", "items": [nested items] }
+	 *
+	 * @param mixed $item The list item (string or array)
+	 * @param string $style List style (ordered/unordered)
+	 * @return string Rendered HTML
+	 */
+	private function renderListItem( mixed $item, string $style ): string
+	{
+		// Handle simple string items (legacy format and leaf items)
+		if( is_string( $item ) )
+		{
+			return "  <li>" . $this->parseInlineContent( $item ) . "</li>\n";
+		}
+
+		// Handle nested list items (objects with content and items)
+		if( is_array( $item ) && isset( $item['content'] ) )
+		{
+			$html = "  <li>\n";
+			$html .= "    " . $this->parseInlineContent( $item['content'] ) . "\n";
+
+			// Recursively render nested items
+			if( isset( $item['items'] ) && is_array( $item['items'] ) && !empty( $item['items'] ) )
+			{
+				$tag = $style === 'ordered' ? 'ol' : 'ul';
+				$html .= "    <{$tag}>\n";
+				foreach( $item['items'] as $nestedItem )
+				{
+					// Indent nested items
+					$nestedHtml = $this->renderListItem( $nestedItem, $style );
+					$html .= "  " . $nestedHtml;
+				}
+				$html .= "    </{$tag}>\n";
+			}
+
+			$html .= "  </li>\n";
+			return $html;
+		}
+
+		// Fallback for unknown item types (shouldn't happen in valid Editor.js data)
+		return "  <li><!-- Invalid list item --></li>\n";
 	}
 
 	/**

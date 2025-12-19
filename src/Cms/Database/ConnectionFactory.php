@@ -2,7 +2,7 @@
 
 namespace Neuron\Cms\Database;
 
-use Neuron\Data\Setting\SettingManager;
+use Neuron\Data\Settings\SettingManager;
 use PDO;
 use Exception;
 

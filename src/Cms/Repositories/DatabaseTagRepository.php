@@ -4,15 +4,14 @@ namespace Neuron\Cms\Repositories;
 
 use Neuron\Cms\Database\ConnectionFactory;
 use Neuron\Cms\Models\Tag;
-use Neuron\Data\Setting\SettingManager;
+use Neuron\Data\Settings\SettingManager;
 use PDO;
 use Exception;
-use DateTimeImmutable;
 
 /**
- * Database-backed tag repository.
+ * Database-backed tag repository using ORM.
  *
- * Works with SQLite, MySQL, and PostgreSQL via PDO.
+ * Works with SQLite, MySQL, and PostgreSQL via the Neuron ORM.
  *
  * @package Neuron\Cms\Repositories
  */
@@ -28,6 +27,7 @@ class DatabaseTagRepository implements ITagRepository
 	 */
 	public function __construct( SettingManager $settings )
 	{
+		// Keep PDO for allWithPostCount() which uses a custom JOIN query
 		$this->_pdo = ConnectionFactory::createFromSettings( $settings );
 	}
 
@@ -36,12 +36,7 @@ class DatabaseTagRepository implements ITagRepository
 	 */
 	public function findById( int $id ): ?Tag
 	{
-		$stmt = $this->_pdo->prepare( "SELECT * FROM tags WHERE id = ? LIMIT 1" );
-		$stmt->execute( [ $id ] );
-
-		$row = $stmt->fetch();
-
-		return $row ? Tag::fromArray( $row ) : null;
+		return Tag::find( $id );
 	}
 
 	/**
@@ -49,12 +44,7 @@ class DatabaseTagRepository implements ITagRepository
 	 */
 	public function findBySlug( string $slug ): ?Tag
 	{
-		$stmt = $this->_pdo->prepare( "SELECT * FROM tags WHERE slug = ? LIMIT 1" );
-		$stmt->execute( [ $slug ] );
-
-		$row = $stmt->fetch();
-
-		return $row ? Tag::fromArray( $row ) : null;
+		return Tag::where( 'slug', $slug )->first();
 	}
 
 	/**
@@ -62,12 +52,7 @@ class DatabaseTagRepository implements ITagRepository
 	 */
 	public function findByName( string $name ): ?Tag
 	{
-		$stmt = $this->_pdo->prepare( "SELECT * FROM tags WHERE name = ? LIMIT 1" );
-		$stmt->execute( [ $name ] );
-
-		$row = $stmt->fetch();
-
-		return $row ? Tag::fromArray( $row ) : null;
+		return Tag::where( 'name', $name )->first();
 	}
 
 	/**
@@ -87,19 +72,11 @@ class DatabaseTagRepository implements ITagRepository
 			throw new Exception( 'Tag name already exists' );
 		}
 
-		$stmt = $this->_pdo->prepare(
-			"INSERT INTO tags (name, slug, created_at, updated_at)
-			VALUES (?, ?, ?, ?)"
-		);
+		// Use ORM create method
+		$createdTag = Tag::create( $tag->toArray() );
 
-		$stmt->execute([
-			$tag->getName(),
-			$tag->getSlug(),
-			$tag->getCreatedAt()->format( 'Y-m-d H:i:s' ),
-			(new DateTimeImmutable())->format( 'Y-m-d H:i:s' )
-		]);
-
-		$tag->setId( (int)$this->_pdo->lastInsertId() );
+		// Update the original tag with the new ID
+		$tag->setId( $createdTag->getId() );
 
 		return $tag;
 	}
@@ -128,20 +105,8 @@ class DatabaseTagRepository implements ITagRepository
 			throw new Exception( 'Tag name already exists' );
 		}
 
-		$stmt = $this->_pdo->prepare(
-			"UPDATE tags SET
-				name = ?,
-				slug = ?,
-				updated_at = ?
-			WHERE id = ?"
-		);
-
-		return $stmt->execute([
-			$tag->getName(),
-			$tag->getSlug(),
-			(new DateTimeImmutable())->format( 'Y-m-d H:i:s' ),
-			$tag->getId()
-		]);
+		// Use ORM save method
+		return $tag->save();
 	}
 
 	/**
@@ -150,10 +115,9 @@ class DatabaseTagRepository implements ITagRepository
 	public function delete( int $id ): bool
 	{
 		// Foreign key constraints will handle cascade delete of post relationships
-		$stmt = $this->_pdo->prepare( "DELETE FROM tags WHERE id = ?" );
-		$stmt->execute( [ $id ] );
+		$deletedCount = Tag::query()->where( 'id', $id )->delete();
 
-		return $stmt->rowCount() > 0;
+		return $deletedCount > 0;
 	}
 
 	/**
@@ -161,10 +125,7 @@ class DatabaseTagRepository implements ITagRepository
 	 */
 	public function all(): array
 	{
-		$stmt = $this->_pdo->query( "SELECT * FROM tags ORDER BY name ASC" );
-		$rows = $stmt->fetchAll();
-
-		return array_map( fn( $row ) => Tag::fromArray( $row ), $rows );
+		return Tag::orderBy( 'name', 'ASC' )->all();
 	}
 
 	/**
@@ -172,10 +133,7 @@ class DatabaseTagRepository implements ITagRepository
 	 */
 	public function count(): int
 	{
-		$stmt = $this->_pdo->query( "SELECT COUNT(*) as total FROM tags" );
-		$row = $stmt->fetch();
-
-		return (int)$row['total'];
+		return Tag::query()->count();
 	}
 
 	/**
@@ -183,6 +141,8 @@ class DatabaseTagRepository implements ITagRepository
 	 */
 	public function allWithPostCount(): array
 	{
+		// This method still uses raw SQL for the JOIN with aggregation
+		// TODO: Add support for joins and aggregations to ORM
 		$stmt = $this->_pdo->query(
 			"SELECT t.*, COUNT(pt.post_id) as post_count
 			FROM tags t
@@ -200,5 +160,22 @@ class DatabaseTagRepository implements ITagRepository
 				'post_count' => (int)$row['post_count']
 			];
 		}, $rows );
+	}
+
+	/**
+	 * Handle serialization for PHPUnit process isolation
+	 */
+	public function __sleep(): array
+	{
+		// Don't serialize PDO connection
+		return [];
+	}
+
+	/**
+	 * Handle unserialization for PHPUnit process isolation
+	 */
+	public function __wakeup(): void
+	{
+		// PDO will be re-initialized by test setup
 	}
 }

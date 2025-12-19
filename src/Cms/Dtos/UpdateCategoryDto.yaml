@@ -1,3 +1,7 @@
+# Update Category DTO
+# Note: This DTO uses flat structure instead of composition (referencing CategoryFieldsDto)
+# because the RequestMapper doesn't yet support mapping flat POST data to nested DTO properties.
+
 dto:
   name:
     type: string

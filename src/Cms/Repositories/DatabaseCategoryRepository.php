@@ -4,15 +4,14 @@ namespace Neuron\Cms\Repositories;
 
 use Neuron\Cms\Database\ConnectionFactory;
 use Neuron\Cms\Models\Category;
-use Neuron\Data\Setting\SettingManager;
+use Neuron\Data\Settings\SettingManager;
 use PDO;
 use Exception;
-use DateTimeImmutable;
 
 /**
- * Database-backed category repository.
+ * Database-backed category repository using ORM.
  *
- * Works with SQLite, MySQL, and PostgreSQL via PDO.
+ * Works with SQLite, MySQL, and PostgreSQL via the Neuron ORM.
  *
  * @package Neuron\Cms\Repositories
  */
@@ -28,6 +27,7 @@ class DatabaseCategoryRepository implements ICategoryRepository
 	 */
 	public function __construct( SettingManager $settings )
 	{
+		// Keep PDO for allWithPostCount() which uses a custom JOIN query
 		$this->_pdo = ConnectionFactory::createFromSettings( $settings );
 	}
 
@@ -36,12 +36,7 @@ class DatabaseCategoryRepository implements ICategoryRepository
 	 */
 	public function findById( int $id ): ?Category
 	{
-		$stmt = $this->_pdo->prepare( "SELECT * FROM categories WHERE id = ? LIMIT 1" );
-		$stmt->execute( [ $id ] );
-
-		$row = $stmt->fetch();
-
-		return $row ? Category::fromArray( $row ) : null;
+		return Category::find( $id );
 	}
 
 	/**
@@ -49,12 +44,7 @@ class DatabaseCategoryRepository implements ICategoryRepository
 	 */
 	public function findBySlug( string $slug ): ?Category
 	{
-		$stmt = $this->_pdo->prepare( "SELECT * FROM categories WHERE slug = ? LIMIT 1" );
-		$stmt->execute( [ $slug ] );
-
-		$row = $stmt->fetch();
-
-		return $row ? Category::fromArray( $row ) : null;
+		return Category::where( 'slug', $slug )->first();
 	}
 
 	/**
@@ -62,12 +52,7 @@ class DatabaseCategoryRepository implements ICategoryRepository
 	 */
 	public function findByName( string $name ): ?Category
 	{
-		$stmt = $this->_pdo->prepare( "SELECT * FROM categories WHERE name = ? LIMIT 1" );
-		$stmt->execute( [ $name ] );
-
-		$row = $stmt->fetch();
-
-		return $row ? Category::fromArray( $row ) : null;
+		return Category::where( 'name', $name )->first();
 	}
 
 	/**
@@ -83,13 +68,7 @@ class DatabaseCategoryRepository implements ICategoryRepository
 			return [];
 		}
 
-		$placeholders = implode( ',', array_fill( 0, count( $ids ), '?' ) );
-		$stmt = $this->_pdo->prepare( "SELECT * FROM categories WHERE id IN ($placeholders)" );
-		$stmt->execute( $ids );
-
-		$rows = $stmt->fetchAll();
-
-		return array_map( fn( $row ) => Category::fromArray( $row ), $rows );
+		return Category::whereIn( 'id', $ids )->get();
 	}
 
 	/**
@@ -109,20 +88,11 @@ class DatabaseCategoryRepository implements ICategoryRepository
 			throw new Exception( 'Category name already exists' );
 		}
 
-		$stmt = $this->_pdo->prepare(
-			"INSERT INTO categories (name, slug, description, created_at, updated_at)
-			VALUES (?, ?, ?, ?, ?)"
-		);
+		// Use ORM create method
+		$createdCategory = Category::create( $category->toArray() );
 
-		$stmt->execute([
-			$category->getName(),
-			$category->getSlug(),
-			$category->getDescription(),
-			$category->getCreatedAt()->format( 'Y-m-d H:i:s' ),
-			(new DateTimeImmutable())->format( 'Y-m-d H:i:s' )
-		]);
-
-		$category->setId( (int)$this->_pdo->lastInsertId() );
+		// Update the original category with the new ID
+		$category->setId( $createdCategory->getId() );
 
 		return $category;
 	}
@@ -151,22 +121,8 @@ class DatabaseCategoryRepository implements ICategoryRepository
 			throw new Exception( 'Category name already exists' );
 		}
 
-		$stmt = $this->_pdo->prepare(
-			"UPDATE categories SET
-				name = ?,
-				slug = ?,
-				description = ?,
-				updated_at = ?
-			WHERE id = ?"
-		);
-
-		return $stmt->execute([
-			$category->getName(),
-			$category->getSlug(),
-			$category->getDescription(),
-			(new DateTimeImmutable())->format( 'Y-m-d H:i:s' ),
-			$category->getId()
-		]);
+		// Use ORM save method
+		return $category->save();
 	}
 
 	/**
@@ -175,10 +131,9 @@ class DatabaseCategoryRepository implements ICategoryRepository
 	public function delete( int $id ): bool
 	{
 		// Foreign key constraints will handle cascade delete of post relationships
-		$stmt = $this->_pdo->prepare( "DELETE FROM categories WHERE id = ?" );
-		$stmt->execute( [ $id ] );
+		$deletedCount = Category::query()->where( 'id', $id )->delete();
 
-		return $stmt->rowCount() > 0;
+		return $deletedCount > 0;
 	}
 
 	/**
@@ -186,10 +141,7 @@ class DatabaseCategoryRepository implements ICategoryRepository
 	 */
 	public function all(): array
 	{
-		$stmt = $this->_pdo->query( "SELECT * FROM categories ORDER BY name ASC" );
-		$rows = $stmt->fetchAll();
-
-		return array_map( fn( $row ) => Category::fromArray( $row ), $rows );
+		return Category::orderBy( 'name', 'ASC' )->all();
 	}
 
 	/**
@@ -197,10 +149,7 @@ class DatabaseCategoryRepository implements ICategoryRepository
 	 */
 	public function count(): int
 	{
-		$stmt = $this->_pdo->query( "SELECT COUNT(*) as total FROM categories" );
-		$row = $stmt->fetch();
-
-		return (int)$row['total'];
+		return Category::query()->count();
 	}
 
 	/**
@@ -208,6 +157,8 @@ class DatabaseCategoryRepository implements ICategoryRepository
 	 */
 	public function allWithPostCount(): array
 	{
+		// This method still uses raw SQL for the JOIN with aggregation
+		// TODO: Add support for joins and aggregations to ORM
 		$stmt = $this->_pdo->query(
 			"SELECT c.*, COUNT(pc.post_id) as post_count
 			FROM categories c
@@ -225,5 +176,22 @@ class DatabaseCategoryRepository implements ICategoryRepository
 				'post_count' => (int)$row['post_count']
 			];
 		}, $rows );
+	}
+
+	/**
+	 * Handle serialization for PHPUnit process isolation
+	 */
+	public function __sleep(): array
+	{
+		// Don't serialize PDO connection
+		return [];
+	}
+
+	/**
+	 * Handle unserialization for PHPUnit process isolation
+	 */
+	public function __wakeup(): void
+	{
+		// PDO will be re-initialized by test setup
 	}
 }

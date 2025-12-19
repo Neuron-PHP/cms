@@ -7,7 +7,9 @@ use Neuron\Cms\Models\PasswordResetToken;
 use Neuron\Cms\Repositories\IPasswordResetTokenRepository;
 use Neuron\Cms\Repositories\IUserRepository;
 use Neuron\Cms\Services\Email\Sender;
-use Neuron\Data\Setting\SettingManager;
+use Neuron\Core\System\IRandom;
+use Neuron\Core\System\RealRandom;
+use Neuron\Data\Settings\SettingManager;
 use Neuron\Log\Log;
 use Exception;
 
@@ -24,6 +26,7 @@ class PasswordResetter
 	private IUserRepository $_userRepository;
 	private PasswordHasher $_passwordHasher;
 	private SettingManager $_settings;
+	private IRandom $_random;
 	private string $_basePath;
 	private string $_resetUrl;
 	private int $_tokenExpirationMinutes = 60;
@@ -37,6 +40,7 @@ class PasswordResetter
 	 * @param SettingManager $settings Settings manager with email configuration
 	 * @param string $basePath Base path for template loading
 	 * @param string $resetUrl Base URL for password reset (token will be appended)
+	 * @param IRandom|null $random Random generator (defaults to cryptographically secure)
 	 */
 	public function __construct(
 		IPasswordResetTokenRepository $tokenRepository,
@@ -44,7 +48,8 @@ class PasswordResetter
 		PasswordHasher $passwordHasher,
 		SettingManager $settings,
 		string $basePath,
-		string $resetUrl
+		string $resetUrl,
+		?IRandom $random = null
 	)
 	{
 		$this->_tokenRepository = $tokenRepository;
@@ -53,6 +58,7 @@ class PasswordResetter
 		$this->_settings = $settings;
 		$this->_basePath = $basePath;
 		$this->_resetUrl = $resetUrl;
+		$this->_random = $random ?? new RealRandom();
 	}
 
 	/**
@@ -87,8 +93,8 @@ class PasswordResetter
 		// Delete any existing tokens for this email
 		$this->_tokenRepository->deleteByEmail( $email );
 
-		// Generate secure random token
-		$plainToken = bin2hex( random_bytes( 32 ) );
+		// Generate secure random token (64 hex characters = 32 bytes)
+		$plainToken = $this->_random->string( 64, 'hex' );
 		$hashedToken = hash( 'sha256', $plainToken );
 
 		// Create and store token
@@ -102,6 +108,12 @@ class PasswordResetter
 
 		// Send reset email
 		$this->sendResetEmail( $email, $plainToken );
+
+		// Emit password reset requested event
+		\Neuron\Application\CrossCutting\Event::emit( new \Neuron\Cms\Events\PasswordResetRequestedEvent(
+			$user,
+			$_SERVER['REMOTE_ADDR'] ?? 'unknown'
+		) );
 
 		return true;
 	}
@@ -165,6 +177,12 @@ class PasswordResetter
 
 		// Delete the token
 		$this->_tokenRepository->deleteByToken( hash( 'sha256', $plainToken ) );
+
+		// Emit password reset completed event
+		\Neuron\Application\CrossCutting\Event::emit( new \Neuron\Cms\Events\PasswordResetCompletedEvent(
+			$user,
+			$_SERVER['REMOTE_ADDR'] ?? 'unknown'
+		) );
 
 		return true;
 	}

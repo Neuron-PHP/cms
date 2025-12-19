@@ -6,8 +6,8 @@ use Neuron\Cli\Commands\Command;
 use Neuron\Cms\Models\User;
 use Neuron\Cms\Repositories\DatabaseUserRepository;
 use Neuron\Cms\Auth\PasswordHasher;
-use Neuron\Data\Setting\SettingManager;
-use Neuron\Data\Setting\Source\Yaml;
+use Neuron\Data\Settings\SettingManager;
+use Neuron\Data\Settings\Source\Yaml;
 use Neuron\Patterns\Registry;
 
 /**
@@ -182,6 +182,8 @@ class InstallCommand extends Command
 			'/storage',
 			'/storage/logs',
 			'/storage/cache',
+			'/storage/uploads',
+			'/storage/uploads/temp',
 
 			// Database directories
 			'/db',

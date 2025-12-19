@@ -1,0 +1,192 @@
+<?php
+
+namespace Neuron\Cms\Controllers\Admin;
+
+use Neuron\Mvc\Controller;
+use Neuron\Cms\Services\Media\CloudinaryUploader;
+use Neuron\Cms\Services\Media\MediaValidator;
+use Neuron\Data\Settings\SettingManager;
+use Neuron\Patterns\Registry;
+
+/**
+ * Media upload controller.
+ *
+ * Handles image uploads for the admin interface.
+ *
+ * @package Neuron\Cms\Controllers\Admin
+ */
+class Media extends Controller
+{
+	private CloudinaryUploader $_uploader;
+	private MediaValidator $_validator;
+
+	/**
+	 * Constructor
+	 */
+	public function __construct()
+	{
+		parent::__construct();
+
+		$settings = Registry::getInstance()->get( 'Settings' );
+
+		if( !$settings instanceof SettingManager )
+		{
+			throw new \Exception( 'Settings not found in Registry' );
+		}
+
+		$this->_uploader = new CloudinaryUploader( $settings );
+		$this->_validator = new MediaValidator( $settings );
+	}
+
+	/**
+	 * Upload image for Editor.js
+	 *
+	 * Handles POST /admin/upload/image
+	 * Returns JSON in Editor.js format
+	 *
+	 * @return void
+	 */
+	public function uploadImage(): void
+	{
+		// Set JSON response header
+		header( 'Content-Type: application/json' );
+
+		try
+		{
+			// Check if file was uploaded
+			if( !isset( $_FILES['image'] ) )
+			{
+				$this->returnEditorJsError( 'No file was uploaded' );
+				return;
+			}
+
+			$file = $_FILES['image'];
+
+			// Validate file
+			if( !$this->_validator->validate( $file ) )
+			{
+				$this->returnEditorJsError( $this->_validator->getFirstError() );
+				return;
+			}
+
+			// Upload to Cloudinary
+			$result = $this->_uploader->upload( $file['tmp_name'] );
+
+			// Return success response in Editor.js format
+			$this->returnEditorJsSuccess( $result );
+		}
+		catch( \Exception $e )
+		{
+			$this->returnEditorJsError( $e->getMessage() );
+		}
+	}
+
+	/**
+	 * Upload featured image
+	 *
+	 * Handles POST /admin/upload/featured-image
+	 * Returns JSON with upload result
+	 *
+	 * @return void
+	 */
+	public function uploadFeaturedImage(): void
+	{
+		// Set JSON response header
+		header( 'Content-Type: application/json' );
+
+		try
+		{
+			// Check if file was uploaded
+			if( !isset( $_FILES['image'] ) )
+			{
+				$this->returnError( 'No file was uploaded' );
+				return;
+			}
+
+			$file = $_FILES['image'];
+
+			// Validate file
+			if( !$this->_validator->validate( $file ) )
+			{
+				$this->returnError( $this->_validator->getFirstError() );
+				return;
+			}
+
+			// Upload to Cloudinary
+			$result = $this->_uploader->upload( $file['tmp_name'] );
+
+			// Return success response
+			$this->returnSuccess( $result );
+		}
+		catch( \Exception $e )
+		{
+			$this->returnError( $e->getMessage() );
+		}
+	}
+
+	/**
+	 * Return Editor.js success response
+	 *
+	 * @param array $result Upload result
+	 * @return void
+	 */
+	private function returnEditorJsSuccess( array $result ): void
+	{
+		echo json_encode( [
+			'success' => 1,
+			'file' => [
+				'url' => $result['url'],
+				'width' => $result['width'],
+				'height' => $result['height']
+			]
+		] );
+		exit;
+	}
+
+	/**
+	 * Return Editor.js error response
+	 *
+	 * @param string $message Error message
+	 * @return void
+	 */
+	private function returnEditorJsError( string $message ): void
+	{
+		http_response_code( 400 );
+		echo json_encode( [
+			'success' => 0,
+			'message' => $message
+		] );
+		exit;
+	}
+
+	/**
+	 * Return standard success response
+	 *
+	 * @param array $result Upload result
+	 * @return void
+	 */
+	private function returnSuccess( array $result ): void
+	{
+		echo json_encode( [
+			'success' => true,
+			'data' => $result
+		] );
+		exit;
+	}
+
+	/**
+	 * Return standard error response
+	 *
+	 * @param string $message Error message
+	 * @return void
+	 */
+	private function returnError( string $message ): void
+	{
+		http_response_code( 400 );
+		echo json_encode( [
+			'success' => false,
+			'error' => $message
+		] );
+		exit;
+	}
+}

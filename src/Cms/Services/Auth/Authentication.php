@@ -46,40 +46,75 @@ class Authentication
 		{
 			// Perform dummy hash to normalize timing
 			$this->_passwordHasher->verify( $password, '$2y$10$dummyhashtopreventtimingattack1234567890' );
+
+			// Emit login failed event
+			\Neuron\Application\CrossCutting\Event::emit( new \Neuron\Cms\Events\UserLoginFailedEvent(
+				$username,
+				$_SERVER['REMOTE_ADDR'] ?? 'unknown',
+				microtime( true ),
+				'user_not_found'
+			) );
+
 			return false;
 		}
 
 		// Check if account is locked
 		if( $user->isLockedOut() )
 		{
+			// Emit login failed event
+			\Neuron\Application\CrossCutting\Event::emit( new \Neuron\Cms\Events\UserLoginFailedEvent(
+				$username,
+				$_SERVER['REMOTE_ADDR'] ?? 'unknown',
+				microtime( true ),
+				'account_locked'
+			) );
 			return false;
 		}
 
 		// Check if account is active
 		if( !$user->isActive() )
 		{
+			// Emit login failed event
+			\Neuron\Application\CrossCutting\Event::emit( new \Neuron\Cms\Events\UserLoginFailedEvent(
+				$username,
+				$_SERVER['REMOTE_ADDR'] ?? 'unknown',
+				microtime( true ),
+				'account_inactive'
+			) );
 			return false;
 		}
 
 		// Verify password
 		if( !$this->validateCredentials( $user, $password ) )
 		{
-			// Increment failed login attempts
-			$user->incrementFailedLoginAttempts();
+			// Atomically increment failed login attempts to avoid race condition
+			$newFailedAttempts = $this->_userRepository->incrementFailedLoginAttempts( $user->getId() );
 
 			// Lock account if too many failed attempts
-			if( $user->getFailedLoginAttempts() >= $this->_maxLoginAttempts )
+			if( $newFailedAttempts >= $this->_maxLoginAttempts )
 			{
 				$lockedUntil = (new DateTimeImmutable())->add( new DateInterval( "PT{$this->_lockoutDuration}M" ) );
-				$user->setLockedUntil( $lockedUntil );
+				$this->_userRepository->setLockedUntil( $user->getId(), $lockedUntil );
 			}
 
-			$this->_userRepository->update( $user );
+			// Emit login failed event
+			\Neuron\Application\CrossCutting\Event::emit( new \Neuron\Cms\Events\UserLoginFailedEvent(
+				$username,
+				$_SERVER['REMOTE_ADDR'] ?? 'unknown',
+				microtime( true ),
+				'invalid_credentials'
+			) );
+
 			return false;
 		}
 
-		// Successful login - reset failed attempts
-		$user->resetFailedLoginAttempts();
+		// Successful login - atomically reset failed attempts
+		$this->_userRepository->resetFailedLoginAttempts( $user->getId() );
+
+		// Refresh user from database to get updated failed_login_attempts
+		$user = $this->_userRepository->findById( $user->getId() );
+
+		// Update last login time and potentially rehash password
 		$user->setLastLoginAt( new DateTimeImmutable() );
 
 		// Check if password needs rehashing
@@ -107,12 +142,20 @@ class Authentication
 		// Store user ID in session
 		$this->_sessionManager->set( 'user_id', $user->getId() );
 		$this->_sessionManager->set( 'user_role', $user->getRole() );
+		$this->_sessionManager->set( 'login_time', microtime( true ) );
 
 		// Handle remember me
 		if( $remember )
 		{
 			$this->setRememberToken( $user );
 		}
+
+		// Emit user login event
+		\Neuron\Application\CrossCutting\Event::emit( new \Neuron\Cms\Events\UserLoginEvent(
+			$user,
+			$_SERVER['REMOTE_ADDR'] ?? 'unknown',
+			microtime( true )
+		) );
 	}
 
 	/**
@@ -120,6 +163,9 @@ class Authentication
 	 */
 	public function logout(): void
 	{
+		$user = null;
+		$sessionDuration = 0.0;
+
 		// Clear remember token if exists
 		if( $this->check() )
 		{
@@ -128,6 +174,13 @@ class Authentication
 			{
 				$user->setRememberToken( null );
 				$this->_userRepository->update( $user );
+
+				// Calculate session duration
+				$loginTime = $this->_sessionManager->get( 'login_time' );
+				if( $loginTime )
+				{
+					$sessionDuration = microtime( true ) - $loginTime;
+				}
 			}
 		}
 
@@ -138,6 +191,15 @@ class Authentication
 		if( isset( $_COOKIE['remember_token'] ) )
 		{
 			setcookie( 'remember_token', '', time() - 3600, '/', '', true, true );
+		}
+
+		// Emit user logout event
+		if( $user )
+		{
+			\Neuron\Application\CrossCutting\Event::emit( new \Neuron\Cms\Events\UserLogoutEvent(
+				$user,
+				$sessionDuration
+			) );
 		}
 	}
 
