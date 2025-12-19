@@ -4,6 +4,8 @@ namespace Neuron\Cms\Services\Tag;
 
 use Neuron\Cms\Models\Tag;
 use Neuron\Cms\Repositories\ITagRepository;
+use Neuron\Core\System\IRandom;
+use Neuron\Core\System\RealRandom;
 
 /**
  * Tag creation service.
@@ -15,10 +17,12 @@ use Neuron\Cms\Repositories\ITagRepository;
 class Creator
 {
 	private ITagRepository $_tagRepository;
+	private IRandom $_random;
 
-	public function __construct( ITagRepository $tagRepository )
+	public function __construct( ITagRepository $tagRepository, ?IRandom $random = null )
 	{
 		$this->_tagRepository = $tagRepository;
+		$this->_random = $random ?? new RealRandom();
 	}
 
 	/**
@@ -40,6 +44,9 @@ class Creator
 	/**
 	 * Generate URL-friendly slug from name
 	 *
+	 * For names with only non-ASCII characters (e.g., "你好", "مرحبا"),
+	 * generates a fallback slug using a unique identifier.
+	 *
 	 * @param string $name
 	 * @return string
 	 */
@@ -48,6 +55,14 @@ class Creator
 		$slug = strtolower( trim( $name ) );
 		$slug = preg_replace( '/[^a-z0-9-]/', '-', $slug );
 		$slug = preg_replace( '/-+/', '-', $slug );
-		return trim( $slug, '-' );
+		$slug = trim( $slug, '-' );
+
+		// Fallback for names with no ASCII characters
+		if( $slug === '' )
+		{
+			$slug = 'tag-' . $this->_random->uniqueId();
+		}
+
+		return $slug;
 	}
 }

@@ -1,3 +1,7 @@
+# Create User DTO
+# Note: This DTO uses flat structure instead of composition (referencing UserCredentialsDto)
+# because the RequestMapper doesn't yet support mapping flat POST data to nested DTO properties.
+
 dto:
   username:
     type: string

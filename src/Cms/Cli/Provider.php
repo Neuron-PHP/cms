@@ -18,10 +18,15 @@ class Provider
 	 */
 	public static function register( Registry $registry ): void
 	{
-		// Installation command
+		// Installation commands
 		$registry->register(
 			'cms:install',
 			'Neuron\\Cms\\Cli\\Commands\\Install\\InstallCommand'
+		);
+
+		$registry->register(
+			'cms:upgrade',
+			'Neuron\\Cms\\Cli\\Commands\\Install\\UpgradeCommand'
 		);
 
 		// User management commands
@@ -54,18 +59,6 @@ class Provider
 		$registry->register(
 			'cms:maintenance:status',
 			'Neuron\\Cms\\Cli\\Commands\\Maintenance\\StatusCommand'
-		);
-
-		// Email template generator
-		$registry->register(
-			'mail:generate',
-			'Neuron\\Cms\\Cli\\Commands\\Generate\\EmailCommand'
-		);
-
-		// Queue installation
-		$registry->register(
-			'queue:install',
-			'Neuron\\Cms\\Cli\\Commands\\Queue\\InstallCommand'
 		);
 	}
 }

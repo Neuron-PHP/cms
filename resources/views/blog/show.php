@@ -36,7 +36,7 @@
 		<?php endif; ?>
 
 		<div class="post-content">
-			<?= $renderedContent ?? htmlspecialchars( $Post->getBody() ) ?>
+			<?= $renderedContent ?>
 		</div>
 	</article>
 
@@ -47,3 +47,114 @@
 	</div>
 	<?php endif; ?>
 </div>
+
+<style>
+/* Post content styles */
+.post-content {
+	max-width: 800px;
+	margin: 0 auto;
+}
+
+.post-content h2 {
+	margin-top: 2rem;
+	margin-bottom: 1rem;
+	font-weight: 600;
+}
+
+.post-content h3 {
+	margin-top: 1.5rem;
+	margin-bottom: 0.75rem;
+	font-weight: 600;
+}
+
+.post-content h4 {
+	margin-top: 1.25rem;
+	margin-bottom: 0.5rem;
+	font-weight: 600;
+}
+
+.post-content p {
+	margin-bottom: 1rem;
+	line-height: 1.7;
+}
+
+.post-content ul,
+.post-content ol {
+	margin-bottom: 1rem;
+	padding-left: 2rem;
+}
+
+.post-content li {
+	margin-bottom: 0.5rem;
+	line-height: 1.6;
+}
+
+.post-content blockquote {
+	padding-left: 1.5rem;
+	border-left: 4px solid #dee2e6;
+	margin: 1.5rem 0;
+	color: #6c757d;
+}
+
+.post-content img {
+	max-width: 100%;
+	height: auto;
+	border-radius: 0.25rem;
+}
+
+.post-content figure {
+	margin: 2rem 0;
+}
+
+.post-content figcaption {
+	margin-top: 0.5rem;
+	font-size: 0.875rem;
+}
+
+.post-content pre {
+	background: #f8f9fa;
+	padding: 1rem;
+	border-radius: 0.25rem;
+	overflow-x: auto;
+}
+
+.post-content code {
+	background: #f8f9fa;
+	padding: 0.2rem 0.4rem;
+	border-radius: 0.25rem;
+	font-size: 0.875em;
+}
+
+.post-content pre code {
+	background: transparent;
+	padding: 0;
+}
+
+.post-content hr {
+	margin: 2rem 0;
+	border: 0;
+	border-top: 1px solid #dee2e6;
+}
+
+/* Widget styles */
+.post-content .latest-posts-widget {
+	margin: 2rem 0;
+	padding: 1.5rem;
+	background: #f8f9fa;
+	border-radius: 0.5rem;
+}
+
+.post-content .contact-form-widget {
+	margin: 2rem 0;
+	padding: 1.5rem;
+	background: #fff;
+	border: 1px solid #dee2e6;
+	border-radius: 0.5rem;
+}
+
+.post-content .map-widget {
+	margin: 2rem 0;
+	border-radius: 0.5rem;
+	overflow: hidden;
+}
+</style>

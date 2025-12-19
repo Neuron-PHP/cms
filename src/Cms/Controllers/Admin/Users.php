@@ -10,7 +10,7 @@ use Neuron\Cms\Services\User\Updater;
 use Neuron\Cms\Services\User\Deleter;
 use Neuron\Cms\Auth\PasswordHasher;
 use Neuron\Cms\Services\Auth\CsrfToken;
-use Neuron\Data\Setting\SettingManager;
+use Neuron\Data\Settings\SettingManager;
 use Neuron\Mvc\Application;
 use Neuron\Mvc\Requests\Request;
 use Neuron\Mvc\Responses\HttpResponseStatus;

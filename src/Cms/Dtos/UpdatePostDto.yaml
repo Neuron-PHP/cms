@@ -1,3 +1,7 @@
+# Update Post DTO
+# Note: This DTO uses flat structure instead of composition (referencing PostFieldsDto)
+# because the RequestMapper doesn't yet support mapping flat POST data to nested DTO properties.
+
 dto:
   title:
     type: string

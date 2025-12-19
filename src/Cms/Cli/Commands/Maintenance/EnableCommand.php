@@ -5,7 +5,7 @@ namespace Neuron\Cms\Cli\Commands\Maintenance;
 use Neuron\Cli\Commands\Command;
 use Neuron\Cms\Maintenance\MaintenanceManager;
 use Neuron\Cms\Maintenance\MaintenanceConfig;
-use Neuron\Data\Setting\Source\Yaml;
+use Neuron\Data\Settings\Source\Yaml;
 
 /**
  * CLI command for enabling maintenance mode.

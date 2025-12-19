@@ -6,6 +6,8 @@ use Neuron\Cms\Models\Post;
 use Neuron\Cms\Repositories\IPostRepository;
 use Neuron\Cms\Repositories\ICategoryRepository;
 use Neuron\Cms\Services\Tag\Resolver as TagResolver;
+use Neuron\Core\System\IRandom;
+use Neuron\Core\System\RealRandom;
 
 /**
  * Post update service.
@@ -19,16 +21,19 @@ class Updater
 	private IPostRepository $_postRepository;
 	private ICategoryRepository $_categoryRepository;
 	private TagResolver $_tagResolver;
+	private IRandom $_random;
 
 	public function __construct(
 		IPostRepository $postRepository,
 		ICategoryRepository $categoryRepository,
-		TagResolver $tagResolver
+		TagResolver $tagResolver,
+		?IRandom $random = null
 	)
 	{
 		$this->_postRepository = $postRepository;
 		$this->_categoryRepository = $categoryRepository;
 		$this->_tagResolver = $tagResolver;
+		$this->_random = $random ?? new RealRandom();
 	}
 
 	/**
@@ -36,7 +41,7 @@ class Updater
 	 *
 	 * @param Post $post The post to update
 	 * @param string $title Post title
-	 * @param string $body Post body content
+	 * @param string $content Editor.js JSON content
 	 * @param string $status Post status
 	 * @param string|null $slug Custom slug
 	 * @param string|null $excerpt Excerpt
@@ -48,7 +53,7 @@ class Updater
 	public function update(
 		Post $post,
 		string $title,
-		string $body,
+		string $content,
 		string $status,
 		?string $slug = null,
 		?string $excerpt = null,
@@ -59,7 +64,7 @@ class Updater
 	{
 		$post->setTitle( $title );
 		$post->setSlug( $slug ?: $this->generateSlug( $title ) );
-		$post->setBody( $body );
+		$post->setContent( $content );
 		$post->setExcerpt( $excerpt );
 		$post->setFeaturedImage( $featuredImage );
 		$post->setStatus( $status );
@@ -85,6 +90,9 @@ class Updater
 	/**
 	 * Generate URL-friendly slug from title
 	 *
+	 * For titles with only non-ASCII characters (e.g., "你好", "مرحبا"),
+	 * generates a fallback slug using a unique identifier.
+	 *
 	 * @param string $title
 	 * @return string
 	 */
@@ -93,6 +101,14 @@ class Updater
 		$slug = strtolower( trim( $title ) );
 		$slug = preg_replace( '/[^a-z0-9-]/', '-', $slug );
 		$slug = preg_replace( '/-+/', '-', $slug );
-		return trim( $slug, '-' );
+		$slug = trim( $slug, '-' );
+
+		// Fallback for titles with no ASCII characters
+		if( $slug === '' )
+		{
+			$slug = 'post-' . $this->_random->uniqueId();
+		}
+
+		return $slug;
 	}
 }

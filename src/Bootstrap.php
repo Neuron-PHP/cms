@@ -1,8 +1,8 @@
 <?php
 namespace Neuron\Cms;
 
-use Neuron\Data\Object\Version;
-use Neuron\Data\Setting\Source\Yaml;
+use Neuron\Data\Objects\Version;
+use Neuron\Data\Settings\Source\Yaml;
 use Neuron\Mvc\Application;
 use Neuron\Orm\Model;
 use Neuron\Cms\Database\ConnectionFactory;

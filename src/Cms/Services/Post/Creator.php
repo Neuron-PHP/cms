@@ -6,6 +6,8 @@ use Neuron\Cms\Models\Post;
 use Neuron\Cms\Repositories\IPostRepository;
 use Neuron\Cms\Repositories\ICategoryRepository;
 use Neuron\Cms\Services\Tag\Resolver as TagResolver;
+use Neuron\Core\System\IRandom;
+use Neuron\Core\System\RealRandom;
 use DateTimeImmutable;
 
 /**
@@ -20,23 +22,26 @@ class Creator
 	private IPostRepository $_postRepository;
 	private ICategoryRepository $_categoryRepository;
 	private TagResolver $_tagResolver;
+	private IRandom $_random;
 
 	public function __construct(
 		IPostRepository $postRepository,
 		ICategoryRepository $categoryRepository,
-		TagResolver $tagResolver
+		TagResolver $tagResolver,
+		?IRandom $random = null
 	)
 	{
 		$this->_postRepository = $postRepository;
 		$this->_categoryRepository = $categoryRepository;
 		$this->_tagResolver = $tagResolver;
+		$this->_random = $random ?? new RealRandom();
 	}
 
 	/**
 	 * Create a new post
 	 *
 	 * @param string $title Post title
-	 * @param string $body Post body content
+	 * @param string $content Editor.js JSON content
 	 * @param int $authorId Author user ID
 	 * @param string $status Post status (draft, published, scheduled)
 	 * @param string|null $slug Optional custom slug (auto-generated if not provided)
@@ -48,7 +53,7 @@ class Creator
 	 */
 	public function create(
 		string $title,
-		string $body,
+		string $content,
 		int $authorId,
 		string $status,
 		?string $slug = null,
@@ -61,7 +66,7 @@ class Creator
 		$post = new Post();
 		$post->setTitle( $title );
 		$post->setSlug( $slug ?: $this->generateSlug( $title ) );
-		$post->setBody( $body );
+		$post->setContent( $content );
 		$post->setExcerpt( $excerpt );
 		$post->setFeaturedImage( $featuredImage );
 		$post->setAuthorId( $authorId );
@@ -88,6 +93,9 @@ class Creator
 	/**
 	 * Generate URL-friendly slug from title
 	 *
+	 * For titles with only non-ASCII characters (e.g., "你好", "مرحبا"),
+	 * generates a fallback slug using a unique identifier.
+	 *
 	 * @param string $title
 	 * @return string
 	 */
@@ -96,6 +104,14 @@ class Creator
 		$slug = strtolower( trim( $title ) );
 		$slug = preg_replace( '/[^a-z0-9-]/', '-', $slug );
 		$slug = preg_replace( '/-+/', '-', $slug );
-		return trim( $slug, '-' );
+		$slug = trim( $slug, '-' );
+
+		// Fallback for titles with no ASCII characters
+		if( $slug === '' )
+		{
+			$slug = 'post-' . $this->_random->uniqueId();
+		}
+
+		return $slug;
 	}
 }

@@ -76,3 +76,63 @@ theme:
   # Guest theme (for public website and login/registration pages)
   # Recommended: sandstone, flatly, cosmo, litera, lumen, minty
   guest: sandstone
+
+# Cloudinary Configuration
+# Sign up for free at: https://cloudinary.com
+# Get credentials from: https://console.cloudinary.com/settings/general
+cloudinary:
+  cloud_name: your-cloud-name  # Your Cloudinary cloud name (required)
+  api_key: your-api-key  # API key from Cloudinary console (required)
+  api_secret: your-api-secret  # API secret from Cloudinary console (required)
+  folder: neuron-cms/images  # Default folder for uploads (optional)
+  max_file_size: 5242880  # Maximum file size in bytes (5MB default)
+  allowed_formats: [jpg, jpeg, png, gif, webp]  # Allowed image formats
+
+# Database Configuration
+# The installer will configure this section interactively
+database:
+  adapter: mysql  # Database adapter (mysql, pgsql, sqlite)
+  host: localhost  # Database host
+  name: neuron_cms  # Database name
+  user: root  # Database username
+  pass: secret  # Database password
+  port: 3306  # Database port (3306 for MySQL, 5432 for PostgreSQL)
+  charset: utf8mb4  # Character set
+
+# Migration Configuration
+migrations:
+  path: db/migrate  # Path to migrations directory (relative to project root)
+  seeds_path: db/seed  # Path to seeds directory (relative to project root)
+  table: phinx_log  # Migration tracking table name
+  schema_file: db/schema.yaml  # Schema export file path (relative to project root)
+  auto_dump_schema: false  # Auto-dump schema after migrations (true/false)
+
+# Email Configuration
+# Used by email-sending features of the CMS powered by PHPMailer
+email:
+  test_mode: false  # When enabled, emails are logged instead of being sent (useful for development)
+  driver: mail  # Email driver: mail, sendmail, or smtp
+  from_address: noreply@yourdomain.com  # From address for system emails
+  from_name: Your Site Name  # From name for system emails
+
+  # SMTP Configuration (only required if driver is 'smtp')
+  # Examples for popular email services:
+  # Gmail: host: smtp.gmail.com, port: 587, encryption: tls
+  # SendGrid: host: smtp.sendgrid.net, port: 587, username: apikey
+  # Mailgun: host: smtp.mailgun.org, port: 587
+  # host: smtp.gmail.com
+  # port: 587
+  # username: your-email@gmail.com
+  # password: your-app-password
+  # encryption: tls  # or 'ssl' for port 465
+
+# Maintenance Mode Configuration
+maintenance:
+  default_message: "Site is currently under maintenance. We'll be back soon!"  # Default maintenance message
+  allowed_ips:  # IP addresses that can bypass maintenance mode
+    - 127.0.0.1  # Localhost IPv4
+    - ::1  # Localhost IPv6
+    # - 192.168.1.0/24  # Example: Allow entire local network (CIDR notation)
+  retry_after: 3600  # Retry-after value in seconds (1 hour)
+  custom_view: null  # Path to custom maintenance view (optional)
+  show_countdown: false  # Show countdown timer on maintenance page

@@ -18,7 +18,8 @@ class Post extends Model
 	private ?int $_id = null;
 	private string $_title;
 	private string $_slug;
-	private string $_body;
+	private string $_body = '';  // Plain text fallback, derived from contentRaw
+	private string $_contentRaw = '{"blocks":[]}';  // JSON string for Editor.js
 	private ?string $_excerpt = null;
 	private ?string $_featuredImage = null;
 	private int $_authorId;
@@ -115,6 +116,55 @@ class Post extends Model
 	public function setBody( string $body ): self
 	{
 		$this->_body = $body;
+		return $this;
+	}
+
+	/**
+	 * Get content as array (decoded Editor.js JSON)
+	 */
+	public function getContent(): array
+	{
+		return json_decode( $this->_contentRaw, true ) ?? ['blocks' => []];
+	}
+
+	/**
+	 * Get raw content JSON string
+	 */
+	public function getContentRaw(): string
+	{
+		return $this->_contentRaw;
+	}
+
+	/**
+	 * Set content from Editor.js JSON string
+	 * Also extracts plain text to _body for backward compatibility
+	 */
+	public function setContent( string $jsonContent ): self
+	{
+		$this->_contentRaw = $jsonContent;
+		$this->_body = $this->extractPlainText( $jsonContent );
+		return $this;
+	}
+
+	/**
+	 * Set content from array (will be JSON encoded)
+	 * Also extracts plain text to _body for backward compatibility
+	 * @param array $content Content array to encode
+	 * @return self
+	 * @throws \JsonException If JSON encoding fails
+	 */
+	public function setContentArray( array $content ): self
+	{
+		$encoded = json_encode( $content );
+
+		if( $encoded === false )
+		{
+			$error = json_last_error_msg();
+			throw new \JsonException( "Failed to encode content array to JSON: {$error}" );
+		}
+
+		$this->_contentRaw = $encoded;
+		$this->_body = $this->extractPlainText( $encoded );
 		return $this;
 	}
 
@@ -446,7 +496,54 @@ class Post extends Model
 
 		$post->setTitle( $data['title'] ?? '' );
 		$post->setSlug( $data['slug'] ?? '' );
-		$post->setBody( $data['body'] ?? '' );
+
+		// Handle content_raw first (without extracting plain text to body yet)
+		if( isset( $data['content_raw'] ) )
+		{
+			if( is_string( $data['content_raw'] ) )
+			{
+				$post->_contentRaw = $data['content_raw'];
+			}
+			elseif( is_array( $data['content_raw'] ) )
+			{
+				$encoded = json_encode( $data['content_raw'] );
+				if( $encoded === false )
+				{
+					$error = json_last_error_msg();
+					throw new \JsonException( "Failed to encode content_raw array to JSON: {$error}" );
+				}
+				$post->_contentRaw = $encoded;
+			}
+		}
+		elseif( isset( $data['content'] ) )
+		{
+			if( is_string( $data['content'] ) )
+			{
+				$post->_contentRaw = $data['content'];
+			}
+			elseif( is_array( $data['content'] ) )
+			{
+				$encoded = json_encode( $data['content'] );
+				if( $encoded === false )
+				{
+					$error = json_last_error_msg();
+					throw new \JsonException( "Failed to encode content array to JSON: {$error}" );
+				}
+				$post->_contentRaw = $encoded;
+			}
+		}
+
+		// Set body - if explicitly provided, use it; otherwise extract from content_raw
+		if( isset( $data['body'] ) && $data['body'] !== '' )
+		{
+			$post->setBody( $data['body'] );
+		}
+		else
+		{
+			// Extract plain text from content_raw as fallback
+			$post->setBody( $post->extractPlainText( $post->_contentRaw ) );
+		}
+
 		$post->setExcerpt( $data['excerpt'] ?? null );
 		$post->setFeaturedImage( $data['featured_image'] ?? null );
 		$post->setAuthorId( (int)($data['author_id'] ?? 0) );
@@ -511,6 +608,7 @@ class Post extends Model
 			'title' => $this->_title,
 			'slug' => $this->_slug,
 			'body' => $this->_body,
+			'content_raw' => $this->_contentRaw,
 			'excerpt' => $this->_excerpt,
 			'featured_image' => $this->_featuredImage,
 			'author_id' => $this->_authorId,
@@ -520,5 +618,93 @@ class Post extends Model
 			'created_at' => $this->_createdAt?->format( 'Y-m-d H:i:s' ),
 			'updated_at' => $this->_updatedAt?->format( 'Y-m-d H:i:s' ),
 		];
+	}
+
+	/**
+	 * Extract plain text from Editor.js JSON content
+	 *
+	 * @param string $jsonContent Editor.js JSON string
+	 * @return string Plain text extracted from blocks
+	 */
+	private function extractPlainText( string $jsonContent ): string
+	{
+		$data = json_decode( $jsonContent, true );
+
+		if( !$data || !isset( $data['blocks'] ) || !is_array( $data['blocks'] ) )
+		{
+			return '';
+		}
+
+		$text = [];
+
+		foreach( $data['blocks'] as $block )
+		{
+			if( !isset( $block['type'] ) || !isset( $block['data'] ) )
+			{
+				continue;
+			}
+
+			$blockText = match( $block['type'] )
+			{
+				'paragraph', 'header' => $block['data']['text'] ?? '',
+				'list' => isset( $block['data']['items'] ) && is_array( $block['data']['items'] )
+					? $this->extractListText( $block['data']['items'] )
+					: '',
+				'quote' => $block['data']['text'] ?? '',
+				'code' => $block['data']['code'] ?? '',
+				'raw' => $block['data']['html'] ?? '',
+				default => ''
+			};
+
+			if( $blockText !== '' )
+			{
+				// Strip HTML tags from text
+				$blockText = strip_tags( $blockText );
+				$text[] = trim( $blockText );
+			}
+		}
+
+		return implode( "\n\n", array_filter( $text ) );
+	}
+
+	/**
+	 * Extract text from list items (handles nested structures)
+	 *
+	 * Editor.js List v1.9+ supports nested lists where items can be:
+	 * - Simple strings: "Item text"
+	 * - Objects with nested items: { "content": "Item text", "items": [nested items] }
+	 *
+	 * @param array $items List items array
+	 * @return string Extracted text with newlines between items
+	 */
+	private function extractListText( array $items ): string
+	{
+		$textItems = [];
+
+		foreach( $items as $item )
+		{
+			// Handle simple string items
+			if( is_string( $item ) )
+			{
+				$textItems[] = $item;
+			}
+			// Handle nested list items (objects with content and items)
+			elseif( is_array( $item ) && isset( $item['content'] ) )
+			{
+				$textItems[] = $item['content'];
+
+				// Recursively extract nested items
+				if( isset( $item['items'] ) && is_array( $item['items'] ) )
+				{
+					$nestedText = $this->extractListText( $item['items'] );
+					if( $nestedText !== '' )
+					{
+						$textItems[] = $nestedText;
+					}
+				}
+			}
+		}
+
+		return implode( "\n", $textItems );
 	}
 }

@@ -1,5 +1,6 @@
 <?php
 namespace Neuron\Cms\Controllers;
+use Neuron\Data\Factories;
 
 /**
  * Base content controller for the Neuron CMS framework.
@@ -50,7 +51,7 @@ namespace Neuron\Cms\Controllers;
 use League\CommonMark\Exception\CommonMarkException;
 use Neuron\Cms\Auth\SessionManager;
 use Neuron\Core\Exceptions\NotFound;
-use Neuron\Data\Object\Version;
+use Neuron\Data\Objects\Version;
 use Neuron\Mvc\Application;
 use Neuron\Mvc\Controllers\Base;
 use Neuron\Mvc\Requests\Request;
@@ -83,8 +84,7 @@ class Content extends Base
 
 		try
 		{
-			$version = new Version();
-			$version->loadFromFile( "../.version.json" );
+			$version = Factories\Version::fromFile( "../.version.json" );
 
 			Registry::getInstance()->set( 'version', 'v'.$version->getAsString() );
 		}
@@ -202,7 +202,7 @@ class Content extends Base
 	{
 		$viewData = array();
 
-		$page = $request->getRouteParameter( 'page' );
+		$page = $request->getRouteParameter( 'page' ) ?? 'index';
 
 		$viewData[ 'Title' ]		= $this->getName() . ' | ' . $this->getTitle();
 

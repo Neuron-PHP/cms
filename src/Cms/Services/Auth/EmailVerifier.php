@@ -7,7 +7,9 @@ use Neuron\Cms\Models\User;
 use Neuron\Cms\Repositories\IEmailVerificationTokenRepository;
 use Neuron\Cms\Repositories\IUserRepository;
 use Neuron\Cms\Services\Email\Sender;
-use Neuron\Data\Setting\SettingManager;
+use Neuron\Core\System\IRandom;
+use Neuron\Core\System\RealRandom;
+use Neuron\Data\Settings\SettingManager;
 use Neuron\Log\Log;
 use Exception;
 
@@ -23,6 +25,7 @@ class EmailVerifier
 	private IEmailVerificationTokenRepository $_tokenRepository;
 	private IUserRepository $_userRepository;
 	private SettingManager $_settings;
+	private IRandom $_random;
 	private string $_basePath;
 	private string $_verificationUrl;
 	private int $_tokenExpirationMinutes = 60;
@@ -35,13 +38,15 @@ class EmailVerifier
 	 * @param SettingManager $settings Settings manager with email configuration
 	 * @param string $basePath Base path for template loading
 	 * @param string $verificationUrl Base URL for email verification (token will be appended)
+	 * @param IRandom|null $random Random generator (defaults to cryptographically secure)
 	 */
 	public function __construct(
 		IEmailVerificationTokenRepository $tokenRepository,
 		IUserRepository $userRepository,
 		SettingManager $settings,
 		string $basePath,
-		string $verificationUrl
+		string $verificationUrl,
+		?IRandom $random = null
 	)
 	{
 		$this->_tokenRepository = $tokenRepository;
@@ -49,6 +54,7 @@ class EmailVerifier
 		$this->_settings = $settings;
 		$this->_basePath = $basePath;
 		$this->_verificationUrl = $verificationUrl;
+		$this->_random = $random ?? new RealRandom();
 	}
 
 	/**
@@ -74,8 +80,8 @@ class EmailVerifier
 		// Delete any existing tokens for this user
 		$this->_tokenRepository->deleteByUserId( $user->getId() );
 
-		// Generate secure random token
-		$plainToken = bin2hex( random_bytes( 32 ) );
+		// Generate secure random token (64 hex characters = 32 bytes)
+		$plainToken = $this->_random->string( 64, 'hex' );
 		$hashedToken = hash( 'sha256', $plainToken );
 
 		// Create and store token
@@ -159,6 +165,9 @@ class EmailVerifier
 		$this->_tokenRepository->deleteByToken( hash( 'sha256', $plainToken ) );
 
 		Log::info( "Email verified for user: {$user->getUsername()}" );
+
+		// Emit email verified event
+		\Neuron\Application\CrossCutting\Event::emit( new \Neuron\Cms\Events\EmailVerifiedEvent( $user ) );
 
 		return true;
 	}

@@ -4,7 +4,7 @@ namespace Neuron\Cms\Services\Email;
 
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception as PHPMailerException;
-use Neuron\Data\Setting\SettingManager;
+use Neuron\Data\Settings\SettingManager;
 use Neuron\Log\Log;
 
 /**
