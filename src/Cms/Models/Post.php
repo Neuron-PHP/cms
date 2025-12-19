@@ -506,7 +506,13 @@ class Post extends Model
 			}
 			elseif( is_array( $data['content_raw'] ) )
 			{
-				$post->_contentRaw = json_encode( $data['content_raw'] );
+				$encoded = json_encode( $data['content_raw'] );
+				if( $encoded === false )
+				{
+					$error = json_last_error_msg();
+					throw new \JsonException( "Failed to encode content_raw array to JSON: {$error}" );
+				}
+				$post->_contentRaw = $encoded;
 			}
 		}
 		elseif( isset( $data['content'] ) )
@@ -517,7 +523,13 @@ class Post extends Model
 			}
 			elseif( is_array( $data['content'] ) )
 			{
-				$post->_contentRaw = json_encode( $data['content'] );
+				$encoded = json_encode( $data['content'] );
+				if( $encoded === false )
+				{
+					$error = json_last_error_msg();
+					throw new \JsonException( "Failed to encode content array to JSON: {$error}" );
+				}
+				$post->_contentRaw = $encoded;
 			}
 		}
 

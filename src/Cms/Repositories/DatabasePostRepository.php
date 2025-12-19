@@ -441,4 +441,21 @@ class DatabasePostRepository implements IPostRepository
 
 		return $stmt->rowCount() > 0;
 	}
+
+	/**
+	 * Handle serialization for PHPUnit process isolation
+	 */
+	public function __sleep(): array
+	{
+		// Don't serialize PDO connection
+		return [];
+	}
+
+	/**
+	 * Handle unserialization for PHPUnit process isolation
+	 */
+	public function __wakeup(): void
+	{
+		// PDO will be re-initialized by test setup
+	}
 }

@@ -142,4 +142,88 @@ class DatabaseUserRepository implements IUserRepository
 	{
 		return User::query()->count();
 	}
+
+	/**
+	 * Atomically increment failed login attempts for a user
+	 *
+	 * Uses atomic UPDATE to avoid race condition under concurrent login attempts.
+	 *
+	 * @param int $userId User ID
+	 * @return int New failed login attempts count, or -1 if user not found
+	 */
+	public function incrementFailedLoginAttempts( int $userId ): int
+	{
+		// Use atomic increment
+		$rowsUpdated = User::query()
+			->where( 'id', $userId )
+			->increment( 'failed_login_attempts', 1 );
+
+		if( $rowsUpdated === 0 )
+		{
+			return -1; // User not found
+		}
+
+		// Fetch and return the new count
+		$user = $this->findById( $userId );
+		return $user ? $user->getFailedLoginAttempts() : -1;
+	}
+
+	/**
+	 * Atomically reset failed login attempts and unlock account
+	 *
+	 * Uses atomic UPDATE to avoid race condition.
+	 *
+	 * @param int $userId User ID
+	 * @return bool True if successful, false if user not found
+	 */
+	public function resetFailedLoginAttempts( int $userId ): bool
+	{
+		// Use ORM's atomic update to avoid race condition
+		$rowsUpdated = User::query()
+			->where( 'id', $userId )
+			->update([
+				'failed_login_attempts' => 0,
+				'locked_until' => null
+			]);
+
+		return $rowsUpdated > 0;
+	}
+
+	/**
+	 * Atomically set account lockout until specified time
+	 *
+	 * Uses atomic UPDATE to avoid race condition.
+	 *
+	 * @param int $userId User ID
+	 * @param \DateTimeImmutable|null $lockedUntil Locked until time, or null to unlock
+	 * @return bool True if successful, false if user not found
+	 */
+	public function setLockedUntil( int $userId, ?\DateTimeImmutable $lockedUntil ): bool
+	{
+		$lockedUntilString = $lockedUntil ? $lockedUntil->format( 'Y-m-d H:i:s' ) : null;
+
+		// Use ORM's atomic update to avoid race condition
+		$rowsUpdated = User::query()
+			->where( 'id', $userId )
+			->update([ 'locked_until' => $lockedUntilString ]);
+
+		return $rowsUpdated > 0;
+	}
+
+	/**
+	 * Handle serialization for PHPUnit process isolation
+	 */
+	public function __sleep(): array
+	{
+		// Don't serialize PDO connection
+		return [];
+	}
+
+	/**
+	 * Handle unserialization for PHPUnit process isolation
+	 */
+	public function __wakeup(): void
+	{
+		// PDO will be re-initialized by test setup
+	}
 }

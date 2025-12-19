@@ -396,6 +396,10 @@ class UpgradeCommand extends Command
 			{
 				$this->output->writeln( "  ✓ Updated: $fileName" );
 			}
+			else
+			{
+				$this->output->error( "  ✗ Failed to copy $fileName from $sourceFile to $destFile" );
+			}
 		}
 
 		return true;

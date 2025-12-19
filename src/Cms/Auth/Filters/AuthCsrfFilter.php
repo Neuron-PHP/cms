@@ -49,7 +49,7 @@ class AuthCsrfFilter extends Filter
 	protected function validate( RouteMap $route ): void
 	{
 		// 1. Check authentication first
-		if( !$this->_authentication->isAuthenticated() )
+		if( !$this->_authentication->check() )
 		{
 			Log::warning( 'Unauthenticated access attempt to protected route: ' . $route->Path );
 			$this->redirectToLogin();

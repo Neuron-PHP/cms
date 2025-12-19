@@ -25,6 +25,17 @@ class AuthenticationTest extends TestCase
 	private PasswordHasher $_passwordHasher;
 	private PDO $pdo;
 
+	public function __sleep(): array
+	{
+		// Don't serialize PDO for process isolation
+		return ['_authentication', '_userRepository', '_sessionManager', '_passwordHasher'];
+	}
+
+	public function __wakeup(): void
+	{
+		// PDO will be re-initialized in setUp()
+	}
+
 	protected function setUp(): void
 	{
 		// Create in-memory SQLite database for testing

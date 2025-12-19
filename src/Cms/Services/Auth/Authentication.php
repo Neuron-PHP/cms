@@ -87,17 +87,15 @@ class Authentication
 		// Verify password
 		if( !$this->validateCredentials( $user, $password ) )
 		{
-			// Increment failed login attempts
-			$user->incrementFailedLoginAttempts();
+			// Atomically increment failed login attempts to avoid race condition
+			$newFailedAttempts = $this->_userRepository->incrementFailedLoginAttempts( $user->getId() );
 
 			// Lock account if too many failed attempts
-			if( $user->getFailedLoginAttempts() >= $this->_maxLoginAttempts )
+			if( $newFailedAttempts >= $this->_maxLoginAttempts )
 			{
 				$lockedUntil = (new DateTimeImmutable())->add( new DateInterval( "PT{$this->_lockoutDuration}M" ) );
-				$user->setLockedUntil( $lockedUntil );
+				$this->_userRepository->setLockedUntil( $user->getId(), $lockedUntil );
 			}
-
-			$this->_userRepository->update( $user );
 
 			// Emit login failed event
 			\Neuron\Application\CrossCutting\Event::emit( new \Neuron\Cms\Events\UserLoginFailedEvent(
@@ -110,8 +108,13 @@ class Authentication
 			return false;
 		}
 
-		// Successful login - reset failed attempts
-		$user->resetFailedLoginAttempts();
+		// Successful login - atomically reset failed attempts
+		$this->_userRepository->resetFailedLoginAttempts( $user->getId() );
+
+		// Refresh user from database to get updated failed_login_attempts
+		$user = $this->_userRepository->findById( $user->getId() );
+
+		// Update last login time and potentially rehash password
 		$user->setLastLoginAt( new DateTimeImmutable() );
 
 		// Check if password needs rehashing

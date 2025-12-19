@@ -165,17 +165,16 @@ class DatabasePageRepository implements IPageRepository
 
 	/**
 	 * Increment page view count
+	 *
+	 * Uses atomic UPDATE to avoid race condition under concurrent requests.
 	 */
 	public function incrementViewCount( int $id ): bool
 	{
-		$page = Page::find( $id );
+		// Use ORM's atomic increment to avoid race condition
+		$rowsUpdated = Page::query()
+			->where( 'id', $id )
+			->increment( 'view_count', 1 );
 
-		if( !$page )
-		{
-			return false;
-		}
-
-		$page->incrementViewCount();
-		return $page->save();
+		return $rowsUpdated > 0;
 	}
 }
