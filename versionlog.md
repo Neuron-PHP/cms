@@ -1,3 +1,5 @@
+## 0.8.10
+
 ## 0.8.9 2025-12-19
 * **Slug generation now uses system abstractions** - All content service classes refactored to use `IRandom` interface
 * Refactored 6 service classes: Post/Creator, Post/Updater, Category/Creator, Category/Updater, Page/Creator, Tag/Creator
