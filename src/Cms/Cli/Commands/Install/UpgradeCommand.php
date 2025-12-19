@@ -132,8 +132,12 @@ class UpgradeCommand extends Command
 		}
 
 		// Update installed manifest
-		$this->updateInstalledManifest();
+		if( !$this->updateInstalledManifest() )
+		{
+			$this->output->warning( "Upgrade completed but manifest update failed. You may need to re-run cms:upgrade." );
+		}
 
+		// Display summary
 		// Display summary
 		$this->displaySummary();
 
