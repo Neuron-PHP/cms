@@ -138,8 +138,6 @@ class UpgradeCommand extends Command
 		}
 
 		// Display summary
-		$this->displaySummary();
-
 		// Display summary
 		$this->displaySummary();
 
