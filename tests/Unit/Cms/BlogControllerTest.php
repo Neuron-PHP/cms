@@ -69,8 +69,8 @@ class BlogControllerTest extends TestCase
 		Registry::getInstance()->set( 'Settings', $settingManager );
 
 		// Set paths for views - point to CMS component's resources
-		Registry::getInstance()->set( 'Base.Path', __DIR__ . '/../..' );
-		Registry::getInstance()->set( 'Views.Path', __DIR__ . '/../../resources/views' );
+		Registry::getInstance()->set( 'Base.Path', __DIR__ . '/../../..' );
+		Registry::getInstance()->set( 'Views.Path', __DIR__ . '/../../../resources/views' );
 
 		// Initialize ViewDataProvider for tests
 		$provider = \Neuron\Mvc\Views\ViewDataProvider::getInstance();
