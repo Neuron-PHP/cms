@@ -26,3 +26,5 @@ cache.properties
 composer.lock
 .phpunit.result.cache
 examples/test.log
+
+coverage*/
