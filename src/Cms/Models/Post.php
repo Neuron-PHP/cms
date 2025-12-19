@@ -636,7 +636,7 @@ class Post extends Model
 			{
 				'paragraph', 'header' => $block['data']['text'] ?? '',
 				'list' => isset( $block['data']['items'] ) && is_array( $block['data']['items'] )
-					? implode( "\n", $block['data']['items'] )
+					? $this->extractListText( $block['data']['items'] )
 					: '',
 				'quote' => $block['data']['text'] ?? '',
 				'code' => $block['data']['code'] ?? '',
@@ -653,5 +653,46 @@ class Post extends Model
 		}
 
 		return implode( "\n\n", array_filter( $text ) );
+	}
+
+	/**
+	 * Extract text from list items (handles nested structures)
+	 *
+	 * Editor.js List v1.9+ supports nested lists where items can be:
+	 * - Simple strings: "Item text"
+	 * - Objects with nested items: { "content": "Item text", "items": [nested items] }
+	 *
+	 * @param array $items List items array
+	 * @return string Extracted text with newlines between items
+	 */
+	private function extractListText( array $items ): string
+	{
+		$textItems = [];
+
+		foreach( $items as $item )
+		{
+			// Handle simple string items
+			if( is_string( $item ) )
+			{
+				$textItems[] = $item;
+			}
+			// Handle nested list items (objects with content and items)
+			elseif( is_array( $item ) && isset( $item['content'] ) )
+			{
+				$textItems[] = $item['content'];
+
+				// Recursively extract nested items
+				if( isset( $item['items'] ) && is_array( $item['items'] ) )
+				{
+					$nestedText = $this->extractListText( $item['items'] );
+					if( $nestedText !== '' )
+					{
+						$textItems[] = $nestedText;
+					}
+				}
+			}
+		}
+
+		return implode( "\n", $textItems );
 	}
 }

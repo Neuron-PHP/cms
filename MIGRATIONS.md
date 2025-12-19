@@ -461,4 +461,3 @@ mysqldump -u user -p database_name > backup.sql
 
 - [Phinx Documentation](https://book.cakephp.org/phinx/0/en/migrations.html)
 - [Neuron CMS Installation Guide](README.md)
-- Project-wide migration guidelines: `/CLAUDE.md`

@@ -3,7 +3,10 @@
 namespace App\Initializers;
 
 use Neuron\Cms\Services\Auth\Authentication;
+use Neuron\Cms\Services\Auth\CsrfToken;
 use Neuron\Cms\Auth\Filters\AuthenticationFilter;
+use Neuron\Cms\Auth\Filters\CsrfFilter;
+use Neuron\Cms\Auth\Filters\AuthCsrfFilter;
 use Neuron\Cms\Auth\PasswordHasher;
 use Neuron\Cms\Auth\SessionManager;
 use Neuron\Cms\Repositories\DatabaseUserRepository;
@@ -56,15 +59,21 @@ class AuthInitializer implements IRunnable
 				$sessionManager = new SessionManager();
 				$passwordHasher = new PasswordHasher();
 				$authentication = new Authentication( $userRepository, $sessionManager, $passwordHasher );
+				$csrfToken = new CsrfToken();
 
-				// Create authentication filter
+				// Create filters
 				$authFilter = new AuthenticationFilter( $authentication, '/login' );
+				$csrfFilter = new CsrfFilter( $csrfToken );
+				$authCsrfFilter = new AuthCsrfFilter( $authentication, $csrfToken, '/login' );
 
-				// Register the auth filter with the Router
+				// Register filters with the Router
 				$app->getRouter()->registerFilter( 'auth', $authFilter );
+				$app->getRouter()->registerFilter( 'csrf', $csrfFilter );
+				$app->getRouter()->registerFilter( 'auth-csrf', $authCsrfFilter );
 
-				// Store Authentication in Registry for easy access
+				// Store services in Registry for easy access
 				Registry::getInstance()->set( 'Authentication', $authentication );
+				Registry::getInstance()->set( 'CsrfToken', $csrfToken );
 			}
 		}
 		catch( \Exception $e )

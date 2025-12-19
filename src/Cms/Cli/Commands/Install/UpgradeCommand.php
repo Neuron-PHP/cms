@@ -171,9 +171,9 @@ class UpgradeCommand extends Command
 		$packageManifestJson = file_get_contents( $packageManifestPath );
 		$this->_packageManifest = json_decode( $packageManifestJson, true );
 
-		if( !$this->_packageManifest )
+		if( json_last_error() !== JSON_ERROR_NONE )
 		{
-			$this->output->error( "Failed to parse package manifest" );
+			$this->output->error( "Failed to parse package manifest: " . json_last_error_msg() );
 			return false;
 		}
 
@@ -184,6 +184,12 @@ class UpgradeCommand extends Command
 		{
 			$installedManifestJson = file_get_contents( $installedManifestPath );
 			$this->_installedManifest = json_decode( $installedManifestJson, true );
+
+			if( json_last_error() !== JSON_ERROR_NONE )
+			{
+				$this->output->error( "Failed to parse installed manifest: " . json_last_error_msg() );
+				return false;
+			}
 		}
 		else
 		{
@@ -402,8 +408,7 @@ class UpgradeCommand extends Command
 	{
 		$manifestPath = $this->_projectPath . '/.cms-manifest.json';
 
-		// Merge new migrations into installed list
-		$installedMigrations = $this->_installedManifest['migrations'] ?? [];
+		// Update manifest with package migrations
 		$packageMigrations = $this->_packageManifest['migrations'] ?? [];
 
 		$this->_installedManifest['version'] = $this->_packageManifest['version'];

@@ -2,7 +2,6 @@
 
 namespace Neuron\Cms\Events;
 
-use Neuron\Cms\Models\User;
 use Neuron\Events\IEvent;
 
 /**

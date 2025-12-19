@@ -319,4 +319,187 @@ class PostTest extends TestCase
 
 		$this->assertCount( 1, $post->getTags() );
 	}
+
+	public function testSetContentExtractsPlainTextFromSimpleList(): void
+	{
+		$post = new Post();
+
+		$content = json_encode( [
+			'blocks' => [
+				[
+					'type' => 'list',
+					'data' => [
+						'style' => 'unordered',
+						'items' => [ 'Item 1', 'Item 2', 'Item 3' ]
+					]
+				]
+			]
+		] );
+
+		$post->setContent( $content );
+
+		$body = $post->getBody();
+		$this->assertStringContainsString( 'Item 1', $body );
+		$this->assertStringContainsString( 'Item 2', $body );
+		$this->assertStringContainsString( 'Item 3', $body );
+	}
+
+	public function testSetContentExtractsPlainTextFromNestedList(): void
+	{
+		$post = new Post();
+
+		$content = json_encode( [
+			'blocks' => [
+				[
+					'type' => 'list',
+					'data' => [
+						'style' => 'unordered',
+						'items' => [
+							'Simple item',
+							[
+								'content' => 'Item with nested list',
+								'items' => [
+									'Nested item 1',
+									'Nested item 2'
+								]
+							]
+						]
+					]
+				]
+			]
+		] );
+
+		$post->setContent( $content );
+
+		$body = $post->getBody();
+		$this->assertStringContainsString( 'Simple item', $body );
+		$this->assertStringContainsString( 'Item with nested list', $body );
+		$this->assertStringContainsString( 'Nested item 1', $body );
+		$this->assertStringContainsString( 'Nested item 2', $body );
+	}
+
+	public function testSetContentExtractsPlainTextFromMultiLevelNestedList(): void
+	{
+		$post = new Post();
+
+		$content = json_encode( [
+			'blocks' => [
+				[
+					'type' => 'list',
+					'data' => [
+						'style' => 'unordered',
+						'items' => [
+							[
+								'content' => 'Level 1 item',
+								'items' => [
+									[
+										'content' => 'Level 2 item',
+										'items' => [
+											'Level 3 item'
+										]
+									]
+								]
+							]
+						]
+					]
+				]
+			]
+		] );
+
+		$post->setContent( $content );
+
+		$body = $post->getBody();
+		$this->assertStringContainsString( 'Level 1 item', $body );
+		$this->assertStringContainsString( 'Level 2 item', $body );
+		$this->assertStringContainsString( 'Level 3 item', $body );
+
+		// Should not contain the string "Array"
+		$this->assertStringNotContainsString( 'Array', $body );
+	}
+
+	public function testSetContentExtractsPlainTextFromMixedContent(): void
+	{
+		$post = new Post();
+
+		$content = json_encode( [
+			'blocks' => [
+				[
+					'type' => 'header',
+					'data' => [ 'text' => 'Test Header', 'level' => 1 ]
+				],
+				[
+					'type' => 'paragraph',
+					'data' => [ 'text' => 'This is a paragraph.' ]
+				],
+				[
+					'type' => 'list',
+					'data' => [
+						'style' => 'ordered',
+						'items' => [
+							'First',
+							[
+								'content' => 'Second with nested',
+								'items' => [ 'Nested A', 'Nested B' ]
+							],
+							'Third'
+						]
+					]
+				]
+			]
+		] );
+
+		$post->setContent( $content );
+
+		$body = $post->getBody();
+		$this->assertStringContainsString( 'Test Header', $body );
+		$this->assertStringContainsString( 'This is a paragraph.', $body );
+		$this->assertStringContainsString( 'First', $body );
+		$this->assertStringContainsString( 'Second with nested', $body );
+		$this->assertStringContainsString( 'Nested A', $body );
+		$this->assertStringContainsString( 'Nested B', $body );
+		$this->assertStringContainsString( 'Third', $body );
+
+		// Should not contain the string "Array"
+		$this->assertStringNotContainsString( 'Array', $body );
+	}
+
+	public function testSetContentStripsHtmlTags(): void
+	{
+		$post = new Post();
+
+		$content = json_encode( [
+			'blocks' => [
+				[
+					'type' => 'paragraph',
+					'data' => [ 'text' => 'Text with <strong>HTML</strong> tags' ]
+				],
+				[
+					'type' => 'list',
+					'data' => [
+						'items' => [
+							'<em>Italic</em> item',
+							[
+								'content' => '<b>Bold</b> nested item',
+								'items' => [ '<a href="#">Link</a> text' ]
+							]
+						]
+					]
+				]
+			]
+		] );
+
+		$post->setContent( $content );
+
+		$body = $post->getBody();
+		// Text should be extracted but HTML tags stripped
+		$this->assertStringContainsString( 'HTML', $body );
+		$this->assertStringContainsString( 'Bold', $body );
+		$this->assertStringContainsString( 'Link', $body );
+
+		// HTML tags should be stripped
+		$this->assertStringNotContainsString( '<strong>', $body );
+		$this->assertStringNotContainsString( '<em>', $body );
+		$this->assertStringNotContainsString( '<b>', $body );
+		$this->assertStringNotContainsString( '<a href', $body );
+	}
 }

@@ -7,35 +7,27 @@ use Neuron\Data\Settings\Source\Memory;
 use Neuron\Mvc\Requests\Request;
 use Neuron\Mvc\Responses\HttpResponseStatus;
 use Neuron\Patterns\Registry;
-use Neuron\Routing\Router;
 use org\bovigo\vfs\vfsStream;
 use PHPUnit\Framework\TestCase;
 
 class ContentControllerTest extends TestCase
 {
-	private $root;
-	private $router;
-	private $settings;
-	
 	protected function setUp(): void
 	{
 		parent::setUp();
-		
-		// Create virtual filesystem
-		$this->root = vfsStream::setup( 'test' );
 
-		// Create mock router
-		$this->router = $this->createMock( Router::class );
+		// Create virtual filesystem (local variable, not stored)
+		$root = vfsStream::setup( 'test' );
 
-		// Create mock settings
-		$this->settings = new Memory();
-		$this->settings->set( 'site', 'name', 'Test Site' );
-		$this->settings->set( 'site', 'title', 'Test Title' );
-		$this->settings->set( 'site', 'description', 'Test Description' );
-		$this->settings->set( 'site', 'url', 'http://test.com' );
+		// Create mock settings (local variable, not stored as test property)
+		$settings = new Memory();
+		$settings->set( 'site', 'name', 'Test Site' );
+		$settings->set( 'site', 'title', 'Test Title' );
+		$settings->set( 'site', 'description', 'Test Description' );
+		$settings->set( 'site', 'url', 'http://test.com' );
 
 		// Store settings in registry
-		Registry::getInstance()->set( 'Settings', $this->settings );
+		Registry::getInstance()->set( 'Settings', $settings );
 
 		// Create version file
 		$versionContent = json_encode([
@@ -45,7 +37,7 @@ class ContentControllerTest extends TestCase
 		]);
 
 		vfsStream::newFile( '.version.json' )
-			->at( $this->root )
+			->at( $root )
 			->setContent( $versionContent );
 
 		// Create a real version file in parent directory for the controller
@@ -64,11 +56,12 @@ class ContentControllerTest extends TestCase
 		Registry::getInstance()->set( 'version', null );
 		Registry::getInstance()->set( 'name', null );
 		Registry::getInstance()->set( 'rss_url', null );
-		
+		Registry::getInstance()->set( 'DtoFactoryService', null );
+
 		// Clean up temp version file
 		$parentDir = dirname( getcwd() );
 		@unlink( $parentDir . '/.version.json' );
-		
+
 		parent::tearDown();
 	}
 	
@@ -175,6 +168,7 @@ class ContentControllerTest extends TestCase
 	/**
 	 * Test getSessionManager returns SessionManager instance
 	 * @runInSeparateProcess
+	 * @preserveGlobalState disabled
 	 */
 	public function testGetSessionManager()
 	{
@@ -197,6 +191,7 @@ class ContentControllerTest extends TestCase
 	/**
 	 * Test flash method sets flash message
 	 * @runInSeparateProcess
+	 * @preserveGlobalState disabled
 	 */
 	public function testFlash()
 	{

@@ -120,27 +120,30 @@ class DatabasePostRepository implements IPostRepository
 			throw new Exception( 'Slug already exists' );
 		}
 
-		// Use ORM create method - only save the post data without relations
-		$createdPost = Post::create( $post->toArray() );
+		// Use transaction to ensure atomicity of post creation and relation syncing
+		return Post::transaction( function() use ( $post ) {
+			// Use ORM create method - only save the post data without relations
+			$createdPost = Post::create( $post->toArray() );
 
-		// Update the original post with the new ID
-		$post->setId( $createdPost->getId() );
+			// Update the original post with the new ID
+			$post->setId( $createdPost->getId() );
 
-		// Sync categories using raw SQL (vendor ORM doesn't have relation() method yet)
-		if( count( $post->getCategories() ) > 0 )
-		{
-			$categoryIds = array_map( fn( $c ) => $c->getId(), $post->getCategories() );
-			$this->syncCategories( $post->getId(), $categoryIds );
-		}
+			// Sync categories using raw SQL (vendor ORM doesn't have relation() method yet)
+			if( count( $post->getCategories() ) > 0 )
+			{
+				$categoryIds = array_map( fn( $c ) => $c->getId(), $post->getCategories() );
+				$this->syncCategories( $post->getId(), $categoryIds );
+			}
 
-		// Sync tags using raw SQL
-		if( count( $post->getTags() ) > 0 )
-		{
-			$tagIds = array_map( fn( $t ) => $t->getId(), $post->getTags() );
-			$this->syncTags( $post->getId(), $tagIds );
-		}
+			// Sync tags using raw SQL
+			if( count( $post->getTags() ) > 0 )
+			{
+				$tagIds = array_map( fn( $t ) => $t->getId(), $post->getTags() );
+				$this->syncTags( $post->getId(), $tagIds );
+			}
 
-		return $post;
+			return $post;
+		} );
 	}
 
 	/**
@@ -160,50 +163,22 @@ class DatabasePostRepository implements IPostRepository
 			throw new Exception( 'Slug already exists' );
 		}
 
-		// Update using raw SQL because Post model uses private properties
-		// that aren't tracked by ORM's attribute system
-		$data = $post->toArray();
-		$data['updated_at'] = ( new \DateTimeImmutable() )->format( 'Y-m-d H:i:s' );
+		// Use transaction to ensure atomicity of post update and relation syncing
+		return Post::transaction( function() use ( $post ) {
+			// Update post using ORM (handles private properties via reflection)
+			$post->setUpdatedAt( new \DateTimeImmutable() );
+			$result = $post->save();
 
-		$sql = "UPDATE posts SET
-			title = ?,
-			slug = ?,
-			body = ?,
-			content_raw = ?,
-			excerpt = ?,
-			featured_image = ?,
-			author_id = ?,
-			status = ?,
-			published_at = ?,
-			view_count = ?,
-			updated_at = ?
-		WHERE id = ?";
+			// Sync categories
+			$categoryIds = array_map( fn( $c ) => $c->getId(), $post->getCategories() );
+			$this->syncCategories( $post->getId(), $categoryIds );
 
-		$stmt = $this->_pdo->prepare( $sql );
-		$result = $stmt->execute( [
-			$data['title'],
-			$data['slug'],
-			$data['body'],
-			$data['content_raw'],
-			$data['excerpt'],
-			$data['featured_image'],
-			$data['author_id'],
-			$data['status'],
-			$data['published_at'],
-			$data['view_count'],
-			$data['updated_at'],
-			$post->getId()
-		] );
+			// Sync tags
+			$tagIds = array_map( fn( $t ) => $t->getId(), $post->getTags() );
+			$this->syncTags( $post->getId(), $tagIds );
 
-		// Sync categories using raw SQL
-		$categoryIds = array_map( fn( $c ) => $c->getId(), $post->getCategories() );
-		$this->syncCategories( $post->getId(), $categoryIds );
-
-		// Sync tags using raw SQL
-		$tagIds = array_map( fn( $t ) => $t->getId(), $post->getTags() );
-		$this->syncTags( $post->getId(), $tagIds );
-
-		return $result;
+			return $result;
+		} );
 	}
 
 	/**
@@ -348,19 +323,19 @@ class DatabasePostRepository implements IPostRepository
 	}
 
 	/**
-	 * Increment post view count
+	 * Increment post view count atomically
+	 *
+	 * Uses atomic SQL UPDATE via ORM to avoid race conditions under concurrent requests.
+	 * The fetch-increment-save pattern would lose increments under high concurrency.
 	 */
 	public function incrementViewCount( int $id ): bool
 	{
-		$post = Post::find( $id );
+		// Use ORM's atomic increment to avoid race condition
+		$rowsUpdated = Post::query()
+			->where( 'id', $id )
+			->increment( 'view_count', 1 );
 
-		if( !$post )
-		{
-			return false;
-		}
-
-		$post->incrementViewCount();
-		return $post->save();
+		return $rowsUpdated > 0;
 	}
 
 	/**

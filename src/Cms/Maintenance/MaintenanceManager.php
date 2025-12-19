@@ -203,6 +203,11 @@ class MaintenanceManager
 
 		$data = json_decode( $contents, true );
 
+		if( json_last_error() !== JSON_ERROR_NONE )
+		{
+			return [];
+		}
+
 		return is_array( $data ) ? $data : [];
 	}
 

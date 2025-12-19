@@ -256,13 +256,13 @@ routes:
     method: POST
     route: /admin/upload/image
     controller: Neuron\Cms\Controllers\Admin\Media@uploadImage
-    filter: auth
+    filter: auth-csrf
 
   admin_media_featured_upload:
     method: POST
     route: /admin/upload/featured-image
     controller: Neuron\Cms\Controllers\Admin\Media@uploadFeaturedImage
-    filter: auth
+    filter: auth-csrf
 
   # Homepage
   home:

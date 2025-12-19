@@ -394,4 +394,168 @@ class EditorJsRendererTest extends TestCase
 		// Should not throw exception, should render empty paragraph
 		$this->assertStringContainsString( '<p', $result );
 	}
+
+	public function testRenderNestedUnorderedList(): void
+	{
+		$data = [
+			'blocks' => [
+				[
+					'type' => 'list',
+					'data' => [
+						'style' => 'unordered',
+						'items' => [
+							'Simple item 1',
+							[
+								'content' => 'Item with nested list',
+								'items' => [
+									'Nested item 1',
+									'Nested item 2'
+								]
+							],
+							'Simple item 2'
+						]
+					]
+				]
+			]
+		];
+
+		$result = $this->renderer->render( $data );
+
+		$this->assertStringContainsString( '<ul', $result );
+		$this->assertStringContainsString( 'Simple item 1', $result );
+		$this->assertStringContainsString( 'Item with nested list', $result );
+		$this->assertStringContainsString( 'Nested item 1', $result );
+		$this->assertStringContainsString( 'Nested item 2', $result );
+		$this->assertStringContainsString( 'Simple item 2', $result );
+
+		// Check for nested <ul> structure
+		$this->assertMatchesRegularExpression( '/<ul[^>]*>.*<ul[^>]*>.*<\/ul>.*<\/ul>/s', $result );
+	}
+
+	public function testRenderNestedOrderedList(): void
+	{
+		$data = [
+			'blocks' => [
+				[
+					'type' => 'list',
+					'data' => [
+						'style' => 'ordered',
+						'items' => [
+							'First item',
+							[
+								'content' => 'Second item with sub-items',
+								'items' => [
+									'Sub-item A',
+									'Sub-item B'
+								]
+							]
+						]
+					]
+				]
+			]
+		];
+
+		$result = $this->renderer->render( $data );
+
+		$this->assertStringContainsString( '<ol', $result );
+		$this->assertStringContainsString( 'First item', $result );
+		$this->assertStringContainsString( 'Second item with sub-items', $result );
+		$this->assertStringContainsString( 'Sub-item A', $result );
+		$this->assertStringContainsString( 'Sub-item B', $result );
+
+		// Check for nested <ol> structure
+		$this->assertMatchesRegularExpression( '/<ol[^>]*>.*<ol[^>]*>.*<\/ol>.*<\/ol>/s', $result );
+	}
+
+	public function testRenderMultiLevelNestedList(): void
+	{
+		$data = [
+			'blocks' => [
+				[
+					'type' => 'list',
+					'data' => [
+						'style' => 'unordered',
+						'items' => [
+							[
+								'content' => 'Level 1 item',
+								'items' => [
+									[
+										'content' => 'Level 2 item',
+										'items' => [
+											'Level 3 item'
+										]
+									]
+								]
+							]
+						]
+					]
+				]
+			]
+		];
+
+		$result = $this->renderer->render( $data );
+
+		$this->assertStringContainsString( 'Level 1 item', $result );
+		$this->assertStringContainsString( 'Level 2 item', $result );
+		$this->assertStringContainsString( 'Level 3 item', $result );
+
+		// Should have multiple nested <ul> tags (3 levels)
+		$ulCount = substr_count( $result, '<ul' );
+		$this->assertGreaterThanOrEqual( 3, $ulCount );
+	}
+
+	public function testRenderNestedListWithEmptyItems(): void
+	{
+		$data = [
+			'blocks' => [
+				[
+					'type' => 'list',
+					'data' => [
+						'style' => 'unordered',
+						'items' => [
+							[
+								'content' => 'Item with empty nested list',
+								'items' => []
+							]
+						]
+					]
+				]
+			]
+		];
+
+		$result = $this->renderer->render( $data );
+
+		$this->assertStringContainsString( 'Item with empty nested list', $result );
+
+		// Should only have one <ul> since nested items array is empty
+		$ulCount = substr_count( $result, '<ul' );
+		$this->assertEquals( 1, $ulCount );
+	}
+
+	public function testRenderNestedListPreservesLegacyFormat(): void
+	{
+		// Old format: all items are simple strings
+		$data = [
+			'blocks' => [
+				[
+					'type' => 'list',
+					'data' => [
+						'style' => 'unordered',
+						'items' => [ 'Item 1', 'Item 2', 'Item 3' ]
+					]
+				]
+			]
+		];
+
+		$result = $this->renderer->render( $data );
+
+		$this->assertStringContainsString( '<ul', $result );
+		$this->assertStringContainsString( '<li>Item 1</li>', $result );
+		$this->assertStringContainsString( '<li>Item 2</li>', $result );
+		$this->assertStringContainsString( '<li>Item 3</li>', $result );
+
+		// Should only have one <ul> (no nesting)
+		$ulCount = substr_count( $result, '<ul' );
+		$this->assertEquals( 1, $ulCount );
+	}
 }

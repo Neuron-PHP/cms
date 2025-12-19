@@ -146,6 +146,6 @@ php neuron db:migrate
 
 ## Need Help?
 
-- **Documentation:** See `README.md`, `MIGRATIONS.md`, and `/CLAUDE.md`
+- **Documentation:** See `README.md`, `MIGRATIONS.md`
 - **Issues:** Report bugs at [GitHub Issues](https://github.com/neuron-php/cms/issues)
 - **Migration Help:** See `MIGRATIONS.md` for a comprehensive migration guide
