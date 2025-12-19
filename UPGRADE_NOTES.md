@@ -8,18 +8,18 @@ After running `composer update neuron-php/cms`, follow these steps:
 
 1. **Run the upgrade command:**
    ```bash
-   php neuron cms:upgrade
+   ./vendor/bin/neuron cms:upgrade
    ```
 
 2. **Review and apply migrations:**
    The upgrade command will detect new migrations. Review them and run:
    ```bash
-   php neuron db:migrate
+   ./vendor/bin/neuron db:migrate
    ```
 
 3. **Clear caches:**
    ```bash
-   php neuron cache:clear  # if applicable
+   ./vendor/bin/neuron cache:clear  # if applicable
    ```
 
 4. **Test your application** to ensure compatibility with the new version.
@@ -129,7 +129,7 @@ php neuron db:migrate
 **Cause:** New CMS code expects columns that don't exist in your database.
 
 **Prevention:**
-1. Always run `php neuron cms:upgrade` after `composer update neuron-php/cms`
+1. Always run `neuron cms:upgrade` after `composer update neuron-php/cms`
 2. Review and apply any new migrations before deploying to production
 3. Test in development/staging environment first
 
@@ -148,4 +148,4 @@ php neuron db:migrate
 
 - **Documentation:** See `README.md`, `MIGRATIONS.md`, and `/CLAUDE.md`
 - **Issues:** Report bugs at [GitHub Issues](https://github.com/neuron-php/cms/issues)
-- **Migration Help:** See `MIGRATIONS.md` for comprehensive migration guide
+- **Migration Help:** See `MIGRATIONS.md` for a comprehensive migration guide
