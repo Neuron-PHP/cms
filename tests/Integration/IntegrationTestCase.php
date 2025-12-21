@@ -162,6 +162,12 @@ abstract class IntegrationTestCase extends TestCase
 	{
 		$driver = getenv( 'TEST_DB_DRIVER' ) ?: 'sqlite';
 
+		// Normalize driver name (postgres -> pgsql)
+		if( $driver === 'postgres' )
+		{
+			$driver = 'pgsql';
+		}
+
 		if( $driver === 'sqlite' )
 		{
 			// Use SQLite file for persistence across test methods
