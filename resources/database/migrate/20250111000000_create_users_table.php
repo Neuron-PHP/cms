@@ -12,8 +12,8 @@ class CreateUsersTable extends AbstractMigration
 	 */
 	public function change()
 	{
-		// Create users table with explicit unsigned bigint primary key
-		$usersTable = $this->table( 'users', [ 'id' => 'id', 'primary_key' => 'id', 'signed' => false ] );
+		// Create users table - Phinx will auto-create unsigned bigint id
+		$usersTable = $this->table( 'users', [ 'signed' => false ] );
 
 		$usersTable->addColumn( 'username', 'string', [ 'limit' => 255 ] )
 			->addColumn( 'email', 'string', [ 'limit' => 255 ] )
