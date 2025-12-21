@@ -99,8 +99,13 @@ class DatabaseCategoryRepository implements ICategoryRepository
 			$category->setUpdatedAt( $now );
 		}
 
-		// Use ORM create method
-		$createdCategory = Category::create( $category->toArray() );
+		// Use ORM create method - exclude id to let database handle auto-increment
+		$data = $category->toArray();
+		if( isset( $data['id'] ) && $data['id'] === null )
+		{
+			unset( $data['id'] );
+		}
+		$createdCategory = Category::create( $data );
 
 		// Fetch from database to get all fields
 		return $this->findById( $createdCategory->getId() );

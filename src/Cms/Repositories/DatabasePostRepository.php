@@ -137,8 +137,13 @@ class DatabasePostRepository implements IPostRepository
 			$categories = $post->getCategories();
 			$tags = $post->getTags();
 
-			// Use ORM create method
-			$createdPost = Post::create( $post->toArray() );
+			// Use ORM create method - exclude id to let database handle auto-increment
+			$data = $post->toArray();
+			if( isset( $data['id'] ) && $data['id'] === null )
+			{
+				unset( $data['id'] );
+			}
+			$createdPost = Post::create( $data );
 
 			// Get the ORM's PDO for sync operations (same connection as transaction)
 			$pdo = $this->getOrmPdo();

@@ -66,8 +66,13 @@ class DatabasePageRepository implements IPageRepository
 			$page->setUpdatedAt( $now );
 		}
 
-		// Use ORM create method
-		$createdPage = Page::create( $page->toArray() );
+		// Use ORM create method - exclude id to let database handle auto-increment
+		$data = $page->toArray();
+		if( isset( $data['id'] ) && $data['id'] === null )
+		{
+			unset( $data['id'] );
+		}
+		$createdPage = Page::create( $data );
 
 		// Fetch from database to get all fields
 		return $this->findById( $createdPage->getId() );

@@ -83,8 +83,13 @@ class DatabaseTagRepository implements ITagRepository
 			$tag->setUpdatedAt( $now );
 		}
 
-		// Use ORM create method
-		$createdTag = Tag::create( $tag->toArray() );
+		// Use ORM create method - exclude id to let database handle auto-increment
+		$data = $tag->toArray();
+		if( isset( $data['id'] ) && $data['id'] === null )
+		{
+			unset( $data['id'] );
+		}
+		$createdTag = Tag::create( $data );
 
 		// Fetch from database to get all fields
 		return $this->findById( $createdTag->getId() );

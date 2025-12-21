@@ -91,8 +91,13 @@ class DatabaseUserRepository implements IUserRepository
 			$user->setUpdatedAt( $now );
 		}
 
-		// Use ORM create method
-		$createdUser = User::create( $user->toArray() );
+		// Use ORM create method - exclude id to let database handle auto-increment
+		$data = $user->toArray();
+		if( isset( $data['id'] ) && $data['id'] === null )
+		{
+			unset( $data['id'] );
+		}
+		$createdUser = User::create( $data );
 
 		// Fetch from database to get all fields
 		return $this->findById( $createdUser->getId() );
