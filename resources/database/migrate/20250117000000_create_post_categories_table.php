@@ -14,8 +14,8 @@ class CreatePostCategoriesTable extends AbstractMigration
 	{
 		$table = $this->table( 'post_categories', [ 'id' => false, 'primary_key' => [ 'post_id', 'category_id' ] ] );
 
-		$table->addColumn( 'post_id', 'integer', [ 'null' => false ] )
-			->addColumn( 'category_id', 'integer', [ 'null' => false ] )
+		$table->addColumn( 'post_id', 'biginteger', [ 'signed' => false, 'null' => false ] )
+			->addColumn( 'category_id', 'biginteger', [ 'signed' => false, 'null' => false ] )
 			->addColumn( 'created_at', 'timestamp', [ 'default' => 'CURRENT_TIMESTAMP' ] )
 			->addIndex( [ 'post_id' ] )
 			->addIndex( [ 'category_id' ] )
