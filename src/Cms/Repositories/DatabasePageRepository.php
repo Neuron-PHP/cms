@@ -4,6 +4,7 @@ namespace Neuron\Cms\Repositories;
 
 use Neuron\Cms\Models\Page;
 use Neuron\Cms\Database\ConnectionFactory;
+use Neuron\Cms\Repositories\Traits\ManagesTimestamps;
 use Neuron\Data\Settings\SettingManager;
 use PDO;
 use Exception;
@@ -17,6 +18,8 @@ use Exception;
  */
 class DatabasePageRepository implements IPageRepository
 {
+	use ManagesTimestamps;
+
 	private PDO $_pdo;
 
 	/**
@@ -60,21 +63,14 @@ class DatabasePageRepository implements IPageRepository
 			throw new Exception( 'Slug already exists' );
 		}
 
-		// Set timestamps explicitly (ORM doesn't use DB defaults)
-		$now = new \DateTimeImmutable();
-		if( !$page->getCreatedAt() )
-		{
-			$page->setCreatedAt( $now );
-		}
-		if( !$page->getUpdatedAt() )
-		{
-			$page->setUpdatedAt( $now );
-		}
+		// Set timestamps and save with null-safety check
+		$this->ensureTimestamps( $page );
 
-		// Save the page using ORM
-		$page->save();
-
-		return $this->findById( $page->getId() );
+		return $this->saveAndRefresh(
+			$page,
+			fn( int $id ) => $this->findById( $id ),
+			'Page'
+		);
 	}
 
 	/**
@@ -189,7 +185,9 @@ class DatabasePageRepository implements IPageRepository
 		// Use ORM's atomic increment to avoid race condition
 		$rowsUpdated = Page::query()
 			->where( 'id', $id )
-			->increment( 'view_count', 1 );
+			->increment( 'view_count', 1, [
+				'updated_at' => ( new \DateTimeImmutable() )->format( 'Y-m-d H:i:s' )
+			]);
 
 		return $rowsUpdated > 0;
 	}

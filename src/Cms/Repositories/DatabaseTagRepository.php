@@ -4,6 +4,7 @@ namespace Neuron\Cms\Repositories;
 
 use Neuron\Cms\Database\ConnectionFactory;
 use Neuron\Cms\Models\Tag;
+use Neuron\Cms\Repositories\Traits\ManagesTimestamps;
 use Neuron\Data\Settings\SettingManager;
 use PDO;
 use Exception;
@@ -17,6 +18,8 @@ use Exception;
  */
 class DatabaseTagRepository implements ITagRepository
 {
+	use ManagesTimestamps;
+
 	private PDO $_pdo;
 
 	/**
@@ -72,21 +75,14 @@ class DatabaseTagRepository implements ITagRepository
 			throw new Exception( 'Tag name already exists' );
 		}
 
-		// Set timestamps explicitly (ORM doesn't use DB defaults)
-		$now = new \DateTimeImmutable();
-		if( !$tag->getCreatedAt() )
-		{
-			$tag->setCreatedAt( $now );
-		}
-		if( !$tag->getUpdatedAt() )
-		{
-			$tag->setUpdatedAt( $now );
-		}
+		// Set timestamps and save with null-safety check
+		$this->ensureTimestamps( $tag );
 
-		// Save the tag using ORM
-		$tag->save();
-
-		return $this->findById( $tag->getId() );
+		return $this->saveAndRefresh(
+			$tag,
+			fn( int $id ) => $this->findById( $id ),
+			'Tag'
+		);
 	}
 
 	/**

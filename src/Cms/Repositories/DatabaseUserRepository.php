@@ -4,6 +4,7 @@ namespace Neuron\Cms\Repositories;
 
 use Neuron\Cms\Database\ConnectionFactory;
 use Neuron\Cms\Models\User;
+use Neuron\Cms\Repositories\Traits\ManagesTimestamps;
 use Neuron\Data\Settings\SettingManager;
 use PDO;
 use Exception;
@@ -17,6 +18,8 @@ use Exception;
  */
 class DatabaseUserRepository implements IUserRepository
 {
+	use ManagesTimestamps;
+
 	private ?PDO $_pdo = null;
 
 	/**
@@ -80,21 +83,14 @@ class DatabaseUserRepository implements IUserRepository
 			throw new Exception( 'Email already exists' );
 		}
 
-		// Set timestamps explicitly (ORM doesn't use DB defaults)
-		$now = new \DateTimeImmutable();
-		if( !$user->getCreatedAt() )
-		{
-			$user->setCreatedAt( $now );
-		}
-		if( !$user->getUpdatedAt() )
-		{
-			$user->setUpdatedAt( $now );
-		}
+		// Set timestamps and save with null-safety check
+		$this->ensureTimestamps( $user );
 
-		// Save the user using ORM
-		$user->save();
-
-		return $this->findById( $user->getId() );
+		return $this->saveAndRefresh(
+			$user,
+			fn( int $id ) => $this->findById( $id ),
+			'User'
+		);
 	}
 
 	/**
@@ -164,10 +160,12 @@ class DatabaseUserRepository implements IUserRepository
 	 */
 	public function incrementFailedLoginAttempts( int $userId ): int
 	{
-		// Use atomic increment
+		// Use atomic increment with updated_at timestamp
 		$rowsUpdated = User::query()
 			->where( 'id', $userId )
-			->increment( 'failed_login_attempts', 1 );
+			->increment( 'failed_login_attempts', 1, [
+				'updated_at' => ( new \DateTimeImmutable() )->format( 'Y-m-d H:i:s' )
+			]);
 
 		if( $rowsUpdated === 0 )
 		{
@@ -194,7 +192,8 @@ class DatabaseUserRepository implements IUserRepository
 			->where( 'id', $userId )
 			->update([
 				'failed_login_attempts' => 0,
-				'locked_until' => null
+				'locked_until' => null,
+				'updated_at' => ( new \DateTimeImmutable() )->format( 'Y-m-d H:i:s' )
 			]);
 
 		return $rowsUpdated > 0;
@@ -216,7 +215,10 @@ class DatabaseUserRepository implements IUserRepository
 		// Use ORM's atomic update to avoid race condition
 		$rowsUpdated = User::query()
 			->where( 'id', $userId )
-			->update([ 'locked_until' => $lockedUntilString ]);
+			->update([
+				'locked_until' => $lockedUntilString,
+				'updated_at' => ( new \DateTimeImmutable() )->format( 'Y-m-d H:i:s' )
+			]);
 
 		return $rowsUpdated > 0;
 	}

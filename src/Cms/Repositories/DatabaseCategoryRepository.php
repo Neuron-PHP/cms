@@ -4,6 +4,7 @@ namespace Neuron\Cms\Repositories;
 
 use Neuron\Cms\Database\ConnectionFactory;
 use Neuron\Cms\Models\Category;
+use Neuron\Cms\Repositories\Traits\ManagesTimestamps;
 use Neuron\Data\Settings\SettingManager;
 use PDO;
 use Exception;
@@ -17,6 +18,8 @@ use Exception;
  */
 class DatabaseCategoryRepository implements ICategoryRepository
 {
+	use ManagesTimestamps;
+
 	private PDO $_pdo;
 
 	/**
@@ -88,21 +91,14 @@ class DatabaseCategoryRepository implements ICategoryRepository
 			throw new Exception( 'Category name already exists' );
 		}
 
-		// Set timestamps explicitly (ORM doesn't use DB defaults)
-		$now = new \DateTimeImmutable();
-		if( !$category->getCreatedAt() )
-		{
-			$category->setCreatedAt( $now );
-		}
-		if( !$category->getUpdatedAt() )
-		{
-			$category->setUpdatedAt( $now );
-		}
+		// Set timestamps and save with null-safety check
+		$this->ensureTimestamps( $category );
 
-		// Save the category using ORM
-		$category->save();
-
-		return $this->findById( $category->getId() );
+		return $this->saveAndRefresh(
+			$category,
+			fn( int $id ) => $this->findById( $id ),
+			'Category'
+		);
 	}
 
 	/**

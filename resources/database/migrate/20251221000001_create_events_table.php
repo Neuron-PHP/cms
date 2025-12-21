@@ -28,7 +28,7 @@ class CreateEventsTable extends AbstractMigration
 			->addColumn( 'organizer', 'string', [ 'limit' => 255, 'null' => true ] )
 			->addColumn( 'contact_email', 'string', [ 'limit' => 255, 'null' => true ] )
 			->addColumn( 'contact_phone', 'string', [ 'limit' => 50, 'null' => true ] )
-			->addColumn( 'created_by', 'integer', [ 'signed' => false, 'null' => false ] )
+			->addColumn( 'created_by', 'integer', [ 'signed' => false, 'null' => true ] )
 			->addColumn( 'view_count', 'integer', [ 'default' => 0 ] )
 			->addColumn( 'created_at', 'timestamp', [ 'default' => 'CURRENT_TIMESTAMP' ] )
 			->addColumn( 'updated_at', 'timestamp', [ 'default' => 'CURRENT_TIMESTAMP' ] )
@@ -39,7 +39,7 @@ class CreateEventsTable extends AbstractMigration
 			->addIndex( [ 'category_id' ] )
 			->addIndex( [ 'created_by' ] )
 			->addForeignKey( 'category_id', 'event_categories', 'id', [ 'delete' => 'SET_NULL', 'update' => 'CASCADE' ] )
-			->addForeignKey( 'created_by', 'users', 'id', [ 'delete' => 'CASCADE', 'update' => 'CASCADE' ] )
+			->addForeignKey( 'created_by', 'users', 'id', [ 'delete' => 'SET_NULL', 'update' => 'CASCADE' ] )
 			->create();
 	}
 }
