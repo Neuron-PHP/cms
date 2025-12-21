@@ -12,7 +12,7 @@ class CreateCategoriesTable extends AbstractMigration
 	 */
 	public function change()
 	{
-		$table = $this->table( 'categories' );
+		$table = $this->table( 'categories', [ 'signed' => false ] );
 
 		$table->addColumn( 'name', 'string', [ 'limit' => 255 ] )
 			->addColumn( 'slug', 'string', [ 'limit' => 255 ] )

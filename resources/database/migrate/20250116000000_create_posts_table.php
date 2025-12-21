@@ -12,7 +12,7 @@ class CreatePostsTable extends AbstractMigration
 	 */
 	public function change()
 	{
-		$table = $this->table( 'posts' );
+		$table = $this->table( 'posts', [ 'signed' => false ] );
 
 		$table->addColumn( 'title', 'string', [ 'limit' => 255 ] )
 			->addColumn( 'slug', 'string', [ 'limit' => 255 ] )

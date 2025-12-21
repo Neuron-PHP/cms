@@ -12,7 +12,7 @@ class CreateEventsTable extends AbstractMigration
 	 */
 	public function change()
 	{
-		$table = $this->table( 'events' );
+		$table = $this->table( 'events', [ 'signed' => false ] );
 
 		$table->addColumn( 'title', 'string', [ 'limit' => 255 ] )
 			->addColumn( 'slug', 'string', [ 'limit' => 255 ] )

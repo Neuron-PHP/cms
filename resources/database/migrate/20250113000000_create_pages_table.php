@@ -12,7 +12,7 @@ class CreatePagesTable extends AbstractMigration
 	 */
 	public function change()
 	{
-		$table = $this->table( 'pages' );
+		$table = $this->table( 'pages', [ 'signed' => false ] );
 
 		$table->addColumn( 'title', 'string', [ 'limit' => 255, 'null' => false ] )
 			->addColumn( 'slug', 'string', [ 'limit' => 255, 'null' => false ] )
