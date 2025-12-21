@@ -92,11 +92,9 @@ class DatabaseUserRepository implements IUserRepository
 		}
 
 		// Use ORM create method - exclude id to let database handle auto-increment
+		// Always remove id for new records to ensure PostgreSQL uses sequence
 		$data = $user->toArray();
-		if( array_key_exists( 'id', $data ) && $data['id'] === null )
-		{
-			unset( $data['id'] );
-		}
+		unset( $data['id'] );
 		$createdUser = User::create( $data );
 
 		// Fetch from database to get all fields

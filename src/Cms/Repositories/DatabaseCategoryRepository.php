@@ -100,11 +100,9 @@ class DatabaseCategoryRepository implements ICategoryRepository
 		}
 
 		// Use ORM create method - exclude id to let database handle auto-increment
+		// Always remove id for new records to ensure PostgreSQL uses sequence
 		$data = $category->toArray();
-		if( array_key_exists( 'id', $data ) && $data['id'] === null )
-		{
-			unset( $data['id'] );
-		}
+		unset( $data['id'] );
 		$createdCategory = Category::create( $data );
 
 		// Fetch from database to get all fields

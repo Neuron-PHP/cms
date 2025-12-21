@@ -84,11 +84,9 @@ class DatabaseTagRepository implements ITagRepository
 		}
 
 		// Use ORM create method - exclude id to let database handle auto-increment
+		// Always remove id for new records to ensure PostgreSQL uses sequence
 		$data = $tag->toArray();
-		if( array_key_exists( 'id', $data ) && $data['id'] === null )
-		{
-			unset( $data['id'] );
-		}
+		unset( $data['id'] );
 		$createdTag = Tag::create( $data );
 
 		// Fetch from database to get all fields

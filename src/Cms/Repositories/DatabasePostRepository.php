@@ -138,11 +138,9 @@ class DatabasePostRepository implements IPostRepository
 			$tags = $post->getTags();
 
 			// Use ORM create method - exclude id to let database handle auto-increment
+			// Always remove id for new records to ensure PostgreSQL uses sequence
 			$data = $post->toArray();
-			if( array_key_exists( 'id', $data ) && $data['id'] === null )
-			{
-				unset( $data['id'] );
-			}
+			unset( $data['id'] );
 			$createdPost = Post::create( $data );
 
 			// Get the ORM's PDO for sync operations (same connection as transaction)
