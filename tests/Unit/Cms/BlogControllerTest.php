@@ -76,7 +76,16 @@ class BlogControllerTest extends TestCase
 		Registry::getInstance()->set( 'Views.Path', __DIR__ . '/../../../resources/views' );
 
 		// Initialize ViewDataProvider for tests
+		// Reset the singleton to ensure clean state
 		$provider = \Neuron\Mvc\Views\ViewDataProvider::getInstance();
+
+		// Use reflection to reset the shared data
+		$reflection = new \ReflectionClass( $provider );
+		$property = $reflection->getProperty( '_data' );
+		$property->setAccessible( true );
+		$property->setValue( $provider, [] );
+
+		// Now set our test data
 		$provider->share( 'siteName', 'Test Site' );
 		$provider->share( 'appVersion', '1.0.0-test' );
 		$provider->share( 'currentUser', null );
@@ -90,6 +99,13 @@ class BlogControllerTest extends TestCase
 
 	protected function tearDown(): void
 	{
+		// Reset ViewDataProvider to avoid pollution between tests
+		$provider = \Neuron\Mvc\Views\ViewDataProvider::getInstance();
+		$reflection = new \ReflectionClass( $provider );
+		$property = $reflection->getProperty( '_data' );
+		$property->setAccessible( true );
+		$property->setValue( $provider, [] );
+
 		// Restore original registry values
 		foreach( $this->originalRegistry as $key => $value )
 		{
