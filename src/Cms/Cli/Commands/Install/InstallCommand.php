@@ -476,8 +476,11 @@ class InstallCommand extends Command
 			return false;
 		}
 
+		// Optionally configure Cloudinary
+		$cloudinaryConfig = $this->configureCloudinary();
+
 		// Merge and save complete configuration
-		return $this->saveCompleteConfig( $config, $appConfig );
+		return $this->saveCompleteConfig( $config, $appConfig, $cloudinaryConfig );
 	}
 
 	/**
@@ -528,9 +531,75 @@ class InstallCommand extends Command
 	}
 
 	/**
+	 * Configure Cloudinary (optional)
+	 */
+	private function configureCloudinary(): array
+	{
+		$this->output->writeln( "\n╔═══════════════════════════════════════╗" );
+		$this->output->writeln( "║  Cloudinary Configuration (Optional)  ║" );
+		$this->output->writeln( "╚═══════════════════════════════════════╝\n" );
+
+		$this->output->writeln( "Cloudinary is a cloud-based image and video management service." );
+		$this->output->writeln( "It's used for uploading, storing, and delivering media files." );
+		$this->output->writeln( "" );
+		$this->output->writeln( "Get a free account at: https://cloudinary.com" );
+		$this->output->writeln( "Find credentials at: https://console.cloudinary.com/settings/general" );
+		$this->output->writeln( "" );
+
+		if( !$this->input->confirm( "Would you like to configure Cloudinary now?", false ) )
+		{
+			$this->output->info( "Skipping Cloudinary configuration." );
+			$this->output->writeln( "You can add credentials later in config/neuron.yaml" );
+			return [];
+		}
+
+		$this->output->writeln( "\n--- Cloudinary Credentials ---\n" );
+
+		$cloudName = $this->input->ask( "Cloud name (from Cloudinary dashboard)" );
+
+		if( !$cloudName )
+		{
+			$this->output->warning( "Cloud name is required for Cloudinary. Skipping configuration." );
+			return [];
+		}
+
+		$apiKey = $this->input->ask( "API key (from Cloudinary dashboard)" );
+
+		if( !$apiKey )
+		{
+			$this->output->warning( "API key is required for Cloudinary. Skipping configuration." );
+			return [];
+		}
+
+		$apiSecret = $this->input->askSecret( "API secret (from Cloudinary dashboard)" );
+
+		if( !$apiSecret )
+		{
+			$this->output->warning( "API secret is required for Cloudinary. Skipping configuration." );
+			return [];
+		}
+
+		$folder = $this->input->ask( "Upload folder (optional)", "neuron-cms/images" );
+		$maxFileSize = $this->input->ask( "Max file size in bytes", "5242880" );  // 5MB default
+
+		$this->_messages[] = "Cloudinary: $cloudName (folder: $folder)";
+
+		return [
+			'cloudinary' => [
+				'cloud_name' => $cloudName,
+				'api_key' => $apiKey,
+				'api_secret' => $apiSecret,
+				'folder' => $folder,
+				'max_file_size' => (int)$maxFileSize,
+				'allowed_formats' => [ 'jpg', 'jpeg', 'png', 'gif', 'webp' ]
+			]
+		];
+	}
+
+	/**
 	 * Save complete configuration with all required sections
 	 */
-	private function saveCompleteConfig( array $databaseConfig, array $appConfig ): bool
+	private function saveCompleteConfig( array $databaseConfig, array $appConfig, array $cloudinaryConfig = [] ): bool
 	{
 		// Build complete configuration
 		$config = [
@@ -563,6 +632,12 @@ class InstallCommand extends Command
 
 		// Merge database configuration
 		$config = array_merge( $config, $databaseConfig );
+
+		// Merge Cloudinary configuration if provided
+		if( !empty( $cloudinaryConfig ) )
+		{
+			$config = array_merge( $config, $cloudinaryConfig );
+		}
 
 		// Save configuration
 		return $this->saveConfig( $config );

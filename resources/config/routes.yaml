@@ -358,3 +358,93 @@ routes:
     route: /member/profile
     controller: Neuron\Cms\Controllers\Member\Profile@update
     filter: member
+
+  # Event Category Management
+  admin_event_categories:
+    method: GET
+    route: /admin/event-categories
+    controller: Neuron\Cms\Controllers\Admin\EventCategories@index
+    filter: auth
+
+  admin_event_categories_create:
+    method: GET
+    route: /admin/event-categories/create
+    controller: Neuron\Cms\Controllers\Admin\EventCategories@create
+    filter: auth
+
+  admin_event_categories_store:
+    method: POST
+    route: /admin/event-categories
+    controller: Neuron\Cms\Controllers\Admin\EventCategories@store
+    filter: auth
+
+  admin_event_categories_edit:
+    method: GET
+    route: /admin/event-categories/:id/edit
+    controller: Neuron\Cms\Controllers\Admin\EventCategories@edit
+    filter: auth
+
+  admin_event_categories_update:
+    method: PUT
+    route: /admin/event-categories/:id
+    controller: Neuron\Cms\Controllers\Admin\EventCategories@update
+    filter: auth
+
+  admin_event_categories_destroy:
+    method: DELETE
+    route: /admin/event-categories/:id
+    controller: Neuron\Cms\Controllers\Admin\EventCategories@destroy
+    filter: auth
+
+  # Event Management
+  admin_events:
+    method: GET
+    route: /admin/events
+    controller: Neuron\Cms\Controllers\Admin\Events@index
+    filter: auth
+
+  admin_events_create:
+    method: GET
+    route: /admin/events/create
+    controller: Neuron\Cms\Controllers\Admin\Events@create
+    filter: auth
+
+  admin_events_store:
+    method: POST
+    route: /admin/events
+    controller: Neuron\Cms\Controllers\Admin\Events@store
+    filter: auth
+
+  admin_events_edit:
+    method: GET
+    route: /admin/events/:id/edit
+    controller: Neuron\Cms\Controllers\Admin\Events@edit
+    filter: auth
+
+  admin_events_update:
+    method: PUT
+    route: /admin/events/:id
+    controller: Neuron\Cms\Controllers\Admin\Events@update
+    filter: auth
+
+  admin_events_destroy:
+    method: DELETE
+    route: /admin/events/:id
+    controller: Neuron\Cms\Controllers\Admin\Events@destroy
+    filter: auth
+
+  # Public Calendar Routes
+  calendar:
+    method: GET
+    route: /calendar
+    controller: Neuron\Cms\Controllers\Calendar@index
+
+  calendar_event:
+    method: GET
+    route: /calendar/event/:slug
+    controller: Neuron\Cms\Controllers\Calendar@show
+
+  calendar_category:
+    method: GET
+    route: /calendar/category/:slug
+    controller: Neuron\Cms\Controllers\Calendar@category

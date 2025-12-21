@@ -18,14 +18,60 @@ class CloudinaryUploaderTest extends TestCase
 	{
 		parent::setUp();
 
-		// Create in-memory settings for testing
+		// Load .env.testing file if it exists (for local testing with real credentials)
+		$envFile = __DIR__ . '/../../../../../.env.testing';
+		if( file_exists( $envFile ) )
+		{
+			$this->loadEnvFile( $envFile );
+		}
+
+		// Create settings from environment variables if available, otherwise use test values
 		$memory = new Memory();
-		$memory->set( 'cloudinary', 'cloud_name', 'test-cloud' );
-		$memory->set( 'cloudinary', 'api_key', 'test-key' );
-		$memory->set( 'cloudinary', 'api_secret', 'test-secret' );
-		$memory->set( 'cloudinary', 'folder', 'test-folder' );
+		$memory->set( 'cloudinary', 'cloud_name', getenv( 'CLOUDINARY_CLOUD_NAME' ) ?: 'test-cloud' );
+		$memory->set( 'cloudinary', 'api_key', getenv( 'CLOUDINARY_API_KEY' ) ?: 'test-key' );
+		$memory->set( 'cloudinary', 'api_secret', getenv( 'CLOUDINARY_API_SECRET' ) ?: 'test-secret' );
+		$memory->set( 'cloudinary', 'folder', getenv( 'CLOUDINARY_FOLDER' ) ?: 'test-folder' );
 
 		$this->_settings = new SettingManager( $memory );
+	}
+
+	/**
+	 * Load environment variables from a .env file
+	 */
+	private function loadEnvFile( string $filePath ): void
+	{
+		if( !file_exists( $filePath ) )
+		{
+			return;
+		}
+
+		$lines = file( $filePath, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES );
+		foreach( $lines as $line )
+		{
+			// Skip comments and empty lines
+			if( strpos( trim( $line ), '#' ) === 0 || trim( $line ) === '' )
+			{
+				continue;
+			}
+
+			// Parse KEY=VALUE format
+			if( strpos( $line, '=' ) !== false )
+			{
+				list( $key, $value ) = explode( '=', $line, 2 );
+				$key = trim( $key );
+				$value = trim( $value );
+
+				// Remove quotes if present
+				if( preg_match( '/^["\'](.*)["\']\s*$/', $value, $matches ) )
+				{
+					$value = $matches[1];
+				}
+
+				putenv( "$key=$value" );
+				$_ENV[$key] = $value;
+				$_SERVER[$key] = $value;
+			}
+		}
 	}
 
 	public function testConstructorThrowsExceptionWithMissingConfig(): void

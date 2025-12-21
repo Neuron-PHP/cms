@@ -3,6 +3,7 @@
 namespace Neuron\Cms\Services\Widget;
 
 use Neuron\Cms\Repositories\IPostRepository;
+use Neuron\Cms\Repositories\IEventRepository;
 use Neuron\Cms\Models\Post;
 
 /**
@@ -17,10 +18,12 @@ use Neuron\Cms\Models\Post;
 class WidgetRenderer
 {
 	private ?IPostRepository $_postRepository = null;
+	private ?IEventRepository $_eventRepository = null;
 
-	public function __construct( ?IPostRepository $postRepository = null )
+	public function __construct( ?IPostRepository $postRepository = null, ?IEventRepository $eventRepository = null )
 	{
 		$this->_postRepository = $postRepository;
+		$this->_eventRepository = $eventRepository;
 	}
 
 	/**
@@ -35,6 +38,7 @@ class WidgetRenderer
 		return match( $widgetType )
 		{
 			'latest-posts' => $this->renderLatestPosts( $config ),
+			'calendar' => $this->renderCalendar( $config ),
 			default => $this->renderUnknownWidget( $widgetType )
 		};
 	}
@@ -91,6 +95,25 @@ class WidgetRenderer
 		$html .= "</div>\n";
 
 		return $html;
+	}
+
+	/**
+	 * Render calendar widget
+	 *
+	 * Attributes:
+	 * - category: Filter by category slug (optional)
+	 * - limit: Number of events to show (default: 5)
+	 * - upcoming: Show upcoming events (true) or past events (false) (default: true)
+	 */
+	private function renderCalendar( array $config ): string
+	{
+		if( !$this->_eventRepository )
+		{
+			return "<!-- Calendar widget requires EventRepository -->";
+		}
+
+		$widget = new CalendarWidget();
+		return $widget->render( $config );
 	}
 
 	/**
