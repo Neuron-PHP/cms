@@ -37,7 +37,8 @@ class BlogControllerTest extends TestCase
 		$this->originalRegistry = [
 			'Settings' => Registry::getInstance()->get( 'Settings' ),
 			'Base.Path' => Registry::getInstance()->get( 'Base.Path' ),
-			'Views.Path' => Registry::getInstance()->get( 'Views.Path' )
+			'Views.Path' => Registry::getInstance()->get( 'Views.Path' ),
+			'ViewDataProvider' => Registry::getInstance()->get( 'ViewDataProvider' )
 		];
 
 		// Set up in-memory database
@@ -93,6 +94,9 @@ class BlogControllerTest extends TestCase
 		$provider->share( 'currentYear', fn() => date('Y') );
 		$provider->share( 'isAuthenticated', false );
 
+		// CRITICAL: Register ViewDataProvider in Registry so Base controller can find it
+		Registry::getInstance()->set( 'ViewDataProvider', $provider );
+
 		// Initialize repositories with our test PDO
 		$this->initializeRepositories();
 	}
@@ -106,7 +110,7 @@ class BlogControllerTest extends TestCase
 		$property->setAccessible( true );
 		$property->setValue( $provider, [] );
 
-		// Restore original registry values
+		// Restore original registry values (including ViewDataProvider)
 		foreach( $this->originalRegistry as $key => $value )
 		{
 			Registry::getInstance()->set( $key, $value );
