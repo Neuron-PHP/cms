@@ -18,26 +18,32 @@ class DatabasePageRepositoryTest extends TestCase
 
 	protected function setUp(): void
 	{
-		// Create in-memory SQLite database for testing
-		$this->pdo = new PDO(
-			'sqlite::memory:',
-			null,
-			null,
-			[
-				PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-				PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC
-			]
-		);
+		// Configure database settings
+		$config = [
+			'adapter' => 'sqlite',
+			'name' => ':memory:'
+		];
 
-		// Create tables
-		$this->createTables();
+		// Mock SettingManager with database configuration
+		$settings = $this->createMock( SettingManager::class );
+		$settings->method( 'getSection' )
+			->with( 'database' )
+			->willReturn( $config );
+
+		// Create repository
+		$this->repository = new DatabasePageRepository( $settings );
+
+		// Get PDO connection via reflection
+		$reflection = new \ReflectionClass( $this->repository );
+		$property = $reflection->getProperty( '_pdo' );
+		$property->setAccessible( true );
+		$this->pdo = $property->getValue( $this->repository );
 
 		// Initialize ORM with the PDO connection
 		Model::setPdo( $this->pdo );
 
-		// Create repository
-		$settings = $this->createMock( SettingManager::class );
-		$this->repository = new DatabasePageRepository( $settings );
+		// Create tables
+		$this->createTables();
 	}
 
 	private function createTables(): void

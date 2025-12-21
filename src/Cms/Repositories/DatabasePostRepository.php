@@ -137,14 +137,32 @@ class DatabasePostRepository implements IPostRepository
 			$categories = $post->getCategories();
 			$tags = $post->getTags();
 
-			// Use ORM create method - exclude id to let database handle auto-increment
-			// Always remove id for new records to ensure PostgreSQL uses sequence
-			$data = $post->toArray();
-			unset( $data['id'] );
-			$createdPost = Post::create( $data );
-
 			// Get the ORM's PDO for sync operations (same connection as transaction)
 			$pdo = $this->getOrmPdo();
+
+			// Use ORM save method on new instance
+			$createdPost = new Post();
+			foreach( $post->toArray() as $key => $value )
+			{
+				// Skip id and all DateTimeImmutable fields (toArray() returns strings, setters expect objects)
+				if( in_array( $key, [ 'id', 'created_at', 'updated_at', 'published_at' ] ) )
+				{
+					continue;
+				}
+
+				$setter = 'set' . str_replace( '_', '', ucwords( $key, '_' ) );
+				if( method_exists( $createdPost, $setter ) )
+				{
+					$createdPost->$setter( $value );
+				}
+			}
+
+			// Set DateTimeImmutable fields from original object
+			$createdPost->setCreatedAt( $post->getCreatedAt() );
+			$createdPost->setUpdatedAt( $post->getUpdatedAt() );
+			$createdPost->setPublishedAt( $post->getPublishedAt() );
+
+			$createdPost->save();
 
 			// Sync categories using raw SQL (vendor ORM doesn't have relation() method yet)
 			if( count( $categories ) > 0 )

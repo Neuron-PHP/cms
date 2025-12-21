@@ -99,14 +99,30 @@ class DatabaseCategoryRepository implements ICategoryRepository
 			$category->setUpdatedAt( $now );
 		}
 
-		// Use ORM create method - exclude id to let database handle auto-increment
-		// Always remove id for new records to ensure PostgreSQL uses sequence
-		$data = $category->toArray();
-		unset( $data['id'] );
-		$createdCategory = Category::create( $data );
+		// Use ORM save method on new instance
+		$newCategory = new Category();
+		foreach( $category->toArray() as $key => $value )
+		{
+			// Skip id and all DateTimeImmutable fields (toArray() returns strings, setters expect objects)
+			if( in_array( $key, [ 'id', 'created_at', 'updated_at' ] ) )
+			{
+				continue;
+			}
 
-		// Fetch from database to get all fields
-		return $this->findById( $createdCategory->getId() );
+			$setter = 'set' . str_replace( '_', '', ucwords( $key, '_' ) );
+			if( method_exists( $newCategory, $setter ) )
+			{
+				$newCategory->$setter( $value );
+			}
+		}
+
+		// Set DateTimeImmutable fields from original object
+		$newCategory->setCreatedAt( $category->getCreatedAt() );
+		$newCategory->setUpdatedAt( $category->getUpdatedAt() );
+
+		$newCategory->save();
+
+		return $this->findById( $newCategory->getId() );
 	}
 
 	/**

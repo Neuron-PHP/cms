@@ -3,7 +3,9 @@
 namespace Neuron\Cms\Repositories;
 
 use Neuron\Cms\Models\Page;
+use Neuron\Cms\Database\ConnectionFactory;
 use Neuron\Data\Settings\SettingManager;
+use PDO;
 use Exception;
 
 /**
@@ -15,6 +17,8 @@ use Exception;
  */
 class DatabasePageRepository implements IPageRepository
 {
+	private PDO $_pdo;
+
 	/**
 	 * Constructor
 	 *
@@ -23,7 +27,8 @@ class DatabasePageRepository implements IPageRepository
 	 */
 	public function __construct( SettingManager $settings )
 	{
-		// No longer need PDO - ORM is initialized in Bootstrap
+		// Keep PDO for PostgreSQL workaround
+		$this->_pdo = ConnectionFactory::createFromSettings( $settings );
 	}
 
 	/**
@@ -66,14 +71,31 @@ class DatabasePageRepository implements IPageRepository
 			$page->setUpdatedAt( $now );
 		}
 
-		// Use ORM create method - exclude id to let database handle auto-increment
-		// Always remove id for new records to ensure PostgreSQL uses sequence
-		$data = $page->toArray();
-		unset( $data['id'] );
-		$createdPage = Page::create( $data );
+		// Use ORM save method on new instance
+		$newPage = new Page();
+		foreach( $page->toArray() as $key => $value )
+		{
+			// Skip id and all DateTimeImmutable fields (toArray() returns strings, setters expect objects)
+			if( in_array( $key, [ 'id', 'created_at', 'updated_at', 'published_at' ] ) )
+			{
+				continue;
+			}
 
-		// Fetch from database to get all fields
-		return $this->findById( $createdPage->getId() );
+			$setter = 'set' . str_replace( '_', '', ucwords( $key, '_' ) );
+			if( method_exists( $newPage, $setter ) )
+			{
+				$newPage->$setter( $value );
+			}
+		}
+
+		// Set DateTimeImmutable fields from original object
+		$newPage->setCreatedAt( $page->getCreatedAt() );
+		$newPage->setUpdatedAt( $page->getUpdatedAt() );
+		$newPage->setPublishedAt( $page->getPublishedAt() );
+
+		$newPage->save();
+
+		return $this->findById( $newPage->getId() );
 	}
 
 	/**
