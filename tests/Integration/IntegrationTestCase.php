@@ -186,6 +186,12 @@ abstract class IntegrationTestCase extends TestCase
 			// Enable foreign keys for SQLite
 			$pdo->exec( 'PRAGMA foreign_keys = ON' );
 
+			// Enable WAL mode for better concurrency (matches ConnectionFactory)
+			$pdo->exec( 'PRAGMA journal_mode = WAL' );
+
+			// Set busy timeout to handle locks gracefully (matches ConnectionFactory)
+			$pdo->exec( 'PRAGMA busy_timeout = 5000' );
+
 			return $pdo;
 		}
 
