@@ -68,7 +68,7 @@ class DatabasePageRepository implements IPageRepository
 
 		// Use ORM create method - exclude id to let database handle auto-increment
 		$data = $page->toArray();
-		if( isset( $data['id'] ) && $data['id'] === null )
+		if( array_key_exists( 'id', $data ) && $data['id'] === null )
 		{
 			unset( $data['id'] );
 		}
