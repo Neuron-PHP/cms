@@ -7,9 +7,11 @@ use Neuron\Cms\Controllers\Blog;
 use Neuron\Cms\Models\Post;
 use Neuron\Cms\Models\Category;
 use Neuron\Cms\Models\Tag;
+use Neuron\Cms\Models\User;
 use Neuron\Cms\Repositories\DatabasePostRepository;
 use Neuron\Cms\Repositories\DatabaseCategoryRepository;
 use Neuron\Cms\Repositories\DatabaseTagRepository;
+use Neuron\Cms\Repositories\DatabaseUserRepository;
 use Neuron\Data\Settings\Source\Memory;
 use Neuron\Data\Settings\SettingManager;
 use Neuron\Mvc\Requests\Request;
@@ -24,6 +26,7 @@ class BlogControllerTest extends TestCase
 	private DatabasePostRepository $_postRepository;
 	private DatabaseCategoryRepository $_categoryRepository;
 	private DatabaseTagRepository $_tagRepository;
+	private DatabaseUserRepository $_userRepository;
 	private $originalRegistry;
 
 	protected function setUp(): void
@@ -222,6 +225,17 @@ class BlogControllerTest extends TestCase
 				$property->setValue( $this, $PDO );
 			}
 		};
+
+		$this->_userRepository = new class( $pdo ) extends DatabaseUserRepository
+		{
+			public function __construct( PDO $PDO )
+			{
+				$reflection = new \ReflectionClass( DatabaseUserRepository::class );
+				$property = $reflection->getProperty( '_pdo' );
+				$property->setAccessible( true );
+				$property->setValue( $this, $PDO );
+			}
+		};
 	}
 
 	private function createBlogWithInjectedRepositories(): Blog
@@ -243,6 +257,10 @@ class BlogControllerTest extends TestCase
 		$tagRepoProp = $reflection->getProperty( '_tagRepository' );
 		$tagRepoProp->setAccessible( true );
 		$tagRepoProp->setValue( $blog, $this->_tagRepository );
+
+		$userRepoProp = $reflection->getProperty( '_userRepository' );
+		$userRepoProp->setAccessible( true );
+		$userRepoProp->setValue( $blog, $this->_userRepository );
 
 		return $blog;
 	}
@@ -285,6 +303,19 @@ class BlogControllerTest extends TestCase
 		$tag->setSlug( $slug );
 
 		return $this->_tagRepository->create( $tag );
+	}
+
+	private function createTestUser( string $username, string $email ): User
+	{
+		$user = new User();
+		$user->setUsername( $username );
+		$user->setEmail( $email );
+		$user->setPasswordHash( password_hash( 'password', PASSWORD_DEFAULT ) );
+		$user->setRole( User::ROLE_AUTHOR );
+		$user->setStatus( User::STATUS_ACTIVE );
+		$user->setEmailVerified( true );
+
+		return $this->_userRepository->create( $user );
 	}
 
 	public function testIndexReturnsPublishedPosts(): void
@@ -361,14 +392,29 @@ class BlogControllerTest extends TestCase
 
 	public function testAuthorFiltersPostsByAuthor(): void
 	{
-		$this->createTestPost( 'Author 1 Post', 'a1-post', Post::STATUS_PUBLISHED, 1 );
-		$this->createTestPost( 'Author 2 Post', 'a2-post', Post::STATUS_PUBLISHED, 2 );
+		// Create test users
+		$user1 = $this->createTestUser( 'author1', 'author1@test.com' );
+		$user2 = $this->createTestUser( 'author2', 'author2@test.com' );
+
+		// Create posts by different authors
+		$this->createTestPost( 'Author 1 Post', 'a1-post', Post::STATUS_PUBLISHED, $user1->getId() );
+		$this->createTestPost( 'Author 2 Post', 'a2-post', Post::STATUS_PUBLISHED, $user2->getId() );
 
 		$blog = $this->createBlogWithInjectedRepositories();
 
-		// This will fail because we need to implement the author method test properly
-		// For now just verify it doesn't crash
-		$this->markTestSkipped( 'Author method needs proper implementation' );
+		// Create mock request with author parameter
+		$request = $this->createMock( Request::class );
+		$request->expects( $this->once() )
+			->method( 'getRouteParameter' )
+			->with( 'author', '' )
+			->willReturn( 'author1' );
+
+		$result = $blog->author( $request );
+
+		// Verify the response contains only author1's posts
+		$this->assertStringContainsString( 'Author 1 Post', $result );
+		$this->assertStringNotContainsString( 'Author 2 Post', $result );
+		$this->assertStringContainsString( 'Articles by author1', $result );
 	}
 
 	public function testBlogExtendsContentController(): void

@@ -47,13 +47,65 @@ YAML;
 
 	public function testGetUserRepositoryWithMissingConfig(): void
 	{
-		// Test that missing config is handled - skipped due to vfs limitations with chdir
-		$this->markTestSkipped('Cannot test with vfsStream due to chdir() limitations');
+		// Clear Registry to simulate missing Settings
+		\Neuron\Patterns\Registry::getInstance()->reset();
+
+		// Create command instance
+		$command = new CreateCommand();
+
+		// Mock the output to capture error messages
+		$output = $this->createMock(\Neuron\Cli\Console\Output::class);
+		$output->expects($this->once())
+			->method('error')
+			->with('Application not initialized: Settings not found in Registry');
+		$output->expects($this->once())
+			->method('writeln')
+			->with('This is a configuration error - the application should load settings into the Registry');
+
+		$command->setOutput($output);
+
+		// Use reflection to test private getUserRepository method
+		$reflection = new \ReflectionClass($command);
+		$method = $reflection->getMethod('getUserRepository');
+		$method->setAccessible(true);
+
+		// Call the method and verify it returns null
+		$result = $method->invoke($command);
+		$this->assertNull($result);
 	}
 
 	public function testGetUserRepositoryWithInvalidDatabase(): void
 	{
-		// Test that invalid database config is handled - skipped due to vfs limitations with chdir
-		$this->markTestSkipped('Cannot test with vfsStream due to chdir() limitations');
+		// Set up Registry with invalid database configuration that will cause an exception
+		$settings = $this->createMock(\Neuron\Data\Settings\SettingManager::class);
+
+		// Make the SettingManager throw an exception when DatabaseUserRepository tries to use it
+		$settings->method('get')
+			->willThrowException(new \Exception('Invalid database configuration'));
+
+		\Neuron\Patterns\Registry::getInstance()->set('Settings', $settings);
+
+		// Create command instance
+		$command = new CreateCommand();
+
+		// Mock the output to capture error messages
+		$output = $this->createMock(\Neuron\Cli\Console\Output::class);
+		$output->expects($this->once())
+			->method('error')
+			->with($this->stringContains('Database connection failed:'));
+
+		$command->setOutput($output);
+
+		// Use reflection to test private getUserRepository method
+		$reflection = new \ReflectionClass($command);
+		$method = $reflection->getMethod('getUserRepository');
+		$method->setAccessible(true);
+
+		// Call the method and verify it returns null
+		$result = $method->invoke($command);
+		$this->assertNull($result);
+
+		// Clean up Registry
+		\Neuron\Patterns\Registry::getInstance()->reset();
 	}
 }

@@ -48,10 +48,41 @@ class InstallCommandTest extends TestCase
 
 	public function testConfigureSqliteCreatesValidConfig(): void
 	{
-		$this->markTestSkipped('Cannot test configureSqlite() as it requires interactive input via prompt()');
+		// Create command instance
+		$command = new InstallCommand();
 
-		// TODO: Refactor InstallCommand to accept an input interface for testing
-		// For now, this test is skipped to prevent hanging in CI/IDE environments
+		// Mock the input to provide predefined database path
+		$input = $this->createMock(\Neuron\Cli\Console\Input::class);
+		$input->expects($this->once())
+			->method('ask')
+			->with('Database file path', 'storage/database.sqlite3')
+			->willReturn('storage/test.sqlite3');
+
+		$command->setInput($input);
+
+		// Mock the output to avoid console output
+		$output = $this->createMock(\Neuron\Cli\Console\Output::class);
+		$output->expects($this->once())
+			->method('writeln')
+			->with("\n--- SQLite Configuration ---\n");
+
+		$command->setOutput($output);
+
+		// Use reflection to call private configureSqlite method
+		$reflection = new \ReflectionClass($command);
+		$method = $reflection->getMethod('configureSqlite');
+		$method->setAccessible(true);
+
+		// Call the method
+		$result = $method->invoke($command);
+
+		// Verify the configuration is returned correctly
+		$this->assertIsArray($result);
+		$this->assertArrayHasKey('database', $result);
+		$this->assertArrayHasKey('adapter', $result['database']);
+		$this->assertArrayHasKey('name', $result['database']);
+		$this->assertEquals('sqlite', $result['database']['adapter']);
+		$this->assertStringContainsString('storage/test.sqlite3', $result['database']['name']);
 	}
 
 	public function testArrayToYamlConvertsArrayCorrectly(): void

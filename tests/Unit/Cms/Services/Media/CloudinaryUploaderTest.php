@@ -163,48 +163,77 @@ class CloudinaryUploaderTest extends TestCase
 
 	public function testUploadWithValidFile(): void
 	{
-		$this->markTestIncomplete(
-			'This test requires valid Cloudinary credentials and a test image file. ' .
-			'Enable for integration testing.'
-		);
+		// Skip if using test credentials (not real Cloudinary account)
+		$cloudName = $this->_settings->get( 'cloudinary', 'cloud_name' );
+		$isTestCredentials = ($cloudName === 'test-cloud');
+		$hasRealCredentials = getenv( 'CLOUDINARY_URL' ) || (!$isTestCredentials && $cloudName);
 
-		// Example integration test:
-		// $uploader = new CloudinaryUploader( $this->_settings );
-		// $result = $uploader->upload( '/path/to/test/image.jpg' );
-		//
-		// $this->assertIsArray( $result );
-		// $this->assertArrayHasKey( 'url', $result );
-		// $this->assertArrayHasKey( 'public_id', $result );
-		// $this->assertArrayHasKey( 'width', $result );
-		// $this->assertArrayHasKey( 'height', $result );
+		if( !$hasRealCredentials )
+		{
+			$this->markTestSkipped(
+				'Cloudinary credentials not configured. Set CLOUDINARY_URL environment variable or configure real cloudinary settings to run this integration test.'
+			);
+		}
+
+		// Integration test requires actual file and credentials
+		$testImagePath = __DIR__ . '/../../../../resources/test-fixtures/test-image.jpg';
+		if( !file_exists( $testImagePath ) )
+		{
+			$this->markTestSkipped( 'Test image file not found: ' . $testImagePath );
+		}
+
+		$uploader = new CloudinaryUploader( $this->_settings );
+		$result = $uploader->upload( $testImagePath );
+
+		$this->assertIsArray( $result );
+		$this->assertArrayHasKey( 'url', $result );
+		$this->assertArrayHasKey( 'public_id', $result );
+		$this->assertArrayHasKey( 'width', $result );
+		$this->assertArrayHasKey( 'height', $result );
 	}
 
 	public function testUploadFromUrlWithValidUrl(): void
 	{
-		$this->markTestIncomplete(
-			'This test requires valid Cloudinary credentials and internet connection. ' .
-			'Enable for integration testing.'
-		);
+		// Skip if using test credentials (not real Cloudinary account)
+		$cloudName = $this->_settings->get( 'cloudinary', 'cloud_name' );
+		$isTestCredentials = ($cloudName === 'test-cloud');
+		$hasRealCredentials = getenv( 'CLOUDINARY_URL' ) || (!$isTestCredentials && $cloudName);
 
-		// Example integration test:
-		// $uploader = new CloudinaryUploader( $this->_settings );
-		// $result = $uploader->uploadFromUrl( 'https://example.com/test-image.jpg' );
-		//
-		// $this->assertIsArray( $result );
-		// $this->assertArrayHasKey( 'url', $result );
+		if( !$hasRealCredentials )
+		{
+			$this->markTestSkipped(
+				'Cloudinary credentials not configured. Set CLOUDINARY_URL environment variable or configure real cloudinary settings to run this integration test.'
+			);
+		}
+
+		$uploader = new CloudinaryUploader( $this->_settings );
+		// Using a reliable test image URL
+		$result = $uploader->uploadFromUrl( 'https://via.placeholder.com/150' );
+
+		$this->assertIsArray( $result );
+		$this->assertArrayHasKey( 'url', $result );
+		$this->assertArrayHasKey( 'public_id', $result );
 	}
 
 	public function testDeleteWithValidPublicId(): void
 	{
-		$this->markTestIncomplete(
-			'This test requires valid Cloudinary credentials. ' .
-			'Enable for integration testing.'
-		);
+		// Skip if using test credentials (not real Cloudinary account)
+		$cloudName = $this->_settings->get( 'cloudinary', 'cloud_name' );
+		$isTestCredentials = ($cloudName === 'test-cloud');
+		$hasRealCredentials = getenv( 'CLOUDINARY_URL' ) || (!$isTestCredentials && $cloudName);
 
-		// Example integration test:
-		// $uploader = new CloudinaryUploader( $this->_settings );
-		// $result = $uploader->delete( 'test-folder/test-image' );
-		//
-		// $this->assertIsBool( $result );
+		if( !$hasRealCredentials )
+		{
+			$this->markTestSkipped(
+				'Cloudinary credentials not configured. Set CLOUDINARY_URL environment variable or configure real cloudinary settings to run this integration test.'
+			);
+		}
+
+		// Note: This test assumes a test image exists with this public_id
+		// In a real integration test, you would upload first, then delete
+		$uploader = new CloudinaryUploader( $this->_settings );
+		$result = $uploader->delete( 'test-folder/test-image' );
+
+		$this->assertIsBool( $result );
 	}
 }
