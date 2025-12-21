@@ -133,6 +133,11 @@ abstract class IntegrationTestCase extends TestCase
 			{
 				$this->pdo->exec( "DELETE FROM {$table}" );
 			}
+			elseif( $driver === 'pgsql' )
+			{
+				// PostgreSQL requires CASCADE to truncate tables with FK constraints
+				$this->pdo->exec( "TRUNCATE TABLE {$table} CASCADE" );
+			}
 			else
 			{
 				$this->pdo->exec( "TRUNCATE TABLE {$table}" );
@@ -365,6 +370,11 @@ abstract class IntegrationTestCase extends TestCase
 		if( $driver === 'sqlite' )
 		{
 			$this->pdo->exec( "DELETE FROM {$table}" );
+		}
+		elseif( $driver === 'pgsql' )
+		{
+			// PostgreSQL requires CASCADE to truncate tables with FK constraints
+			$this->pdo->exec( "TRUNCATE TABLE {$table} CASCADE" );
 		}
 		else
 		{
