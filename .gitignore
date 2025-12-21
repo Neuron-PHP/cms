@@ -28,3 +28,4 @@ composer.lock
 examples/test.log
 
 coverage*
+.env.testing
