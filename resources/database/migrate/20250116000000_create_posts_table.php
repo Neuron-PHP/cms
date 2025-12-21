@@ -1,7 +1,6 @@
 <?php
 
 use Phinx\Migration\AbstractMigration;
-use Phinx\Db\Adapter\MysqlAdapter;
 
 /**
  * Create posts table for blog system
@@ -20,7 +19,7 @@ class CreatePostsTable extends AbstractMigration
 			->addColumn( 'body', 'text', [ 'null' => false ] )
 			->addColumn( 'excerpt', 'text', [ 'null' => true ] )
 			->addColumn( 'featured_image', 'string', [ 'limit' => 255, 'null' => true ] )
-			->addColumn( 'author_id', 'biginteger', [ 'signed' => false, 'limit' => MysqlAdapter::INT_BIG, 'null' => false ] )
+			->addColumn( 'author_id', 'integer', [ 'signed' => false, 'null' => false ] )
 			->addColumn( 'status', 'string', [ 'limit' => 20, 'default' => 'draft' ] )
 			->addColumn( 'published_at', 'timestamp', [ 'null' => true ] )
 			->addColumn( 'view_count', 'integer', [ 'default' => 0 ] )

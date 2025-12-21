@@ -1,7 +1,6 @@
 <?php
 
 use Phinx\Migration\AbstractMigration;
-use Phinx\Db\Adapter\MysqlAdapter;
 
 /**
  * Create events table for calendar system
@@ -23,13 +22,13 @@ class CreateEventsTable extends AbstractMigration
 			->addColumn( 'start_date', 'datetime', [ 'null' => false ] )
 			->addColumn( 'end_date', 'datetime', [ 'null' => true ] )
 			->addColumn( 'all_day', 'boolean', [ 'default' => false ] )
-			->addColumn( 'category_id', 'biginteger', [ 'signed' => false, 'limit' => MysqlAdapter::INT_BIG, 'null' => true ] )
+			->addColumn( 'category_id', 'integer', [ 'signed' => false, 'null' => true ] )
 			->addColumn( 'status', 'string', [ 'limit' => 20, 'default' => 'draft' ] )
 			->addColumn( 'featured_image', 'string', [ 'limit' => 255, 'null' => true ] )
 			->addColumn( 'organizer', 'string', [ 'limit' => 255, 'null' => true ] )
 			->addColumn( 'contact_email', 'string', [ 'limit' => 255, 'null' => true ] )
 			->addColumn( 'contact_phone', 'string', [ 'limit' => 50, 'null' => true ] )
-			->addColumn( 'created_by', 'biginteger', [ 'signed' => false, 'limit' => MysqlAdapter::INT_BIG, 'null' => false ] )
+			->addColumn( 'created_by', 'integer', [ 'signed' => false, 'null' => false ] )
 			->addColumn( 'view_count', 'integer', [ 'default' => 0 ] )
 			->addColumn( 'created_at', 'timestamp', [ 'default' => 'CURRENT_TIMESTAMP' ] )
 			->addColumn( 'updated_at', 'timestamp', [ 'default' => 'CURRENT_TIMESTAMP' ] )

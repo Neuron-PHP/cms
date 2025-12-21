@@ -1,7 +1,6 @@
 <?php
 
 use Phinx\Migration\AbstractMigration;
-use Phinx\Db\Adapter\MysqlAdapter;
 
 /**
  * Create post_tags junction table for many-to-many relationship
@@ -15,8 +14,8 @@ class CreatePostTagsTable extends AbstractMigration
 	{
 		$table = $this->table( 'post_tags', [ 'id' => false, 'primary_key' => [ 'post_id', 'tag_id' ] ] );
 
-		$table->addColumn( 'post_id', 'biginteger', [ 'signed' => false, 'limit' => MysqlAdapter::INT_BIG, 'null' => false ] )
-			->addColumn( 'tag_id', 'biginteger', [ 'signed' => false, 'limit' => MysqlAdapter::INT_BIG, 'null' => false ] )
+		$table->addColumn( 'post_id', 'integer', [ 'signed' => false, 'null' => false ] )
+			->addColumn( 'tag_id', 'integer', [ 'signed' => false, 'null' => false ] )
 			->addColumn( 'created_at', 'timestamp', [ 'default' => 'CURRENT_TIMESTAMP' ] )
 			->addIndex( [ 'post_id' ] )
 			->addIndex( [ 'tag_id' ] )

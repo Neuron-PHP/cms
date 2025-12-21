@@ -1,7 +1,6 @@
 <?php
 
 use Phinx\Migration\AbstractMigration;
-use Phinx\Db\Adapter\MysqlAdapter;
 
 /**
  * Create email_verification_tokens table
@@ -15,7 +14,7 @@ class CreateEmailVerificationTokensTable extends AbstractMigration
 	{
 		$table = $this->table( 'email_verification_tokens', [ 'signed' => false ] );
 
-		$table->addColumn( 'user_id', 'biginteger', [ 'signed' => false, 'limit' => MysqlAdapter::INT_BIG, 'null' => false ] )
+		$table->addColumn( 'user_id', 'integer', [ 'signed' => false, 'null' => false ] )
 			->addColumn( 'token', 'string', [ 'limit' => 64 ] )
 			->addColumn( 'created_at', 'timestamp', [ 'default' => 'CURRENT_TIMESTAMP' ] )
 			->addColumn( 'expires_at', 'timestamp', [ 'null' => false ] )
