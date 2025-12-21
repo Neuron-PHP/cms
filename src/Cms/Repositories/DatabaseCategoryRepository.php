@@ -88,13 +88,22 @@ class DatabaseCategoryRepository implements ICategoryRepository
 			throw new Exception( 'Category name already exists' );
 		}
 
+		// Set timestamps explicitly (ORM doesn't use DB defaults)
+		$now = new \DateTimeImmutable();
+		if( !$category->getCreatedAt() )
+		{
+			$category->setCreatedAt( $now );
+		}
+		if( !$category->getUpdatedAt() )
+		{
+			$category->setUpdatedAt( $now );
+		}
+
 		// Use ORM create method
 		$createdCategory = Category::create( $category->toArray() );
 
-		// Update the original category with the new ID
-		$category->setId( $createdCategory->getId() );
-
-		return $category;
+		// Fetch from database to get all fields
+		return $this->findById( $createdCategory->getId() );
 	}
 
 	/**
@@ -120,6 +129,9 @@ class DatabaseCategoryRepository implements ICategoryRepository
 		{
 			throw new Exception( 'Category name already exists' );
 		}
+
+		// Update timestamp (database-independent approach)
+		$category->setUpdatedAt( new \DateTimeImmutable() );
 
 		// Use ORM save method
 		return $category->save();

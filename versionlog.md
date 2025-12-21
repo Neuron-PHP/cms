@@ -1,4 +1,6 @@
 ## 0.8.10
+* Added current_user_identifier helper function.
+* Database compatability improvements.
 
 ## 0.8.9 2025-12-19
 * **Slug generation now uses system abstractions** - All content service classes refactored to use `IRandom` interface

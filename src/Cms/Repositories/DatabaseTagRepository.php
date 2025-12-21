@@ -72,13 +72,22 @@ class DatabaseTagRepository implements ITagRepository
 			throw new Exception( 'Tag name already exists' );
 		}
 
+		// Set timestamps explicitly (ORM doesn't use DB defaults)
+		$now = new \DateTimeImmutable();
+		if( !$tag->getCreatedAt() )
+		{
+			$tag->setCreatedAt( $now );
+		}
+		if( !$tag->getUpdatedAt() )
+		{
+			$tag->setUpdatedAt( $now );
+		}
+
 		// Use ORM create method
 		$createdTag = Tag::create( $tag->toArray() );
 
-		// Update the original tag with the new ID
-		$tag->setId( $createdTag->getId() );
-
-		return $tag;
+		// Fetch from database to get all fields
+		return $this->findById( $createdTag->getId() );
 	}
 
 	/**
@@ -104,6 +113,9 @@ class DatabaseTagRepository implements ITagRepository
 		{
 			throw new Exception( 'Tag name already exists' );
 		}
+
+		// Update timestamp (database-independent approach)
+		$tag->setUpdatedAt( new \DateTimeImmutable() );
 
 		// Use ORM save method
 		return $tag->save();

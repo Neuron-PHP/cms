@@ -90,14 +90,45 @@ cloudinary:
 
 # Database Configuration
 # The installer will configure this section interactively
+# All three databases (SQLite, MySQL, PostgreSQL) are fully supported
+# with identical behavior - choose based on your deployment needs
+
+# Option 1: SQLite (Recommended for development and small-to-medium sites)
+# - Zero configuration required
+# - Single file database
+# - Automatic WAL mode for concurrency
+# - Foreign keys enforced automatically
 database:
-  adapter: mysql  # Database adapter (mysql, pgsql, sqlite)
-  host: localhost  # Database host
-  name: neuron_cms  # Database name
-  user: root  # Database username
-  pass: secret  # Database password
-  port: 3306  # Database port (3306 for MySQL, 5432 for PostgreSQL)
-  charset: utf8mb4  # Character set
+  adapter: sqlite
+  name: storage/database.sqlite3
+
+# Option 2: MySQL (Recommended for large-scale production)
+# - Best for high-traffic websites
+# - Proven scalability
+# - Wide hosting support
+# database:
+#   adapter: mysql
+#   host: localhost
+#   port: 3306
+#   name: neuron_cms
+#   user: root
+#   pass: secret
+#   charset: utf8mb4  # UTF8MB4 recommended for full Unicode support
+
+# Option 3: PostgreSQL (Enterprise features and complex queries)
+# - Advanced query capabilities
+# - Better JSON support
+# - ACID compliance with advanced features
+# database:
+#   adapter: pgsql
+#   host: localhost
+#   port: 5432
+#   name: neuron_cms
+#   user: postgres
+#   pass: secret
+
+# Note: All databases use UTC timezone and have foreign key constraints enforced
+# Timestamp updates (created_at, updated_at) work identically across all platforms
 
 # Migration Configuration
 migrations:

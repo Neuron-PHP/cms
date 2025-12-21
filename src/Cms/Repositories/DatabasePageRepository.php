@@ -55,13 +55,22 @@ class DatabasePageRepository implements IPageRepository
 			throw new Exception( 'Slug already exists' );
 		}
 
+		// Set timestamps explicitly (ORM doesn't use DB defaults)
+		$now = new \DateTimeImmutable();
+		if( !$page->getCreatedAt() )
+		{
+			$page->setCreatedAt( $now );
+		}
+		if( !$page->getUpdatedAt() )
+		{
+			$page->setUpdatedAt( $now );
+		}
+
 		// Use ORM create method
 		$createdPage = Page::create( $page->toArray() );
 
-		// Update the original page with the new ID
-		$page->setId( $createdPage->getId() );
-
-		return $page;
+		// Fetch from database to get all fields
+		return $this->findById( $createdPage->getId() );
 	}
 
 	/**
@@ -80,6 +89,9 @@ class DatabasePageRepository implements IPageRepository
 		{
 			throw new Exception( 'Slug already exists' );
 		}
+
+		// Update timestamp (database-independent approach)
+		$page->setUpdatedAt( new \DateTimeImmutable() );
 
 		// Use ORM save method
 		return $page->save();

@@ -6,6 +6,45 @@ jobs:
   build-test:
     runs-on: ubuntu-latest
 
+    strategy:
+      fail-fast: false
+      matrix:
+        database: [sqlite, mysql, postgres]
+        include:
+          - database: sqlite
+            db_extension: pdo_sqlite
+          - database: mysql
+            db_extension: pdo_mysql
+          - database: postgres
+            db_extension: pdo_pgsql
+
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: test_password
+          MYSQL_DATABASE: cms_test
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping --silent"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=3
+
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: test_password
+          POSTGRES_DB: cms_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=3
+
     steps:
     - name: Checkout
       uses: actions/checkout@v3
@@ -14,19 +53,34 @@ jobs:
       uses: shivammathur/setup-php@v2
       with:
         php-version: 8.4
-        extensions: pdo, pdo_sqlite, sockets, calendar, pcov
+        extensions: pdo, ${{ matrix.db_extension }}, sockets, calendar, pcov
         coverage: pcov
 
     - name: Install Dependencies
       run: composer install --prefer-dist --no-progress --no-interaction --optimize-autoloader
 
     - name: Run Unit Tests with Coverage
+      env:
+        TEST_DB_DRIVER: ${{ matrix.database }}
+        TEST_DB_HOST: 127.0.0.1
+        TEST_DB_PORT: ${{ matrix.database == 'mysql' && '3306' || '5432' }}
+        TEST_DB_NAME: cms_test
+        TEST_DB_USER: ${{ matrix.database == 'mysql' && 'root' || 'postgres' }}
+        TEST_DB_PASSWORD: test_password
       run: vendor/bin/phpunit -c tests/phpunit.xml --testsuite=unit --coverage-clover coverage.xml --coverage-filter src
 
     - name: Run Integration Tests
+      env:
+        TEST_DB_DRIVER: ${{ matrix.database }}
+        TEST_DB_HOST: 127.0.0.1
+        TEST_DB_PORT: ${{ matrix.database == 'mysql' && '3306' || '5432' }}
+        TEST_DB_NAME: cms_test
+        TEST_DB_USER: ${{ matrix.database == 'mysql' && 'root' || 'postgres' }}
+        TEST_DB_PASSWORD: test_password
       run: vendor/bin/phpunit -c tests/phpunit.xml --testsuite=integration
 
     - name: Upload coverage to Codecov
+      if: matrix.database == 'sqlite'
       uses: codecov/codecov-action@v5
       with:
         token: ${{ secrets.CODECOV_TOKEN }}

@@ -442,12 +442,18 @@ class InstallCommand extends Command
 		$choice = $this->input->choice(
 			"Select database adapter:",
 			[
-				'sqlite' => 'SQLite (recommended - simple, no server required)',
-				'mysql' => 'MySQL',
-				'pgsql' => 'PostgreSQL'
+				'sqlite' => 'SQLite - Recommended for development (zero config, single file)',
+				'mysql' => 'MySQL - Recommended for production (proven scalability)',
+				'pgsql' => 'PostgreSQL - Enterprise features (advanced querying)'
 			],
 			'sqlite'
 		);
+
+		$this->output->writeln( "\nAll databases support:" );
+		$this->output->writeln( "  ✓ Foreign key constraints with cascade deletes" );
+		$this->output->writeln( "  ✓ Automatic timestamp management" );
+		$this->output->writeln( "  ✓ Full ACID transaction support" );
+		$this->output->writeln( "" );
 
 		$config = match( $choice )
 		{

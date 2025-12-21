@@ -63,22 +63,91 @@ abstract class IntegrationTestCase extends TestCase
 			self::$migrationsRun = true;
 		}
 
-		// Start a transaction for test isolation
-		$this->pdo->beginTransaction();
+		// NOTE: We don't start a transaction here because repositories
+		// manage their own transactions. Using both causes "already in transaction" errors.
 	}
 
 	/**
-	 * Rollback transaction after each test for isolation
+	 * Clean up after each test
 	 */
 	protected function tearDown(): void
 	{
-		// Rollback transaction to clean up test data
-		if( $this->pdo->inTransaction() )
+		// Clean up any active transactions from failed tests
+		while( $this->pdo->inTransaction() )
 		{
 			$this->pdo->rollBack();
 		}
 
+		// Truncate all tables except phinxlog for test isolation
+		$this->cleanupTestData();
+
 		parent::tearDown();
+	}
+
+	/**
+	 * Clean up test data by truncating tables
+	 */
+	private function cleanupTestData(): void
+	{
+		$driver = $this->pdo->getAttribute( PDO::ATTR_DRIVER_NAME );
+
+		// Get list of tables
+		if( $driver === 'sqlite' )
+		{
+			$tables = $this->pdo->query(
+				"SELECT name FROM sqlite_master WHERE type='table' AND name NOT IN ('phinxlog', 'sqlite_sequence')"
+			)->fetchAll( PDO::FETCH_COLUMN );
+		}
+		elseif( $driver === 'mysql' )
+		{
+			$dbname = $this->getDatabaseName();
+			$tables = $this->pdo->query(
+				"SELECT table_name FROM information_schema.tables WHERE table_schema = '{$dbname}' AND table_name != 'phinxlog'"
+			)->fetchAll( PDO::FETCH_COLUMN );
+		}
+		elseif( $driver === 'pgsql' )
+		{
+			$tables = $this->pdo->query(
+				"SELECT tablename FROM pg_tables WHERE schemaname = 'public' AND tablename != 'phinxlog'"
+			)->fetchAll( PDO::FETCH_COLUMN );
+		}
+		else
+		{
+			return;
+		}
+
+		// Disable foreign key checks temporarily
+		if( $driver === 'sqlite' )
+		{
+			$this->pdo->exec( 'PRAGMA foreign_keys = OFF' );
+		}
+		elseif( $driver === 'mysql' )
+		{
+			$this->pdo->exec( 'SET FOREIGN_KEY_CHECKS = 0' );
+		}
+
+		// Truncate all tables
+		foreach( $tables as $table )
+		{
+			if( $driver === 'sqlite' )
+			{
+				$this->pdo->exec( "DELETE FROM {$table}" );
+			}
+			else
+			{
+				$this->pdo->exec( "TRUNCATE TABLE {$table}" );
+			}
+		}
+
+		// Re-enable foreign key checks
+		if( $driver === 'sqlite' )
+		{
+			$this->pdo->exec( 'PRAGMA foreign_keys = ON' );
+		}
+		elseif( $driver === 'mysql' )
+		{
+			$this->pdo->exec( 'SET FOREIGN_KEY_CHECKS = 1' );
+		}
 	}
 
 	/**
@@ -190,11 +259,19 @@ abstract class IntegrationTestCase extends TestCase
 			]
 		]);
 
-		// Create migration manager
-		$this->migrationManager = new Manager( $config, new StringInput( '' ), new NullOutput() );
+		// Create migration manager - use console output to see errors
+		$output = new \Symfony\Component\Console\Output\ConsoleOutput();
+		$this->migrationManager = new Manager( $config, new StringInput( '' ), $output );
 
-		// Run all migrations
-		$this->migrationManager->migrate( 'test' );
+		try
+		{
+			// Run all migrations
+			$this->migrationManager->migrate( 'test' );
+		}
+		catch( \Exception $e )
+		{
+			throw new \RuntimeException( "Migration failed: " . $e->getMessage(), 0, $e );
+		}
 	}
 
 	/**

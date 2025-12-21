@@ -4,18 +4,110 @@ This document provides comprehensive guidance for working with database migratio
 
 ## Table of Contents
 
-1. [Core Principles](#core-principles)
-2. [Migration Workflow](#migration-workflow)
-3. [Common Scenarios](#common-scenarios)
-4. [Upgrade Path Considerations](#upgrade-path-considerations)
-5. [Best Practices](#best-practices)
-6. [Troubleshooting](#troubleshooting)
+1. [Cross-Database Compatibility](#cross-database-compatibility)
+2. [Core Principles](#core-principles)
+3. [Migration Workflow](#migration-workflow)
+4. [Common Scenarios](#common-scenarios)
+5. [Upgrade Path Considerations](#upgrade-path-considerations)
+6. [Best Practices](#best-practices)
+7. [Troubleshooting](#troubleshooting)
+
+## Cross-Database Compatibility
+
+Neuron CMS supports SQLite, MySQL, and PostgreSQL. When writing migrations, follow these guidelines to ensure compatibility across all platforms:
+
+### Avoid Database-Specific Syntax
+
+❌ **DON'T use MySQL-specific features:**
+```php
+// MySQL-only: ON UPDATE CURRENT_TIMESTAMP
+->addColumn('updated_at', 'timestamp', [
+    'default' => 'CURRENT_TIMESTAMP',
+    'update' => 'CURRENT_TIMESTAMP'  // ← PostgreSQL/SQLite ignore this
+])
+```
+
+✅ **DO handle timestamps at application level:**
+```php
+// Cross-database compatible
+->addColumn('updated_at', 'timestamp', [
+    'default' => 'CURRENT_TIMESTAMP'
+])
+
+// In your repository's update() method:
+$model->setUpdatedAt(new \DateTimeImmutable());
+$model->save();
+```
+
+### Use Phinx's Cross-Database Abstractions
+
+✅ **DO use Phinx column types that work everywhere:**
+```php
+->addColumn('name', 'string', ['limit' => 255])
+->addColumn('count', 'integer', ['default' => 0])
+->addColumn('price', 'decimal', ['precision' => 10, 'scale' => 2])
+->addColumn('created_at', 'timestamp', ['default' => 'CURRENT_TIMESTAMP'])
+```
+
+❌ **DON'T use raw SQL for schema changes:**
+```php
+// Avoid database-specific SQL
+$this->execute("ALTER TABLE users ADD COLUMN email VARCHAR(255)");
+```
+
+### Foreign Keys Work Everywhere
+
+✅ **Foreign keys are properly enforced on all databases** (including SQLite):
+```php
+->addForeignKey('author_id', 'users', 'id', [
+    'delete' => 'CASCADE',
+    'update' => 'CASCADE'
+])
+```
+
+**Note:** ConnectionFactory automatically enables foreign keys for SQLite via `PRAGMA foreign_keys = ON`.
+
+### Testing on All Databases
+
+Before committing migrations:
+
+1. **Test locally on SQLite** (easiest for development)
+2. **Test on MySQL** if available
+3. **Test on PostgreSQL** if available
+4. **CI tests run on all three** - watch for failures
+
+```bash
+# Test migration on SQLite
+TEST_DB_DRIVER=sqlite vendor/bin/phpunit tests/Integration
+
+# Test migration on MySQL (if available)
+TEST_DB_DRIVER=mysql vendor/bin/phpunit tests/Integration
+
+# Test migration on PostgreSQL (if available)
+TEST_DB_DRIVER=postgres vendor/bin/phpunit tests/Integration
+```
+
+### Database-Specific Limitations
+
+Be aware of platform differences:
+
+| Feature | SQLite | MySQL | PostgreSQL |
+|---------|--------|-------|------------|
+| ALTER COLUMN | ❌ Limited | ✅ Full support | ✅ Full support |
+| DROP COLUMN | ❌ Requires table rebuild | ✅ Supported | ✅ Supported |
+| ENUM types | ❌ Use CHECK | ✅ Native ENUM | ✅ Native ENUM |
+| Full-text search | Limited | ✅ FULLTEXT | ✅ ts_vector |
+| JSON columns | ✅ TEXT as JSON | ✅ JSON type | ✅ JSONB type |
+
+**Recommendation:** Design migrations that work on SQLite's limited ALTER TABLE support for maximum compatibility.
 
 ## Core Principles
 
 ### Never Modify Existing Migrations
 
 **CRITICAL RULE: Once a migration has been committed to the repository, NEVER modify it.**
+
+**Exception:** When adding new columns to a table, use the **Dual Migration Pattern** (see below).
 
 **Why?**
 - Phinx tracks which migrations have been executed using a `phinxlog` table
@@ -38,12 +130,22 @@ public function change()
 }
 ```
 
-### Always Create New Migrations for Schema Changes
+### The Dual Migration Pattern
 
-**Correct Approach:** Create a new migration file with a new timestamp.
+When adding columns to an existing table, you must update TWO migration files:
 
+**1. Update the CREATE migration** (for NEW installations):
 ```php
-// ✅ CORRECT: Create cms/resources/database/migrate/20251205000000_add_new_column_to_users.php
+// cms/resources/database/migrate/20250111000000_create_users_table.php
+$usersTable->addColumn( 'username', 'string', [ 'limit' => 255 ] )
+    ->addColumn( 'email', 'string', [ 'limit' => 255 ] )
+    ->addColumn( 'new_column', 'string', [ 'limit' => 255, 'null' => true ] )  // ← ADD HERE
+    ->create();
+```
+
+**2. Create an ALTER migration** (for EXISTING installations):
+```php
+// cms/resources/database/migrate/20251205000000_add_new_column_to_users.php
 use Phinx\Migration\AbstractMigration;
 
 class AddNewColumnToUsers extends AbstractMigration
@@ -51,10 +153,29 @@ class AddNewColumnToUsers extends AbstractMigration
     public function change()
     {
         $table = $this->table( 'users' );
-        $table->addColumn( 'new_column', 'string', [ 'null' => true ] )
-            ->update();
+
+        // Check if column exists (handles both new and existing installations)
+        if( !$table->hasColumn( 'new_column' ) )
+        {
+            $table->addColumn( 'new_column', 'string', [ 'limit' => 255, 'null' => true ] )
+                ->update();
+        }
     }
 }
+```
+
+**Why both?**
+- **CREATE migration**: Ensures new installations get the complete, up-to-date schema from day one
+- **ALTER migration**: Upgrades existing installations that already ran the original CREATE migration
+- **hasColumn() check**: Makes the ALTER migration safe to run on both new and existing installations
+
+**Testing:**
+```bash
+# ALWAYS run tests after updating migrations
+./vendor/bin/phpunit tests
+
+# If integration tests fail with "table already exists", clean test DB:
+rm -f /tmp/cms_test_*.db && ./vendor/bin/phpunit tests
 ```
 
 ## Migration Workflow

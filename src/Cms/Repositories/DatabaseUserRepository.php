@@ -80,13 +80,22 @@ class DatabaseUserRepository implements IUserRepository
 			throw new Exception( 'Email already exists' );
 		}
 
+		// Set timestamps explicitly (ORM doesn't use DB defaults)
+		$now = new \DateTimeImmutable();
+		if( !$user->getCreatedAt() )
+		{
+			$user->setCreatedAt( $now );
+		}
+		if( !$user->getUpdatedAt() )
+		{
+			$user->setUpdatedAt( $now );
+		}
+
 		// Use ORM create method
 		$createdUser = User::create( $user->toArray() );
 
-		// Update the original user with the new ID
-		$user->setId( $createdUser->getId() );
-
-		return $user;
+		// Fetch from database to get all fields
+		return $this->findById( $createdUser->getId() );
 	}
 
 	/**
@@ -112,6 +121,9 @@ class DatabaseUserRepository implements IUserRepository
 		{
 			throw new Exception( 'Email already exists' );
 		}
+
+		// Update timestamp (database-independent approach)
+		$user->setUpdatedAt( new \DateTimeImmutable() );
 
 		// Use ORM save method
 		return $user->save();

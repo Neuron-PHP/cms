@@ -75,7 +75,7 @@ class ConnectionFactory
 			default => throw new Exception( "Unsupported database adapter: $adapter" )
 		};
 
-		return new PDO(
+		$pdo = new PDO(
 			$dsn,
 			$config['user'] ?? null,
 			$config['pass'] ?? null,
@@ -84,5 +84,73 @@ class ConnectionFactory
 				PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC
 			]
 		);
+
+		// Apply database-specific initialization
+		self::initializeConnection( $pdo, $adapter );
+
+		return $pdo;
+	}
+
+	/**
+	 * Initialize database-specific settings
+	 *
+	 * @param PDO $pdo
+	 * @param string $adapter
+	 * @return void
+	 */
+	private static function initializeConnection( PDO $pdo, string $adapter ): void
+	{
+		match( $adapter )
+		{
+			'sqlite' => self::initializeSqlite( $pdo ),
+			'mysql' => self::initializeMysql( $pdo ),
+			'pgsql' => self::initializePostgresql( $pdo ),
+			default => null
+		};
+	}
+
+	/**
+	 * Initialize SQLite-specific settings
+	 *
+	 * @param PDO $pdo
+	 * @return void
+	 */
+	private static function initializeSqlite( PDO $pdo ): void
+	{
+		// Enable foreign key constraints (disabled by default in SQLite)
+		$pdo->exec( 'PRAGMA foreign_keys = ON' );
+
+		// Enable WAL mode for better concurrency
+		$pdo->exec( 'PRAGMA journal_mode = WAL' );
+
+		// Set busy timeout to handle locks gracefully (5 seconds)
+		$pdo->exec( 'PRAGMA busy_timeout = 5000' );
+	}
+
+	/**
+	 * Initialize MySQL-specific settings
+	 *
+	 * @param PDO $pdo
+	 * @return void
+	 */
+	private static function initializeMysql( PDO $pdo ): void
+	{
+		// Set timezone to UTC for consistent timestamp handling
+		$pdo->exec( "SET time_zone = '+00:00'" );
+	}
+
+	/**
+	 * Initialize PostgreSQL-specific settings
+	 *
+	 * @param PDO $pdo
+	 * @return void
+	 */
+	private static function initializePostgresql( PDO $pdo ): void
+	{
+		// Set character encoding to UTF8
+		$pdo->exec( "SET NAMES 'UTF8'" );
+
+		// Set timezone to UTC for consistent timestamp handling
+		$pdo->exec( "SET timezone = 'UTC'" );
 	}
 }

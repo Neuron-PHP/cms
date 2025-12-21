@@ -26,7 +26,7 @@ class CreatePagesTable extends AbstractMigration
 			->addColumn( 'published_at', 'timestamp', [ 'null' => true ] )
 			->addColumn( 'view_count', 'integer', [ 'default' => 0 ] )
 			->addColumn( 'created_at', 'timestamp', [ 'default' => 'CURRENT_TIMESTAMP' ] )
-			->addColumn( 'updated_at', 'timestamp', [ 'default' => 'CURRENT_TIMESTAMP', 'update' => 'CURRENT_TIMESTAMP' ] )
+			->addColumn( 'updated_at', 'timestamp', [ 'default' => 'CURRENT_TIMESTAMP' ] )
 			->addIndex( [ 'slug' ], [ 'unique' => true ] )
 			->addIndex( [ 'author_id' ] )
 			->addIndex( [ 'status' ] )
