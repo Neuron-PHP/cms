@@ -99,30 +99,10 @@ class DatabaseCategoryRepository implements ICategoryRepository
 			$category->setUpdatedAt( $now );
 		}
 
-		// Use ORM save method on new instance
-		$newCategory = new Category();
-		foreach( $category->toArray() as $key => $value )
-		{
-			// Skip id and all DateTimeImmutable fields (toArray() returns strings, setters expect objects)
-			if( in_array( $key, [ 'id', 'created_at', 'updated_at' ] ) )
-			{
-				continue;
-			}
+		// Save the category using ORM
+		$category->save();
 
-			$setter = 'set' . str_replace( '_', '', ucwords( $key, '_' ) );
-			if( method_exists( $newCategory, $setter ) )
-			{
-				$newCategory->$setter( $value );
-			}
-		}
-
-		// Set DateTimeImmutable fields from original object
-		$newCategory->setCreatedAt( $category->getCreatedAt() );
-		$newCategory->setUpdatedAt( $category->getUpdatedAt() );
-
-		$newCategory->save();
-
-		return $this->findById( $newCategory->getId() );
+		return $this->findById( $category->getId() );
 	}
 
 	/**

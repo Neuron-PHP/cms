@@ -140,47 +140,26 @@ class DatabasePostRepository implements IPostRepository
 			// Get the ORM's PDO for sync operations (same connection as transaction)
 			$pdo = $this->getOrmPdo();
 
-			// Use ORM save method on new instance
-			$createdPost = new Post();
-			foreach( $post->toArray() as $key => $value )
-			{
-				// Skip id and all DateTimeImmutable fields (toArray() returns strings, setters expect objects)
-				if( in_array( $key, [ 'id', 'created_at', 'updated_at', 'published_at' ] ) )
-				{
-					continue;
-				}
-
-				$setter = 'set' . str_replace( '_', '', ucwords( $key, '_' ) );
-				if( method_exists( $createdPost, $setter ) )
-				{
-					$createdPost->$setter( $value );
-				}
-			}
-
-			// Set DateTimeImmutable fields from original object
-			$createdPost->setCreatedAt( $post->getCreatedAt() );
-			$createdPost->setUpdatedAt( $post->getUpdatedAt() );
-			$createdPost->setPublishedAt( $post->getPublishedAt() );
-
-			$createdPost->save();
+			// Save the post using ORM
+			$post->save();
 
 			// Sync categories using raw SQL (vendor ORM doesn't have relation() method yet)
 			if( count( $categories ) > 0 )
 			{
 				$categoryIds = array_map( fn( $c ) => $c->getId(), $categories );
-				$this->syncCategoriesWithPdo( $pdo, $createdPost->getId(), $categoryIds );
+				$this->syncCategoriesWithPdo( $pdo, $post->getId(), $categoryIds );
 			}
 
 			// Sync tags using raw SQL
 			if( count( $tags ) > 0 )
 			{
 				$tagIds = array_map( fn( $t ) => $t->getId(), $tags );
-				$this->syncTagsWithPdo( $pdo, $createdPost->getId(), $tagIds );
+				$this->syncTagsWithPdo( $pdo, $post->getId(), $tagIds );
 			}
 
 			// Use ORM's find() to get DB-set values within the same transaction
 			// Can't use $this->findById() because it uses a different PDO connection
-			$refreshedPost = Post::find( $createdPost->getId() );
+			$refreshedPost = Post::find( $post->getId() );
 
 			// Load relations manually since we're inside the transaction
 			$this->loadRelationsWithPdo( $pdo, $refreshedPost );

@@ -71,31 +71,10 @@ class DatabasePageRepository implements IPageRepository
 			$page->setUpdatedAt( $now );
 		}
 
-		// Use ORM save method on new instance
-		$newPage = new Page();
-		foreach( $page->toArray() as $key => $value )
-		{
-			// Skip id and all DateTimeImmutable fields (toArray() returns strings, setters expect objects)
-			if( in_array( $key, [ 'id', 'created_at', 'updated_at', 'published_at' ] ) )
-			{
-				continue;
-			}
+		// Save the page using ORM
+		$page->save();
 
-			$setter = 'set' . str_replace( '_', '', ucwords( $key, '_' ) );
-			if( method_exists( $newPage, $setter ) )
-			{
-				$newPage->$setter( $value );
-			}
-		}
-
-		// Set DateTimeImmutable fields from original object
-		$newPage->setCreatedAt( $page->getCreatedAt() );
-		$newPage->setUpdatedAt( $page->getUpdatedAt() );
-		$newPage->setPublishedAt( $page->getPublishedAt() );
-
-		$newPage->save();
-
-		return $this->findById( $newPage->getId() );
+		return $this->findById( $page->getId() );
 	}
 
 	/**

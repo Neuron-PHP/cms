@@ -91,33 +91,10 @@ class DatabaseUserRepository implements IUserRepository
 			$user->setUpdatedAt( $now );
 		}
 
-		// Use ORM save method on new instance (not create with array)
-		// This ensures the ORM doesn't try to insert id column for PostgreSQL
-		$newUser = new User();
-		foreach( $user->toArray() as $key => $value )
-		{
-			// Skip id and all DateTimeImmutable fields (toArray() returns strings, setters expect objects)
-			if( in_array( $key, [ 'id', 'created_at', 'updated_at', 'locked_until', 'last_login_at' ] ) )
-			{
-				continue;
-			}
+		// Save the user using ORM
+		$user->save();
 
-			$setter = 'set' . str_replace( '_', '', ucwords( $key, '_' ) );
-			if( method_exists( $newUser, $setter ) )
-			{
-				$newUser->$setter( $value );
-			}
-		}
-
-		// Set DateTimeImmutable fields from original user object
-		$newUser->setCreatedAt( $user->getCreatedAt() );
-		$newUser->setUpdatedAt( $user->getUpdatedAt() );
-		$newUser->setLockedUntil( $user->getLockedUntil() );
-		$newUser->setLastLoginAt( $user->getLastLoginAt() );
-
-		$newUser->save();
-
-		return $this->findById( $newUser->getId() );
+		return $this->findById( $user->getId() );
 	}
 
 	/**

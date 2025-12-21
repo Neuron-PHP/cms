@@ -83,30 +83,10 @@ class DatabaseTagRepository implements ITagRepository
 			$tag->setUpdatedAt( $now );
 		}
 
-		// Use ORM save method on new instance
-		$newTag = new Tag();
-		foreach( $tag->toArray() as $key => $value )
-		{
-			// Skip id and all DateTimeImmutable fields (toArray() returns strings, setters expect objects)
-			if( in_array( $key, [ 'id', 'created_at', 'updated_at' ] ) )
-			{
-				continue;
-			}
+		// Save the tag using ORM
+		$tag->save();
 
-			$setter = 'set' . str_replace( '_', '', ucwords( $key, '_' ) );
-			if( method_exists( $newTag, $setter ) )
-			{
-				$newTag->$setter( $value );
-			}
-		}
-
-		// Set DateTimeImmutable fields from original object
-		$newTag->setCreatedAt( $tag->getCreatedAt() );
-		$newTag->setUpdatedAt( $tag->getUpdatedAt() );
-
-		$newTag->save();
-
-		return $this->findById( $newTag->getId() );
+		return $this->findById( $tag->getId() );
 	}
 
 	/**
