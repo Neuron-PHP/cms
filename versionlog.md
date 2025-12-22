@@ -1,4 +1,4 @@
-## 0.8.10
+## 0.8.10 2025-12-22
 * Added current_user_identifier helper function.
 * Database compatability improvements.
 * Added calendar functionality to cms.
