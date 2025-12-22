@@ -6,9 +6,11 @@ use Neuron\Cms\Database\ConnectionFactory;
 use Neuron\Cms\Models\Post;
 use Neuron\Cms\Models\Category;
 use Neuron\Cms\Models\Tag;
+use Neuron\Cms\Repositories\Traits\ManagesTimestamps;
 use Neuron\Data\Settings\SettingManager;
 use PDO;
 use Exception;
+use RuntimeException;
 
 /**
  * Database-backed post repository using ORM.
@@ -19,6 +21,8 @@ use Exception;
  */
 class DatabasePostRepository implements IPostRepository
 {
+	use ManagesTimestamps;
+
 	private PDO $_pdo;
 
 	/**
@@ -120,29 +124,55 @@ class DatabasePostRepository implements IPostRepository
 			throw new Exception( 'Slug already exists' );
 		}
 
+		// Set timestamps
+		$this->ensureTimestamps( $post );
+
 		// Use transaction to ensure atomicity of post creation and relation syncing
 		return Post::transaction( function() use ( $post ) {
-			// Use ORM create method - only save the post data without relations
-			$createdPost = Post::create( $post->toArray() );
+			// Save original categories and tags before creating
+			$categories = $post->getCategories();
+			$tags = $post->getTags();
 
-			// Update the original post with the new ID
-			$post->setId( $createdPost->getId() );
+			// Get the ORM's PDO for sync operations (same connection as transaction)
+			$pdo = $this->getOrmPdo();
+
+			// Save the post using ORM
+			$post->save();
+
+			// Verify the post was saved with an ID
+			$postId = $post->getId();
+			if( $postId === null )
+			{
+				throw new RuntimeException( 'Failed to save Post: Entity ID is null after save operation' );
+			}
 
 			// Sync categories using raw SQL (vendor ORM doesn't have relation() method yet)
-			if( count( $post->getCategories() ) > 0 )
+			if( count( $categories ) > 0 )
 			{
-				$categoryIds = array_map( fn( $c ) => $c->getId(), $post->getCategories() );
-				$this->syncCategories( $post->getId(), $categoryIds );
+				$categoryIds = array_map( fn( $c ) => $c->getId(), $categories );
+				$this->syncCategoriesWithPdo( $pdo, $postId, $categoryIds );
 			}
 
 			// Sync tags using raw SQL
-			if( count( $post->getTags() ) > 0 )
+			if( count( $tags ) > 0 )
 			{
-				$tagIds = array_map( fn( $t ) => $t->getId(), $post->getTags() );
-				$this->syncTags( $post->getId(), $tagIds );
+				$tagIds = array_map( fn( $t ) => $t->getId(), $tags );
+				$this->syncTagsWithPdo( $pdo, $postId, $tagIds );
 			}
 
-			return $post;
+			// Use ORM's find() to get DB-set values within the same transaction
+			// Can't use $this->findById() because it uses a different PDO connection
+			$refreshedPost = Post::find( $postId );
+
+			if( $refreshedPost === null )
+			{
+				throw new RuntimeException( "Failed to retrieve Post after save: Entity with ID {$postId} not found in database" );
+			}
+
+			// Load relations manually since we're inside the transaction
+			$this->loadRelationsWithPdo( $pdo, $refreshedPost );
+
+			return $refreshedPost;
 		} );
 	}
 
@@ -169,13 +199,16 @@ class DatabasePostRepository implements IPostRepository
 			$post->setUpdatedAt( new \DateTimeImmutable() );
 			$result = $post->save();
 
+			// Get the ORM's PDO for sync operations (same connection as transaction)
+			$pdo = $this->getOrmPdo();
+
 			// Sync categories
 			$categoryIds = array_map( fn( $c ) => $c->getId(), $post->getCategories() );
-			$this->syncCategories( $post->getId(), $categoryIds );
+			$this->syncCategoriesWithPdo( $pdo, $post->getId(), $categoryIds );
 
 			// Sync tags
 			$tagIds = array_map( fn( $t ) => $t->getId(), $post->getTags() );
-			$this->syncTags( $post->getId(), $tagIds );
+			$this->syncTagsWithPdo( $pdo, $post->getId(), $tagIds );
 
 			return $result;
 		} );
@@ -333,51 +366,11 @@ class DatabasePostRepository implements IPostRepository
 		// Use ORM's atomic increment to avoid race condition
 		$rowsUpdated = Post::query()
 			->where( 'id', $id )
-			->increment( 'view_count', 1 );
+			->increment( 'view_count', 1, [
+				'updated_at' => ( new \DateTimeImmutable() )->format( 'Y-m-d H:i:s' )
+			]);
 
 		return $rowsUpdated > 0;
-	}
-
-	/**
-	 * Sync categories for a post (removes old, adds new)
-	 */
-	private function syncCategories( int $postId, array $categoryIds ): void
-	{
-		// Delete existing categories
-		$this->_pdo->prepare( "DELETE FROM post_categories WHERE post_id = ?" )
-			->execute( [ $postId ] );
-
-		// Insert new categories
-		if( !empty( $categoryIds ) )
-		{
-			$stmt = $this->_pdo->prepare( "INSERT INTO post_categories (post_id, category_id, created_at) VALUES (?, ?, ?)" );
-			$now = ( new \DateTimeImmutable() )->format( 'Y-m-d H:i:s' );
-			foreach( $categoryIds as $categoryId )
-			{
-				$stmt->execute( [ $postId, $categoryId, $now ] );
-			}
-		}
-	}
-
-	/**
-	 * Sync tags for a post (removes old, adds new)
-	 */
-	private function syncTags( int $postId, array $tagIds ): void
-	{
-		// Delete existing tags
-		$this->_pdo->prepare( "DELETE FROM post_tags WHERE post_id = ?" )
-			->execute( [ $postId ] );
-
-		// Insert new tags
-		if( !empty( $tagIds ) )
-		{
-			$stmt = $this->_pdo->prepare( "INSERT INTO post_tags (post_id, tag_id, created_at) VALUES (?, ?, ?)" );
-			$now = ( new \DateTimeImmutable() )->format( 'Y-m-d H:i:s' );
-			foreach( $tagIds as $tagId )
-			{
-				$stmt->execute( [ $postId, $tagId, $now ] );
-			}
-		}
 	}
 
 	/**
@@ -440,6 +433,150 @@ class DatabasePostRepository implements IPostRepository
 		$stmt->execute( [ $postId ] );
 
 		return $stmt->rowCount() > 0;
+	}
+
+	/**
+	 * Get the PDO connection from the ORM
+	 *
+	 * This method uses reflection to access the static PDO connection stored in the Model base class.
+	 * The PDO connection is needed for transaction-scoped operations within Model::transaction().
+	 *
+	 * @return PDO The PDO connection used by the ORM
+	 * @throws RuntimeException If the PDO connection cannot be retrieved or is not available
+	 */
+	private function getOrmPdo(): PDO
+	{
+		try
+		{
+			$reflectionClass = new \ReflectionClass( Post::class );
+
+			// Check if the _pdo property exists on the Post class or its parent
+			if( !$reflectionClass->hasProperty( '_pdo' ) )
+			{
+				throw new RuntimeException(
+					'ORM PDO connection not available: Post class does not have a $_pdo property. ' .
+					'This may indicate an ORM version incompatibility or configuration issue.'
+				);
+			}
+
+			$property = $reflectionClass->getProperty( '_pdo' );
+			$property->setAccessible( true );
+
+			// Get the value - for static properties, pass null; for instance properties, pass an instance
+			$value = $property->isStatic()
+				? $property->getValue()
+				: $property->getValue( null );
+
+			// Verify we got a PDO instance
+			if( !( $value instanceof PDO ) )
+			{
+				$type = is_object( $value ) ? get_class( $value ) : gettype( $value );
+				throw new RuntimeException(
+					"ORM PDO connection is not valid: Expected PDO instance, got {$type}. " .
+					'Ensure Model::setPdo() has been called before creating posts.'
+				);
+			}
+
+			return $value;
+		}
+		catch( \ReflectionException $e )
+		{
+			throw new RuntimeException(
+				'Failed to access ORM PDO connection via reflection: ' . $e->getMessage() .
+				'. This may indicate an ORM structure change or incompatible version.',
+				0,
+				$e
+			);
+		}
+	}
+
+	/**
+	 * Sync categories using a specific PDO connection
+	 *
+	 * @param PDO $pdo
+	 * @param int $postId
+	 * @param array $categoryIds
+	 */
+	private function syncCategoriesWithPdo( PDO $pdo, int $postId, array $categoryIds ): void
+	{
+		// Delete existing categories
+		$pdo->prepare( "DELETE FROM post_categories WHERE post_id = ?" )
+			->execute( [ $postId ] );
+
+		// Insert new categories
+		if( !empty( $categoryIds ) )
+		{
+			$stmt = $pdo->prepare( "INSERT INTO post_categories (post_id, category_id, created_at) VALUES (?, ?, ?)" );
+			$now = ( new \DateTimeImmutable() )->format( 'Y-m-d H:i:s' );
+			foreach( $categoryIds as $categoryId )
+			{
+				$stmt->execute( [ $postId, $categoryId, $now ] );
+			}
+		}
+	}
+
+	/**
+	 * Sync tags using a specific PDO connection
+	 *
+	 * @param PDO $pdo
+	 * @param int $postId
+	 * @param array $tagIds
+	 */
+	private function syncTagsWithPdo( PDO $pdo, int $postId, array $tagIds ): void
+	{
+		// Delete existing tags
+		$pdo->prepare( "DELETE FROM post_tags WHERE post_id = ?" )
+			->execute( [ $postId ] );
+
+		// Insert new tags
+		if( !empty( $tagIds ) )
+		{
+			$stmt = $pdo->prepare( "INSERT INTO post_tags (post_id, tag_id, created_at) VALUES (?, ?, ?)" );
+			$now = ( new \DateTimeImmutable() )->format( 'Y-m-d H:i:s' );
+			foreach( $tagIds as $tagId )
+			{
+				$stmt->execute( [ $postId, $tagId, $now ] );
+			}
+		}
+	}
+
+	/**
+	 * Load relations using a specific PDO connection
+	 *
+	 * @param PDO $pdo
+	 * @param Post $post
+	 */
+	private function loadRelationsWithPdo( PDO $pdo, Post $post ): void
+	{
+		// Load categories
+		$stmt = $pdo->prepare(
+			"SELECT c.* FROM categories c
+			INNER JOIN post_categories pc ON c.id = pc.category_id
+			WHERE pc.post_id = ?"
+		);
+		$stmt->execute( [ $post->getId() ] );
+		$categoryRows = $stmt->fetchAll();
+
+		$categories = array_map(
+			fn( $row ) => Category::fromArray( $row ),
+			$categoryRows
+		);
+		$post->setCategories( $categories );
+
+		// Load tags
+		$stmt = $pdo->prepare(
+			"SELECT t.* FROM tags t
+			INNER JOIN post_tags pt ON t.id = pt.tag_id
+			WHERE pt.post_id = ?"
+		);
+		$stmt->execute( [ $post->getId() ] );
+		$tagRows = $stmt->fetchAll();
+
+		$tags = array_map(
+			fn( $row ) => Tag::fromArray( $row ),
+			$tagRows
+		);
+		$post->setTags( $tags );
 	}
 
 	/**

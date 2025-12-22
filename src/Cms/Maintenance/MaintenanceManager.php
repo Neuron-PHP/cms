@@ -64,7 +64,7 @@ class MaintenanceManager
 			'allowed_ips' => $allowedIps,
 			'retry_after' => $retryAfter,
 			'enabled_at' => (new DateTime())->format( DateTime::ATOM ),
-			'enabled_by' => $enabledBy ?? get_current_user()
+			'enabled_by' => $enabledBy ?? current_user_identifier()
 		];
 
 		$result = $this->writeMaintenanceFile( $data );
@@ -90,7 +90,7 @@ class MaintenanceManager
 	public function disable( ?string $disabledBy = null ): bool
 	{
 		// Get who is disabling before we delete the file
-		$disabledByUser = $disabledBy ?? get_current_user();
+		$disabledByUser = $disabledBy ?? current_user_identifier();
 
 		if( file_exists( $this->_maintenanceFilePath ) )
 		{

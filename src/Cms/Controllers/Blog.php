@@ -6,6 +6,7 @@ use Neuron\Cms\Models\Post;
 use Neuron\Cms\Repositories\DatabasePostRepository;
 use Neuron\Cms\Repositories\DatabaseCategoryRepository;
 use Neuron\Cms\Repositories\DatabaseTagRepository;
+use Neuron\Cms\Repositories\DatabaseUserRepository;
 use Neuron\Cms\Services\Content\EditorJsRenderer;
 use Neuron\Cms\Services\Content\ShortcodeParser;
 use Neuron\Cms\Services\Widget\WidgetRenderer;
@@ -20,6 +21,7 @@ class Blog extends Content
 	private DatabasePostRepository $_postRepository;
 	private DatabaseCategoryRepository $_categoryRepository;
 	private DatabaseTagRepository $_tagRepository;
+	private DatabaseUserRepository $_userRepository;
 	private EditorJsRenderer $_renderer;
 
 	/**
@@ -37,6 +39,7 @@ class Blog extends Content
 		$this->_postRepository = new DatabasePostRepository( $settings );
 		$this->_categoryRepository = new DatabaseCategoryRepository( $settings );
 		$this->_tagRepository = new DatabaseTagRepository( $settings );
+		$this->_userRepository = new DatabaseUserRepository( $settings );
 
 		// Initialize renderer with shortcode support
 		$widgetRenderer = new WidgetRenderer( $this->_postRepository );
@@ -129,11 +132,17 @@ class Blog extends Content
 	 */
 	public function author( Request $request ): string
 	{
-		$authorName = $parameters['author'] ?? '';
+		$authorName = $request->getRouteParameter( 'author', '' );
 
-		// Note: This would need a user lookup by username
-		// For now, we'll just show an empty list
+		// Look up user by username
+		$user = $this->_userRepository->findByUsername( $authorName );
+
+		// Get posts by this author (only published posts for public view)
 		$posts = [];
+		if( $user )
+		{
+			$posts = $this->_postRepository->getByAuthor( $user->getId(), Post::STATUS_PUBLISHED );
+		}
 
 		$categories = $this->_categoryRepository->all();
 		$tags = $this->_tagRepository->all();

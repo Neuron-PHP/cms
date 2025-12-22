@@ -111,7 +111,7 @@ class EnableCommand extends Command
 			$message,
 			$allowedIps,
 			$retryAfter ? (int)$retryAfter : null,
-			get_current_user()
+			current_user_identifier()
 		);
 
 		if( $success )

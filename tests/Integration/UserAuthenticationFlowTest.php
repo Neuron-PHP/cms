@@ -107,8 +107,8 @@ class UserAuthenticationFlowTest extends IntegrationTestCase
 		$this->assertEquals( $userId, $token['user_id'] );
 		$this->assertEquals( $hashedToken, $token['token'] );
 
-		// 4. Verify the user's email
-		$stmt = $this->pdo->prepare( "UPDATE users SET email_verified = 1 WHERE id = ?" );
+		// 4. Verify the user's email (use TRUE for PostgreSQL compatibility)
+		$stmt = $this->pdo->prepare( "UPDATE users SET email_verified = TRUE WHERE id = ?" );
 		$stmt->execute( [$userId] );
 
 		// 5. Delete used token

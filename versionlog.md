@@ -1,3 +1,8 @@
+## 0.8.10 2025-12-22
+* Added current_user_identifier helper function.
+* Database compatability improvements.
+* Added calendar functionality to cms.
+
 ## 0.8.9 2025-12-19
 * **Slug generation now uses system abstractions** - All content service classes refactored to use `IRandom` interface
 * Refactored 6 service classes: Post/Creator, Post/Updater, Category/Creator, Category/Updater, Page/Creator, Tag/Creator

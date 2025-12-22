@@ -11,17 +11,19 @@
 use Neuron\Patterns\Registry;
 use Neuron\Cms\Models\User;
 
-if (!function_exists('auth')) {
+if( !function_exists( 'auth' ) )
+{
 	/**
 	 * Get the authenticated user
 	 */
 	function auth(): ?User
 	{
-		return Registry::getInstance()->get('Auth.User');
+		return Registry::getInstance()->get( 'Auth.User' );
 	}
 }
 
-if (!function_exists('user')) {
+if( !function_exists( 'user' ) )
+{
 	/**
 	 * Alias for auth()
 	 */
@@ -31,17 +33,19 @@ if (!function_exists('user')) {
 	}
 }
 
-if (!function_exists('user_id')) {
+if( !function_exists( 'user_id' ) )
+{
 	/**
 	 * Get the authenticated user's ID
 	 */
 	function user_id(): ?int
 	{
-		return Registry::getInstance()->get('Auth.UserId');
+		return Registry::getInstance()->get( 'Auth.UserId' );
 	}
 }
 
-if (!function_exists('is_logged_in')) {
+if( !function_exists( 'is_logged_in' ) )
+{
 	/**
 	 * Check if user is authenticated
 	 */
@@ -51,7 +55,8 @@ if (!function_exists('is_logged_in')) {
 	}
 }
 
-if (!function_exists('is_guest')) {
+if( !function_exists( 'is_guest' ) )
+{
 	/**
 	 * Check if user is a guest (not authenticated)
 	 */
@@ -61,7 +66,8 @@ if (!function_exists('is_guest')) {
 	}
 }
 
-if (!function_exists('is_admin')) {
+if( !function_exists( 'is_admin' ) )
+{
 	/**
 	 * Check if user is an admin
 	 */
@@ -72,7 +78,8 @@ if (!function_exists('is_admin')) {
 	}
 }
 
-if (!function_exists('is_editor')) {
+if( !function_exists( 'is_editor' ) )
+{
 	/**
 	 * Check if user is an editor
 	 */
@@ -83,7 +90,8 @@ if (!function_exists('is_editor')) {
 	}
 }
 
-if (!function_exists('is_author')) {
+if( !function_exists( 'is_author' ) )
+{
 	/**
 	 * Check if user is an author
 	 */
@@ -94,34 +102,70 @@ if (!function_exists('is_author')) {
 	}
 }
 
-if (!function_exists('has_role')) {
+if( !function_exists( 'has_role' ) )
+{
 	/**
 	 * Check if user has a specific role
 	 */
-	function has_role(string $role): bool
+	function has_role( string $role ): bool
 	{
 		$user = auth();
 		return $user && $user->getRole() === $role;
 	}
 }
 
-if (!function_exists('csrf_token')) {
+if( !function_exists( 'csrf_token' ) )
+{
 	/**
 	 * Get the current CSRF token
 	 */
 	function csrf_token(): string
 	{
-		return Registry::getInstance()->get('Auth.CsrfToken') ?? '';
+		return Registry::getInstance()->get( 'Auth.CsrfToken' ) ?? '';
 	}
 }
 
-if (!function_exists('csrf_field')) {
+if( !function_exists( 'csrf_field' ) )
+{
 	/**
 	 * Generate a CSRF token hidden input field
 	 */
 	function csrf_field(): string
 	{
 		$token = csrf_token();
-		return '<input type="hidden" name="csrf_token" value="' . htmlspecialchars($token) . '">';
+		return '<input type="hidden" name="csrf_token" value="' . htmlspecialchars( $token ) . '">';
+	}
+}
+
+if( !function_exists( 'current_user_identifier' ) )
+{
+	/**
+	 * Get current user identifier for audit purposes
+	 *
+	 * Returns the authenticated CMS user's username if available (web context),
+	 * otherwise returns the OS user running the process (CLI context).
+	 *
+	 * @return string User identifier (e.g., "admin" or "www-data" or "system")
+	 */
+	function current_user_identifier(): string
+	{
+		// Try to get authenticated CMS user first (web context)
+		$authUser = user();
+
+		if( $authUser !== null )
+		{
+			return $authUser->getUsername();
+		}
+
+		// Fall back to OS user (CLI context)
+		$osUser = get_current_user();
+
+		if( !empty( $osUser ) )
+		{
+			return $osUser;
+		}
+
+		// Ultimate fallback
+		return 'system';
 	}
 }

@@ -12,8 +12,8 @@ class CreateUsersTable extends AbstractMigration
 	 */
 	public function change()
 	{
-		// Create users table
-		$usersTable = $this->table( 'users' );
+		// Create users table - Phinx will auto-create unsigned bigint id
+		$usersTable = $this->table( 'users', [ 'signed' => false ] );
 
 		$usersTable->addColumn( 'username', 'string', [ 'limit' => 255 ] )
 			->addColumn( 'email', 'string', [ 'limit' => 255 ] )
@@ -22,12 +22,14 @@ class CreateUsersTable extends AbstractMigration
 			->addColumn( 'status', 'string', [ 'limit' => 50, 'default' => 'active' ] )
 			->addColumn( 'email_verified', 'boolean', [ 'default' => false ] )
 			->addColumn( 'two_factor_secret', 'string', [ 'limit' => 255, 'null' => true ] )
+			->addColumn( 'two_factor_recovery_codes', 'text', [ 'null' => true ] )
 			->addColumn( 'remember_token', 'string', [ 'limit' => 255, 'null' => true ] )
 			->addColumn( 'failed_login_attempts', 'integer', [ 'default' => 0 ] )
 			->addColumn( 'locked_until', 'timestamp', [ 'null' => true ] )
 			->addColumn( 'last_login_at', 'timestamp', [ 'null' => true ] )
+			->addColumn( 'timezone', 'string', [ 'limit' => 50, 'default' => 'UTC' ] )
 			->addColumn( 'created_at', 'timestamp', [ 'default' => 'CURRENT_TIMESTAMP' ] )
-			->addColumn( 'updated_at', 'timestamp', [ 'default' => 'CURRENT_TIMESTAMP', 'update' => 'CURRENT_TIMESTAMP' ] )
+			->addColumn( 'updated_at', 'timestamp', [ 'default' => 'CURRENT_TIMESTAMP' ] )
 			->addIndex( [ 'username' ], [ 'unique' => true ] )
 			->addIndex( [ 'email' ], [ 'unique' => true ] )
 			->addIndex( [ 'remember_token' ] )

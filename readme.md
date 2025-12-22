@@ -50,6 +50,34 @@ A modern, database-backed Content Management System for PHP 8.4+ built on the Ne
   - Database migrations via Phinx
   - Seeders for sample data
 
+### Database Compatibility
+
+All three databases are fully supported with identical behavior across platforms:
+
+- **Foreign Key Constraints**: Properly enforced on all databases (including SQLite)
+  - Cascade deletes work correctly (deleting a user cascades to their posts)
+  - Referential integrity maintained across all platforms
+
+- **Timestamp Management**: `created_at` and `updated_at` handled at application level
+  - Automatic timestamp updates work consistently across all databases
+  - No reliance on database-specific features (MySQL's ON UPDATE CURRENT_TIMESTAMP)
+
+- **Transactions**: Full ACID compliance
+  - Transaction rollback works identically on all platforms
+  - Nested transaction support where available
+
+- **Database-Specific Optimizations**:
+  - **SQLite**: WAL mode enabled for better concurrency, foreign keys enforced by default
+  - **MySQL**: UTF8MB4 charset, UTC timezone configuration
+  - **PostgreSQL**: UTF8 encoding, UTC timezone configuration
+
+**Performance Notes:**
+- SQLite: Ideal for development and small-to-medium production sites
+- MySQL: Recommended for large-scale production deployments
+- PostgreSQL: Best for complex queries and enterprise features
+
+All databases are tested in CI on every commit to ensure consistent behavior.
+
 ## Installation
 
 ### Requirements

@@ -12,9 +12,9 @@ class CreateEmailVerificationTokensTable extends AbstractMigration
 	 */
 	public function change()
 	{
-		$table = $this->table( 'email_verification_tokens' );
+		$table = $this->table( 'email_verification_tokens', [ 'signed' => false ] );
 
-		$table->addColumn( 'user_id', 'integer', [ 'null' => false ] )
+		$table->addColumn( 'user_id', 'integer', [ 'signed' => false, 'null' => false ] )
 			->addColumn( 'token', 'string', [ 'limit' => 64 ] )
 			->addColumn( 'created_at', 'timestamp', [ 'default' => 'CURRENT_TIMESTAMP' ] )
 			->addColumn( 'expires_at', 'timestamp', [ 'null' => false ] )

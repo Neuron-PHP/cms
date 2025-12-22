@@ -4,6 +4,8 @@ namespace Neuron\Cms\Repositories;
 
 use Neuron\Cms\Database\ConnectionFactory;
 use Neuron\Cms\Models\Tag;
+use Neuron\Cms\Repositories\Traits\ManagesTimestamps;
+use Neuron\Cms\Exceptions\DuplicateEntityException;
 use Neuron\Data\Settings\SettingManager;
 use PDO;
 use Exception;
@@ -17,6 +19,8 @@ use Exception;
  */
 class DatabaseTagRepository implements ITagRepository
 {
+	use ManagesTimestamps;
+
 	private PDO $_pdo;
 
 	/**
@@ -63,22 +67,21 @@ class DatabaseTagRepository implements ITagRepository
 		// Check for duplicate slug
 		if( $this->findBySlug( $tag->getSlug() ) )
 		{
-			throw new Exception( 'Slug already exists' );
+			throw new DuplicateEntityException( 'Tag', 'slug', $tag->getSlug() );
 		}
 
 		// Check for duplicate name
 		if( $this->findByName( $tag->getName() ) )
 		{
-			throw new Exception( 'Tag name already exists' );
+			throw new DuplicateEntityException( 'Tag', 'name', $tag->getName() );
 		}
 
-		// Use ORM create method
-		$createdTag = Tag::create( $tag->toArray() );
-
-		// Update the original tag with the new ID
-		$tag->setId( $createdTag->getId() );
-
-		return $tag;
+		// Set timestamps, save, and refresh with null-safety check
+		return $this->createEntity(
+			$tag,
+			fn( int $id ) => $this->findById( $id ),
+			'Tag'
+		);
 	}
 
 	/**
@@ -95,15 +98,18 @@ class DatabaseTagRepository implements ITagRepository
 		$existingBySlug = $this->findBySlug( $tag->getSlug() );
 		if( $existingBySlug && $existingBySlug->getId() !== $tag->getId() )
 		{
-			throw new Exception( 'Slug already exists' );
+			throw new DuplicateEntityException( 'Tag', 'slug', $tag->getSlug() );
 		}
 
 		// Check for duplicate name (excluding current tag)
 		$existingByName = $this->findByName( $tag->getName() );
 		if( $existingByName && $existingByName->getId() !== $tag->getId() )
 		{
-			throw new Exception( 'Tag name already exists' );
+			throw new DuplicateEntityException( 'Tag', 'name', $tag->getName() );
 		}
+
+		// Update timestamp (database-independent approach)
+		$tag->setUpdatedAt( new \DateTimeImmutable() );
 
 		// Use ORM save method
 		return $tag->save();
