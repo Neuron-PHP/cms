@@ -33,6 +33,9 @@ class DatabasePageRepository implements IPageRepository
 	{
 		// Keep PDO for PostgreSQL workaround
 		$this->_pdo = ConnectionFactory::createFromSettings( $settings );
+
+		// Set PDO connection on Model class for ORM queries
+		Page::setPdo( $this->_pdo );
 	}
 
 	/**

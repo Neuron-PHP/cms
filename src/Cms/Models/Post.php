@@ -365,6 +365,12 @@ class Post extends Model
 	 */
 	public function getCategories(): array
 	{
+		// Check if categories were eager loaded by ORM (uses pivot table name as key)
+		if( isset( $this->_loadedRelations['post_categories'] ) )
+		{
+			return $this->_loadedRelations['post_categories'];
+		}
+
 		return $this->_categories;
 	}
 
@@ -376,6 +382,8 @@ class Post extends Model
 	public function setCategories( array $categories ): self
 	{
 		$this->_categories = $categories;
+		// Also update loaded relations so eager loading and explicit setters stay in sync (uses pivot table name as key)
+		$this->_loadedRelations['post_categories'] = $categories;
 		return $this;
 	}
 
@@ -387,6 +395,11 @@ class Post extends Model
 		if( !$this->hasCategory( $category ) )
 		{
 			$this->_categories[] = $category;
+			// Keep loaded relations in sync (uses pivot table name as key)
+			if( isset( $this->_loadedRelations['post_categories'] ) )
+			{
+				$this->_loadedRelations['post_categories'][] = $category;
+			}
 		}
 		return $this;
 	}
@@ -400,6 +413,14 @@ class Post extends Model
 			$this->_categories,
 			fn( $c ) => $c->getId() !== $category->getId()
 		);
+		// Keep loaded relations in sync (uses pivot table name as key)
+		if( isset( $this->_loadedRelations['post_categories'] ) )
+		{
+			$this->_loadedRelations['post_categories'] = array_filter(
+				$this->_loadedRelations['post_categories'],
+				fn( $c ) => $c->getId() !== $category->getId()
+			);
+		}
 		return $this;
 	}
 
@@ -425,6 +446,12 @@ class Post extends Model
 	 */
 	public function getTags(): array
 	{
+		// Check if tags were eager loaded by ORM (uses pivot table name as key)
+		if( isset( $this->_loadedRelations['post_tags'] ) )
+		{
+			return $this->_loadedRelations['post_tags'];
+		}
+
 		return $this->_tags;
 	}
 
@@ -436,6 +463,8 @@ class Post extends Model
 	public function setTags( array $tags ): self
 	{
 		$this->_tags = $tags;
+		// Also update loaded relations so eager loading and explicit setters stay in sync (uses pivot table name as key)
+		$this->_loadedRelations['post_tags'] = $tags;
 		return $this;
 	}
 
@@ -447,6 +476,11 @@ class Post extends Model
 		if( !$this->hasTag( $tag ) )
 		{
 			$this->_tags[] = $tag;
+			// Keep loaded relations in sync (uses pivot table name as key)
+			if( isset( $this->_loadedRelations['post_tags'] ) )
+			{
+				$this->_loadedRelations['post_tags'][] = $tag;
+			}
 		}
 		return $this;
 	}
@@ -460,6 +494,14 @@ class Post extends Model
 			$this->_tags,
 			fn( $t ) => $t->getId() !== $tag->getId()
 		);
+		// Keep loaded relations in sync (uses pivot table name as key)
+		if( isset( $this->_loadedRelations['post_tags'] ) )
+		{
+			$this->_loadedRelations['post_tags'] = array_filter(
+				$this->_loadedRelations['post_tags'],
+				fn( $t ) => $t->getId() !== $tag->getId()
+			);
+		}
 		return $this;
 	}
 

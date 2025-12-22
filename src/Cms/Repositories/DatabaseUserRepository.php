@@ -32,6 +32,9 @@ class DatabaseUserRepository implements IUserRepository
 	{
 		// Keep PDO property for backwards compatibility with tests
 		$this->_pdo = ConnectionFactory::createFromSettings( $settings );
+
+		// Set PDO connection on Model class for ORM queries
+		User::setPdo( $this->_pdo );
 	}
 
 	/**

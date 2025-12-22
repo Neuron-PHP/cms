@@ -33,8 +33,11 @@ class DatabasePostRepository implements IPostRepository
 	 */
 	public function __construct( SettingManager $settings )
 	{
-		// Keep PDO for methods that need raw SQL queries (getByCategory, getByTag)
+		// Keep PDO for transaction-scoped sync operations
 		$this->_pdo = ConnectionFactory::createFromSettings( $settings );
+
+		// Set PDO connection on Model class for ORM queries
+		Post::setPdo( $this->_pdo );
 	}
 
 	/**
@@ -42,19 +45,11 @@ class DatabasePostRepository implements IPostRepository
 	 */
 	public function findById( int $id ): ?Post
 	{
-		$stmt = $this->_pdo->prepare( "SELECT * FROM posts WHERE id = ?" );
-		$stmt->execute( [ $id ] );
-		$row = $stmt->fetch();
-
-		if( !$row )
-		{
-			return null;
-		}
-
-		$post = Post::fromArray( $row );
-		$this->loadRelations( $post );
-
-		return $post;
+		// Use ORM eager loading to avoid N+1 queries
+		return Post::query()
+			->with( ['categories', 'tags'] )
+			->where( 'id', $id )
+			->first();
 	}
 
 	/**
@@ -62,55 +57,11 @@ class DatabasePostRepository implements IPostRepository
 	 */
 	public function findBySlug( string $slug ): ?Post
 	{
-		$stmt = $this->_pdo->prepare( "SELECT * FROM posts WHERE slug = ?" );
-		$stmt->execute( [ $slug ] );
-		$row = $stmt->fetch();
-
-		if( !$row )
-		{
-			return null;
-		}
-
-		$post = Post::fromArray( $row );
-		$this->loadRelations( $post );
-
-		return $post;
-	}
-
-	/**
-	 * Load categories and tags for a post
-	 */
-	private function loadRelations( Post $post ): void
-	{
-		// Load categories
-		$stmt = $this->_pdo->prepare(
-			"SELECT c.* FROM categories c
-			INNER JOIN post_categories pc ON c.id = pc.category_id
-			WHERE pc.post_id = ?"
-		);
-		$stmt->execute( [ $post->getId() ] );
-		$categoryRows = $stmt->fetchAll();
-
-		$categories = array_map(
-			fn( $row ) => Category::fromArray( $row ),
-			$categoryRows
-		);
-		$post->setCategories( $categories );
-
-		// Load tags
-		$stmt = $this->_pdo->prepare(
-			"SELECT t.* FROM tags t
-			INNER JOIN post_tags pt ON t.id = pt.tag_id
-			WHERE pt.post_id = ?"
-		);
-		$stmt->execute( [ $post->getId() ] );
-		$tagRows = $stmt->fetchAll();
-
-		$tags = array_map(
-			fn( $row ) => Tag::fromArray( $row ),
-			$tagRows
-		);
-		$post->setTags( $tags );
+		// Use ORM eager loading to avoid N+1 queries
+		return Post::query()
+			->with( ['categories', 'tags'] )
+			->where( 'slug', $slug )
+			->first();
 	}
 
 	/**
@@ -267,26 +218,18 @@ class DatabasePostRepository implements IPostRepository
 	 */
 	public function getByCategory( int $categoryId, ?string $status = null ): array
 	{
-		// This still uses raw SQL for the JOIN
-		// TODO: Add JOIN support to ORM QueryBuilder
-		$sql = "SELECT p.* FROM posts p
-				INNER JOIN post_categories pc ON p.id = pc.post_id
-				WHERE pc.category_id = ?";
-		$params = [ $categoryId ];
+		// Use ORM JOIN support instead of raw SQL
+		$query = Post::query()
+			->select( ['posts.*'] )
+			->join( 'post_categories', 'posts.id', '=', 'post_categories.post_id' )
+			->where( 'post_categories.category_id', $categoryId );
 
 		if( $status )
 		{
-			$sql .= " AND p.status = ?";
-			$params[] = $status;
+			$query->where( 'posts.status', $status );
 		}
 
-		$sql .= " ORDER BY p.created_at DESC";
-
-		$stmt = $this->_pdo->prepare( $sql );
-		$stmt->execute( $params );
-		$rows = $stmt->fetchAll();
-
-		return array_map( fn( $row ) => Post::fromArray( $row ), $rows );
+		return $query->orderBy( 'posts.created_at', 'DESC' )->get();
 	}
 
 	/**
@@ -294,26 +237,18 @@ class DatabasePostRepository implements IPostRepository
 	 */
 	public function getByTag( int $tagId, ?string $status = null ): array
 	{
-		// This still uses raw SQL for the JOIN
-		// TODO: Add JOIN support to ORM QueryBuilder
-		$sql = "SELECT p.* FROM posts p
-				INNER JOIN post_tags pt ON p.id = pt.post_id
-				WHERE pt.tag_id = ?";
-		$params = [ $tagId ];
+		// Use ORM JOIN support instead of raw SQL
+		$query = Post::query()
+			->select( ['posts.*'] )
+			->join( 'post_tags', 'posts.id', '=', 'post_tags.post_id' )
+			->where( 'post_tags.tag_id', $tagId );
 
 		if( $status )
 		{
-			$sql .= " AND p.status = ?";
-			$params[] = $status;
+			$query->where( 'posts.status', $status );
 		}
 
-		$sql .= " ORDER BY p.created_at DESC";
-
-		$stmt = $this->_pdo->prepare( $sql );
-		$stmt->execute( $params );
-		$rows = $stmt->fetchAll();
-
-		return array_map( fn( $row ) => Post::fromArray( $row ), $rows );
+		return $query->orderBy( 'posts.created_at', 'DESC' )->get();
 	}
 
 	/**

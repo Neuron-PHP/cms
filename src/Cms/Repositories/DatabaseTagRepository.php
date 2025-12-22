@@ -33,6 +33,9 @@ class DatabaseTagRepository implements ITagRepository
 	{
 		// Keep PDO for allWithPostCount() which uses a custom JOIN query
 		$this->_pdo = ConnectionFactory::createFromSettings( $settings );
+
+		// Set PDO connection on Model class for ORM queries
+		Tag::setPdo( $this->_pdo );
 	}
 
 	/**
@@ -147,17 +150,12 @@ class DatabaseTagRepository implements ITagRepository
 	 */
 	public function allWithPostCount(): array
 	{
-		// This method still uses raw SQL for the JOIN with aggregation
-		// TODO: Add support for joins and aggregations to ORM
-		$stmt = $this->_pdo->query(
-			"SELECT t.*, COUNT(pt.post_id) as post_count
-			FROM tags t
-			LEFT JOIN post_tags pt ON t.id = pt.tag_id
-			GROUP BY t.id
-			ORDER BY t.name ASC"
-		);
-
-		$rows = $stmt->fetchAll();
+		$rows = Tag::query()
+			->select( ['tags.*', 'COUNT(post_tags.post_id) as post_count'] )
+			->leftJoin( 'post_tags', 'tags.id', '=', 'post_tags.tag_id' )
+			->groupBy( 'tags.id' )
+			->orderBy( 'tags.name' )
+			->getRaw();
 
 		return array_map( function( $row ) {
 			$tag = Tag::fromArray( $row );
