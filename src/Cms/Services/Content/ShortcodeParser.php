@@ -152,6 +152,7 @@ class ShortcodeParser
 				return match( $shortcode )
 				{
 					'latest-posts' => $this->_widgetRenderer->render( 'latest-posts', $attrs ),
+					'calendar' => $this->_widgetRenderer->render( 'calendar', $attrs ),
 					default => "<!-- Unknown shortcode: [{$shortcode}] -->"
 				};
 			}
@@ -173,6 +174,6 @@ class ShortcodeParser
 	 */
 	private function hasBuiltInShortcode( string $shortcode ): bool
 	{
-		return $shortcode === 'latest-posts';
+		return $shortcode === 'latest-posts' || $shortcode === 'calendar';
 	}
 }

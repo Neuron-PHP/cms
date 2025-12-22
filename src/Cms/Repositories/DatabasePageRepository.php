@@ -3,7 +3,11 @@
 namespace Neuron\Cms\Repositories;
 
 use Neuron\Cms\Models\Page;
+use Neuron\Cms\Database\ConnectionFactory;
+use Neuron\Cms\Repositories\Traits\ManagesTimestamps;
+use Neuron\Cms\Exceptions\DuplicateEntityException;
 use Neuron\Data\Settings\SettingManager;
+use PDO;
 use Exception;
 
 /**
@@ -15,6 +19,10 @@ use Exception;
  */
 class DatabasePageRepository implements IPageRepository
 {
+	use ManagesTimestamps;
+
+	private PDO $_pdo;
+
 	/**
 	 * Constructor
 	 *
@@ -23,7 +31,8 @@ class DatabasePageRepository implements IPageRepository
 	 */
 	public function __construct( SettingManager $settings )
 	{
-		// No longer need PDO - ORM is initialized in Bootstrap
+		// Keep PDO for PostgreSQL workaround
+		$this->_pdo = ConnectionFactory::createFromSettings( $settings );
 	}
 
 	/**
@@ -52,25 +61,15 @@ class DatabasePageRepository implements IPageRepository
 		// Check for duplicate slug
 		if( $this->findBySlug( $page->getSlug() ) )
 		{
-			throw new Exception( 'Slug already exists' );
+			throw new DuplicateEntityException( 'Page', 'slug', $page->getSlug() );
 		}
 
-		// Set timestamps explicitly (ORM doesn't use DB defaults)
-		$now = new \DateTimeImmutable();
-		if( !$page->getCreatedAt() )
-		{
-			$page->setCreatedAt( $now );
-		}
-		if( !$page->getUpdatedAt() )
-		{
-			$page->setUpdatedAt( $now );
-		}
-
-		// Use ORM create method
-		$createdPage = Page::create( $page->toArray() );
-
-		// Fetch from database to get all fields
-		return $this->findById( $createdPage->getId() );
+		// Set timestamps, save, and refresh with null-safety check
+		return $this->createEntity(
+			$page,
+			fn( int $id ) => $this->findById( $id ),
+			'Page'
+		);
 	}
 
 	/**
@@ -87,7 +86,7 @@ class DatabasePageRepository implements IPageRepository
 		$existingBySlug = $this->findBySlug( $page->getSlug() );
 		if( $existingBySlug && $existingBySlug->getId() !== $page->getId() )
 		{
-			throw new Exception( 'Slug already exists' );
+			throw new DuplicateEntityException( 'Page', 'slug', $page->getSlug() );
 		}
 
 		// Update timestamp (database-independent approach)
@@ -185,7 +184,9 @@ class DatabasePageRepository implements IPageRepository
 		// Use ORM's atomic increment to avoid race condition
 		$rowsUpdated = Page::query()
 			->where( 'id', $id )
-			->increment( 'view_count', 1 );
+			->increment( 'view_count', 1, [
+				'updated_at' => ( new \DateTimeImmutable() )->format( 'Y-m-d H:i:s' )
+			]);
 
 		return $rowsUpdated > 0;
 	}

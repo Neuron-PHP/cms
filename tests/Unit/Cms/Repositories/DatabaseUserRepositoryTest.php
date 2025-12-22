@@ -5,6 +5,7 @@ namespace Neuron\Cms\Tests\Repositories;
 use PHPUnit\Framework\TestCase;
 use Neuron\Cms\Repositories\DatabaseUserRepository;
 use Neuron\Cms\Models\User;
+use Neuron\Cms\Exceptions\DuplicateEntityException;
 use Neuron\Data\Settings\SettingManager;
 use Neuron\Orm\Model;
 use PDO;
@@ -228,8 +229,8 @@ class DatabaseUserRepositoryTest extends TestCase
 		$user2->setPasswordHash( 'hashed_password' );
 		$user2->setRole( User::ROLE_SUBSCRIBER );
 
-		$this->expectException( \Exception::class );
-		$this->expectExceptionMessage( 'Username already exists' );
+		$this->expectException( DuplicateEntityException::class );
+		$this->expectExceptionMessage( "Duplicate User: username 'testuser' already exists" );
 
 		$this->repository->create( $user2 );
 	}
@@ -245,8 +246,8 @@ class DatabaseUserRepositoryTest extends TestCase
 		$user2->setPasswordHash( 'hashed_password' );
 		$user2->setRole( User::ROLE_SUBSCRIBER );
 
-		$this->expectException( \Exception::class );
-		$this->expectExceptionMessage( 'Email already exists' );
+		$this->expectException( DuplicateEntityException::class );
+		$this->expectExceptionMessage( "Duplicate User: email 'test@example.com' already exists" );
 
 		$this->repository->create( $user2 );
 	}
@@ -292,8 +293,8 @@ class DatabaseUserRepositoryTest extends TestCase
 
 		$createdUser2->setUsername( 'testuser' );
 
-		$this->expectException( \Exception::class );
-		$this->expectExceptionMessage( 'Username already exists' );
+		$this->expectException( DuplicateEntityException::class );
+		$this->expectExceptionMessage( "Duplicate User: username 'testuser' already exists" );
 
 		$this->repository->update( $createdUser2 );
 	}
@@ -312,8 +313,8 @@ class DatabaseUserRepositoryTest extends TestCase
 
 		$createdUser2->setEmail( 'test@example.com' );
 
-		$this->expectException( \Exception::class );
-		$this->expectExceptionMessage( 'Email already exists' );
+		$this->expectException( DuplicateEntityException::class );
+		$this->expectExceptionMessage( "Duplicate User: email 'test@example.com' already exists" );
 
 		$this->repository->update( $createdUser2 );
 	}

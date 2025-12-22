@@ -37,7 +37,8 @@ class BlogControllerTest extends TestCase
 		$this->originalRegistry = [
 			'Settings' => Registry::getInstance()->get( 'Settings' ),
 			'Base.Path' => Registry::getInstance()->get( 'Base.Path' ),
-			'Views.Path' => Registry::getInstance()->get( 'Views.Path' )
+			'Views.Path' => Registry::getInstance()->get( 'Views.Path' ),
+			'ViewDataProvider' => Registry::getInstance()->get( 'ViewDataProvider' )
 		];
 
 		// Set up in-memory database
@@ -76,7 +77,16 @@ class BlogControllerTest extends TestCase
 		Registry::getInstance()->set( 'Views.Path', __DIR__ . '/../../../resources/views' );
 
 		// Initialize ViewDataProvider for tests
+		// Reset the singleton to ensure clean state
 		$provider = \Neuron\Mvc\Views\ViewDataProvider::getInstance();
+
+		// Use reflection to reset the shared data
+		$reflection = new \ReflectionClass( $provider );
+		$property = $reflection->getProperty( '_data' );
+		$property->setAccessible( true );
+		$property->setValue( $provider, [] );
+
+		// Now set our test data
 		$provider->share( 'siteName', 'Test Site' );
 		$provider->share( 'appVersion', '1.0.0-test' );
 		$provider->share( 'currentUser', null );
@@ -84,13 +94,23 @@ class BlogControllerTest extends TestCase
 		$provider->share( 'currentYear', fn() => date('Y') );
 		$provider->share( 'isAuthenticated', false );
 
+		// CRITICAL: Register ViewDataProvider in Registry so Base controller can find it
+		Registry::getInstance()->set( 'ViewDataProvider', $provider );
+
 		// Initialize repositories with our test PDO
 		$this->initializeRepositories();
 	}
 
 	protected function tearDown(): void
 	{
-		// Restore original registry values
+		// Reset ViewDataProvider to avoid pollution between tests
+		$provider = \Neuron\Mvc\Views\ViewDataProvider::getInstance();
+		$reflection = new \ReflectionClass( $provider );
+		$property = $reflection->getProperty( '_data' );
+		$property->setAccessible( true );
+		$property->setValue( $provider, [] );
+
+		// Restore original registry values (including ViewDataProvider)
 		foreach( $this->originalRegistry as $key => $value )
 		{
 			Registry::getInstance()->set( $key, $value );

@@ -5,6 +5,7 @@ namespace Tests\Cms\Repositories;
 use DateTimeImmutable;
 use Neuron\Cms\Models\Category;
 use Neuron\Cms\Repositories\DatabaseCategoryRepository;
+use Neuron\Cms\Exceptions\DuplicateEntityException;
 use Neuron\Orm\Model;
 use PHPUnit\Framework\TestCase;
 use PDO;
@@ -113,8 +114,8 @@ class DatabaseCategoryRepositoryTest extends TestCase
 		$category2->setName( 'Second' );
 		$category2->setSlug( 'duplicate-slug' );
 
-		$this->expectException( \Exception::class );
-		$this->expectExceptionMessage( 'Slug already exists' );
+		$this->expectException( DuplicateEntityException::class );
+		$this->expectExceptionMessage( "Duplicate Category: slug 'duplicate-slug' already exists" );
 		$this->_Repository->create( $category2 );
 	}
 
@@ -129,8 +130,8 @@ class DatabaseCategoryRepositoryTest extends TestCase
 		$category2->setName( 'Duplicate Name' );
 		$category2->setSlug( 'slug-two' );
 
-		$this->expectException( \Exception::class );
-		$this->expectExceptionMessage( 'Category name already exists' );
+		$this->expectException( DuplicateEntityException::class );
+		$this->expectExceptionMessage( "Duplicate Category: name 'Duplicate Name' already exists" );
 		$this->_Repository->create( $category2 );
 	}
 
@@ -227,8 +228,8 @@ class DatabaseCategoryRepositoryTest extends TestCase
 		// Try to update second category with first category's slug
 		$created2->setSlug( 'first-slug' );
 
-		$this->expectException( \Exception::class );
-		$this->expectExceptionMessage( 'Slug already exists' );
+		$this->expectException( DuplicateEntityException::class );
+		$this->expectExceptionMessage( "Duplicate Category: slug 'first-slug' already exists" );
 		$this->_Repository->update( $created2 );
 	}
 
@@ -247,8 +248,8 @@ class DatabaseCategoryRepositoryTest extends TestCase
 		// Try to update second category with first category's name
 		$created2->setName( 'First Name' );
 
-		$this->expectException( \Exception::class );
-		$this->expectExceptionMessage( 'Category name already exists' );
+		$this->expectException( DuplicateEntityException::class );
+		$this->expectExceptionMessage( "Duplicate Category: name 'First Name' already exists" );
 		$this->_Repository->update( $created2 );
 	}
 

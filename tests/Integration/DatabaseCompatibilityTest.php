@@ -12,6 +12,7 @@ use Neuron\Cms\Repositories\DatabasePostRepository;
 use Neuron\Cms\Repositories\DatabaseCategoryRepository;
 use Neuron\Cms\Repositories\DatabaseTagRepository;
 use Neuron\Cms\Repositories\DatabasePageRepository;
+use Neuron\Cms\Exceptions\DuplicateEntityException;
 
 /**
  * Database Compatibility Integration Tests
@@ -37,31 +38,48 @@ class DatabaseCompatibilityTest extends IntegrationTestCase
 		// Set up ORM with test PDO connection
 		\Neuron\Orm\Model::setPdo( $this->pdo );
 
-		// Create test settings
-		$settings = $this->createTestSettings();
-
-		$this->_userRepo = new DatabaseUserRepository( $settings );
-		$this->_postRepo = new DatabasePostRepository( $settings );
-		$this->_categoryRepo = new DatabaseCategoryRepository( $settings );
-		$this->_tagRepo = new DatabaseTagRepository( $settings );
-		$this->_pageRepo = new DatabasePageRepository( $settings );
+		// Create repositories using reflection to inject the shared PDO
+		// This ensures repositories use the same connection where migrations ran
+		$this->_userRepo = $this->createRepositoryWithPdo( DatabaseUserRepository::class );
+		$this->_postRepo = $this->createRepositoryWithPdo( DatabasePostRepository::class );
+		$this->_categoryRepo = $this->createRepositoryWithPdo( DatabaseCategoryRepository::class );
+		$this->_tagRepo = $this->createRepositoryWithPdo( DatabaseTagRepository::class );
+		$this->_pageRepo = $this->createRepositoryWithPdo( DatabasePageRepository::class );
 	}
 
 	/**
-	 * Create test settings with database config
+	 * Create a repository instance and inject the shared test PDO
 	 *
-	 * IMPORTANT: Must point to the same database where migrations ran
+	 * Uses reflection to set the private $_pdo property to ensure
+	 * the repository uses the same connection where migrations ran.
+	 * Some repositories (like DatabasePageRepository) only use ORM and don't have $_pdo.
+	 *
+	 * @param string $repositoryClass Fully qualified repository class name
+	 * @return object Repository instance with shared PDO
 	 */
-	private function createTestSettings(): \Neuron\Data\Settings\SettingManager
+	private function createRepositoryWithPdo( string $repositoryClass ): object
 	{
+		// Create minimal settings (adapter is enough for constructor)
 		$source = new \Neuron\Data\Settings\Source\Memory();
 		$source->set( 'database', 'adapter', 'sqlite' );
+		$source->set( 'database', 'name', ':memory:' ); // Won't be used
+		$settings = new \Neuron\Data\Settings\SettingManager( $source );
 
-		// Use the same database file that IntegrationTestCase created
-		$dbPath = sys_get_temp_dir() . '/cms_test_' . getmypid() . '.db';
-		$source->set( 'database', 'name', $dbPath );
+		// Create repository instance
+		$repository = new $repositoryClass( $settings );
 
-		return new \Neuron\Data\Settings\SettingManager( $source );
+		// Use reflection to replace the PDO connection with our shared test PDO (if it has one)
+		$reflection = new \ReflectionClass( $repository );
+		if( $reflection->hasProperty( '_pdo' ) )
+		{
+			$pdoProperty = $reflection->getProperty( '_pdo' );
+			$pdoProperty->setAccessible( true );
+			$pdoProperty->setValue( $repository, $this->pdo );
+		}
+		// If no $_pdo property, repository only uses ORM (Model::getPdo())
+		// which we already set in setUp()
+
+		return $repository;
 	}
 
 	/**
@@ -273,7 +291,7 @@ class DatabaseCompatibilityTest extends IntegrationTestCase
 				$user->setRole( User::ROLE_AUTHOR );
 				$user->setStatus( User::STATUS_ACTIVE );
 				$user->setEmailVerified( true );
-				$created = User::create( $user->toArray() );
+				User::create( $user->toArray() );
 
 				// Force an exception
 				throw new \Exception( 'Test rollback' );
@@ -304,8 +322,8 @@ class DatabaseCompatibilityTest extends IntegrationTestCase
 		$this->_userRepo->create( $user1 );
 
 		// Try to create duplicate username
-		$this->expectException( \Exception::class );
-		$this->expectExceptionMessage( 'Username already exists' );
+		$this->expectException( DuplicateEntityException::class );
+		$this->expectExceptionMessage( "Duplicate User: username 'unique_test' already exists" );
 
 		$user2 = new User();
 		$user2->setUsername( 'unique_test' ); // Duplicate!

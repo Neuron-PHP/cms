@@ -28,4 +28,9 @@ composer.lock
 examples/test.log
 
 coverage*
+
+# Environment files with credentials (keep .env.*.example files)
+.env
 .env.testing
+.env.local
+.env.*.local

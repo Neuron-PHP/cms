@@ -4,9 +4,10 @@ namespace Neuron\Cms\Repositories;
 
 use Neuron\Cms\Database\ConnectionFactory;
 use Neuron\Cms\Models\User;
+use Neuron\Cms\Repositories\Traits\ManagesTimestamps;
+use Neuron\Cms\Exceptions\DuplicateEntityException;
 use Neuron\Data\Settings\SettingManager;
 use PDO;
-use Exception;
 
 /**
  * Database-backed user repository using ORM.
@@ -17,6 +18,8 @@ use Exception;
  */
 class DatabaseUserRepository implements IUserRepository
 {
+	use ManagesTimestamps;
+
 	private ?PDO $_pdo = null;
 
 	/**
@@ -71,31 +74,21 @@ class DatabaseUserRepository implements IUserRepository
 		// Check for duplicate username
 		if( $this->findByUsername( $user->getUsername() ) )
 		{
-			throw new Exception( 'Username already exists' );
+			throw new DuplicateEntityException( 'User', 'username', $user->getUsername() );
 		}
 
 		// Check for duplicate email
 		if( $this->findByEmail( $user->getEmail() ) )
 		{
-			throw new Exception( 'Email already exists' );
+			throw new DuplicateEntityException( 'User', 'email', $user->getEmail() );
 		}
 
-		// Set timestamps explicitly (ORM doesn't use DB defaults)
-		$now = new \DateTimeImmutable();
-		if( !$user->getCreatedAt() )
-		{
-			$user->setCreatedAt( $now );
-		}
-		if( !$user->getUpdatedAt() )
-		{
-			$user->setUpdatedAt( $now );
-		}
-
-		// Use ORM create method
-		$createdUser = User::create( $user->toArray() );
-
-		// Fetch from database to get all fields
-		return $this->findById( $createdUser->getId() );
+		// Set timestamps, save, and refresh with null-safety check
+		return $this->createEntity(
+			$user,
+			fn( int $id ) => $this->findById( $id ),
+			'User'
+		);
 	}
 
 	/**
@@ -112,14 +105,14 @@ class DatabaseUserRepository implements IUserRepository
 		$existingByUsername = $this->findByUsername( $user->getUsername() );
 		if( $existingByUsername && $existingByUsername->getId() !== $user->getId() )
 		{
-			throw new Exception( 'Username already exists' );
+			throw new DuplicateEntityException( 'User', 'username', $user->getUsername() );
 		}
 
 		// Check for duplicate email (excluding current user)
 		$existingByEmail = $this->findByEmail( $user->getEmail() );
 		if( $existingByEmail && $existingByEmail->getId() !== $user->getId() )
 		{
-			throw new Exception( 'Email already exists' );
+			throw new DuplicateEntityException( 'User', 'email', $user->getEmail() );
 		}
 
 		// Update timestamp (database-independent approach)
@@ -165,10 +158,12 @@ class DatabaseUserRepository implements IUserRepository
 	 */
 	public function incrementFailedLoginAttempts( int $userId ): int
 	{
-		// Use atomic increment
+		// Use atomic increment with updated_at timestamp
 		$rowsUpdated = User::query()
 			->where( 'id', $userId )
-			->increment( 'failed_login_attempts', 1 );
+			->increment( 'failed_login_attempts', 1, [
+				'updated_at' => ( new \DateTimeImmutable() )->format( 'Y-m-d H:i:s' )
+			]);
 
 		if( $rowsUpdated === 0 )
 		{
@@ -195,7 +190,8 @@ class DatabaseUserRepository implements IUserRepository
 			->where( 'id', $userId )
 			->update([
 				'failed_login_attempts' => 0,
-				'locked_until' => null
+				'locked_until' => null,
+				'updated_at' => ( new \DateTimeImmutable() )->format( 'Y-m-d H:i:s' )
 			]);
 
 		return $rowsUpdated > 0;
@@ -217,7 +213,10 @@ class DatabaseUserRepository implements IUserRepository
 		// Use ORM's atomic update to avoid race condition
 		$rowsUpdated = User::query()
 			->where( 'id', $userId )
-			->update([ 'locked_until' => $lockedUntilString ]);
+			->update([
+				'locked_until' => $lockedUntilString,
+				'updated_at' => ( new \DateTimeImmutable() )->format( 'Y-m-d H:i:s' )
+			]);
 
 		return $rowsUpdated > 0;
 	}

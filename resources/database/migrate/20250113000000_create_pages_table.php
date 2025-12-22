@@ -12,7 +12,7 @@ class CreatePagesTable extends AbstractMigration
 	 */
 	public function change()
 	{
-		$table = $this->table( 'pages' );
+		$table = $this->table( 'pages', [ 'signed' => false ] );
 
 		$table->addColumn( 'title', 'string', [ 'limit' => 255, 'null' => false ] )
 			->addColumn( 'slug', 'string', [ 'limit' => 255, 'null' => false ] )
@@ -21,7 +21,7 @@ class CreatePagesTable extends AbstractMigration
 			->addColumn( 'meta_title', 'string', [ 'limit' => 255, 'null' => true ] )
 			->addColumn( 'meta_description', 'text', [ 'null' => true ] )
 			->addColumn( 'meta_keywords', 'string', [ 'limit' => 255, 'null' => true ] )
-			->addColumn( 'author_id', 'integer', [ 'null' => false ] )
+			->addColumn( 'author_id', 'integer', [ 'signed' => false, 'null' => false ] )
 			->addColumn( 'status', 'string', [ 'limit' => 20, 'default' => 'draft' ] )
 			->addColumn( 'published_at', 'timestamp', [ 'null' => true ] )
 			->addColumn( 'view_count', 'integer', [ 'default' => 0 ] )

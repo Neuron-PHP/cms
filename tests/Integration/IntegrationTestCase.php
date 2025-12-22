@@ -133,6 +133,11 @@ abstract class IntegrationTestCase extends TestCase
 			{
 				$this->pdo->exec( "DELETE FROM {$table}" );
 			}
+			elseif( $driver === 'pgsql' )
+			{
+				// PostgreSQL requires CASCADE to truncate tables with FK constraints
+				$this->pdo->exec( "TRUNCATE TABLE {$table} CASCADE" );
+			}
 			else
 			{
 				$this->pdo->exec( "TRUNCATE TABLE {$table}" );
@@ -162,6 +167,12 @@ abstract class IntegrationTestCase extends TestCase
 	{
 		$driver = getenv( 'TEST_DB_DRIVER' ) ?: 'sqlite';
 
+		// Normalize driver name (postgres -> pgsql)
+		if( $driver === 'postgres' )
+		{
+			$driver = 'pgsql';
+		}
+
 		if( $driver === 'sqlite' )
 		{
 			// Use SQLite file for persistence across test methods
@@ -185,6 +196,12 @@ abstract class IntegrationTestCase extends TestCase
 
 			// Enable foreign keys for SQLite
 			$pdo->exec( 'PRAGMA foreign_keys = ON' );
+
+			// Enable WAL mode for better concurrency (matches ConnectionFactory)
+			$pdo->exec( 'PRAGMA journal_mode = WAL' );
+
+			// Set busy timeout to handle locks gracefully (matches ConnectionFactory)
+			$pdo->exec( 'PRAGMA busy_timeout = 5000' );
 
 			return $pdo;
 		}
@@ -353,6 +370,11 @@ abstract class IntegrationTestCase extends TestCase
 		if( $driver === 'sqlite' )
 		{
 			$this->pdo->exec( "DELETE FROM {$table}" );
+		}
+		elseif( $driver === 'pgsql' )
+		{
+			// PostgreSQL requires CASCADE to truncate tables with FK constraints
+			$this->pdo->exec( "TRUNCATE TABLE {$table} CASCADE" );
 		}
 		else
 		{

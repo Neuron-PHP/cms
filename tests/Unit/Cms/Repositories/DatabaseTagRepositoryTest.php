@@ -5,6 +5,7 @@ namespace Tests\Cms\Repositories;
 use DateTimeImmutable;
 use Neuron\Cms\Models\Tag;
 use Neuron\Cms\Repositories\DatabaseTagRepository;
+use Neuron\Cms\Exceptions\DuplicateEntityException;
 use Neuron\Orm\Model;
 use PHPUnit\Framework\TestCase;
 use PDO;
@@ -110,8 +111,8 @@ class DatabaseTagRepositoryTest extends TestCase
 		$tag2->setName( 'Second' );
 		$tag2->setSlug( 'duplicate-slug' );
 
-		$this->expectException( \Exception::class );
-		$this->expectExceptionMessage( 'Slug already exists' );
+		$this->expectException( DuplicateEntityException::class );
+		$this->expectExceptionMessage( "Duplicate Tag: slug 'duplicate-slug' already exists" );
 		$this->_Repository->create( $tag2 );
 	}
 
@@ -126,8 +127,8 @@ class DatabaseTagRepositoryTest extends TestCase
 		$tag2->setName( 'Duplicate Name' );
 		$tag2->setSlug( 'slug-two' );
 
-		$this->expectException( \Exception::class );
-		$this->expectExceptionMessage( 'Tag name already exists' );
+		$this->expectException( DuplicateEntityException::class );
+		$this->expectExceptionMessage( "Duplicate Tag: name 'Duplicate Name' already exists" );
 		$this->_Repository->create( $tag2 );
 	}
 
@@ -221,8 +222,8 @@ class DatabaseTagRepositoryTest extends TestCase
 		// Try to update second tag with first tag's slug
 		$created2->setSlug( 'first-slug' );
 
-		$this->expectException( \Exception::class );
-		$this->expectExceptionMessage( 'Slug already exists' );
+		$this->expectException( DuplicateEntityException::class );
+		$this->expectExceptionMessage( "Duplicate Tag: slug 'first-slug' already exists" );
 		$this->_Repository->update( $created2 );
 	}
 
@@ -241,8 +242,8 @@ class DatabaseTagRepositoryTest extends TestCase
 		// Try to update second tag with first tag's name
 		$created2->setName( 'First Name' );
 
-		$this->expectException( \Exception::class );
-		$this->expectExceptionMessage( 'Tag name already exists' );
+		$this->expectException( DuplicateEntityException::class );
+		$this->expectExceptionMessage( "Duplicate Tag: name 'First Name' already exists" );
 		$this->_Repository->update( $created2 );
 	}
 

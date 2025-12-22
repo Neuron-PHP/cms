@@ -412,8 +412,7 @@ class User extends Model
 	 */
 	public function toArray(): array
 	{
-		return [
-			'id' => $this->_id,
+		$data = [
 			'username' => $this->_username,
 			'email' => $this->_email,
 			'password_hash' => $this->_passwordHash,
@@ -430,6 +429,14 @@ class User extends Model
 			'last_login_at' => $this->_lastLoginAt?->format( 'Y-m-d H:i:s' ),
 			'timezone' => $this->_timezone
 		];
+
+		// Only include id if it's set (not null) to avoid PostgreSQL NOT NULL constraint errors
+		if( $this->_id !== null )
+		{
+			$data['id'] = $this->_id;
+		}
+
+		return $data;
 	}
 
 	/**
