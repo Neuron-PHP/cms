@@ -8,6 +8,7 @@ use Neuron\Cms\Services\EventCategory\Creator;
 use Neuron\Cms\Services\EventCategory\Updater;
 use Neuron\Cms\Services\EventCategory\Deleter;
 use Neuron\Cms\Services\Auth\CsrfToken;
+use Neuron\Log\Log;
 use Neuron\Mvc\Application;
 use Neuron\Mvc\Requests\Request;
 use Neuron\Mvc\Responses\HttpResponseStatus;
@@ -88,13 +89,16 @@ class EventCategories extends Content
 			throw new \RuntimeException( 'Authenticated user not found' );
 		}
 
-		$csrfToken = new CsrfToken( $this->getSessionManager() );
+		$sessionManager = $this->getSessionManager();
+		$csrfToken = new CsrfToken( $sessionManager );
 		Registry::getInstance()->set( 'Auth.CsrfToken', $csrfToken->getToken() );
 
 		$viewData = [
 			'Title' => 'Create Event Category | ' . $this->getName(),
 			'Description' => 'Create a new event category',
-			'User' => $user
+			'User' => $user,
+			'errors' => $sessionManager->getFlash( 'errors' ) ?: [],
+			'old' => $sessionManager->getFlash( 'old' ) ?: []
 		];
 
 		return $this->renderHtml(
@@ -117,13 +121,23 @@ class EventCategories extends Content
 			throw new \RuntimeException( 'Authenticated user not found' );
 		}
 
+		// Validate CSRF token before any state changes
+		$csrfToken = new CsrfToken( $this->getSessionManager() );
+		$submittedToken = $request->post( 'csrf_token', '' );
+
+		if( !$csrfToken->validate( $submittedToken ) )
+		{
+			Log::warning( "CSRF validation failed for event category creation by user {$user->getId()}" );
+			$this->redirect( 'admin_event_categories_create', [], ['error', 'Invalid security token. Please try again.'] );
+		}
+
+		$name = $request->post( 'name', '' );
+		$slug = $request->post( 'slug', '' );
+		$color = $request->post( 'color', '#3b82f6' );
+		$description = $request->post( 'description', '' );
+
 		try
 		{
-			$name = $request->post( 'name', '' );
-			$slug = $request->post( 'slug', '' );
-			$color = $request->post( 'color', '#3b82f6' );
-			$description = $request->post( 'description', '' );
-
 			$this->_creator->create(
 				$name,
 				$slug ?: null,
@@ -135,7 +149,17 @@ class EventCategories extends Content
 		}
 		catch( \Exception $e )
 		{
-			$this->redirect( 'admin_event_categories_create', [], ['error', 'Failed to create category: ' . $e->getMessage()] );
+			// Store old input and errors in session for display
+			$sessionManager = $this->getSessionManager();
+			$sessionManager->setFlash( 'errors', [ $e->getMessage() ] );
+			$sessionManager->setFlash( 'old', [
+				'name' => $name,
+				'slug' => $slug,
+				'color' => $color,
+				'description' => $description
+			]);
+
+			$this->redirect( 'admin_event_categories_create' );
 		}
 	}
 
@@ -197,6 +221,16 @@ class EventCategories extends Content
 			$this->redirect( 'admin_event_categories', [], ['error', 'Category not found'] );
 		}
 
+		// Validate CSRF token before any state changes
+		$csrfToken = new CsrfToken( $this->getSessionManager() );
+		$submittedToken = $request->post( 'csrf_token', '' );
+
+		if( !$csrfToken->validate( $submittedToken ) )
+		{
+			Log::warning( "CSRF validation failed for event category update: Category {$categoryId}, user {$user->getId()}" );
+			$this->redirect( 'admin_event_categories_edit', ['id' => $categoryId], ['error', 'Invalid security token. Please try again.'] );
+		}
+
 		try
 		{
 			$name = $request->post( 'name', '' );
@@ -238,6 +272,16 @@ class EventCategories extends Content
 		if( !$category )
 		{
 			$this->redirect( 'admin_event_categories', [], ['error', 'Category not found'] );
+		}
+
+		// Validate CSRF token before any state changes
+		$csrfToken = new CsrfToken( $this->getSessionManager() );
+		$submittedToken = $request->post( 'csrf_token', '' );
+
+		if( !$csrfToken->validate( $submittedToken ) )
+		{
+			Log::warning( "CSRF validation failed for event category deletion: Category {$categoryId}, user {$user->getId()}" );
+			$this->redirect( 'admin_event_categories', [], ['error', 'Invalid security token. Please try again.'] );
 		}
 
 		try

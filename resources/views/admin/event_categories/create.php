@@ -22,30 +22,42 @@ $csrfToken = Neuron\Patterns\Registry::getInstance()->get( 'Auth.CsrfToken' );
 		<div class="col-md-8">
 			<div class="card">
 				<div class="card-body">
+					<?php if( !empty( $errors ) ): ?>
+						<div class="alert alert-danger alert-dismissible fade show" role="alert">
+							<strong>Error:</strong> Please correct the following issues:
+							<ul class="mb-0 mt-2">
+								<?php foreach( $errors as $error ): ?>
+									<li><?= htmlspecialchars( $error ) ?></li>
+								<?php endforeach; ?>
+							</ul>
+							<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+						</div>
+					<?php endif; ?>
+
 					<form action="/admin/event-categories" method="POST">
 						<input type="hidden" name="csrf_token" value="<?= htmlspecialchars( $csrfToken ) ?>">
 
 						<div class="mb-3">
 							<label for="name" class="form-label">Name <span class="text-danger">*</span></label>
-							<input type="text" class="form-control" id="name" name="name" required>
+							<input type="text" class="form-control" id="name" name="name" value="<?= htmlspecialchars( $old['name'] ?? '' ) ?>" required>
 							<div class="form-text">The display name for this category</div>
 						</div>
 
 						<div class="mb-3">
 							<label for="slug" class="form-label">Slug</label>
-							<input type="text" class="form-control" id="slug" name="slug">
+							<input type="text" class="form-control" id="slug" name="slug" value="<?= htmlspecialchars( $old['slug'] ?? '' ) ?>">
 							<div class="form-text">URL-friendly version (leave blank to auto-generate from name)</div>
 						</div>
 
 						<div class="mb-3">
 							<label for="color" class="form-label">Color</label>
-							<input type="color" class="form-control form-control-color" id="color" name="color" value="#3b82f6">
+							<input type="color" class="form-control form-control-color" id="color" name="color" value="<?= htmlspecialchars( $old['color'] ?? '#3b82f6' ) ?>">
 							<div class="form-text">Color for calendar display</div>
 						</div>
 
 						<div class="mb-3">
 							<label for="description" class="form-label">Description</label>
-							<textarea class="form-control" id="description" name="description" rows="3"></textarea>
+							<textarea class="form-control" id="description" name="description" rows="3"><?= htmlspecialchars( $old['description'] ?? '' ) ?></textarea>
 							<div class="form-text">Optional description of this category</div>
 						</div>
 

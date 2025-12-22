@@ -20,7 +20,7 @@ use DateTimeImmutable;
  */
 class DatabaseEventRepository implements IEventRepository
 {
-	private PDO $_pdo;
+	protected PDO $_pdo;
 
 	/**
 	 * Constructor
@@ -143,8 +143,8 @@ class DatabaseEventRepository implements IEventRepository
 	public function getPast( ?int $limit = null, string $status = 'published' ): array
 	{
 		$sql = "SELECT * FROM events
-				WHERE (end_date IS NOT NULL AND end_date < ?)
-					OR (end_date IS NULL AND start_date < ?)
+				WHERE ((end_date IS NOT NULL AND end_date < ?)
+					OR (end_date IS NULL AND start_date < ?))
 				AND status = ?
 				ORDER BY start_date DESC";
 

@@ -12,6 +12,7 @@ use Neuron\Cms\Repositories\DatabasePostRepository;
 use Neuron\Cms\Repositories\DatabaseCategoryRepository;
 use Neuron\Cms\Repositories\DatabaseTagRepository;
 use Neuron\Cms\Repositories\DatabasePageRepository;
+use Neuron\Cms\Exceptions\DuplicateEntityException;
 
 /**
  * Database Compatibility Integration Tests
@@ -321,8 +322,8 @@ class DatabaseCompatibilityTest extends IntegrationTestCase
 		$this->_userRepo->create( $user1 );
 
 		// Try to create duplicate username
-		$this->expectException( \Exception::class );
-		$this->expectExceptionMessage( 'Username already exists' );
+		$this->expectException( DuplicateEntityException::class );
+		$this->expectExceptionMessage( "Duplicate User: username 'unique_test' already exists" );
 
 		$user2 = new User();
 		$user2->setUsername( 'unique_test' ); // Duplicate!

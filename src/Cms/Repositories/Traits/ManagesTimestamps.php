@@ -3,6 +3,7 @@
 namespace Neuron\Cms\Repositories\Traits;
 
 use DateTimeImmutable;
+use Neuron\Cms\Exceptions\RepositoryException;
 
 /**
  * Trait for managing entity timestamps in repositories
@@ -49,7 +50,7 @@ trait ManagesTimestamps
 	 * @param callable $finder Callback to find entity by ID: function(int $id): ?T
 	 * @param string $entityType Human-readable entity type for error messages
 	 * @return T The refreshed entity from database
-	 * @throws \RuntimeException If entity cannot be found after save
+	 * @throws RepositoryException If entity cannot be found after save
 	 */
 	protected function saveAndRefresh( object $entity, callable $finder, string $entityType ): object
 	{
@@ -61,8 +62,10 @@ trait ManagesTimestamps
 
 		if( $id === null )
 		{
-			throw new \RuntimeException(
-				"Failed to save {$entityType}: Entity ID is null after save operation"
+			throw new RepositoryException(
+				'save',
+				$entityType,
+				'Entity ID is null after save operation'
 			);
 		}
 
@@ -71,8 +74,10 @@ trait ManagesTimestamps
 
 		if( $refreshed === null )
 		{
-			throw new \RuntimeException(
-				"Failed to retrieve {$entityType} after save: Entity with ID {$id} not found in database"
+			throw new RepositoryException(
+				'retrieve',
+				$entityType,
+				"Entity with ID {$id} not found in database after save"
 			);
 		}
 

@@ -30,7 +30,7 @@ class Event extends Model
 	private ?string $_organizer = null;
 	private ?string $_contactEmail = null;
 	private ?string $_contactPhone = null;
-	private int $_createdBy;
+	private ?int $_createdBy = null;
 	private int $_viewCount = 0;
 	private ?DateTimeImmutable $_createdAt = null;
 	private ?DateTimeImmutable $_updatedAt = null;
@@ -376,7 +376,7 @@ class Event extends Model
 	/**
 	 * Get creator ID
 	 */
-	public function getCreatedBy(): int
+	public function getCreatedBy(): ?int
 	{
 		return $this->_createdBy;
 	}
@@ -404,10 +404,16 @@ class Event extends Model
 	public function setCreator( ?User $creator ): self
 	{
 		$this->_creator = $creator;
+
 		if( $creator && $creator->getId() )
 		{
 			$this->_createdBy = $creator->getId();
 		}
+		else
+		{
+			$this->_createdBy = null;
+		}
+
 		return $this;
 	}
 
@@ -608,14 +614,13 @@ class Event extends Model
 	 */
 	public function toArray(): array
 	{
-		return [
-			'id' => $this->_id,
+		$data = [
 			'title' => $this->_title,
 			'slug' => $this->_slug,
 			'description' => $this->_description,
 			'content_raw' => $this->_contentRaw,
 			'location' => $this->_location,
-			'start_date' => $this->_startDate->format( 'Y-m-d H:i:s' ),
+			'start_date' => isset( $this->_startDate ) ? $this->_startDate->format( 'Y-m-d H:i:s' ) : null,
 			'end_date' => $this->_endDate?->format( 'Y-m-d H:i:s' ),
 			'all_day' => $this->_allDay,
 			'category_id' => $this->_categoryId,
@@ -629,5 +634,13 @@ class Event extends Model
 			'created_at' => $this->_createdAt?->format( 'Y-m-d H:i:s' ),
 			'updated_at' => $this->_updatedAt?->format( 'Y-m-d H:i:s' ),
 		];
+
+		// Only include id if it's set (not null) to avoid PostgreSQL NOT NULL constraint errors
+		if( $this->_id !== null )
+		{
+			$data['id'] = $this->_id;
+		}
+
+		return $data;
 	}
 }

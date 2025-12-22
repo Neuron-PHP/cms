@@ -9,6 +9,7 @@ use Neuron\Cms\Services\Event\Creator;
 use Neuron\Cms\Services\Event\Updater;
 use Neuron\Cms\Services\Event\Deleter;
 use Neuron\Cms\Services\Auth\CsrfToken;
+use Neuron\Log\Log;
 use Neuron\Mvc\Application;
 use Neuron\Mvc\Requests\Request;
 use Neuron\Mvc\Responses\HttpResponseStatus;
@@ -130,6 +131,16 @@ class Events extends Content
 			throw new \RuntimeException( 'Authenticated user not found' );
 		}
 
+		// Validate CSRF token before any state changes or processing
+		$csrfToken = new CsrfToken( $this->getSessionManager() );
+		$submittedToken = $request->post( 'csrf_token', '' );
+
+		if( !$csrfToken->validate( $submittedToken ) )
+		{
+			Log::warning( "CSRF validation failed for event creation by user {$user->getId()}" );
+			$this->redirect( 'admin_events_create', [], ['error', 'Invalid security token. Please try again.'] );
+		}
+
 		try
 		{
 			$title = $request->post( 'title', '' );
@@ -244,6 +255,16 @@ class Events extends Content
 			throw new \RuntimeException( 'Unauthorized to edit this event' );
 		}
 
+		// Validate CSRF token before any state changes or processing
+		$csrfToken = new CsrfToken( $this->getSessionManager() );
+		$submittedToken = $request->post( 'csrf_token', '' );
+
+		if( !$csrfToken->validate( $submittedToken ) )
+		{
+			Log::warning( "CSRF validation failed for event update: Event {$eventId}, user {$user->getId()}" );
+			$this->redirect( 'admin_events_edit', ['id' => $eventId], ['error', 'Invalid security token. Please try again.'] );
+		}
+
 		try
 		{
 			$title = $request->post( 'title', '' );
@@ -311,6 +332,16 @@ class Events extends Content
 		if( !$user->isAdmin() && !$user->isEditor() && $event->getCreatedBy() !== $user->getId() )
 		{
 			$this->redirect( 'admin_events', [], ['error', 'Unauthorized to delete this event'] );
+		}
+
+		// Validate CSRF token before any state changes
+		$csrfToken = new CsrfToken( $this->getSessionManager() );
+		$submittedToken = $request->post( 'csrf_token', '' );
+
+		if( !$csrfToken->validate( $submittedToken ) )
+		{
+			Log::warning( "CSRF validation failed for event deletion: Event {$eventId}, user {$user->getId()}" );
+			$this->redirect( 'admin_events', [], ['error', 'Invalid security token. Please try again.'] );
 		}
 
 		try

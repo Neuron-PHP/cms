@@ -5,9 +5,9 @@ namespace Neuron\Cms\Repositories;
 use Neuron\Cms\Database\ConnectionFactory;
 use Neuron\Cms\Models\User;
 use Neuron\Cms\Repositories\Traits\ManagesTimestamps;
+use Neuron\Cms\Exceptions\DuplicateEntityException;
 use Neuron\Data\Settings\SettingManager;
 use PDO;
-use Exception;
 
 /**
  * Database-backed user repository using ORM.
@@ -74,13 +74,13 @@ class DatabaseUserRepository implements IUserRepository
 		// Check for duplicate username
 		if( $this->findByUsername( $user->getUsername() ) )
 		{
-			throw new Exception( 'Username already exists' );
+			throw new DuplicateEntityException( 'User', 'username', $user->getUsername() );
 		}
 
 		// Check for duplicate email
 		if( $this->findByEmail( $user->getEmail() ) )
 		{
-			throw new Exception( 'Email already exists' );
+			throw new DuplicateEntityException( 'User', 'email', $user->getEmail() );
 		}
 
 		// Set timestamps and save with null-safety check
@@ -107,14 +107,14 @@ class DatabaseUserRepository implements IUserRepository
 		$existingByUsername = $this->findByUsername( $user->getUsername() );
 		if( $existingByUsername && $existingByUsername->getId() !== $user->getId() )
 		{
-			throw new Exception( 'Username already exists' );
+			throw new DuplicateEntityException( 'User', 'username', $user->getUsername() );
 		}
 
 		// Check for duplicate email (excluding current user)
 		$existingByEmail = $this->findByEmail( $user->getEmail() );
 		if( $existingByEmail && $existingByEmail->getId() !== $user->getId() )
 		{
-			throw new Exception( 'Email already exists' );
+			throw new DuplicateEntityException( 'User', 'email', $user->getEmail() );
 		}
 
 		// Update timestamp (database-independent approach)

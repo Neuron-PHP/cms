@@ -4,7 +4,6 @@ namespace Neuron\Cms\Services\Widget;
 
 use Neuron\Cms\Repositories\DatabaseEventRepository;
 use Neuron\Cms\Repositories\DatabaseEventCategoryRepository;
-use Neuron\Patterns\Registry;
 
 /**
  * Calendar widget for displaying events via shortcode.
@@ -18,11 +17,13 @@ class CalendarWidget implements IWidget
 	private DatabaseEventRepository $_eventRepository;
 	private DatabaseEventCategoryRepository $_categoryRepository;
 
-	public function __construct()
+	public function __construct(
+		DatabaseEventRepository $eventRepository,
+		DatabaseEventCategoryRepository $categoryRepository
+	)
 	{
-		$settings = Registry::getInstance()->get( 'Settings' );
-		$this->_eventRepository = new DatabaseEventRepository( $settings );
-		$this->_categoryRepository = new DatabaseEventCategoryRepository( $settings );
+		$this->_eventRepository = $eventRepository;
+		$this->_categoryRepository = $categoryRepository;
 	}
 
 	/**
@@ -42,7 +43,9 @@ class CalendarWidget implements IWidget
 	public function render( array $attrs ): string
 	{
 		$limit = $attrs['limit'] ?? 5;
-		$upcoming = $attrs['upcoming'] ?? true;
+		$upcoming = isset( $attrs['upcoming'] )
+			? filter_var( $attrs['upcoming'], FILTER_VALIDATE_BOOLEAN )
+			: true;
 		$categorySlug = $attrs['category'] ?? null;
 
 		// Get events based on parameters
