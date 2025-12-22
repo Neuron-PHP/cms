@@ -83,4 +83,27 @@ trait ManagesTimestamps
 
 		return $refreshed;
 	}
+
+	/**
+	 * Prepare entity for creation by setting timestamps, saving, and refreshing
+	 *
+	 * This combines the common pattern of:
+	 * 1. Setting timestamps if not already set
+	 * 2. Saving the entity
+	 * 3. Re-fetching from database to get all DB-generated values
+	 *
+	 * Use this in create() methods after performing duplicate checks.
+	 *
+	 * @template T
+	 * @param T $entity Entity to create
+	 * @param callable $finder Callback to find entity by ID: function(int $id): ?T
+	 * @param string $entityType Human-readable entity type for error messages
+	 * @return T The refreshed entity from database
+	 * @throws RepositoryException If entity cannot be saved or found after save
+	 */
+	protected function createEntity( object $entity, callable $finder, string $entityType ): object
+	{
+		$this->ensureTimestamps( $entity );
+		return $this->saveAndRefresh( $entity, $finder, $entityType );
+	}
 }

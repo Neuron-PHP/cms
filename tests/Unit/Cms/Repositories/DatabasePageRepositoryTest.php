@@ -6,6 +6,7 @@ use DateTimeImmutable;
 use Neuron\Cms\Models\Page;
 use Neuron\Cms\Models\User;
 use Neuron\Cms\Repositories\DatabasePageRepository;
+use Neuron\Cms\Exceptions\DuplicateEntityException;
 use Neuron\Data\Settings\SettingManager;
 use Neuron\Orm\Model;
 use PHPUnit\Framework\TestCase;
@@ -188,8 +189,8 @@ class DatabasePageRepositoryTest extends TestCase
 		$page->setContent( '{"blocks":[]}' );
 		$page->setAuthorId( $user->getId() );
 
-		$this->expectException( \Exception::class );
-		$this->expectExceptionMessage( 'Slug already exists' );
+		$this->expectException( DuplicateEntityException::class );
+		$this->expectExceptionMessage( "Duplicate Page: slug 'duplicate-slug' already exists" );
 
 		$this->repository->create( $page );
 	}
@@ -227,8 +228,8 @@ class DatabasePageRepositoryTest extends TestCase
 		// Try to update page2 with page1's slug
 		$page2->setSlug( 'page-one' );
 
-		$this->expectException( \Exception::class );
-		$this->expectExceptionMessage( 'Slug already exists' );
+		$this->expectException( DuplicateEntityException::class );
+		$this->expectExceptionMessage( "Duplicate Page: slug 'page-one' already exists" );
 
 		$this->repository->update( $page2 );
 	}

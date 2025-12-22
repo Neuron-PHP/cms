@@ -5,6 +5,7 @@ namespace Neuron\Cms\Repositories;
 use Neuron\Cms\Database\ConnectionFactory;
 use Neuron\Cms\Models\Category;
 use Neuron\Cms\Repositories\Traits\ManagesTimestamps;
+use Neuron\Cms\Exceptions\DuplicateEntityException;
 use Neuron\Data\Settings\SettingManager;
 use PDO;
 use Exception;
@@ -82,19 +83,17 @@ class DatabaseCategoryRepository implements ICategoryRepository
 		// Check for duplicate slug
 		if( $this->findBySlug( $category->getSlug() ) )
 		{
-			throw new Exception( 'Slug already exists' );
+			throw new DuplicateEntityException( 'Category', 'slug', $category->getSlug() );
 		}
 
 		// Check for duplicate name
 		if( $this->findByName( $category->getName() ) )
 		{
-			throw new Exception( 'Category name already exists' );
+			throw new DuplicateEntityException( 'Category', 'name', $category->getName() );
 		}
 
-		// Set timestamps and save with null-safety check
-		$this->ensureTimestamps( $category );
-
-		return $this->saveAndRefresh(
+		// Set timestamps, save, and refresh with null-safety check
+		return $this->createEntity(
 			$category,
 			fn( int $id ) => $this->findById( $id ),
 			'Category'
@@ -115,14 +114,14 @@ class DatabaseCategoryRepository implements ICategoryRepository
 		$existingBySlug = $this->findBySlug( $category->getSlug() );
 		if( $existingBySlug && $existingBySlug->getId() !== $category->getId() )
 		{
-			throw new Exception( 'Slug already exists' );
+			throw new DuplicateEntityException( 'Category', 'slug', $category->getSlug() );
 		}
 
 		// Check for duplicate name (excluding current category)
 		$existingByName = $this->findByName( $category->getName() );
 		if( $existingByName && $existingByName->getId() !== $category->getId() )
 		{
-			throw new Exception( 'Category name already exists' );
+			throw new DuplicateEntityException( 'Category', 'name', $category->getName() );
 		}
 
 		// Update timestamp (database-independent approach)

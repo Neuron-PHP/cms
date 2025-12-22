@@ -291,7 +291,7 @@ class DatabaseCompatibilityTest extends IntegrationTestCase
 				$user->setRole( User::ROLE_AUTHOR );
 				$user->setStatus( User::STATUS_ACTIVE );
 				$user->setEmailVerified( true );
-				$created = User::create( $user->toArray() );
+				User::create( $user->toArray() );
 
 				// Force an exception
 				throw new \Exception( 'Test rollback' );

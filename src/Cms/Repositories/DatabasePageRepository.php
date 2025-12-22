@@ -5,6 +5,7 @@ namespace Neuron\Cms\Repositories;
 use Neuron\Cms\Models\Page;
 use Neuron\Cms\Database\ConnectionFactory;
 use Neuron\Cms\Repositories\Traits\ManagesTimestamps;
+use Neuron\Cms\Exceptions\DuplicateEntityException;
 use Neuron\Data\Settings\SettingManager;
 use PDO;
 use Exception;
@@ -60,13 +61,11 @@ class DatabasePageRepository implements IPageRepository
 		// Check for duplicate slug
 		if( $this->findBySlug( $page->getSlug() ) )
 		{
-			throw new Exception( 'Slug already exists' );
+			throw new DuplicateEntityException( 'Page', 'slug', $page->getSlug() );
 		}
 
-		// Set timestamps and save with null-safety check
-		$this->ensureTimestamps( $page );
-
-		return $this->saveAndRefresh(
+		// Set timestamps, save, and refresh with null-safety check
+		return $this->createEntity(
 			$page,
 			fn( int $id ) => $this->findById( $id ),
 			'Page'
@@ -87,7 +86,7 @@ class DatabasePageRepository implements IPageRepository
 		$existingBySlug = $this->findBySlug( $page->getSlug() );
 		if( $existingBySlug && $existingBySlug->getId() !== $page->getId() )
 		{
-			throw new Exception( 'Slug already exists' );
+			throw new DuplicateEntityException( 'Page', 'slug', $page->getSlug() );
 		}
 
 		// Update timestamp (database-independent approach)

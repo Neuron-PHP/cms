@@ -83,10 +83,8 @@ class DatabaseUserRepository implements IUserRepository
 			throw new DuplicateEntityException( 'User', 'email', $user->getEmail() );
 		}
 
-		// Set timestamps and save with null-safety check
-		$this->ensureTimestamps( $user );
-
-		return $this->saveAndRefresh(
+		// Set timestamps, save, and refresh with null-safety check
+		return $this->createEntity(
 			$user,
 			fn( int $id ) => $this->findById( $id ),
 			'User'
