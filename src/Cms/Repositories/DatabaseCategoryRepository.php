@@ -33,6 +33,9 @@ class DatabaseCategoryRepository implements ICategoryRepository
 	{
 		// Keep PDO for allWithPostCount() which uses a custom JOIN query
 		$this->_pdo = ConnectionFactory::createFromSettings( $settings );
+
+		// Set PDO connection on Model class for ORM queries
+		Category::setPdo( $this->_pdo );
 	}
 
 	/**
@@ -163,17 +166,12 @@ class DatabaseCategoryRepository implements ICategoryRepository
 	 */
 	public function allWithPostCount(): array
 	{
-		// This method still uses raw SQL for the JOIN with aggregation
-		// TODO: Add support for joins and aggregations to ORM
-		$stmt = $this->_pdo->query(
-			"SELECT c.*, COUNT(pc.post_id) as post_count
-			FROM categories c
-			LEFT JOIN post_categories pc ON c.id = pc.category_id
-			GROUP BY c.id
-			ORDER BY c.name ASC"
-		);
-
-		$rows = $stmt->fetchAll();
+		$rows = Category::query()
+			->select( ['categories.*', 'COUNT(post_categories.post_id) as post_count'] )
+			->leftJoin( 'post_categories', 'categories.id', '=', 'post_categories.category_id' )
+			->groupBy( 'categories.id' )
+			->orderBy( 'categories.name' )
+			->getRaw();
 
 		return array_map( function( $row ) {
 			$category = Category::fromArray( $row );

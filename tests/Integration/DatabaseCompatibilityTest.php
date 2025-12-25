@@ -54,6 +54,9 @@ class DatabaseCompatibilityTest extends IntegrationTestCase
 	 * the repository uses the same connection where migrations ran.
 	 * Some repositories (like DatabasePageRepository) only use ORM and don't have $_pdo.
 	 *
+	 * IMPORTANT: Repository constructors call Model::setPdo() with their own connection,
+	 * so we must re-set the test PDO AFTER construction to override it.
+	 *
 	 * @param string $repositoryClass Fully qualified repository class name
 	 * @return object Repository instance with shared PDO
 	 */
@@ -65,7 +68,7 @@ class DatabaseCompatibilityTest extends IntegrationTestCase
 		$source->set( 'database', 'name', ':memory:' ); // Won't be used
 		$settings = new \Neuron\Data\Settings\SettingManager( $source );
 
-		// Create repository instance
+		// Create repository instance (constructor will call Model::setPdo with a new connection)
 		$repository = new $repositoryClass( $settings );
 
 		// Use reflection to replace the PDO connection with our shared test PDO (if it has one)
@@ -76,8 +79,11 @@ class DatabaseCompatibilityTest extends IntegrationTestCase
 			$pdoProperty->setAccessible( true );
 			$pdoProperty->setValue( $repository, $this->pdo );
 		}
-		// If no $_pdo property, repository only uses ORM (Model::getPdo())
-		// which we already set in setUp()
+
+		// CRITICAL: Re-set the ORM Model PDO to the test PDO
+		// Repository constructor called Model::setPdo() with a different connection,
+		// so we must override it to use the test database where migrations ran
+		\Neuron\Orm\Model::setPdo( $this->pdo );
 
 		return $repository;
 	}

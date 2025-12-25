@@ -1,3 +1,7 @@
+## 0.8.11 2025-12-25
+* Fixed the installer.
+* Updated all remaining queries to use the orm component.
+
 ## 0.8.10 2025-12-22
 * Added current_user_identifier helper function.
 * Database compatability improvements.

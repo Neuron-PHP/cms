@@ -29,6 +29,9 @@ class DatabaseEventCategoryRepository implements IEventCategoryRepository
 	public function __construct( SettingManager $settings )
 	{
 		$this->_pdo = ConnectionFactory::createFromSettings( $settings );
+
+		// Set PDO connection on Model class for ORM queries
+		EventCategory::setPdo( $this->_pdo );
 	}
 
 	/**

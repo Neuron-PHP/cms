@@ -260,7 +260,7 @@ class BlogControllerTest extends TestCase
 
 	private function createBlogWithInjectedRepositories(): Blog
 	{
-		// Create Blog controller
+		// Create Blog controller (constructor will create repositories with ConnectionFactory)
 		$blog = new Blog();
 
 		// Inject our test repositories using reflection
@@ -281,6 +281,11 @@ class BlogControllerTest extends TestCase
 		$userRepoProp = $reflection->getProperty( '_userRepository' );
 		$userRepoProp->setAccessible( true );
 		$userRepoProp->setValue( $blog, $this->_userRepository );
+
+		// CRITICAL: Restore the test PDO on Model class
+		// Blog constructor created repositories which called Model::setPdo() with ConnectionFactory PDO,
+		// so we must restore the test PDO to ensure ORM queries use the test database
+		Model::setPdo( $this->_pdo );
 
 		return $blog;
 	}

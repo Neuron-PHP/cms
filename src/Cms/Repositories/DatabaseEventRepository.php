@@ -31,6 +31,9 @@ class DatabaseEventRepository implements IEventRepository
 	public function __construct( SettingManager $settings )
 	{
 		$this->_pdo = ConnectionFactory::createFromSettings( $settings );
+
+		// Set PDO connection on Model class for ORM queries
+		Event::setPdo( $this->_pdo );
 	}
 
 	/**
