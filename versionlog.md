@@ -1,4 +1,4 @@
-## 0.8.11
+## 0.8.11 2025-12-25
 * Fixed the installer.
 * Updated all remaining queries to use the orm component.
 
