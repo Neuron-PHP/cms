@@ -62,7 +62,9 @@ class Media extends Content
 		try
 		{
 			// Get pagination cursor from query string
-			$nextCursor = $_GET['cursor'] ?? null;
+			$nextCursor = isset($_GET['cursor']) && is_string($_GET['cursor']) 
+				? filter_var($_GET['cursor'], FILTER_SANITIZE_STRING) 
+				: null;
 
 			// List resources from Cloudinary
 			$result = $this->_uploader->listResources( [
