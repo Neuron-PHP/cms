@@ -734,4 +734,192 @@ class EditorJsRendererTest extends TestCase
 		$this->assertStringContainsString( '&lt;script&gt;', $result );
 		$this->assertStringContainsString( 'Safe Caption', $result );
 	}
+
+	public function testRenderEmbedWithTwitterService(): void
+	{
+		$data = [
+			'blocks' => [
+				[
+					'type' => 'embed',
+					'data' => [
+						'service' => 'twitter',
+						'embed' => 'https://platform.twitter.com/embed/Tweet.html?id=123456'
+					]
+				]
+			]
+		];
+
+		$result = $this->renderer->render( $data );
+
+		$this->assertStringContainsString( '<iframe', $result );
+		$this->assertStringContainsString( 'platform.twitter.com', $result );
+	}
+
+	public function testRenderEmbedWithInstagramService(): void
+	{
+		$data = [
+			'blocks' => [
+				[
+					'type' => 'embed',
+					'data' => [
+						'service' => 'instagram',
+						'embed' => 'https://www.instagram.com/p/ABC123/embed'
+					]
+				]
+			]
+		];
+
+		$result = $this->renderer->render( $data );
+
+		$this->assertStringContainsString( '<iframe', $result );
+		$this->assertStringContainsString( 'instagram.com', $result );
+	}
+
+	public function testRenderEmbedWithGitHubGistService(): void
+	{
+		$data = [
+			'blocks' => [
+				[
+					'type' => 'embed',
+					'data' => [
+						'service' => 'github',
+						'embed' => 'https://gist.github.com/username/abc123'
+					]
+				]
+			]
+		];
+
+		$result = $this->renderer->render( $data );
+
+		$this->assertStringContainsString( '<iframe', $result );
+		$this->assertStringContainsString( 'gist.github.com', $result );
+	}
+
+	public function testRenderParagraphWithShortcode(): void
+	{
+		$shortcodeParser = new ShortcodeParser();
+		$shortcodeParser->register( 'test', fn() => 'SHORTCODE_OUTPUT' );
+
+		$renderer = new EditorJsRenderer( $shortcodeParser );
+
+		$data = [
+			'blocks' => [
+				[
+					'type' => 'paragraph',
+					'data' => [
+						'text' => 'Content with [test] shortcode'
+					]
+				]
+			]
+		];
+
+		$result = $renderer->render( $data );
+
+		$this->assertStringContainsString( 'SHORTCODE_OUTPUT', $result );
+		$this->assertStringContainsString( 'Content with', $result );
+		$this->assertStringContainsString( 'shortcode', $result );
+	}
+
+	public function testRenderHeaderWithShortcode(): void
+	{
+		$shortcodeParser = new ShortcodeParser();
+		$shortcodeParser->register( 'dynamic', fn() => 'DYNAMIC_CONTENT' );
+
+		$renderer = new EditorJsRenderer( $shortcodeParser );
+
+		$data = [
+			'blocks' => [
+				[
+					'type' => 'header',
+					'data' => [
+						'text' => 'Title [dynamic]',
+						'level' => 2
+					]
+				]
+			]
+		];
+
+		$result = $renderer->render( $data );
+
+		$this->assertStringContainsString( '<h2', $result );
+		$this->assertStringContainsString( 'DYNAMIC_CONTENT', $result );
+	}
+
+	public function testConstructorWithShortcodeParser(): void
+	{
+		$shortcodeParser = new ShortcodeParser();
+		$renderer = new EditorJsRenderer( $shortcodeParser );
+
+		// Verify it was constructed successfully by using it
+		$result = $renderer->render( [ 'blocks' => [] ] );
+		$this->assertSame( '', $result );
+	}
+
+	public function testRenderEmbedWithSubdomain(): void
+	{
+		// Test that www.youtube.com (subdomain) is allowed when youtube.com is in whitelist
+		$data = [
+			'blocks' => [
+				[
+					'type' => 'embed',
+					'data' => [
+						'service' => 'youtube',
+						'embed' => 'https://www.youtube.com/embed/abc123'
+					]
+				]
+			]
+		];
+
+		$result = $this->renderer->render( $data );
+
+		$this->assertStringContainsString( '<iframe', $result );
+		$this->assertStringContainsString( 'www.youtube.com', $result );
+	}
+
+	public function testRenderEmbedWithMalformedUrl(): void
+	{
+		$data = [
+			'blocks' => [
+				[
+					'type' => 'embed',
+					'data' => [
+						'service' => 'youtube',
+						'embed' => 'not-a-valid-url'
+					]
+				]
+			]
+		];
+
+		$result = $this->renderer->render( $data );
+
+		// Should fail domain validation since parse_url will return empty host
+		$this->assertStringContainsString( '<!-- Embed from untrusted domain', $result );
+	}
+
+	public function testRenderListWithInvalidItem(): void
+	{
+		// Test the fallback for invalid list item types (edge case)
+		$data = [
+			'blocks' => [
+				[
+					'type' => 'list',
+					'data' => [
+						'style' => 'unordered',
+						'items' => [
+							'Valid item',
+							123, // Invalid: number instead of string/array
+							[ 'invalid' => 'structure' ], // Invalid: array without 'content' key
+							'Another valid item'
+						]
+					]
+				]
+			]
+		];
+
+		$result = $this->renderer->render( $data );
+
+		$this->assertStringContainsString( 'Valid item', $result );
+		$this->assertStringContainsString( 'Another valid item', $result );
+		$this->assertStringContainsString( '<!-- Invalid list item -->', $result );
+	}
 }

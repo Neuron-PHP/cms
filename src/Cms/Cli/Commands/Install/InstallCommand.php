@@ -661,8 +661,15 @@ class InstallCommand extends Command
 
 			if( !$host )
 			{
-				$this->output->warning( "SMTP host is required. Skipping email configuration." );
-				return [];
+				$this->output->warning( "SMTP host is required. Falling back to test mode." );
+				return [
+					'email' => [
+						'driver' => 'mail',
+						'test_mode' => true,
+						'from_address' => 'noreply@example.com',
+						'from_name' => 'Neuron CMS'
+					]
+				];
 			}
 
 			$port = $this->input->ask( "SMTP port", "587" );
@@ -680,16 +687,30 @@ class InstallCommand extends Command
 
 			if( !$username )
 			{
-				$this->output->warning( "SMTP username is required. Skipping email configuration." );
-				return [];
+				$this->output->warning( "SMTP username is required. Falling back to test mode." );
+				return [
+					'email' => [
+						'driver' => 'mail',
+						'test_mode' => true,
+						'from_address' => 'noreply@example.com',
+						'from_name' => 'Neuron CMS'
+					]
+				];
 			}
 
 			$password = $this->input->askSecret( "SMTP password (or app-specific password)" );
 
 			if( !$password )
 			{
-				$this->output->warning( "SMTP password is required. Skipping email configuration." );
-				return [];
+				$this->output->warning( "SMTP password is required. Falling back to test mode." );
+				return [
+					'email' => [
+						'driver' => 'mail',
+						'test_mode' => true,
+						'from_address' => 'noreply@example.com',
+						'from_name' => 'Neuron CMS'
+					]
+				];
 			}
 
 			$config['host'] = $host;

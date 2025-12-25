@@ -282,4 +282,118 @@ class CloudinaryUploaderTest extends TestCase
 
 		$this->assertIsBool( $result );
 	}
+
+	public function testListResourcesReturnsExpectedStructure(): void
+	{
+		// Skip if using test credentials (not real Cloudinary account)
+		$cloudName = $this->_settings->get( 'cloudinary', 'cloud_name' );
+		$isTestCredentials = ($cloudName === 'test-cloud');
+		$hasRealCredentials = getenv( 'CLOUDINARY_URL' ) || (!$isTestCredentials && $cloudName);
+
+		if( !$hasRealCredentials )
+		{
+			$this->markTestSkipped(
+				'Cloudinary credentials not configured. Set CLOUDINARY_URL environment variable or configure real cloudinary settings to run this integration test.'
+			);
+		}
+
+		$uploader = new CloudinaryUploader( $this->_settings );
+		$result = $uploader->listResources();
+
+		// Verify structure
+		$this->assertIsArray( $result );
+		$this->assertArrayHasKey( 'resources', $result );
+		$this->assertArrayHasKey( 'next_cursor', $result );
+		$this->assertArrayHasKey( 'total_count', $result );
+
+		// Verify resources is an array
+		$this->assertIsArray( $result['resources'] );
+
+		// If there are resources, verify their structure
+		if( !empty( $result['resources'] ) )
+		{
+			$resource = $result['resources'][0];
+			$this->assertArrayHasKey( 'url', $resource );
+			$this->assertArrayHasKey( 'public_id', $resource );
+			$this->assertArrayHasKey( 'width', $resource );
+			$this->assertArrayHasKey( 'height', $resource );
+			$this->assertArrayHasKey( 'format', $resource );
+			$this->assertArrayHasKey( 'bytes', $resource );
+		}
+	}
+
+	public function testListResourcesWithCustomOptions(): void
+	{
+		// Skip if using test credentials (not real Cloudinary account)
+		$cloudName = $this->_settings->get( 'cloudinary', 'cloud_name' );
+		$isTestCredentials = ($cloudName === 'test-cloud');
+		$hasRealCredentials = getenv( 'CLOUDINARY_URL' ) || (!$isTestCredentials && $cloudName);
+
+		if( !$hasRealCredentials )
+		{
+			$this->markTestSkipped(
+				'Cloudinary credentials not configured. Set CLOUDINARY_URL environment variable or configure real cloudinary settings to run this integration test.'
+			);
+		}
+
+		$uploader = new CloudinaryUploader( $this->_settings );
+		$result = $uploader->listResources( [
+			'max_results' => 5
+		] );
+
+		$this->assertIsArray( $result );
+		$this->assertArrayHasKey( 'resources', $result );
+
+		// If there are resources, should not exceed max_results
+		if( !empty( $result['resources'] ) )
+		{
+			$this->assertLessThanOrEqual( 5, count( $result['resources'] ) );
+		}
+	}
+
+	public function testListResourcesWithPagination(): void
+	{
+		// Skip if using test credentials (not real Cloudinary account)
+		$cloudName = $this->_settings->get( 'cloudinary', 'cloud_name' );
+		$isTestCredentials = ($cloudName === 'test-cloud');
+		$hasRealCredentials = getenv( 'CLOUDINARY_URL' ) || (!$isTestCredentials && $cloudName);
+
+		if( !$hasRealCredentials )
+		{
+			$this->markTestSkipped(
+				'Cloudinary credentials not configured. Set CLOUDINARY_URL environment variable or configure real cloudinary settings to run this integration test.'
+			);
+		}
+
+		$uploader = new CloudinaryUploader( $this->_settings );
+
+		// Get first page
+		$firstPage = $uploader->listResources( [ 'max_results' => 2 ] );
+
+		// If we have a next_cursor, test pagination
+		if( $firstPage['next_cursor'] )
+		{
+			$secondPage = $uploader->listResources( [
+				'max_results' => 2,
+				'next_cursor' => $firstPage['next_cursor']
+			] );
+
+			$this->assertIsArray( $secondPage );
+			$this->assertArrayHasKey( 'resources', $secondPage );
+
+			// Resources should be different
+			if( !empty( $firstPage['resources'] ) && !empty( $secondPage['resources'] ) )
+			{
+				$this->assertNotEquals(
+					$firstPage['resources'][0]['public_id'],
+					$secondPage['resources'][0]['public_id']
+				);
+			}
+		}
+		else
+		{
+			// If no next_cursor, we just verify structure is correct
+			$this->assertNull( $firstPage['next_cursor'] );
+		}
+	}
 }

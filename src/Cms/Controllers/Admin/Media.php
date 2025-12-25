@@ -2,10 +2,12 @@
 
 namespace Neuron\Cms\Controllers\Admin;
 
-use Neuron\Mvc\Controller;
+use Neuron\Cms\Controllers\Content;
 use Neuron\Cms\Services\Media\CloudinaryUploader;
 use Neuron\Cms\Services\Media\MediaValidator;
 use Neuron\Data\Settings\SettingManager;
+use Neuron\Log\Log;
+use Neuron\Mvc\Responses\HttpResponseStatus;
 use Neuron\Patterns\Registry;
 
 /**
@@ -15,17 +17,19 @@ use Neuron\Patterns\Registry;
  *
  * @package Neuron\Cms\Controllers\Admin
  */
-class Media extends Controller
+class Media extends Content
 {
 	private CloudinaryUploader $_uploader;
 	private MediaValidator $_validator;
 
 	/**
 	 * Constructor
+	 *
+	 * @param \Neuron\Mvc\Application|null $app
 	 */
-	public function __construct()
+	public function __construct( ?\Neuron\Mvc\Application $app = null )
 	{
-		parent::__construct();
+		parent::__construct( $app );
 
 		$settings = Registry::getInstance()->get( 'Settings' );
 
@@ -48,6 +52,13 @@ class Media extends Controller
 	 */
 	public function index(): string
 	{
+		$user = Registry::getInstance()->get( 'Auth.User' );
+
+		if( !$user )
+		{
+			throw new \RuntimeException( 'Authenticated user not found' );
+		}
+
 		try
 		{
 			// Get pagination cursor from query string
@@ -59,20 +70,42 @@ class Media extends Controller
 				'max_results' => 30
 			] );
 
-			return $this->render( 'admin/media/index', [
+			$viewData = [
+				'Title' => 'Media Library | ' . $this->getName(),
+				'Description' => 'Manage uploaded images',
+				'User' => $user,
 				'resources' => $result['resources'],
 				'nextCursor' => $result['next_cursor'],
 				'totalCount' => $result['total_count']
-			] );
+			];
+
+			return $this->renderHtml(
+				HttpResponseStatus::OK,
+				$viewData,
+				'index',
+				'admin'
+			);
 		}
 		catch( \Exception $e )
 		{
-			return $this->render( 'admin/media/index', [
+			Log::error( 'Error fetching media resources: ' . $e->getMessage() );
+
+			$viewData = [
+				'Title' => 'Media Library | ' . $this->getName(),
+				'Description' => 'Manage uploaded images',
+				'User' => $user,
 				'resources' => [],
 				'nextCursor' => null,
 				'totalCount' => 0,
 				'error' => $e->getMessage()
-			] );
+			];
+
+			return $this->renderHtml(
+				HttpResponseStatus::OK,
+				$viewData,
+				'index',
+				'admin'
+			);
 		}
 	}
 
