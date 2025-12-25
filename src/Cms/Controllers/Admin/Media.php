@@ -39,6 +39,44 @@ class Media extends Controller
 	}
 
 	/**
+	 * Display media library
+	 *
+	 * Shows all uploaded images from Cloudinary in a grid view.
+	 * Supports pagination and search/filter.
+	 *
+	 * @return string Rendered view
+	 */
+	public function index(): string
+	{
+		try
+		{
+			// Get pagination cursor from query string
+			$nextCursor = $_GET['cursor'] ?? null;
+
+			// List resources from Cloudinary
+			$result = $this->_uploader->listResources( [
+				'next_cursor' => $nextCursor,
+				'max_results' => 30
+			] );
+
+			return $this->render( 'admin/media/index', [
+				'resources' => $result['resources'],
+				'nextCursor' => $result['next_cursor'],
+				'totalCount' => $result['total_count']
+			] );
+		}
+		catch( \Exception $e )
+		{
+			return $this->render( 'admin/media/index', [
+				'resources' => [],
+				'nextCursor' => null,
+				'totalCount' => 0,
+				'error' => $e->getMessage()
+			] );
+		}
+	}
+
+	/**
 	 * Upload image for Editor.js
 	 *
 	 * Handles POST /admin/upload/image
