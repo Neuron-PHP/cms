@@ -1,4 +1,4 @@
-## 0.8.12
+## 0.8.12 2025-12-26
 * Added media management.
 * Added page management.
 * Lots of refactoring.
