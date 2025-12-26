@@ -1,21 +1,26 @@
 ## 0.8.13
+* Auth exception handling improvements.
 
 ## 0.8.12 2025-12-26
+
 * Added media management.
 * Added page management.
 * Lots of refactoring.
 * Added more tests.
 
 ## 0.8.11 2025-12-25
+
 * Fixed the installer.
 * Updated all remaining queries to use the orm component.
 
 ## 0.8.10 2025-12-22
+
 * Added current_user_identifier helper function.
 * Database compatability improvements.
 * Added calendar functionality to cms.
 
 ## 0.8.9 2025-12-19
+
 * **Slug generation now uses system abstractions** - All content service classes refactored to use `IRandom` interface
 * Refactored 6 service classes: Post/Creator, Post/Updater, Category/Creator, Category/Updater, Page/Creator, Tag/Creator
 * Services support dependency injection with optional `IRandom` parameter for testability
@@ -47,7 +52,6 @@
 * Renamed config.yaml to neuron.yaml
 * Added member registration and portal.
 * Added bootswatch theme support.
-
 
 ## 0.8.2 2025-11-11
 

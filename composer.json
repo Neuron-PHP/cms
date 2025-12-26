@@ -49,11 +49,7 @@
     },
     "scripts": {
         "post-update-cmd": [
-            "@php -r \"echo '\\n╔════════════════════════════════════════════════╗\\n';\"",
-            "@php -r \"echo '║  Neuron CMS Updated                            ║\\n';\"",
-            "@php -r \"echo '╚════════════════════════════════════════════════╝\\n';\"",
-            "@php -r \"echo '\\n⚠️  Run upgrade command to apply changes:\\n';\"",
-            "@php -r \"echo '   php neuron cms:upgrade\\n\\n';\""
+            "@php scripts/post-update.php"
         ]
     }
 }

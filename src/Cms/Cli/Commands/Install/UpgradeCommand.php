@@ -246,8 +246,8 @@ class UpgradeCommand extends Command
 		$installedVersion = $this->_installedManifest['version'] ?? 'unknown';
 		$packageVersion = $this->_packageManifest['version'] ?? 'unknown';
 
-		$this->output->writeln( "Installed Version: <info>$installedVersion</info>" );
-		$this->output->writeln( "Package Version:   <info>$packageVersion</info>\n" );
+		$this->output->writeln( "Installed Version: $installedVersion" );
+		$this->output->writeln( "Package Version:   $packageVersion\n" );
 	}
 
 	/**
@@ -263,7 +263,7 @@ class UpgradeCommand extends Command
 		if( !empty( $newMigrations ) )
 		{
 			$hasUpdates = true;
-			$this->output->writeln( "<comment>New Migrations Available:</comment>" );
+			$this->output->writeln( "New Migrations Available:" );
 
 			foreach( $newMigrations as $migration )
 			{
@@ -281,7 +281,7 @@ class UpgradeCommand extends Command
 
 			if( empty( $newMigrations ) )
 			{
-				$this->output->writeln( "<comment>Version update available (no database changes)</comment>" );
+				$this->output->writeln( "Version update available (no database changes)" );
 			}
 		}
 
@@ -353,7 +353,7 @@ class UpgradeCommand extends Command
 
 		if( $copied > 0 )
 		{
-			$this->output->writeln( "\n  <info>Copied $copied new migration" . ( $copied > 1 ? 's' : '' ) . "</info>" );
+			$this->output->writeln( "\n  Copied $copied new migration" . ( $copied > 1 ? 's' : '' ) );
 		}
 
 		return true;
