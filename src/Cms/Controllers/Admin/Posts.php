@@ -76,7 +76,7 @@ class Posts extends Content
 	 */
 	public function index( Request $request ): string
 	{
-		$user = Registry::getInstance()->get( 'Auth.User' );
+		$user = auth();
 
 		if( !$user )
 		{
@@ -89,7 +89,7 @@ class Posts extends Content
 		Registry::getInstance()->set( 'Auth.CsrfToken', $csrfToken->getToken() );
 
 		// Get all posts or filter by author if not admin
-		if( $user->isAdmin() || $user->isEditor() )
+		if( is_admin() || is_editor() )
 		{
 			$posts = $this->_postRepository->all();
 		}
@@ -98,21 +98,17 @@ class Posts extends Content
 			$posts = $this->_postRepository->getByAuthor( $user->getUsername() );
 		}
 
-		$viewData = [
-			'Title' => 'Posts | ' . $this->getName(),
-			'Description' => 'Manage blog posts',
-			'User' => $user,
-			'posts' => $posts,
-			'Success' => $sessionManager->getFlash( 'success' ),
-			'Error' => $sessionManager->getFlash( 'error' )
-		];
-
-		return $this->renderHtml(
-			HttpResponseStatus::OK,
-			$viewData,
-			'index',
-			'admin'
-		);
+		return $this->view()
+			->title( 'Posts' )
+			->description( 'Manage blog posts' )
+			->withCurrentUser()
+			->withCsrfToken()
+			->with([
+				'posts' => $posts,
+				'Success' => $sessionManager->getFlash( 'success' ),
+				'Error' => $sessionManager->getFlash( 'error' )
+			])
+			->render( 'index', 'admin' );
 	}
 
 	/**
@@ -123,9 +119,7 @@ class Posts extends Content
 	 */
 	public function create( Request $request ): string
 	{
-		$user = Registry::getInstance()->get( 'Auth.User' );
-
-		if( !$user )
+		if( !auth() )
 		{
 			throw new \RuntimeException( 'Authenticated user not found' );
 		}
@@ -134,19 +128,13 @@ class Posts extends Content
 		$csrfToken = new CsrfToken( $this->getSessionManager() );
 		Registry::getInstance()->set( 'Auth.CsrfToken', $csrfToken->getToken() );
 
-		$viewData = [
-			'Title' => 'Create Post | ' . $this->getName(),
-			'Description' => 'Create a new blog post',
-			'User' => $user,
-			'categories' => $this->_categoryRepository->all()
-		];
-
-		return $this->renderHtml(
-			HttpResponseStatus::OK,
-			$viewData,
-			'create',
-			'admin'
-		);
+		return $this->view()
+			->title( 'Create Post' )
+			->description( 'Create a new blog post' )
+			->withCurrentUser()
+			->withCsrfToken()
+			->with( 'categories', $this->_categoryRepository->all() )
+			->render( 'create', 'admin' );
 	}
 
 	/**
@@ -157,9 +145,7 @@ class Posts extends Content
 	 */
 	public function store( Request $request ): never
 	{
-		$user = Registry::getInstance()->get( 'Auth.User' );
-
-		if( !$user )
+		if( !auth() )
 		{
 			throw new \RuntimeException( 'Authenticated user not found' );
 		}
@@ -180,7 +166,7 @@ class Posts extends Content
 			$this->_postCreator->create(
 				$title,
 				$content,
-				$user->getId(),
+				user_id(),
 				$status,
 				$slug ?: null,
 				$excerpt ?: null,
@@ -205,9 +191,7 @@ class Posts extends Content
 	 */
 	public function edit( Request $request ): string
 	{
-		$user = Registry::getInstance()->get( 'Auth.User' );
-
-		if( !$user )
+		if( !auth() )
 		{
 			throw new \RuntimeException( 'Authenticated user not found' );
 		}
@@ -221,7 +205,7 @@ class Posts extends Content
 		}
 
 		// Check permissions
-		if( !$user->isAdmin() && !$user->isEditor() && $post->getAuthorId() !== $user->getId() )
+		if( !is_admin() && !is_editor() && $post->getAuthorId() !== user_id() )
 		{
 			throw new \RuntimeException( 'Unauthorized to edit this post' );
 		}
@@ -230,20 +214,16 @@ class Posts extends Content
 		$csrfToken = new CsrfToken( $this->getSessionManager() );
 		Registry::getInstance()->set( 'Auth.CsrfToken', $csrfToken->getToken() );
 
-		$viewData = [
-			'Title' => 'Edit Post | ' . $this->getName(),
-			'Description' => 'Edit blog post',
-			'User' => $user,
-			'post' => $post,
-			'categories' => $this->_categoryRepository->all()
-		];
-
-		return $this->renderHtml(
-			HttpResponseStatus::OK,
-			$viewData,
-			'edit',
-			'admin'
-		);
+		return $this->view()
+			->title( 'Edit Post' )
+			->description( 'Edit blog post' )
+			->withCurrentUser()
+			->withCsrfToken()
+			->with([
+				'post' => $post,
+				'categories' => $this->_categoryRepository->all()
+			])
+			->render( 'edit', 'admin' );
 	}
 
 	/**
@@ -254,9 +234,7 @@ class Posts extends Content
 	 */
 	public function update( Request $request ): never
 	{
-		$user = Registry::getInstance()->get( 'Auth.User' );
-
-		if( !$user )
+		if( !auth() )
 		{
 			throw new \RuntimeException( 'Authenticated user not found' );
 		}
@@ -270,7 +248,7 @@ class Posts extends Content
 		}
 
 		// Check permissions
-		if( !$user->isAdmin() && !$user->isEditor() && $post->getAuthorId() !== $user->getId() )
+		if( !is_admin() && !is_editor() && $post->getAuthorId() !== user_id() )
 		{
 			throw new \RuntimeException( 'Unauthorized to edit this post' );
 		}
@@ -315,9 +293,7 @@ class Posts extends Content
 	 */
 	public function destroy( Request $request ): never
 	{
-		$user = Registry::getInstance()->get( 'Auth.User' );
-
-		if( !$user )
+		if( !auth() )
 		{
 			throw new \RuntimeException( 'Authenticated user not found' );
 		}
@@ -331,7 +307,7 @@ class Posts extends Content
 		}
 
 		// Check permissions
-		if( !$user->isAdmin() && !$user->isEditor() && $post->getAuthorId() !== $user->getId() )
+		if( !is_admin() && !is_editor() && $post->getAuthorId() !== user_id() )
 		{
 			$this->redirect( 'admin_posts', [], ['error', 'Unauthorized to delete this post'] );
 		}

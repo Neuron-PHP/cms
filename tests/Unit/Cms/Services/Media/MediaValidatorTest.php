@@ -251,9 +251,130 @@ class MediaValidatorTest extends TestCase
 		$this->assertNull( $firstError );
 	}
 
-	/**
-	 * Note: Full validation with real image files would require creating
-	 * actual image data, which is complex in unit tests. These tests cover
-	 * the basic validation logic.
-	 */
+	public function testValidatePassesForValidJpegFile(): void
+	{
+		// Create a minimal valid JPEG file
+		$jpegData = base64_decode(
+			'/9j/4AAQSkZJRgABAQEAYABgAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8UHRofHh0a' .
+			'HBwgJC4nICIsIxwcKDcpLDAxNDQ0Hyc5PTgyPC4zNDL/2wBDAQkJCQwLDBgNDRgyIRwhMjIyMjIy' .
+			'MjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjL/wAARCAABAAEDASIA' .
+			'AhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEB' .
+			'AQAAAAAAAAAAAAAAAAAAAAX/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwCwAA=='
+		);
+
+		$tmpFile = tmpfile();
+		$tmpPath = stream_get_meta_data( $tmpFile )['uri'];
+		fwrite( $tmpFile, $jpegData );
+
+		$file = [
+			'error' => UPLOAD_ERR_OK,
+			'tmp_name' => $tmpPath,
+			'name' => 'test.jpg',
+			'size' => strlen( $jpegData )
+		];
+
+		$result = $this->_validator->validate( $file );
+
+		$this->assertTrue( $result );
+		$this->assertEmpty( $this->_validator->getErrors() );
+
+		fclose( $tmpFile );
+	}
+
+	public function testValidatePassesForValidPngFile(): void
+	{
+		// Create a minimal valid PNG file (1x1 transparent pixel)
+		$pngData = base64_decode(
+			'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=='
+		);
+
+		$tmpFile = tmpfile();
+		$tmpPath = stream_get_meta_data( $tmpFile )['uri'];
+		fwrite( $tmpFile, $pngData );
+
+		$file = [
+			'error' => UPLOAD_ERR_OK,
+			'tmp_name' => $tmpPath,
+			'name' => 'test.png',
+			'size' => strlen( $pngData )
+		];
+
+		$result = $this->_validator->validate( $file );
+
+		$this->assertTrue( $result );
+		$this->assertEmpty( $this->_validator->getErrors() );
+
+		fclose( $tmpFile );
+	}
+
+	public function testValidateFailsForInvalidMimeType(): void
+	{
+		// Create a text file with .jpg extension (MIME type mismatch)
+		$tmpFile = tmpfile();
+		$tmpPath = stream_get_meta_data( $tmpFile )['uri'];
+		fwrite( $tmpFile, 'This is not an image' );
+
+		$file = [
+			'error' => UPLOAD_ERR_OK,
+			'tmp_name' => $tmpPath,
+			'name' => 'fake.jpg',
+			'size' => 20
+		];
+
+		$result = $this->_validator->validate( $file );
+
+		$this->assertFalse( $result );
+		$this->assertStringContainsString( 'Invalid file type', $this->_validator->getFirstError() );
+
+		fclose( $tmpFile );
+	}
+
+	public function testValidateFailsForNonImageFile(): void
+	{
+		// Create a file that has correct MIME but isn't a valid image
+		$tmpFile = tmpfile();
+		$tmpPath = stream_get_meta_data( $tmpFile )['uri'];
+		// Write some binary data that might pass MIME check but fail getimagesize
+		fwrite( $tmpFile, "\xFF\xD8\xFF" . str_repeat( 'X', 100 ) ); // Fake JPEG header
+
+		$file = [
+			'error' => UPLOAD_ERR_OK,
+			'tmp_name' => $tmpPath,
+			'name' => 'corrupt.jpg',
+			'size' => 103
+		];
+
+		$result = $this->_validator->validate( $file );
+
+		// Should fail either on MIME or getimagesize check
+		$this->assertFalse( $result );
+
+		fclose( $tmpFile );
+	}
+
+	public function testValidatePassesForValidGifFile(): void
+	{
+		// Create a minimal valid GIF file (1x1 transparent pixel)
+		$gifData = base64_decode(
+			'R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7'
+		);
+
+		$tmpFile = tmpfile();
+		$tmpPath = stream_get_meta_data( $tmpFile )['uri'];
+		fwrite( $tmpFile, $gifData );
+
+		$file = [
+			'error' => UPLOAD_ERR_OK,
+			'tmp_name' => $tmpPath,
+			'name' => 'test.gif',
+			'size' => strlen( $gifData )
+		];
+
+		$result = $this->_validator->validate( $file );
+
+		$this->assertTrue( $result );
+		$this->assertEmpty( $this->_validator->getErrors() );
+
+		fclose( $tmpFile );
+	}
 }

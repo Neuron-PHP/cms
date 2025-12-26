@@ -7,6 +7,7 @@ use Neuron\Cms\Controllers\Admin\Media;
 use Neuron\Cms\Models\User;
 use Neuron\Cms\Services\Media\CloudinaryUploader;
 use Neuron\Cms\Services\Media\MediaValidator;
+use Neuron\Cms\Auth\SessionManager;
 use Neuron\Data\Settings\SettingManager;
 use Neuron\Data\Settings\Source\Memory;
 use Neuron\Mvc\Requests\Request;
@@ -69,10 +70,144 @@ class MediaIndexTest extends TestCase
 		$media->index( $request );
 	}
 
-	/**
-	 * Note: Additional tests for index() method that verify the full rendering
-	 * would require view files to be present and the framework to be fully bootstrapped.
-	 * These are better suited for integration tests. The authentication check test above
-	 * covers the critical security logic in the unit test context.
-	 */
+	public function testIndexReturnsSuccessWithResources(): void
+	{
+		// Set up user in registry
+		$user = $this->createMock( User::class );
+		$user->method( 'getId' )->willReturn( 1 );
+		Registry::getInstance()->set( 'Auth.User', $user );
+
+		// Create a mock session manager
+		$sessionManagerMock = $this->createMock( SessionManager::class );
+		$sessionManagerMock->method( 'getFlash' )->willReturn( null );
+
+		// Create Media controller with mocked getSessionManager and renderHtml (constructor will be called)
+		$media = $this->getMockBuilder( Media::class )
+			->onlyMethods( ['getSessionManager', 'renderHtml'] )
+			->disableOriginalConstructor( false )
+			->getMock();
+		$media->method( 'getSessionManager' )->willReturn( $sessionManagerMock );
+		$media->method( 'renderHtml' )->willReturn( '<html>Media Library</html>' );
+
+		// Create a mock uploader that returns resources
+		$uploaderMock = $this->createMock( CloudinaryUploader::class );
+		$uploaderMock->method( 'listResources' )->willReturn( [
+			'resources' => [
+				[
+					'public_id' => 'test-folder/image1',
+					'url' => 'https://res.cloudinary.com/test/image/upload/v1/image1.jpg',
+					'width' => 800,
+					'height' => 600
+				],
+				[
+					'public_id' => 'test-folder/image2',
+					'url' => 'https://res.cloudinary.com/test/image/upload/v1/image2.jpg',
+					'width' => 1024,
+					'height' => 768
+				]
+			],
+			'next_cursor' => 'abc123',
+			'total_count' => 50
+		] );
+
+		// Inject mock uploader via reflection
+		$reflection = new \ReflectionClass( Media::class );
+		$uploaderProperty = $reflection->getProperty( '_uploader' );
+		$uploaderProperty->setAccessible( true );
+		$uploaderProperty->setValue( $media, $uploaderMock );
+
+		$request = $this->createMock( Request::class );
+		$request->method( 'get' )->with( 'cursor' )->willReturn( null );
+
+		$result = $media->index( $request );
+
+		// Should return HTML response
+		$this->assertIsString( $result );
+	}
+
+	public function testIndexHandlesCursorParameter(): void
+	{
+		// Set up user in registry
+		$user = $this->createMock( User::class );
+		$user->method( 'getId' )->willReturn( 1 );
+		Registry::getInstance()->set( 'Auth.User', $user );
+
+		// Create a mock session manager
+		$sessionManagerMock = $this->createMock( SessionManager::class );
+		$sessionManagerMock->method( 'getFlash' )->willReturn( null );
+
+		// Create Media controller with mocked getSessionManager and renderHtml (constructor will be called)
+		$media = $this->getMockBuilder( Media::class )
+			->onlyMethods( ['getSessionManager', 'renderHtml'] )
+			->disableOriginalConstructor( false )
+			->getMock();
+		$media->method( 'getSessionManager' )->willReturn( $sessionManagerMock );
+		$media->method( 'renderHtml' )->willReturn( '<html>Media Library</html>' );
+
+		// Create a mock uploader that expects cursor parameter
+		$uploaderMock = $this->createMock( CloudinaryUploader::class );
+		$uploaderMock->expects( $this->once() )
+			->method( 'listResources' )
+			->with( $this->callback( function( $options ) {
+				return $options['next_cursor'] === 'xyz789'
+					&& $options['max_results'] === 30;
+			} ) )
+			->willReturn( [
+				'resources' => [],
+				'next_cursor' => null,
+				'total_count' => 0
+			] );
+
+		// Inject mock uploader via reflection
+		$reflection = new \ReflectionClass( Media::class );
+		$uploaderProperty = $reflection->getProperty( '_uploader' );
+		$uploaderProperty->setAccessible( true );
+		$uploaderProperty->setValue( $media, $uploaderMock );
+
+		$request = $this->createMock( Request::class );
+		$request->method( 'get' )->with( 'cursor' )->willReturn( 'xyz789' );
+
+		$result = $media->index( $request );
+
+		$this->assertIsString( $result );
+	}
+
+	public function testIndexHandlesListResourcesException(): void
+	{
+		// Set up user in registry
+		$user = $this->createMock( User::class );
+		$user->method( 'getId' )->willReturn( 1 );
+		Registry::getInstance()->set( 'Auth.User', $user );
+
+		// Create a mock session manager
+		$sessionManagerMock = $this->createMock( SessionManager::class );
+		$sessionManagerMock->method( 'getFlash' )->willReturn( null );
+
+		// Create Media controller with mocked getSessionManager and renderHtml (constructor will be called)
+		$media = $this->getMockBuilder( Media::class )
+			->onlyMethods( ['getSessionManager', 'renderHtml'] )
+			->disableOriginalConstructor( false )
+			->getMock();
+		$media->method( 'getSessionManager' )->willReturn( $sessionManagerMock );
+		$media->method( 'renderHtml' )->willReturn( '<html>Media Library</html>' );
+
+		// Create a mock uploader that throws exception
+		$uploaderMock = $this->createMock( CloudinaryUploader::class );
+		$uploaderMock->method( 'listResources' )
+			->willThrowException( new \Exception( 'Cloudinary API error' ) );
+
+		// Inject mock uploader via reflection
+		$reflection = new \ReflectionClass( Media::class );
+		$uploaderProperty = $reflection->getProperty( '_uploader' );
+		$uploaderProperty->setAccessible( true );
+		$uploaderProperty->setValue( $media, $uploaderMock );
+
+		$request = $this->createMock( Request::class );
+		$request->method( 'get' )->with( 'cursor' )->willReturn( null );
+
+		$result = $media->index( $request );
+
+		// Should return HTML response with error message (not throw exception)
+		$this->assertIsString( $result );
+	}
 }

@@ -37,7 +37,7 @@ class Dashboard extends Content
 	public function index( Request $request ): string
 	{
 		// Get authenticated user from Registry
-		$user = Registry::getInstance()->get( 'Auth.User' );
+		$user = auth();
 
 		if( !$user )
 		{
@@ -48,17 +48,11 @@ class Dashboard extends Content
 		$csrfToken = new CsrfToken( $this->getSessionManager() );
 		Registry::getInstance()->set( 'Auth.CsrfToken', $csrfToken->getToken() );
 
-		$viewData = [
-			'Title' => 'Member Dashboard | ' . $this->getName(),
-			'Description' => 'Member Dashboard',
-			'User' => $user
-		];
-
-		return $this->renderHtml(
-			HttpResponseStatus::OK,
-			$viewData,
-			'index',
-			'member'
-		);
+		return $this->view()
+			->title( 'Member Dashboard' )
+			->description( 'Member Dashboard' )
+			->withCurrentUser()
+			->withCsrfToken()
+			->render( 'index', 'member' );
 	}
 }

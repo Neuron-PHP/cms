@@ -49,7 +49,7 @@ class Profile extends Content
 	 */
 	public function edit( Request $request ): string
 	{
-		$user = Registry::getInstance()->get( 'Auth.User' );
+		$user = auth();
 
 		if( !$user )
 		{
@@ -64,21 +64,17 @@ class Profile extends Content
 		$timezones = \DateTimeZone::listIdentifiers();
 		$groupedTimezones = group_timezones_for_select( $timezones, $user->getTimezone() );
 
-		$viewData = [
-			'Title' => 'Profile | ' . $this->getName(),
-			'Description' => 'Edit Your Profile',
-			'User' => $user,
-			'groupedTimezones' => $groupedTimezones,
-			'success' => $this->getSessionManager()->getFlash( 'success' ),
-			'error' => $this->getSessionManager()->getFlash( 'error' )
-		];
-
-		return $this->renderHtml(
-			HttpResponseStatus::OK,
-			$viewData,
-			'edit',
-			'admin'
-		);
+		return $this->view()
+			->title( 'Profile' )
+			->description( 'Edit Your Profile' )
+			->withCurrentUser()
+			->withCsrfToken()
+			->with([
+				'groupedTimezones' => $groupedTimezones,
+				'success' => $this->getSessionManager()->getFlash( 'success' ),
+				'error' => $this->getSessionManager()->getFlash( 'error' )
+			])
+			->render( 'edit', 'admin' );
 	}
 
 	/**
@@ -89,7 +85,7 @@ class Profile extends Content
 	 */
 	public function update( Request $request ): never
 	{
-		$user = Registry::getInstance()->get( 'Auth.User' );
+		$user = auth();
 
 		if( !$user )
 		{

@@ -52,28 +52,17 @@ class Categories extends Content
 	 */
 	public function index( Request $request ): string
 	{
-		$user = Registry::getInstance()->get( 'Auth.User' );
-
-		if( !$user )
+		if( !auth() )
 		{
 			throw new \RuntimeException( 'Authenticated user not found' );
 		}
 
-		$categoriesWithCount = $this->_categoryRepository->allWithPostCount();
-
-		$viewData = [
-			'Title' => 'Categories | Admin | ' . $this->getName(),
-			'Description' => 'Manage blog categories',
-			'User' => $user,
-			'CategoriesWithCount' => $categoriesWithCount
-		];
-
-		return $this->renderHtml(
-			HttpResponseStatus::OK,
-			$viewData,
-			'index',
-			'categories'
-		);
+		return $this->view()
+			->title( 'Categories | Admin' )
+			->description( 'Manage blog categories' )
+			->withCurrentUser()
+			->with( 'CategoriesWithCount', $this->_categoryRepository->allWithPostCount() )
+			->render( 'index', 'categories' );
 	}
 
 	/**
@@ -84,25 +73,16 @@ class Categories extends Content
 	 */
 	public function create( Request $request ): string
 	{
-		$user = Registry::getInstance()->get( 'Auth.User' );
-
-		if( !$user )
+		if( !auth() )
 		{
 			throw new \RuntimeException( 'Authenticated user not found' );
 		}
 
-		$viewData = [
-			'Title' => 'Create Category | Admin | ' . $this->getName(),
-			'Description' => 'Create a new blog category',
-			'User' => $user
-		];
-
-		return $this->renderHtml(
-			HttpResponseStatus::OK,
-			$viewData,
-			'create',
-			'categories'
-		);
+		return $this->view()
+			->title( 'Create Category | Admin' )
+			->description( 'Create a new blog category' )
+			->withCurrentUser()
+			->render( 'create', 'categories' );
 	}
 
 	/**
@@ -136,9 +116,7 @@ class Categories extends Content
 	 */
 	public function edit( Request $request ): string
 	{
-		$user = Registry::getInstance()->get( 'Auth.User' );
-
-		if( !$user )
+		if( !auth() )
 		{
 			throw new \RuntimeException( 'Authenticated user not found' );
 		}
@@ -151,19 +129,12 @@ class Categories extends Content
 			throw new \RuntimeException( 'Category not found' );
 		}
 
-		$viewData = [
-			'Title' => 'Edit Category | Admin | ' . $this->getName(),
-			'Description' => 'Edit blog category',
-			'User' => $user,
-			'Category' => $category
-		];
-
-		return $this->renderHtml(
-			HttpResponseStatus::OK,
-			$viewData,
-			'edit',
-			'categories'
-		);
+		return $this->view()
+			->title( 'Edit Category | Admin' )
+			->description( 'Edit blog category' )
+			->withCurrentUser()
+			->with( 'Category', $category )
+			->render( 'edit', 'categories' );
 	}
 
 	/**

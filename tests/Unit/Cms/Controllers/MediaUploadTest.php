@@ -4,10 +4,12 @@ namespace Tests\Cms\Controllers;
 
 use PHPUnit\Framework\TestCase;
 use Neuron\Cms\Controllers\Admin\Media;
+use Neuron\Cms\Models\User;
 use Neuron\Cms\Services\Media\CloudinaryUploader;
 use Neuron\Cms\Services\Media\MediaValidator;
 use Neuron\Data\Settings\SettingManager;
 use Neuron\Data\Settings\Source\Memory;
+use Neuron\Mvc\Requests\Request;
 use Neuron\Patterns\Registry;
 
 /**
@@ -56,11 +58,16 @@ class MediaUploadTest extends TestCase
 
 	public function testUploadImageReturnsErrorWhenNoFileUploaded(): void
 	{
+		// Set up user in registry
+		$user = $this->createMock( User::class );
+		Registry::getInstance()->set( 'Auth.User', $user );
+
 		// Ensure $_FILES is empty
 		$_FILES = [];
 
 		$media = new Media();
-		$result = $media->uploadImage();
+		$request = $this->createMock( Request::class );
+		$result = $media->uploadImage( $request );
 
 		// Should return JSON error
 		$this->assertIsString( $result );
@@ -73,6 +80,11 @@ class MediaUploadTest extends TestCase
 
 	public function testUploadImageReturnsErrorWhenValidationFails(): void
 	{
+		// Set up user in registry
+		$user = $this->createMock( User::class );
+		$user->method( 'getId' )->willReturn( 1 );
+		Registry::getInstance()->set( 'Auth.User', $user );
+
 		// Set up invalid file in $_FILES
 		$_FILES['image'] = [
 			'name' => 'test.txt',
@@ -96,7 +108,8 @@ class MediaUploadTest extends TestCase
 		$validatorProperty->setAccessible( true );
 		$validatorProperty->setValue( $media, $validatorMock );
 
-		$result = $media->uploadImage();
+		$request = $this->createMock( Request::class );
+		$result = $media->uploadImage( $request );
 
 		// Should return JSON error
 		$this->assertIsString( $result );
@@ -107,11 +120,16 @@ class MediaUploadTest extends TestCase
 
 	public function testUploadFeaturedImageReturnsErrorWhenNoFileUploaded(): void
 	{
+		// Set up user in registry
+		$user = $this->createMock( User::class );
+		Registry::getInstance()->set( 'Auth.User', $user );
+
 		// Ensure $_FILES is empty
 		$_FILES = [];
 
 		$media = new Media();
-		$result = $media->uploadFeaturedImage();
+		$request = $this->createMock( Request::class );
+		$result = $media->uploadFeaturedImage( $request );
 
 		// Should return JSON error
 		$this->assertIsString( $result );
@@ -124,6 +142,11 @@ class MediaUploadTest extends TestCase
 
 	public function testUploadFeaturedImageReturnsErrorWhenValidationFails(): void
 	{
+		// Set up user in registry
+		$user = $this->createMock( User::class );
+		$user->method( 'getId' )->willReturn( 1 );
+		Registry::getInstance()->set( 'Auth.User', $user );
+
 		// Set up invalid file in $_FILES
 		$_FILES['image'] = [
 			'name' => 'test.exe',
@@ -147,7 +170,8 @@ class MediaUploadTest extends TestCase
 		$validatorProperty->setAccessible( true );
 		$validatorProperty->setValue( $media, $validatorMock );
 
-		$result = $media->uploadFeaturedImage();
+		$request = $this->createMock( Request::class );
+		$result = $media->uploadFeaturedImage( $request );
 
 		// Should return JSON error
 		$this->assertIsString( $result );
@@ -158,6 +182,11 @@ class MediaUploadTest extends TestCase
 
 	public function testUploadImageSuccessfulUpload(): void
 	{
+		// Set up user in registry
+		$user = $this->createMock( User::class );
+		$user->method( 'getId' )->willReturn( 1 );
+		Registry::getInstance()->set( 'Auth.User', $user );
+
 		// Set up valid file in $_FILES
 		$_FILES['image'] = [
 			'name' => 'test.jpg',
@@ -196,7 +225,8 @@ class MediaUploadTest extends TestCase
 		$uploaderProperty->setAccessible( true );
 		$uploaderProperty->setValue( $media, $uploaderMock );
 
-		$result = $media->uploadImage();
+		$request = $this->createMock( Request::class );
+		$result = $media->uploadImage( $request );
 
 		// Should return JSON success in Editor.js format
 		$this->assertIsString( $result );
@@ -210,6 +240,11 @@ class MediaUploadTest extends TestCase
 
 	public function testUploadFeaturedImageSuccessfulUpload(): void
 	{
+		// Set up user in registry
+		$user = $this->createMock( User::class );
+		$user->method( 'getId' )->willReturn( 1 );
+		Registry::getInstance()->set( 'Auth.User', $user );
+
 		// Set up valid file in $_FILES
 		$_FILES['image'] = [
 			'name' => 'featured.png',
@@ -250,7 +285,8 @@ class MediaUploadTest extends TestCase
 		$uploaderProperty->setAccessible( true );
 		$uploaderProperty->setValue( $media, $uploaderMock );
 
-		$result = $media->uploadFeaturedImage();
+		$request = $this->createMock( Request::class );
+		$result = $media->uploadFeaturedImage( $request );
 
 		// Should return JSON success
 		$this->assertIsString( $result );
@@ -262,6 +298,11 @@ class MediaUploadTest extends TestCase
 
 	public function testUploadImageHandlesUploadException(): void
 	{
+		// Set up user in registry
+		$user = $this->createMock( User::class );
+		$user->method( 'getId' )->willReturn( 1 );
+		Registry::getInstance()->set( 'Auth.User', $user );
+
 		// Set up valid file in $_FILES
 		$_FILES['image'] = [
 			'name' => 'test.jpg',
@@ -293,17 +334,23 @@ class MediaUploadTest extends TestCase
 		$uploaderProperty->setAccessible( true );
 		$uploaderProperty->setValue( $media, $uploaderMock );
 
-		$result = $media->uploadImage();
+		$request = $this->createMock( Request::class );
+		$result = $media->uploadImage( $request );
 
-		// Should return JSON error
+		// Should return JSON error with user-friendly message
 		$this->assertIsString( $result );
 		$json = json_decode( $result, true );
 		$this->assertEquals( 0, $json['success'] );
-		$this->assertEquals( 'Upload failed', $json['message'] );
+		$this->assertEquals( 'Upload failed. Please try again.', $json['message'] );
 	}
 
 	public function testUploadFeaturedImageHandlesUploadException(): void
 	{
+		// Set up user in registry
+		$user = $this->createMock( User::class );
+		$user->method( 'getId' )->willReturn( 1 );
+		Registry::getInstance()->set( 'Auth.User', $user );
+
 		// Set up valid file in $_FILES
 		$_FILES['image'] = [
 			'name' => 'test.jpg',
@@ -335,12 +382,49 @@ class MediaUploadTest extends TestCase
 		$uploaderProperty->setAccessible( true );
 		$uploaderProperty->setValue( $media, $uploaderMock );
 
-		$result = $media->uploadFeaturedImage();
+		$request = $this->createMock( Request::class );
+		$result = $media->uploadFeaturedImage( $request );
+
+		// Should return JSON error with user-friendly message
+		$this->assertIsString( $result );
+		$json = json_decode( $result, true );
+		$this->assertFalse( $json['success'] );
+		$this->assertEquals( 'Upload failed. Please try again.', $json['error'] );
+	}
+
+	public function testUploadImageReturnsErrorWhenUserNotAuthenticated(): void
+	{
+		// Ensure no user in registry
+		Registry::getInstance()->set( 'Auth.User', null );
+
+		$_FILES = [];
+
+		$media = new Media();
+		$request = $this->createMock( Request::class );
+		$result = $media->uploadImage( $request );
+
+		// Should return JSON error
+		$this->assertIsString( $result );
+		$json = json_decode( $result, true );
+		$this->assertEquals( 0, $json['success'] );
+		$this->assertEquals( 'Unauthorized', $json['message'] );
+	}
+
+	public function testUploadFeaturedImageReturnsErrorWhenUserNotAuthenticated(): void
+	{
+		// Ensure no user in registry
+		Registry::getInstance()->set( 'Auth.User', null );
+
+		$_FILES = [];
+
+		$media = new Media();
+		$request = $this->createMock( Request::class );
+		$result = $media->uploadFeaturedImage( $request );
 
 		// Should return JSON error
 		$this->assertIsString( $result );
 		$json = json_decode( $result, true );
 		$this->assertFalse( $json['success'] );
-		$this->assertEquals( 'Cloudinary error', $json['error'] );
+		$this->assertEquals( 'Unauthorized', $json['error'] );
 	}
 }

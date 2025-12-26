@@ -55,29 +55,23 @@ class Users extends Content
 	 */
 	public function index( Request $request ): string
 	{
-		$user = Registry::getInstance()->get( 'Auth.User' );
-
 		// Generate CSRF token
 		$csrfToken = new CsrfToken( $this->getSessionManager() );
 		Registry::getInstance()->set( 'Auth.CsrfToken', $csrfToken->getToken() );
 
-		$users = $this->_repository->all();
+		$sessionManager = $this->getSessionManager();
 
-		$viewData = [
-			'Title' => 'Users | ' . $this->getName(),
-			'Description' => 'User Management',
-			'User' => $user,
-			'users' => $users,
-			'Success' => $this->getSessionManager()->getFlash( 'success' ),
-			'Error' => $this->getSessionManager()->getFlash( 'error' )
-		];
-
-		return $this->renderHtml(
-			HttpResponseStatus::OK,
-			$viewData,
-			'index',
-			'admin'
-		);
+		return $this->view()
+			->title( 'Users' )
+			->description( 'User Management' )
+			->withCurrentUser()
+			->withCsrfToken()
+			->with([
+				'users' => $this->_repository->all(),
+				'Success' => $sessionManager->getFlash( 'success' ),
+				'Error' => $sessionManager->getFlash( 'error' )
+			])
+			->render( 'index', 'admin' );
 	}
 
 	/**
@@ -88,25 +82,17 @@ class Users extends Content
 	 */
 	public function create( Request $request ): string
 	{
-		$user = Registry::getInstance()->get( 'Auth.User' );
-
 		// Generate CSRF token
 		$csrfToken = new CsrfToken( $this->getSessionManager() );
 		Registry::getInstance()->set( 'Auth.CsrfToken', $csrfToken->getToken() );
 
-		$viewData = [
-			'Title' => 'Create User | ' . $this->getName(),
-			'Description' => 'Create New User',
-			'User' => $user,
-			'roles' => [User::ROLE_ADMIN, User::ROLE_EDITOR, User::ROLE_AUTHOR, User::ROLE_SUBSCRIBER]
-		];
-
-		return $this->renderHtml(
-			HttpResponseStatus::OK,
-			$viewData,
-			'create',
-			'admin'
-		);
+		return $this->view()
+			->title( 'Create User' )
+			->description( 'Create New User' )
+			->withCurrentUser()
+			->withCsrfToken()
+			->with( 'roles', [User::ROLE_ADMIN, User::ROLE_EDITOR, User::ROLE_AUTHOR, User::ROLE_SUBSCRIBER] )
+			->render( 'create', 'admin' );
 	}
 
 	/**
@@ -149,7 +135,6 @@ class Users extends Content
 	public function edit( Request $request ): string
 	{
 		$id = (int)$request->getRouteParameter( 'id' );
-		$currentUser = Registry::getInstance()->get( 'Auth.User' );
 		$user = $this->_repository->findById( $id );
 
 		if( !$user )
@@ -161,20 +146,16 @@ class Users extends Content
 		$csrfToken = new CsrfToken( $this->getSessionManager() );
 		Registry::getInstance()->set( 'Auth.CsrfToken', $csrfToken->getToken() );
 
-		$viewData = [
-			'Title' => 'Edit User | ' . $this->getName(),
-			'Description' => 'Edit User',
-			'User' => $currentUser,
-			'user' => $user,
-			'roles' => [User::ROLE_ADMIN, User::ROLE_EDITOR, User::ROLE_AUTHOR, User::ROLE_SUBSCRIBER]
-		];
-
-		return $this->renderHtml(
-			HttpResponseStatus::OK,
-			$viewData,
-			'edit',
-			'admin'
-		);
+		return $this->view()
+			->title( 'Edit User' )
+			->description( 'Edit User' )
+			->withCurrentUser()
+			->withCsrfToken()
+			->with([
+				'user' => $user,
+				'roles' => [User::ROLE_ADMIN, User::ROLE_EDITOR, User::ROLE_AUTHOR, User::ROLE_SUBSCRIBER]
+			])
+			->render( 'edit', 'admin' );
 	}
 
 	/**
@@ -229,10 +210,10 @@ class Users extends Content
 	public function destroy( Request $request ): never
 	{
 		$id = (int)$request->getRouteParameter( 'id' );
-		$currentUser = Registry::getInstance()->get( 'Auth.User' );
+		$currentUser = auth();
 
 		// Prevent self-deletion
-		if( $currentUser && $currentUser->getId() === $id )
+		if( $currentUser && user_id() === $id )
 		{
 			$this->redirect( 'admin_users', [], ['error', 'Cannot delete your own account'] );
 		}

@@ -55,9 +55,7 @@ class Pages extends Content
 	 */
 	public function index( Request $request ): string
 	{
-		$user = Registry::getInstance()->get( 'Auth.User' );
-
-		if( !$user )
+		if( !auth() )
 		{
 			throw new \RuntimeException( 'Authenticated user not found' );
 		}
@@ -68,30 +66,26 @@ class Pages extends Content
 		Registry::getInstance()->set( 'Auth.CsrfToken', $csrfToken->getToken() );
 
 		// Get all pages or filter by author if not admin
-		if( $user->isAdmin() || $user->isEditor() )
+		if( is_admin() || is_editor() )
 		{
 			$pages = $this->_pageRepository->all();
 		}
 		else
 		{
-			$pages = $this->_pageRepository->getByAuthor( $user->getId() );
+			$pages = $this->_pageRepository->getByAuthor( user_id() );
 		}
 
-		$viewData = [
-			'Title' => 'Pages | ' . $this->getName(),
-			'Description' => 'Manage pages',
-			'User' => $user,
-			'pages' => $pages,
-			'Success' => $sessionManager->getFlash( 'success' ),
-			'Error' => $sessionManager->getFlash( 'error' )
-		];
-
-		return $this->renderHtml(
-			HttpResponseStatus::OK,
-			$viewData,
-			'pages/index',
-			'admin'
-		);
+		return $this->view()
+			->title( 'Pages' )
+			->description( 'Manage pages' )
+			->withCurrentUser()
+			->withCsrfToken()
+			->with([
+				'pages' => $pages,
+				'Success' => $sessionManager->getFlash( 'success' ),
+				'Error' => $sessionManager->getFlash( 'error' )
+			])
+			->render( 'pages/index', 'admin' );
 	}
 
 	/**
@@ -102,9 +96,7 @@ class Pages extends Content
 	 */
 	public function create( Request $request ): string
 	{
-		$user = Registry::getInstance()->get( 'Auth.User' );
-
-		if( !$user )
+		if( !auth() )
 		{
 			throw new \RuntimeException( 'Authenticated user not found' );
 		}
@@ -113,18 +105,12 @@ class Pages extends Content
 		$csrfToken = new CsrfToken( $this->getSessionManager() );
 		Registry::getInstance()->set( 'Auth.CsrfToken', $csrfToken->getToken() );
 
-		$viewData = [
-			'Title' => 'Create Page | ' . $this->getName(),
-			'Description' => 'Create a new page',
-			'User' => $user
-		];
-
-		return $this->renderHtml(
-			HttpResponseStatus::OK,
-			$viewData,
-			'pages/create',
-			'admin'
-		);
+		return $this->view()
+			->title( 'Create Page' )
+			->description( 'Create a new page' )
+			->withCurrentUser()
+			->withCsrfToken()
+			->render( 'pages/create', 'admin' );
 	}
 
 	/**
@@ -135,7 +121,7 @@ class Pages extends Content
 	 */
 	public function store( Request $request ): never
 	{
-		$user = Registry::getInstance()->get( 'Auth.User' );
+		$user = auth();
 
 		if( !$user )
 		{
@@ -148,7 +134,7 @@ class Pages extends Content
 
 		if( !$csrfToken->validate( $submittedToken ) )
 		{
-			Log::warning( "CSRF validation failed for page creation by user {$user->getId()}" );
+			Log::warning( "CSRF validation failed for page creation by user " . user_id() );
 			$this->redirect( 'admin_pages_create', [], ['error', 'Invalid security token. Please try again.'] );
 		}
 
@@ -168,7 +154,7 @@ class Pages extends Content
 			$page = $this->_pageCreator->create(
 				$title,
 				$content,
-				$user->getId(),
+				user_id(),
 				$status,
 				$slug ?: null,
 				$template,
@@ -179,16 +165,16 @@ class Pages extends Content
 
 			if( !$page )
 			{
-				Log::error( "Page creation failed for user {$user->getId()}, title: {$title}" );
+				Log::error( "Page creation failed for user " . user_id() . ", title: {$title}" );
 				$this->redirect( 'admin_pages_create', [], ['error', 'Failed to create page. Please try again.'] );
 			}
 
-			Log::info( "Page created successfully: ID {$page->getId()}, title: {$title}, by user {$user->getId()}" );
+			Log::info( "Page created successfully: ID {$page->getId()}, title: {$title}, by user " . user_id() );
 			$this->redirect( 'admin_pages', [], ['success', 'Page created successfully'] );
 		}
 		catch( \Exception $e )
 		{
-			Log::error( "Exception during page creation by user {$user->getId()}: {$e->getMessage()}", [
+			Log::error( "Exception during page creation by user " . user_id() . ": {$e->getMessage()}", [
 				'exception' => $e,
 				'trace' => $e->getTraceAsString()
 			] );
@@ -204,9 +190,7 @@ class Pages extends Content
 	 */
 	public function edit( Request $request ): string
 	{
-		$user = Registry::getInstance()->get( 'Auth.User' );
-
-		if( !$user )
+		if( !auth() )
 		{
 			throw new \RuntimeException( 'Authenticated user not found' );
 		}
@@ -220,9 +204,9 @@ class Pages extends Content
 		}
 
 		// Check permissions
-		if( !$user->isAdmin() && !$user->isEditor() && $page->getAuthorId() !== $user->getId() )
+		if( !is_admin() && !is_editor() && $page->getAuthorId() !== user_id() )
 		{
-			Log::warning( "Unauthorized edit attempt by user {$user->getId()} on page {$pageId}" );
+			Log::warning( "Unauthorized edit attempt by user " . user_id() . " on page {$pageId}" );
 			$this->redirect( 'admin_pages', [], ['error', 'Unauthorized to edit this page'] );
 		}
 
@@ -230,19 +214,13 @@ class Pages extends Content
 		$csrfToken = new CsrfToken( $this->getSessionManager() );
 		Registry::getInstance()->set( 'Auth.CsrfToken', $csrfToken->getToken() );
 
-		$viewData = [
-			'Title' => 'Edit Page | ' . $this->getName(),
-			'Description' => 'Edit page',
-			'User' => $user,
-			'page' => $page
-		];
-
-		return $this->renderHtml(
-			HttpResponseStatus::OK,
-			$viewData,
-			'pages/edit',
-			'admin'
-		);
+		return $this->view()
+			->title( 'Edit Page' )
+			->description( 'Edit page' )
+			->withCurrentUser()
+			->withCsrfToken()
+			->with( 'page', $page )
+			->render( 'pages/edit', 'admin' );
 	}
 
 	/**
@@ -253,7 +231,7 @@ class Pages extends Content
 	 */
 	public function update( Request $request ): never
 	{
-		$user = Registry::getInstance()->get( 'Auth.User' );
+		$user = auth();
 
 		if( !$user )
 		{
@@ -269,9 +247,9 @@ class Pages extends Content
 		}
 
 		// Check permissions
-		if( !$user->isAdmin() && !$user->isEditor() && $page->getAuthorId() !== $user->getId() )
+		if( !is_admin() && !is_editor() && $page->getAuthorId() !== user_id() )
 		{
-			Log::warning( "Unauthorized page update attempt: User {$user->getId()} tried to edit page {$pageId}" );
+			Log::warning( "Unauthorized page update attempt: User " . user_id() . " tried to edit page {$pageId}" );
 			$this->redirect( 'admin_pages', [], ['error', 'Unauthorized to edit this page'] );
 		}
 
@@ -281,7 +259,7 @@ class Pages extends Content
 
 		if( !$csrfToken->validate( $submittedToken ) )
 		{
-			Log::warning( "CSRF validation failed for page update: Page {$pageId}, user {$user->getId()}" );
+			Log::warning( "CSRF validation failed for page update: Page {$pageId}, user " . user_id() );
 			$this->redirect( 'admin_pages_edit', ['id' => $pageId], ['error', 'Invalid security token. Please try again.'] );
 		}
 
@@ -312,16 +290,16 @@ class Pages extends Content
 
 			if( !$success )
 			{
-				Log::error( "Page update failed: Page {$pageId}, user {$user->getId()}, title: {$title}" );
+				Log::error( "Page update failed: Page {$pageId}, user " . user_id() . ", title: {$title}" );
 				$this->redirect( 'admin_pages_edit', ['id' => $pageId], ['error', 'Failed to update page. Please try again.'] );
 			}
 
-			Log::info( "Page updated successfully: Page {$pageId}, title: {$title}, by user {$user->getId()}" );
+			Log::info( "Page updated successfully: Page {$pageId}, title: {$title}, by user " . user_id() );
 			$this->redirect( 'admin_pages', [], ['success', 'Page updated successfully'] );
 		}
 		catch( \Exception $e )
 		{
-			Log::error( "Exception during page update: Page {$pageId}, user {$user->getId()}: {$e->getMessage()}", [
+			Log::error( "Exception during page update: Page {$pageId}, user " . user_id() . ": {$e->getMessage()}", [
 				'exception' => $e,
 				'trace' => $e->getTraceAsString()
 			] );
@@ -336,7 +314,7 @@ class Pages extends Content
 	 */
 	public function destroy( Request $request ): never
 	{
-		$user = Registry::getInstance()->get( 'Auth.User' );
+		$user = auth();
 
 		if( !$user )
 		{
@@ -352,9 +330,9 @@ class Pages extends Content
 		}
 
 		// Check permissions
-		if( !$user->isAdmin() && !$user->isEditor() && $page->getAuthorId() !== $user->getId() )
+		if( !is_admin() && !is_editor() && $page->getAuthorId() !== user_id() )
 		{
-			Log::warning( "Unauthorized page deletion attempt: User {$user->getId()} tried to delete page {$pageId}" );
+			Log::warning( "Unauthorized page deletion attempt: User " . user_id() . " tried to delete page {$pageId}" );
 			$this->redirect( 'admin_pages', [], ['error', 'Unauthorized to delete this page'] );
 		}
 
@@ -364,7 +342,7 @@ class Pages extends Content
 
 		if( !$csrfToken->validate( $submittedToken ) )
 		{
-			Log::warning( "CSRF validation failed for page deletion: Page {$pageId}, user {$user->getId()}" );
+			Log::warning( "CSRF validation failed for page deletion: Page {$pageId}, user " . user_id() );
 			$this->redirect( 'admin_pages', [], ['error', 'Invalid security token. Please try again.'] );
 		}
 
@@ -376,16 +354,16 @@ class Pages extends Content
 
 			if( !$success )
 			{
-				Log::error( "Page deletion failed: Page {$pageId}, user {$user->getId()}" );
+				Log::error( "Page deletion failed: Page {$pageId}, user " . user_id() );
 				$this->redirect( 'admin_pages', [], ['error', 'Failed to delete page. Please try again.'] );
 			}
 
-			Log::info( "Page deleted successfully: Page {$pageId}, title: {$pageTitle}, by user {$user->getId()}" );
+			Log::info( "Page deleted successfully: Page {$pageId}, title: {$pageTitle}, by user " . user_id() );
 			$this->redirect( 'admin_pages', [], ['success', 'Page deleted successfully'] );
 		}
 		catch( \Exception $e )
 		{
-			Log::error( "Exception during page deletion: Page {$pageId}, user {$user->getId()}: {$e->getMessage()}", [
+			Log::error( "Exception during page deletion: Page {$pageId}, user " . user_id() . ": {$e->getMessage()}", [
 				'exception' => $e,
 				'trace' => $e->getTraceAsString()
 			] );

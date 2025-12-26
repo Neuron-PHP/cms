@@ -42,28 +42,17 @@ class Tags extends Content
 	 */
 	public function index( Request $request ): string
 	{
-		$user = Registry::getInstance()->get( 'Auth.User' );
-
-		if( !$user )
+		if( !auth() )
 		{
 			throw new \RuntimeException( 'Authenticated user not found' );
 		}
 
-		$tagsWithCount = $this->_tagRepository->allWithPostCount();
-
-		$viewData = [
-			'Title' => 'Tags | Admin | ' . $this->getName(),
-			'Description' => 'Manage blog tags',
-			'User' => $user,
-			'TagsWithCount' => $tagsWithCount
-		];
-
-		return $this->renderHtml(
-			HttpResponseStatus::OK,
-			$viewData,
-			'index',
-			'tags'
-		);
+		return $this->view()
+			->title( 'Tags | Admin' )
+			->description( 'Manage blog tags' )
+			->withCurrentUser()
+			->with( 'TagsWithCount', $this->_tagRepository->allWithPostCount() )
+			->render( 'index', 'tags' );
 	}
 
 	/**
@@ -74,25 +63,16 @@ class Tags extends Content
 	 */
 	public function create( Request $request ): string
 	{
-		$user = Registry::getInstance()->get( 'Auth.User' );
-
-		if( !$user )
+		if( !auth() )
 		{
 			throw new \RuntimeException( 'Authenticated user not found' );
 		}
 
-		$viewData = [
-			'Title' => 'Create Tag | Admin | ' . $this->getName(),
-			'Description' => 'Create a new blog tag',
-			'User' => $user
-		];
-
-		return $this->renderHtml(
-			HttpResponseStatus::OK,
-			$viewData,
-			'create',
-			'tags'
-		);
+		return $this->view()
+			->title( 'Create Tag | Admin' )
+			->description( 'Create a new blog tag' )
+			->withCurrentUser()
+			->render( 'create', 'tags' );
 	}
 
 	/**
@@ -134,9 +114,7 @@ class Tags extends Content
 	 */
 	public function edit( Request $request ): string
 	{
-		$user = Registry::getInstance()->get( 'Auth.User' );
-
-		if( !$user )
+		if( !auth() )
 		{
 			throw new \RuntimeException( 'Authenticated user not found' );
 		}
@@ -149,19 +127,12 @@ class Tags extends Content
 			throw new \RuntimeException( 'Tag not found' );
 		}
 
-		$viewData = [
-			'Title' => 'Edit Tag | Admin | ' . $this->getName(),
-			'Description' => 'Edit blog tag',
-			'User' => $user,
-			'Tag' => $tag
-		];
-
-		return $this->renderHtml(
-			HttpResponseStatus::OK,
-			$viewData,
-			'edit',
-			'tags'
-		);
+		return $this->view()
+			->title( 'Edit Tag | Admin' )
+			->description( 'Edit blog tag' )
+			->withCurrentUser()
+			->with( 'Tag', $tag )
+			->render( 'edit', 'tags' );
 	}
 
 	/**

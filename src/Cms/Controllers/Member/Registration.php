@@ -71,35 +71,22 @@ class Registration extends Content
 		// Check if registration is enabled
 		if( !$this->_registrationService->isRegistrationEnabled() )
 		{
-			$viewData = [
-				'Title' => 'Registration Disabled | ' . $this->getName(),
-				'Description' => 'User registration is currently disabled'
-			];
-
-			return $this->renderHtml(
-				HttpResponseStatus::OK,
-				$viewData,
-				'registration-disabled',
-				'member'
-			);
+			return $this->view()
+				->title( 'Registration Disabled' )
+				->description( 'User registration is currently disabled' )
+				->render( 'registration-disabled', 'member' );
 		}
 
 		// Set CSRF token in Registry
 		Registry::getInstance()->set( 'Auth.CsrfToken', $this->_csrfToken->getToken() );
 
-		$viewData = [
-			'Title' => 'Register | ' . $this->getName(),
-			'Description' => 'Create your account',
-			'Error' => $this->getSessionManager()->getFlash( 'error' ),
-			'Success' => $this->getSessionManager()->getFlash( 'success' )
-		];
-
-		return $this->renderHtml(
-			HttpResponseStatus::OK,
-			$viewData,
-			'register',
-			'member'
-		);
+		return $this->view()
+			->title( 'Register' )
+			->description( 'Create your account' )
+			->withCsrfToken()
+			->with( 'Error', $this->getSessionManager()->getFlash( 'error' ) )
+			->with( 'Success', $this->getSessionManager()->getFlash( 'success' ) )
+			->render( 'register', 'member' );
 	}
 
 	/**
@@ -165,18 +152,11 @@ class Registration extends Content
 	 */
 	public function showVerificationSent( Request $request ): string
 	{
-		$viewData = [
-			'Title' => 'Verify Your Email | ' . $this->getName(),
-			'Description' => 'Please check your email',
-			'Success' => $this->getSessionManager()->getFlash( 'success' )
-		];
-
-		return $this->renderHtml(
-			HttpResponseStatus::OK,
-			$viewData,
-			'verify-email-sent',
-			'member'
-		);
+		return $this->view()
+			->title( 'Verify Your Email' )
+			->description( 'Please check your email' )
+			->with( 'Success', $this->getSessionManager()->getFlash( 'success' ) )
+			->render( 'verify-email-sent', 'member' );
 	}
 
 	/**
@@ -193,19 +173,12 @@ class Registration extends Content
 
 		if( empty( $token ) )
 		{
-			$viewData = [
-				'Title' => 'Email Verification | ' . $this->getName(),
-				'Description' => 'Email verification',
-				'Success' => false,
-				'Message' => 'Invalid or missing verification token.'
-			];
-
-			return $this->renderHtml(
-				HttpResponseStatus::BAD_REQUEST,
-				$viewData,
-				'email-verified',
-				'member'
-			);
+			return $this->view()
+				->title( 'Email Verification' )
+				->description( 'Email verification' )
+				->with( 'Success', false )
+				->with( 'Message', 'Invalid or missing verification token.' )
+				->render( 'email-verified', 'member', HttpResponseStatus::BAD_REQUEST );
 		}
 
 		try
@@ -215,52 +188,31 @@ class Registration extends Content
 
 			if( $success )
 			{
-				$viewData = [
-					'Title' => 'Email Verified | ' . $this->getName(),
-					'Description' => 'Your email has been verified',
-					'Success' => true,
-					'Message' => 'Your email has been verified successfully! You can now log in.'
-				];
-
-				return $this->renderHtml(
-					HttpResponseStatus::OK,
-					$viewData,
-					'email-verified',
-					'member'
-				);
+				return $this->view()
+					->title( 'Email Verified' )
+					->description( 'Your email has been verified' )
+					->with( 'Success', true )
+					->with( 'Message', 'Your email has been verified successfully! You can now log in.' )
+					->render( 'email-verified', 'member' );
 			}
 			else
 			{
-				$viewData = [
-					'Title' => 'Email Verification | ' . $this->getName(),
-					'Description' => 'Email verification failed',
-					'Success' => false,
-					'Message' => 'This verification link is invalid or has expired.'
-				];
-
-				return $this->renderHtml(
-					HttpResponseStatus::BAD_REQUEST,
-					$viewData,
-					'email-verified',
-					'member'
-				);
+				return $this->view()
+					->title( 'Email Verification' )
+					->description( 'Email verification failed' )
+					->with( 'Success', false )
+					->with( 'Message', 'This verification link is invalid or has expired.' )
+					->render( 'email-verified', 'member', HttpResponseStatus::BAD_REQUEST );
 			}
 		}
 		catch( Exception $e )
 		{
-			$viewData = [
-				'Title' => 'Email Verification | ' . $this->getName(),
-				'Description' => 'Email verification error',
-				'Success' => false,
-				'Message' => 'An error occurred during email verification. Please try again later.'
-			];
-
-			return $this->renderHtml(
-				HttpResponseStatus::INTERNAL_SERVER_ERROR,
-				$viewData,
-				'email-verified',
-				'member'
-			);
+			return $this->view()
+				->title( 'Email Verification' )
+				->description( 'Email verification error' )
+				->with( 'Success', false )
+				->with( 'Message', 'An error occurred during email verification. Please try again later.' )
+				->render( 'email-verified', 'member', HttpResponseStatus::INTERNAL_SERVER_ERROR );
 		}
 	}
 

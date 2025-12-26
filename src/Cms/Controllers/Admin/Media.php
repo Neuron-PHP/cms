@@ -5,6 +5,7 @@ namespace Neuron\Cms\Controllers\Admin;
 use Neuron\Cms\Controllers\Content;
 use Neuron\Cms\Services\Media\CloudinaryUploader;
 use Neuron\Cms\Services\Media\MediaValidator;
+use Neuron\Cms\Services\Auth\CsrfToken;
 use Neuron\Data\Settings\SettingManager;
 use Neuron\Log\Log;
 use Neuron\Mvc\Application;
@@ -15,7 +16,7 @@ use Neuron\Patterns\Registry;
 /**
  * Media upload controller.
  *
- * Handles image uploads for the admin interface.
+ * Handles image uploads and media library management for the admin interface.
  *
  * @package Neuron\Cms\Controllers\Admin
  */
@@ -28,6 +29,7 @@ class Media extends Content
 	 * Constructor
 	 *
 	 * @param Application|null $app
+	 * @throws \Exception
 	 */
 	public function __construct( ?Application $app = null )
 	{
@@ -56,16 +58,21 @@ class Media extends Content
 	 */
 	public function index( Request $request ): string
 	{
-		$user = Registry::getInstance()->get( 'Auth.User' );
+		$user = auth();
 
 		if( !$user )
 		{
 			throw new \RuntimeException( 'Authenticated user not found' );
 		}
 
+		// Generate CSRF token
+		$sessionManager = $this->getSessionManager();
+		$csrfToken = new CsrfToken( $sessionManager );
+		Registry::getInstance()->set( 'Auth.CsrfToken', $csrfToken->getToken() );
+
 		try
 		{
-			// Get pagination cursor from query string using framework's filter
+			// Get pagination cursor from query string
 			$nextCursor = $request->get( 'cursor' );
 
 			// List resources from Cloudinary
@@ -80,7 +87,9 @@ class Media extends Content
 				'User' => $user,
 				'resources' => $result['resources'],
 				'nextCursor' => $result['next_cursor'],
-				'totalCount' => $result['total_count']
+				'totalCount' => $result['total_count'],
+				'Success' => $sessionManager->getFlash( 'success' ),
+				'Error' => $sessionManager->getFlash( 'error' )
 			];
 
 			return $this->renderHtml(
@@ -92,7 +101,10 @@ class Media extends Content
 		}
 		catch( \Exception $e )
 		{
-			Log::error( 'Error fetching media resources: ' . $e->getMessage() );
+			Log::error( 'Error fetching media resources: ' . $e->getMessage(), [
+				'exception' => $e,
+				'user_id' => user_id()
+			] );
 
 			$viewData = [
 				'Title' => 'Media Library | ' . $this->getName(),
@@ -101,7 +113,8 @@ class Media extends Content
 				'resources' => [],
 				'nextCursor' => null,
 				'totalCount' => 0,
-				'error' => $e->getMessage()
+				'Success' => $sessionManager->getFlash( 'success' ),
+				'Error' => 'Failed to load media library. Please try again.'
 			];
 
 			return $this->renderHtml(
@@ -119,10 +132,26 @@ class Media extends Content
 	 * Handles POST /admin/upload/image
 	 * Returns JSON in Editor.js format
 	 *
+	 * @param Request $request
 	 * @return string JSON response
 	 */
-	public function uploadImage(): string
+	public function uploadImage( Request $request ): string
 	{
+		$user = auth();
+
+		if( !$user )
+		{
+			Log::warning( 'Unauthorized image upload attempt' );
+
+			return $this->renderJson(
+				HttpResponseStatus::UNAUTHORIZED,
+				[
+					'success' => 0,
+					'message' => 'Unauthorized'
+				]
+			);
+		}
+
 		try
 		{
 			// Check if file was uploaded
@@ -142,6 +171,12 @@ class Media extends Content
 			// Validate file
 			if( !$this->_validator->validate( $file ) )
 			{
+				Log::warning( 'Image upload validation failed', [
+					'user_id' => user_id(),
+					'filename' => $file['name'] ?? 'unknown',
+					'error' => $this->_validator->getFirstError()
+				] );
+
 				return $this->renderJson(
 					HttpResponseStatus::BAD_REQUEST,
 					[
@@ -153,6 +188,13 @@ class Media extends Content
 
 			// Upload to Cloudinary
 			$result = $this->_uploader->upload( $file['tmp_name'] );
+
+			Log::info( 'Image uploaded successfully', [
+				'user_id' => user_id(),
+				'filename' => $file['name'],
+				'public_id' => $result['public_id'],
+				'url' => $result['url']
+			] );
 
 			// Return success response in Editor.js format
 			return $this->renderJson(
@@ -169,13 +211,18 @@ class Media extends Content
 		}
 		catch( \Exception $e )
 		{
-			Log::error( 'uploadImage: ' . $e->getMessage() );
+			Log::error( 'Image upload failed', [
+				'user_id' => user_id(),
+				'filename' => $_FILES['image']['name'] ?? 'unknown',
+				'exception' => $e,
+				'message' => $e->getMessage()
+			] );
 
 			return $this->renderJson(
 				HttpResponseStatus::INTERNAL_SERVER_ERROR,
 				[
 					'success' => 0,
-					'message' => $e->getMessage()
+					'message' => 'Upload failed. Please try again.'
 				]
 			);
 		}
@@ -187,10 +234,26 @@ class Media extends Content
 	 * Handles POST /admin/upload/featured-image
 	 * Returns JSON with upload result
 	 *
+	 * @param Request $request
 	 * @return string JSON response
 	 */
-	public function uploadFeaturedImage(): string
+	public function uploadFeaturedImage( Request $request ): string
 	{
+		$user = auth();
+
+		if( !$user )
+		{
+			Log::warning( 'Unauthorized featured image upload attempt' );
+
+			return $this->renderJson(
+				HttpResponseStatus::UNAUTHORIZED,
+				[
+					'success' => false,
+					'error' => 'Unauthorized'
+				]
+			);
+		}
+
 		try
 		{
 			// Check if file was uploaded
@@ -210,6 +273,12 @@ class Media extends Content
 			// Validate file
 			if( !$this->_validator->validate( $file ) )
 			{
+				Log::warning( 'Featured image upload validation failed', [
+					'user_id' => user_id(),
+					'filename' => $file['name'] ?? 'unknown',
+					'error' => $this->_validator->getFirstError()
+				] );
+
 				return $this->renderJson(
 					HttpResponseStatus::BAD_REQUEST,
 					[
@@ -222,6 +291,13 @@ class Media extends Content
 			// Upload to Cloudinary
 			$result = $this->_uploader->upload( $file['tmp_name'] );
 
+			Log::info( 'Featured image uploaded successfully', [
+				'user_id' => user_id(),
+				'filename' => $file['name'],
+				'public_id' => $result['public_id'],
+				'url' => $result['url']
+			] );
+
 			// Return success response
 			return $this->renderJson(
 				HttpResponseStatus::OK,
@@ -233,13 +309,18 @@ class Media extends Content
 		}
 		catch( \Exception $e )
 		{
-			Log::error( 'uploadFeaturedImage: ' . $e->getMessage() )
-			;
+			Log::error( 'Featured image upload failed', [
+				'user_id' => user_id(),
+				'filename' => $_FILES['image']['name'] ?? 'unknown',
+				'exception' => $e,
+				'message' => $e->getMessage()
+			] );
+
 			return $this->renderJson(
 				HttpResponseStatus::INTERNAL_SERVER_ERROR,
 				[
 					'success' => false,
-					'error' => $e->getMessage()
+					'error' => 'Upload failed. Please try again.'
 				]
 			);
 		}

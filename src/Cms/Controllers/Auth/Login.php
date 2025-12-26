@@ -70,20 +70,14 @@ class Login extends Content
 			? $requestedRedirect
 			: $defaultRedirect;
 
-		$viewData = [
-			'Title' => 'Login | ' . $this->getName(),
-			'Description' => 'Login to ' . $this->getName(),
-			'Error' => $this->getSessionManager()->getFlash( 'error' ),
-			'Success' => $this->getSessionManager()->getFlash( 'success' ),
-			'RedirectUrl' => $redirectUrl
-		];
-
-		return $this->renderHtml(
-			HttpResponseStatus::OK,
-			$viewData,
-			'login',
-			'auth'
-		);
+		return $this->view()
+			->title( 'Login' )
+			->description( 'Login to ' . $this->getName() )
+			->withCsrfToken()
+			->with( 'Error', $this->getSessionManager()->getFlash( 'error' ) )
+			->with( 'Success', $this->getSessionManager()->getFlash( 'success' ) )
+			->with( 'RedirectUrl', $redirectUrl )
+			->render( 'login', 'auth' );
 	}
 
 	/**

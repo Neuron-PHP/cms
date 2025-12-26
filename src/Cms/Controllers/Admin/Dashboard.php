@@ -37,10 +37,8 @@ class Dashboard extends Content
 	 */
 	public function index( Request $request ): string
 	{
-		// Get authenticated user from Registry
-		$user = Registry::getInstance()->get( 'Auth.User' );
-
-		if( !$user )
+		// Verify user is authenticated
+		if( !auth() )
 		{
 			throw new \RuntimeException( 'Authenticated user not found in Registry' );
 		}
@@ -51,17 +49,11 @@ class Dashboard extends Content
 		$csrfToken = new CsrfToken( $sessionManager );
 		Registry::getInstance()->set( 'Auth.CsrfToken', $csrfToken->getToken() );
 
-		$viewData = [
-			'Title' => 'Dashboard | ' . $this->getName(),
-			'Description' => 'Admin Dashboard',
-			'User' => $user
-		];
-
-		return $this->renderHtml(
-			HttpResponseStatus::OK,
-			$viewData,
-			'index',
-			'admin'
-		);
+		return $this->view()
+			->title( 'Dashboard' )
+			->description( 'Admin Dashboard' )
+			->withCurrentUser()
+			->withCsrfToken()
+			->render( 'index', 'admin' );
 	}
 }
