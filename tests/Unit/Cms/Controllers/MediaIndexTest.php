@@ -56,20 +56,6 @@ class MediaIndexTest extends TestCase
 		parent::tearDown();
 	}
 
-	public function testIndexThrowsExceptionWhenUserNotAuthenticated(): void
-	{
-		// Ensure no user in registry
-		Registry::getInstance()->set( 'Auth.User', null );
-
-		$media = new Media();
-		$request = $this->createMock( Request::class );
-
-		$this->expectException( \RuntimeException::class );
-		$this->expectExceptionMessage( 'Authenticated user not found' );
-
-		$media->index( $request );
-	}
-
 	public function testIndexReturnsSuccessWithResources(): void
 	{
 		// Set up user in registry

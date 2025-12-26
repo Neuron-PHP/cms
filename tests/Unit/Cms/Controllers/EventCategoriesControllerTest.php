@@ -62,32 +62,6 @@ class EventCategoriesControllerTest extends TestCase
 		parent::tearDown();
 	}
 
-	public function testIndexThrowsExceptionWhenUserNotAuthenticated(): void
-	{
-		// No user in registry
-		Registry::getInstance()->set( 'Auth.User', null );
-
-		$repository = $this->createMock( DatabaseEventCategoryRepository::class );
-		$creator = $this->createMock( Creator::class );
-		$updater = $this->createMock( Updater::class );
-		$deleter = $this->createMock( Deleter::class );
-
-		$controller = new EventCategories(
-			null,
-			$repository,
-			$creator,
-			$updater,
-			$deleter
-		);
-
-		$request = $this->createMock( Request::class );
-
-		$this->expectException( \RuntimeException::class );
-		$this->expectExceptionMessage( 'Authenticated user not found' );
-
-		$controller->index( $request );
-	}
-
 	public function testIndexReturnsAllCategories(): void
 	{
 		// Set up authenticated user
@@ -146,32 +120,6 @@ class EventCategoriesControllerTest extends TestCase
 
 		$this->assertIsString( $result );
 		$this->assertStringContainsString( 'Event Categories Index', $result );
-	}
-
-	public function testCreateThrowsExceptionWhenUserNotAuthenticated(): void
-	{
-		// No user in registry
-		Registry::getInstance()->set( 'Auth.User', null );
-
-		$repository = $this->createMock( DatabaseEventCategoryRepository::class );
-		$creator = $this->createMock( Creator::class );
-		$updater = $this->createMock( Updater::class );
-		$deleter = $this->createMock( Deleter::class );
-
-		$controller = new EventCategories(
-			null,
-			$repository,
-			$creator,
-			$updater,
-			$deleter
-		);
-
-		$request = $this->createMock( Request::class );
-
-		$this->expectException( \RuntimeException::class );
-		$this->expectExceptionMessage( 'Authenticated user not found' );
-
-		$controller->create( $request );
 	}
 
 	public function testCreateReturnsForm(): void

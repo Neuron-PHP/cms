@@ -74,11 +74,6 @@ class Pages extends Content
 	 */
 	public function index( Request $request ): string
 	{
-		if( !auth() )
-		{
-			throw new \RuntimeException( 'Authenticated user not found' );
-		}
-
 		// Generate CSRF token
 		$sessionManager = $this->getSessionManager();
 		$csrfToken = new CsrfToken( $sessionManager );
@@ -115,14 +110,7 @@ class Pages extends Content
 	 */
 	public function create( Request $request ): string
 	{
-		if( !auth() )
-		{
-			throw new \RuntimeException( 'Authenticated user not found' );
-		}
-
-		// Generate CSRF token
-		$csrfToken = new CsrfToken( $this->getSessionManager() );
-		Registry::getInstance()->set( 'Auth.CsrfToken', $csrfToken->getToken() );
+		$this->initializeCsrfToken();
 
 		return $this->view()
 			->title( 'Create Page' )
@@ -140,23 +128,6 @@ class Pages extends Content
 	 */
 	public function store( Request $request ): never
 	{
-		$user = auth();
-
-		if( !$user )
-		{
-			throw new \RuntimeException( 'Authenticated user not found' );
-		}
-
-		// Validate CSRF token
-		$csrfToken = new CsrfToken( $this->getSessionManager() );
-		$submittedToken = $request->post( 'csrf_token', '' );
-
-		if( !$csrfToken->validate( $submittedToken ) )
-		{
-			Log::warning( "CSRF validation failed for page creation by user " . user_id() );
-			$this->redirect( 'admin_pages_create', [], ['error', 'Invalid security token. Please try again.'] );
-		}
-
 		try
 		{
 			// Get form data
@@ -209,11 +180,6 @@ class Pages extends Content
 	 */
 	public function edit( Request $request ): string
 	{
-		if( !auth() )
-		{
-			throw new \RuntimeException( 'Authenticated user not found' );
-		}
-
 		$pageId = (int)$request->getRouteParameter( 'id' );
 		$page = $this->_pageRepository->findById( $pageId );
 
@@ -229,9 +195,7 @@ class Pages extends Content
 			$this->redirect( 'admin_pages', [], ['error', 'Unauthorized to edit this page'] );
 		}
 
-		// Generate CSRF token
-		$csrfToken = new CsrfToken( $this->getSessionManager() );
-		Registry::getInstance()->set( 'Auth.CsrfToken', $csrfToken->getToken() );
+		$this->initializeCsrfToken();
 
 		return $this->view()
 			->title( 'Edit Page' )
@@ -250,13 +214,6 @@ class Pages extends Content
 	 */
 	public function update( Request $request ): never
 	{
-		$user = auth();
-
-		if( !$user )
-		{
-			throw new \RuntimeException( 'Authenticated user not found' );
-		}
-
 		$pageId = (int)$request->getRouteParameter( 'id' );
 		$page = $this->_pageRepository->findById( $pageId );
 
@@ -270,16 +227,6 @@ class Pages extends Content
 		{
 			Log::warning( "Unauthorized page update attempt: User " . user_id() . " tried to edit page {$pageId}" );
 			$this->redirect( 'admin_pages', [], ['error', 'Unauthorized to edit this page'] );
-		}
-
-		// Validate CSRF token
-		$csrfToken = new CsrfToken( $this->getSessionManager() );
-		$submittedToken = $request->post( 'csrf_token', '' );
-
-		if( !$csrfToken->validate( $submittedToken ) )
-		{
-			Log::warning( "CSRF validation failed for page update: Page {$pageId}, user " . user_id() );
-			$this->redirect( 'admin_pages_edit', ['id' => $pageId], ['error', 'Invalid security token. Please try again.'] );
 		}
 
 		try
@@ -333,13 +280,6 @@ class Pages extends Content
 	 */
 	public function destroy( Request $request ): never
 	{
-		$user = auth();
-
-		if( !$user )
-		{
-			throw new \RuntimeException( 'Authenticated user not found' );
-		}
-
 		$pageId = (int)$request->getRouteParameter( 'id' );
 		$page = $this->_pageRepository->findById( $pageId );
 
@@ -353,16 +293,6 @@ class Pages extends Content
 		{
 			Log::warning( "Unauthorized page deletion attempt: User " . user_id() . " tried to delete page {$pageId}" );
 			$this->redirect( 'admin_pages', [], ['error', 'Unauthorized to delete this page'] );
-		}
-
-		// Validate CSRF token
-		$csrfToken = new CsrfToken( $this->getSessionManager() );
-		$submittedToken = $request->post( 'csrf_token', '' );
-
-		if( !$csrfToken->validate( $submittedToken ) )
-		{
-			Log::warning( "CSRF validation failed for page deletion: Page {$pageId}, user " . user_id() );
-			$this->redirect( 'admin_pages', [], ['error', 'Invalid security token. Please try again.'] );
 		}
 
 		try

@@ -37,12 +37,6 @@ class Dashboard extends Content
 	 */
 	public function index( Request $request ): string
 	{
-		// Verify user is authenticated
-		if( !auth() )
-		{
-			throw new \RuntimeException( 'Authenticated user not found in Registry' );
-		}
-
 		// Generate CSRF token and store in Registry for helper functions
 		$sessionManager = new SessionManager();
 		$sessionManager->start();

@@ -101,17 +101,7 @@ class Posts extends Content
 	 */
 	public function index( Request $request ): string
 	{
-		$user = auth();
-
-		if( !$user )
-		{
-			throw new \RuntimeException( 'Authenticated user not found' );
-		}
-
-		// Generate CSRF token
-		$sessionManager = $this->getSessionManager();
-		$csrfToken = new CsrfToken( $sessionManager );
-		Registry::getInstance()->set( 'Auth.CsrfToken', $csrfToken->getToken() );
+		$this->initializeCsrfToken();
 
 		// Get all posts or filter by author if not admin
 		if( is_admin() || is_editor() )
@@ -123,6 +113,7 @@ class Posts extends Content
 			$posts = $this->_postRepository->getByAuthor( user_id() );
 		}
 
+		$sessionManager = $this->getSessionManager();
 		return $this->view()
 			->title( 'Posts' )
 			->description( 'Manage blog posts' )
@@ -144,14 +135,7 @@ class Posts extends Content
 	 */
 	public function create( Request $request ): string
 	{
-		if( !auth() )
-		{
-			throw new \RuntimeException( 'Authenticated user not found' );
-		}
-
-		// Generate CSRF token
-		$csrfToken = new CsrfToken( $this->getSessionManager() );
-		Registry::getInstance()->set( 'Auth.CsrfToken', $csrfToken->getToken() );
+		$this->initializeCsrfToken();
 
 		return $this->view()
 			->title( 'Create Post' )
@@ -211,11 +195,6 @@ class Posts extends Content
 	 */
 	public function edit( Request $request ): string
 	{
-		if( !auth() )
-		{
-			throw new \RuntimeException( 'Authenticated user not found' );
-		}
-
 		$postId = (int)$request->getRouteParameter( 'id' );
 		$post = $this->_postRepository->findById( $postId );
 
@@ -230,9 +209,7 @@ class Posts extends Content
 			throw new \RuntimeException( 'Unauthorized to edit this post' );
 		}
 
-		// Generate CSRF token
-		$csrfToken = new CsrfToken( $this->getSessionManager() );
-		Registry::getInstance()->set( 'Auth.CsrfToken', $csrfToken->getToken() );
+		$this->initializeCsrfToken();
 
 		return $this->view()
 			->title( 'Edit Post' )

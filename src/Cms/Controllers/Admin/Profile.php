@@ -65,20 +65,11 @@ class Profile extends Content
 	 */
 	public function edit( Request $request ): string
 	{
-		$user = auth();
-
-		if( !$user )
-		{
-			throw new \RuntimeException( 'Authenticated user not found' );
-		}
-
-		// Generate CSRF token
-		$csrfToken = new CsrfToken( $this->getSessionManager() );
-		Registry::getInstance()->set( 'Auth.CsrfToken', $csrfToken->getToken() );
+		$this->initializeCsrfToken();
 
 		// Get available timezones grouped by region with selection state
 		$timezones = \DateTimeZone::listIdentifiers();
-		$groupedTimezones = group_timezones_for_select( $timezones, $user->getTimezone() );
+		$groupedTimezones = group_timezones_for_select( $timezones, auth()->getTimezone() );
 
 		return $this->view()
 			->title( 'Profile' )
@@ -101,16 +92,9 @@ class Profile extends Content
 	 */
 	public function update( Request $request ): never
 	{
-		$user = auth();
-
-		if( !$user )
-		{
-			throw new \RuntimeException( 'Authenticated user not found' );
-		}
-
 		// Security: Only use email from POST if provided by Account Information form
 		// Password change form doesn't include email field, preventing email hijacking attacks
-		$email = $request->post( 'email', $user->getEmail() );
+		$email = $request->post( 'email', auth()->getEmail() );
 		$timezone = $request->post( 'timezone',  '' );
 		$currentPassword = $request->post( 'current_password', '' );
 		$newPassword = $request->post( 'new_password', '' );
@@ -120,7 +104,7 @@ class Profile extends Content
 		if( !empty( $newPassword ) )
 		{
 			// Verify current password
-			if( empty( $currentPassword ) || !$this->_hasher->verify( $currentPassword, $user->getPasswordHash() ) )
+			if( empty( $currentPassword ) || !$this->_hasher->verify( $currentPassword, auth()->getPasswordHash() ) )
 			{
 				$this->redirect( 'admin_profile', [], ['error', 'Current password is incorrect'] );
 			}
@@ -135,10 +119,10 @@ class Profile extends Content
 		try
 		{
 			$this->_userUpdater->update(
-				$user,
-				$user->getUsername(),
+				auth(),
+				auth()->getUsername(),
 				$email,
-				$user->getRole(),
+				auth()->getRole(),
 				!empty( $newPassword ) ? $newPassword : null,
 				!empty( $timezone ) ? $timezone : null
 			);

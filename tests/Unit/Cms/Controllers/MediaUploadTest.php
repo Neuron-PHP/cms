@@ -392,39 +392,4 @@ class MediaUploadTest extends TestCase
 		$this->assertEquals( 'Upload failed. Please try again.', $json['error'] );
 	}
 
-	public function testUploadImageReturnsErrorWhenUserNotAuthenticated(): void
-	{
-		// Ensure no user in registry
-		Registry::getInstance()->set( 'Auth.User', null );
-
-		$_FILES = [];
-
-		$media = new Media();
-		$request = $this->createMock( Request::class );
-		$result = $media->uploadImage( $request );
-
-		// Should return JSON error
-		$this->assertIsString( $result );
-		$json = json_decode( $result, true );
-		$this->assertEquals( 0, $json['success'] );
-		$this->assertEquals( 'Unauthorized', $json['message'] );
-	}
-
-	public function testUploadFeaturedImageReturnsErrorWhenUserNotAuthenticated(): void
-	{
-		// Ensure no user in registry
-		Registry::getInstance()->set( 'Auth.User', null );
-
-		$_FILES = [];
-
-		$media = new Media();
-		$request = $this->createMock( Request::class );
-		$result = $media->uploadFeaturedImage( $request );
-
-		// Should return JSON error
-		$this->assertIsString( $result );
-		$json = json_decode( $result, true );
-		$this->assertFalse( $json['success'] );
-		$this->assertEquals( 'Unauthorized', $json['error'] );
-	}
 }

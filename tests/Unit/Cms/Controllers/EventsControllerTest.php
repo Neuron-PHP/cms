@@ -63,34 +63,6 @@ class EventsControllerTest extends TestCase
 		parent::tearDown();
 	}
 
-	public function testIndexThrowsExceptionWhenUserNotAuthenticated(): void
-	{
-		// No user in registry
-		Registry::getInstance()->set( 'Auth.User', null );
-
-		$eventRepository = $this->createMock( DatabaseEventRepository::class );
-		$categoryRepository = $this->createMock( DatabaseEventCategoryRepository::class );
-		$creator = $this->createMock( Creator::class );
-		$updater = $this->createMock( Updater::class );
-		$deleter = $this->createMock( Deleter::class );
-
-		$controller = new Events(
-			null,
-			$eventRepository,
-			$categoryRepository,
-			$creator,
-			$updater,
-			$deleter
-		);
-
-		$request = $this->createMock( Request::class );
-
-		$this->expectException( \RuntimeException::class );
-		$this->expectExceptionMessage( 'Authenticated user not found' );
-
-		$controller->index( $request );
-	}
-
 	public function testIndexReturnsAllEventsForAdmin(): void
 	{
 		// Set up admin user
@@ -218,34 +190,6 @@ class EventsControllerTest extends TestCase
 		$result = $controller->index( $request );
 
 		$this->assertIsString( $result );
-	}
-
-	public function testCreateThrowsExceptionWhenUserNotAuthenticated(): void
-	{
-		// No user in registry
-		Registry::getInstance()->set( 'Auth.User', null );
-
-		$eventRepository = $this->createMock( DatabaseEventRepository::class );
-		$categoryRepository = $this->createMock( DatabaseEventCategoryRepository::class );
-		$creator = $this->createMock( Creator::class );
-		$updater = $this->createMock( Updater::class );
-		$deleter = $this->createMock( Deleter::class );
-
-		$controller = new Events(
-			null,
-			$eventRepository,
-			$categoryRepository,
-			$creator,
-			$updater,
-			$deleter
-		);
-
-		$request = $this->createMock( Request::class );
-
-		$this->expectException( \RuntimeException::class );
-		$this->expectExceptionMessage( 'Authenticated user not found' );
-
-		$controller->create( $request );
 	}
 
 	public function testCreateReturnsFormForAuthenticatedUser(): void

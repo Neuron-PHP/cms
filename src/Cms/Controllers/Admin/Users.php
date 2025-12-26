@@ -74,9 +74,7 @@ class Users extends Content
 	 */
 	public function index( Request $request ): string
 	{
-		// Generate CSRF token
-		$csrfToken = new CsrfToken( $this->getSessionManager() );
-		Registry::getInstance()->set( 'Auth.CsrfToken', $csrfToken->getToken() );
+		$this->initializeCsrfToken();
 
 		$sessionManager = $this->getSessionManager();
 
@@ -101,9 +99,7 @@ class Users extends Content
 	 */
 	public function create( Request $request ): string
 	{
-		// Generate CSRF token
-		$csrfToken = new CsrfToken( $this->getSessionManager() );
-		Registry::getInstance()->set( 'Auth.CsrfToken', $csrfToken->getToken() );
+		$this->initializeCsrfToken();
 
 		return $this->view()
 			->title( 'Create User' )
@@ -161,9 +157,7 @@ class Users extends Content
 			$this->redirect( 'admin_users', [], ['error', 'User not found'] );
 		}
 
-		// Generate CSRF token
-		$csrfToken = new CsrfToken( $this->getSessionManager() );
-		Registry::getInstance()->set( 'Auth.CsrfToken', $csrfToken->getToken() );
+		$this->initializeCsrfToken();
 
 		return $this->view()
 			->title( 'Edit User' )
@@ -186,11 +180,6 @@ class Users extends Content
 	 */
 	public function update( Request $request ): never
 	{
-		if( !auth() )
-		{
-			throw new \RuntimeException( 'Authenticated user not found' );
-		}
-
 		$id = (int)$request->getRouteParameter( 'id' );
 		$user = $this->_repository->findById( $id );
 
@@ -233,11 +222,6 @@ class Users extends Content
 	 */
 	public function destroy( Request $request ): never
 	{
-		if( !auth() )
-		{
-			throw new \RuntimeException( 'Authenticated user not found' );
-		}
-
 		$id = (int)$request->getRouteParameter( 'id' );
 
 		// Prevent self-deletion

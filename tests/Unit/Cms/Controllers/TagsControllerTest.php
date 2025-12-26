@@ -59,26 +59,6 @@ class TagsControllerTest extends TestCase
 		parent::tearDown();
 	}
 
-	public function testIndexThrowsExceptionWhenUserNotAuthenticated(): void
-	{
-		// No user in registry
-		Registry::getInstance()->set( 'Auth.User', null );
-
-		$repository = $this->createMock( DatabaseTagRepository::class );
-
-		$controller = new Tags(
-			null,
-			$repository
-		);
-
-		$request = $this->createMock( Request::class );
-
-		$this->expectException( \RuntimeException::class );
-		$this->expectExceptionMessage( 'Authenticated user not found' );
-
-		$controller->index( $request );
-	}
-
 	public function testIndexReturnsAllTags(): void
 	{
 		// Set up authenticated user
@@ -131,26 +111,6 @@ class TagsControllerTest extends TestCase
 		$this->assertStringContainsString( 'Tags Index', $result );
 	}
 
-	public function testCreateThrowsExceptionWhenUserNotAuthenticated(): void
-	{
-		// No user in registry
-		Registry::getInstance()->set( 'Auth.User', null );
-
-		$repository = $this->createMock( DatabaseTagRepository::class );
-
-		$controller = new Tags(
-			null,
-			$repository
-		);
-
-		$request = $this->createMock( Request::class );
-
-		$this->expectException( \RuntimeException::class );
-		$this->expectExceptionMessage( 'Authenticated user not found' );
-
-		$controller->create( $request );
-	}
-
 	public function testCreateReturnsForm(): void
 	{
 		// Set up authenticated user
@@ -194,47 +154,6 @@ class TagsControllerTest extends TestCase
 		$this->assertStringContainsString( 'Create Tag Form', $result );
 	}
 
-	public function testStoreThrowsExceptionWhenUserNotAuthenticated(): void
-	{
-		// No user in registry
-		Registry::getInstance()->set( 'Auth.User', null );
-
-		$repository = $this->createMock( DatabaseTagRepository::class );
-
-		$controller = new Tags(
-			null,
-			$repository
-		);
-
-		$request = $this->createMock( Request::class );
-
-		$this->expectException( \RuntimeException::class );
-		$this->expectExceptionMessage( 'Authenticated user not found' );
-
-		$controller->store( $request );
-	}
-
-	public function testEditThrowsExceptionWhenUserNotAuthenticated(): void
-	{
-		// No user in registry
-		Registry::getInstance()->set( 'Auth.User', null );
-
-		$repository = $this->createMock( DatabaseTagRepository::class );
-
-		$controller = new Tags(
-			null,
-			$repository
-		);
-
-		$request = $this->createMock( Request::class );
-		$request->method( 'getRouteParameter' )->with( 'id' )->willReturn( '1' );
-
-		$this->expectException( \RuntimeException::class );
-		$this->expectExceptionMessage( 'Authenticated user not found' );
-
-		$controller->edit( $request );
-	}
-
 	public function testEditThrowsExceptionWhenTagNotFound(): void
 	{
 		// Set up authenticated user
@@ -259,45 +178,4 @@ class TagsControllerTest extends TestCase
 		$controller->edit( $request );
 	}
 
-	public function testUpdateThrowsExceptionWhenUserNotAuthenticated(): void
-	{
-		// No user in registry
-		Registry::getInstance()->set( 'Auth.User', null );
-
-		$repository = $this->createMock( DatabaseTagRepository::class );
-
-		$controller = new Tags(
-			null,
-			$repository
-		);
-
-		$request = $this->createMock( Request::class );
-		$request->method( 'getRouteParameter' )->with( 'id' )->willReturn( '1' );
-
-		$this->expectException( \RuntimeException::class );
-		$this->expectExceptionMessage( 'Authenticated user not found' );
-
-		$controller->update( $request );
-	}
-
-	public function testDestroyThrowsExceptionWhenUserNotAuthenticated(): void
-	{
-		// No user in registry
-		Registry::getInstance()->set( 'Auth.User', null );
-
-		$repository = $this->createMock( DatabaseTagRepository::class );
-
-		$controller = new Tags(
-			null,
-			$repository
-		);
-
-		$request = $this->createMock( Request::class );
-		$request->method( 'getRouteParameter' )->with( 'id' )->willReturn( '1' );
-
-		$this->expectException( \RuntimeException::class );
-		$this->expectExceptionMessage( 'Authenticated user not found' );
-
-		$controller->destroy( $request );
-	}
 }

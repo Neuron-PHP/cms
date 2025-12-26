@@ -299,4 +299,16 @@ class Content extends Base
 	{
 		$this->getSessionManager()->flash( $type, $message );
 	}
+
+	/**
+	 * Initialize CSRF token and store in Registry.
+	 * Should be called by controllers that render forms requiring CSRF protection.
+	 *
+	 * @return void
+	 */
+	protected function initializeCsrfToken(): void
+	{
+		$csrfToken = new \Neuron\Cms\Services\Auth\CsrfToken( $this->getSessionManager() );
+		Registry::getInstance()->set( 'Auth.CsrfToken', $csrfToken->getToken() );
+	}
 }

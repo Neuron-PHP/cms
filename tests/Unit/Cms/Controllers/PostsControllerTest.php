@@ -64,36 +64,6 @@ class PostsControllerTest extends TestCase
 		parent::tearDown();
 	}
 
-	public function testIndexThrowsExceptionWhenUserNotAuthenticated(): void
-	{
-		// No user in registry
-		Registry::getInstance()->set( 'Auth.User', null );
-
-		$postRepository = $this->createMock( DatabasePostRepository::class );
-		$categoryRepository = $this->createMock( DatabaseCategoryRepository::class );
-		$tagRepository = $this->createMock( DatabaseTagRepository::class );
-		$creator = $this->createMock( Creator::class );
-		$updater = $this->createMock( Updater::class );
-		$deleter = $this->createMock( Deleter::class );
-
-		$controller = new Posts(
-			null,
-			$postRepository,
-			$categoryRepository,
-			$tagRepository,
-			$creator,
-			$updater,
-			$deleter
-		);
-
-		$request = $this->createMock( Request::class );
-
-		$this->expectException( \RuntimeException::class );
-		$this->expectExceptionMessage( 'Authenticated user not found' );
-
-		$controller->index( $request );
-	}
-
 	public function testIndexReturnsAllPostsForAdmin(): void
 	{
 		// Set up admin user
@@ -286,67 +256,6 @@ class PostsControllerTest extends TestCase
 
 		$this->assertIsString( $result );
 		$this->assertStringContainsString( 'Create Post Form', $result );
-	}
-
-	public function testCreateThrowsExceptionWhenUserNotAuthenticated(): void
-	{
-		// No user in registry
-		Registry::getInstance()->set( 'Auth.User', null );
-
-		$postRepository = $this->createMock( DatabasePostRepository::class );
-		$categoryRepository = $this->createMock( DatabaseCategoryRepository::class );
-		$tagRepository = $this->createMock( DatabaseTagRepository::class );
-		$creator = $this->createMock( Creator::class );
-		$updater = $this->createMock( Updater::class );
-		$deleter = $this->createMock( Deleter::class );
-
-		$controller = new Posts(
-			null,
-			$postRepository,
-			$categoryRepository,
-			$tagRepository,
-			$creator,
-			$updater,
-			$deleter
-		);
-
-		$request = $this->createMock( Request::class );
-
-		$this->expectException( \RuntimeException::class );
-		$this->expectExceptionMessage( 'Authenticated user not found' );
-
-		$controller->create( $request );
-	}
-
-	public function testEditThrowsExceptionWhenUserNotAuthenticated(): void
-	{
-		// No user in registry
-		Registry::getInstance()->set( 'Auth.User', null );
-
-		$postRepository = $this->createMock( DatabasePostRepository::class );
-		$categoryRepository = $this->createMock( DatabaseCategoryRepository::class );
-		$tagRepository = $this->createMock( DatabaseTagRepository::class );
-		$creator = $this->createMock( Creator::class );
-		$updater = $this->createMock( Updater::class );
-		$deleter = $this->createMock( Deleter::class );
-
-		$controller = new Posts(
-			null,
-			$postRepository,
-			$categoryRepository,
-			$tagRepository,
-			$creator,
-			$updater,
-			$deleter
-		);
-
-		$request = $this->createMock( Request::class );
-		$request->method( 'getRouteParameter' )->with( 'id' )->willReturn( '1' );
-
-		$this->expectException( \RuntimeException::class );
-		$this->expectExceptionMessage( 'Authenticated user not found' );
-
-		$controller->edit( $request );
 	}
 
 	public function testEditThrowsExceptionWhenUserUnauthorized(): void

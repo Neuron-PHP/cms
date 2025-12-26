@@ -62,32 +62,6 @@ class PagesControllerTest extends TestCase
 		parent::tearDown();
 	}
 
-	public function testIndexThrowsExceptionWhenUserNotAuthenticated(): void
-	{
-		// No user in registry
-		Registry::getInstance()->set( 'Auth.User', null );
-
-		$pageRepository = $this->createMock( DatabasePageRepository::class );
-		$creator = $this->createMock( Creator::class );
-		$updater = $this->createMock( Updater::class );
-		$deleter = $this->createMock( Deleter::class );
-
-		$controller = new Pages(
-			null,
-			$pageRepository,
-			$creator,
-			$updater,
-			$deleter
-		);
-
-		$request = $this->createMock( Request::class );
-
-		$this->expectException( \RuntimeException::class );
-		$this->expectExceptionMessage( 'Authenticated user not found' );
-
-		$controller->index( $request );
-	}
-
 	public function testIndexReturnsAllPagesForAdmin(): void
 	{
 		// Set up admin user
@@ -264,56 +238,4 @@ class PagesControllerTest extends TestCase
 		$this->assertStringContainsString( 'Create Page Form', $result );
 	}
 
-	public function testCreateThrowsExceptionWhenUserNotAuthenticated(): void
-	{
-		// No user in registry
-		Registry::getInstance()->set( 'Auth.User', null );
-
-		$pageRepository = $this->createMock( DatabasePageRepository::class );
-		$creator = $this->createMock( Creator::class );
-		$updater = $this->createMock( Updater::class );
-		$deleter = $this->createMock( Deleter::class );
-
-		$controller = new Pages(
-			null,
-			$pageRepository,
-			$creator,
-			$updater,
-			$deleter
-		);
-
-		$request = $this->createMock( Request::class );
-
-		$this->expectException( \RuntimeException::class );
-		$this->expectExceptionMessage( 'Authenticated user not found' );
-
-		$controller->create( $request );
-	}
-
-	public function testEditThrowsExceptionWhenUserNotAuthenticated(): void
-	{
-		// No user in registry
-		Registry::getInstance()->set( 'Auth.User', null );
-
-		$pageRepository = $this->createMock( DatabasePageRepository::class );
-		$creator = $this->createMock( Creator::class );
-		$updater = $this->createMock( Updater::class );
-		$deleter = $this->createMock( Deleter::class );
-
-		$controller = new Pages(
-			null,
-			$pageRepository,
-			$creator,
-			$updater,
-			$deleter
-		);
-
-		$request = $this->createMock( Request::class );
-		$request->method( 'getRouteParameter' )->with( 'id' )->willReturn( '1' );
-
-		$this->expectException( \RuntimeException::class );
-		$this->expectExceptionMessage( 'Authenticated user not found' );
-
-		$controller->edit( $request );
-	}
 }

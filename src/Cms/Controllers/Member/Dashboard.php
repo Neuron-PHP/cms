@@ -36,17 +36,7 @@ class Dashboard extends Content
 	 */
 	public function index( Request $request ): string
 	{
-		// Get authenticated user from Registry
-		$user = auth();
-
-		if( !$user )
-		{
-			throw new \RuntimeException( 'Authenticated user not found in Registry' );
-		}
-
-		// Generate CSRF token and store in Registry
-		$csrfToken = new CsrfToken( $this->getSessionManager() );
-		Registry::getInstance()->set( 'Auth.CsrfToken', $csrfToken->getToken() );
+		$this->initializeCsrfToken();
 
 		return $this->view()
 			->title( 'Member Dashboard' )

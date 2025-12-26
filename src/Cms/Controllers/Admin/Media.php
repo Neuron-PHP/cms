@@ -71,13 +71,6 @@ class Media extends Content
 	 */
 	public function index( Request $request ): string
 	{
-		$user = auth();
-
-		if( !$user )
-		{
-			throw new \RuntimeException( 'Authenticated user not found' );
-		}
-
 		// Generate CSRF token
 		$sessionManager = $this->getSessionManager();
 		$csrfToken = new CsrfToken( $sessionManager );
@@ -167,21 +160,6 @@ class Media extends Content
 	 */
 	public function uploadImage( Request $request ): string
 	{
-		$user = auth();
-
-		if( !$user )
-		{
-			Log::warning( 'Unauthorized image upload attempt' );
-
-			return $this->renderJson(
-				HttpResponseStatus::UNAUTHORIZED,
-				[
-					'success' => 0,
-					'message' => 'Unauthorized'
-				]
-			);
-		}
-
 		try
 		{
 			// Check if file was uploaded
@@ -269,21 +247,6 @@ class Media extends Content
 	 */
 	public function uploadFeaturedImage( Request $request ): string
 	{
-		$user = auth();
-
-		if( !$user )
-		{
-			Log::warning( 'Unauthorized featured image upload attempt' );
-
-			return $this->renderJson(
-				HttpResponseStatus::UNAUTHORIZED,
-				[
-					'success' => false,
-					'error' => 'Unauthorized'
-				]
-			);
-		}
-
 		try
 		{
 			// Check if file was uploaded

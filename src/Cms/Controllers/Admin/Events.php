@@ -73,14 +73,7 @@ class Events extends Content
 	 */
 	public function index( Request $request ): string
 	{
-		if( !auth() )
-		{
-			throw new \RuntimeException( 'Authenticated user not found' );
-		}
-
-		$sessionManager = $this->getSessionManager();
-		$csrfToken = new CsrfToken( $sessionManager );
-		Registry::getInstance()->set( 'Auth.CsrfToken', $csrfToken->getToken() );
+		$this->initializeCsrfToken();
 
 		// Get all events or filter by creator if not admin/editor
 		if( is_admin() || is_editor() )
@@ -92,6 +85,7 @@ class Events extends Content
 			$events = $this->_eventRepository->getByCreator( user_id() );
 		}
 
+		$sessionManager = $this->getSessionManager();
 		return $this->view()
 			->title( 'Events' )
 			->description( 'Manage calendar events' )
@@ -110,13 +104,7 @@ class Events extends Content
 	 */
 	public function create( Request $request ): string
 	{
-		if( !auth() )
-		{
-			throw new \RuntimeException( 'Authenticated user not found' );
-		}
-
-		$csrfToken = new CsrfToken( $this->getSessionManager() );
-		Registry::getInstance()->set( 'Auth.CsrfToken', $csrfToken->getToken() );
+		$this->initializeCsrfToken();
 
 		return $this->view()
 			->title( 'Create Event' )
@@ -132,23 +120,6 @@ class Events extends Content
 	 */
 	public function store( Request $request ): never
 	{
-		$user = auth();
-
-		if( !$user )
-		{
-			throw new \RuntimeException( 'Authenticated user not found' );
-		}
-
-		// Validate CSRF token before any state changes or processing
-		$csrfToken = new CsrfToken( $this->getSessionManager() );
-		$submittedToken = $request->post( 'csrf_token', '' );
-
-		if( !$csrfToken->validate( $submittedToken ) )
-		{
-			Log::warning( "CSRF validation failed for event creation by user " . user_id() );
-			$this->redirect( 'admin_events_create', [], ['error', 'Invalid security token. Please try again.'] );
-		}
-
 		try
 		{
 			$title = $request->post( 'title', '' );
@@ -197,11 +168,6 @@ class Events extends Content
 	 */
 	public function edit( Request $request ): string
 	{
-		if( !auth() )
-		{
-			throw new \RuntimeException( 'Authenticated user not found' );
-		}
-
 		$eventId = (int)$request->getRouteParameter( 'id' );
 		$event = $this->_eventRepository->findById( $eventId );
 
@@ -216,8 +182,7 @@ class Events extends Content
 			throw new \RuntimeException( 'Unauthorized to edit this event' );
 		}
 
-		$csrfToken = new CsrfToken( $this->getSessionManager() );
-		Registry::getInstance()->set( 'Auth.CsrfToken', $csrfToken->getToken() );
+		$this->initializeCsrfToken();
 
 		return $this->view()
 			->title( 'Edit Event' )
@@ -236,13 +201,6 @@ class Events extends Content
 	 */
 	public function update( Request $request ): never
 	{
-		$user = auth();
-
-		if( !$user )
-		{
-			throw new \RuntimeException( 'Authenticated user not found' );
-		}
-
 		$eventId = (int)$request->getRouteParameter( 'id' );
 		$event = $this->_eventRepository->findById( $eventId );
 
@@ -255,16 +213,6 @@ class Events extends Content
 		if( !is_admin() && !is_editor() && $event->getCreatedBy() !== user_id() )
 		{
 			throw new \RuntimeException( 'Unauthorized to edit this event' );
-		}
-
-		// Validate CSRF token before any state changes or processing
-		$csrfToken = new CsrfToken( $this->getSessionManager() );
-		$submittedToken = $request->post( 'csrf_token', '' );
-
-		if( !$csrfToken->validate( $submittedToken ) )
-		{
-			Log::warning( "CSRF validation failed for event update: Event {$eventId}, user " . user_id() );
-			$this->redirect( 'admin_events_edit', ['id' => $eventId], ['error', 'Invalid security token. Please try again.'] );
 		}
 
 		try
@@ -315,13 +263,6 @@ class Events extends Content
 	 */
 	public function destroy( Request $request ): never
 	{
-		$user = auth();
-
-		if( !$user )
-		{
-			throw new \RuntimeException( 'Authenticated user not found' );
-		}
-
 		$eventId = (int)$request->getRouteParameter( 'id' );
 		$event = $this->_eventRepository->findById( $eventId );
 
@@ -334,16 +275,6 @@ class Events extends Content
 		if( !is_admin() && !is_editor() && $event->getCreatedBy() !== user_id() )
 		{
 			$this->redirect( 'admin_events', [], ['error', 'Unauthorized to delete this event'] );
-		}
-
-		// Validate CSRF token before any state changes
-		$csrfToken = new CsrfToken( $this->getSessionManager() );
-		$submittedToken = $request->post( 'csrf_token', '' );
-
-		if( !$csrfToken->validate( $submittedToken ) )
-		{
-			Log::warning( "CSRF validation failed for event deletion: Event {$eventId}, user " . user_id() );
-			$this->redirect( 'admin_events', [], ['error', 'Invalid security token. Please try again.'] );
 		}
 
 		try
