@@ -29,21 +29,34 @@ class Media extends Content
 	 * Constructor
 	 *
 	 * @param Application|null $app
+	 * @param CloudinaryUploader|null $uploader
+	 * @param MediaValidator|null $validator
 	 * @throws \Exception
 	 */
-	public function __construct( ?Application $app = null )
+	public function __construct(
+		?Application $app = null,
+		?CloudinaryUploader $uploader = null,
+		?MediaValidator $validator = null
+	)
 	{
 		parent::__construct( $app );
 
-		$settings = Registry::getInstance()->get( 'Settings' );
-
-		if( !$settings instanceof SettingManager )
+		// Use injected dependencies if provided (for testing), otherwise create them (for production)
+		if( $uploader === null )
 		{
-			throw new \Exception( 'Settings not found in Registry' );
+			$settings = Registry::getInstance()->get( 'Settings' );
+
+			if( !$settings instanceof SettingManager )
+			{
+				throw new \Exception( 'Settings not found in Registry' );
+			}
+
+			$uploader = new CloudinaryUploader( $settings );
+			$validator = new MediaValidator( $settings );
 		}
 
-		$this->_uploader = new CloudinaryUploader( $settings );
-		$this->_validator = new MediaValidator( $settings );
+		$this->_uploader = $uploader;
+		$this->_validator = $validator;
 	}
 
 	/**

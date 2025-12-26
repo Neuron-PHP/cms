@@ -31,19 +31,41 @@ class Events extends Content
 
 	/**
 	 * @param Application|null $app
+	 * @param DatabaseEventRepository|null $eventRepository
+	 * @param DatabaseEventCategoryRepository|null $categoryRepository
+	 * @param Creator|null $creator
+	 * @param Updater|null $updater
+	 * @param Deleter|null $deleter
 	 * @throws \Exception
 	 */
-	public function __construct( ?Application $app = null )
+	public function __construct(
+		?Application $app = null,
+		?DatabaseEventRepository $eventRepository = null,
+		?DatabaseEventCategoryRepository $categoryRepository = null,
+		?Creator $creator = null,
+		?Updater $updater = null,
+		?Deleter $deleter = null
+	)
 	{
 		parent::__construct( $app );
 
-		$settings = Registry::getInstance()->get( 'Settings' );
+		// Use injected dependencies if provided (for testing), otherwise create them (for production)
+		if( $eventRepository === null )
+		{
+			$settings = Registry::getInstance()->get( 'Settings' );
 
-		$this->_eventRepository = new DatabaseEventRepository( $settings );
-		$this->_categoryRepository = new DatabaseEventCategoryRepository( $settings );
-		$this->_creator = new Creator( $this->_eventRepository, $this->_categoryRepository );
-		$this->_updater = new Updater( $this->_eventRepository, $this->_categoryRepository );
-		$this->_deleter = new Deleter( $this->_eventRepository );
+			$eventRepository = new DatabaseEventRepository( $settings );
+			$categoryRepository = new DatabaseEventCategoryRepository( $settings );
+			$creator = new Creator( $eventRepository, $categoryRepository );
+			$updater = new Updater( $eventRepository, $categoryRepository );
+			$deleter = new Deleter( $eventRepository );
+		}
+
+		$this->_eventRepository = $eventRepository;
+		$this->_categoryRepository = $categoryRepository;
+		$this->_creator = $creator;
+		$this->_updater = $updater;
+		$this->_deleter = $deleter;
 	}
 
 	/**

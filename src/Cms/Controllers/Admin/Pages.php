@@ -29,22 +29,41 @@ class Pages extends Content
 
 	/**
 	 * @param Application|null $app
+	 * @param DatabasePageRepository|null $pageRepository
+	 * @param Creator|null $pageCreator
+	 * @param Updater|null $pageUpdater
+	 * @param Deleter|null $pageDeleter
 	 * @throws \Exception
 	 */
-	public function __construct( ?Application $app = null )
+	public function __construct(
+		?Application $app = null,
+		?DatabasePageRepository $pageRepository = null,
+		?Creator $pageCreator = null,
+		?Updater $pageUpdater = null,
+		?Deleter $pageDeleter = null
+	)
 	{
 		parent::__construct( $app );
 
-		// Get settings for repositories
-		$settings = Registry::getInstance()->get( 'Settings' );
+		// Use injected dependencies if provided (for testing), otherwise create them (for production)
+		if( $pageRepository === null )
+		{
+			// Get settings for repositories
+			$settings = Registry::getInstance()->get( 'Settings' );
 
-		// Initialize repository
-		$this->_pageRepository = new DatabasePageRepository( $settings );
+			// Initialize repository
+			$pageRepository = new DatabasePageRepository( $settings );
 
-		// Initialize services
-		$this->_pageCreator = new Creator( $this->_pageRepository );
-		$this->_pageUpdater = new Updater( $this->_pageRepository );
-		$this->_pageDeleter = new Deleter( $this->_pageRepository );
+			// Initialize services
+			$pageCreator = new Creator( $pageRepository );
+			$pageUpdater = new Updater( $pageRepository );
+			$pageDeleter = new Deleter( $pageRepository );
+		}
+
+		$this->_pageRepository = $pageRepository;
+		$this->_pageCreator = $pageCreator;
+		$this->_pageUpdater = $pageUpdater;
+		$this->_pageDeleter = $pageDeleter;
 	}
 
 	/**

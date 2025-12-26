@@ -26,19 +26,35 @@ class Profile extends Content
 
 	/**
 	 * @param Application|null $app
+	 * @param DatabaseUserRepository|null $repository
+	 * @param PasswordHasher|null $hasher
+	 * @param Updater|null $userUpdater
 	 * @throws \Exception
 	 */
-	public function __construct( ?Application $app = null )
+	public function __construct(
+		?Application $app = null,
+		?DatabaseUserRepository $repository = null,
+		?PasswordHasher $hasher = null,
+		?Updater $userUpdater = null
+	)
 	{
 		parent::__construct( $app );
 
-		// Get settings and initialize repository
-		$settings = Registry::getInstance()->get( 'Settings' );
-		$this->_repository = new DatabaseUserRepository( $settings );
-		$this->_hasher = new PasswordHasher();
+		// Use injected dependencies if provided (for testing), otherwise create them (for production)
+		if( $repository === null )
+		{
+			// Get settings and initialize repository
+			$settings = Registry::getInstance()->get( 'Settings' );
+			$repository = new DatabaseUserRepository( $settings );
+			$hasher = new PasswordHasher();
 
-		// Initialize service
-		$this->_userUpdater = new Updater( $this->_repository, $this->_hasher );
+			// Initialize service
+			$userUpdater = new Updater( $repository, $hasher );
+		}
+
+		$this->_repository = $repository;
+		$this->_hasher = $hasher;
+		$this->_userUpdater = $userUpdater;
 	}
 
 	/**

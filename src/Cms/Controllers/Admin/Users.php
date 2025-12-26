@@ -30,21 +30,40 @@ class Users extends Content
 
 	/**
 	 * @param Application|null $app
+	 * @param DatabaseUserRepository|null $repository
+	 * @param Creator|null $userCreator
+	 * @param Updater|null $userUpdater
+	 * @param Deleter|null $userDeleter
 	 * @throws \Exception
 	 */
-	public function __construct( ?Application $app = null )
+	public function __construct(
+		?Application $app = null,
+		?DatabaseUserRepository $repository = null,
+		?Creator $userCreator = null,
+		?Updater $userUpdater = null,
+		?Deleter $userDeleter = null
+	)
 	{
 		parent::__construct( $app );
 
-		// Get settings and initialize repository
-		$settings = Registry::getInstance()->get( 'Settings' );
-		$this->_repository = new DatabaseUserRepository( $settings );
+		// Use injected dependencies if provided (for testing), otherwise create them (for production)
+		if( $repository === null )
+		{
+			// Get settings and initialize repository
+			$settings = Registry::getInstance()->get( 'Settings' );
+			$repository = new DatabaseUserRepository( $settings );
 
-		// Initialize services
-		$hasher = new PasswordHasher();
-		$this->_userCreator = new Creator( $this->_repository, $hasher );
-		$this->_userUpdater = new Updater( $this->_repository, $hasher );
-		$this->_userDeleter = new Deleter( $this->_repository );
+			// Initialize services
+			$hasher = new PasswordHasher();
+			$userCreator = new Creator( $repository, $hasher );
+			$userUpdater = new Updater( $repository, $hasher );
+			$userDeleter = new Deleter( $repository );
+		}
+
+		$this->_repository = $repository;
+		$this->_userCreator = $userCreator;
+		$this->_userUpdater = $userUpdater;
+		$this->_userDeleter = $userDeleter;
 	}
 
 	/**

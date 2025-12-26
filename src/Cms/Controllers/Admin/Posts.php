@@ -33,39 +33,64 @@ class Posts extends Content
 
 	/**
 	 * @param Application|null $app
+	 * @param DatabasePostRepository|null $postRepository
+	 * @param DatabaseCategoryRepository|null $categoryRepository
+	 * @param DatabaseTagRepository|null $tagRepository
+	 * @param Creator|null $postCreator
+	 * @param Updater|null $postUpdater
+	 * @param Deleter|null $postDeleter
 	 * @throws \Exception
 	 */
-	public function __construct( ?Application $app = null )
+	public function __construct(
+		?Application $app = null,
+		?DatabasePostRepository $postRepository = null,
+		?DatabaseCategoryRepository $categoryRepository = null,
+		?DatabaseTagRepository $tagRepository = null,
+		?Creator $postCreator = null,
+		?Updater $postUpdater = null,
+		?Deleter $postDeleter = null
+	)
 	{
 		parent::__construct( $app );
 
-		// Get settings for repositories
-		$settings = Registry::getInstance()->get( 'Settings' );
+		// Use injected dependencies if provided (for testing), otherwise create them (for production)
+		if( $postRepository === null )
+		{
+			// Get settings for repositories
+			$settings = Registry::getInstance()->get( 'Settings' );
 
-		// Initialize repositories
-		$this->_postRepository = new DatabasePostRepository( $settings );
-		$this->_categoryRepository = new DatabaseCategoryRepository( $settings );
-		$this->_tagRepository = new DatabaseTagRepository( $settings );
+			// Initialize repositories
+			$postRepository = new DatabasePostRepository( $settings );
+			$categoryRepository = new DatabaseCategoryRepository( $settings );
+			$tagRepository = new DatabaseTagRepository( $settings );
 
-		// Initialize services
-		$tagResolver = new TagResolver(
-			$this->_tagRepository,
-			new \Neuron\Cms\Services\Tag\Creator( $this->_tagRepository )
-		);
+			// Initialize services
+			$tagResolver = new TagResolver(
+				$tagRepository,
+				new \Neuron\Cms\Services\Tag\Creator( $tagRepository )
+			);
 
-		$this->_postCreator = new Creator(
-			$this->_postRepository,
-			$this->_categoryRepository,
-			$tagResolver
-		);
+			$postCreator = new Creator(
+				$postRepository,
+				$categoryRepository,
+				$tagResolver
+			);
 
-		$this->_postUpdater = new Updater(
-			$this->_postRepository,
-			$this->_categoryRepository,
-			$tagResolver
-		);
+			$postUpdater = new Updater(
+				$postRepository,
+				$categoryRepository,
+				$tagResolver
+			);
 
-		$this->_postDeleter = new Deleter( $this->_postRepository );
+			$postDeleter = new Deleter( $postRepository );
+		}
+
+		$this->_postRepository = $postRepository;
+		$this->_categoryRepository = $categoryRepository;
+		$this->_tagRepository = $tagRepository;
+		$this->_postCreator = $postCreator;
+		$this->_postUpdater = $postUpdater;
+		$this->_postDeleter = $postDeleter;
 	}
 
 	/**
@@ -95,7 +120,7 @@ class Posts extends Content
 		}
 		else
 		{
-			$posts = $this->_postRepository->getByAuthor( $user->getUsername() );
+			$posts = $this->_postRepository->getByAuthor( user_id() );
 		}
 
 		return $this->view()

@@ -21,17 +21,27 @@ class Tags extends Content
 
 	/**
 	 * @param Application|null $app
+	 * @param DatabaseTagRepository|null $tagRepository
 	 * @throws \Exception
 	 */
-	public function __construct( ?Application $app = null )
+	public function __construct(
+		?Application $app = null,
+		?DatabaseTagRepository $tagRepository = null
+	)
 	{
 		parent::__construct( $app );
 
-		// Get settings for repositories
-		$settings = Registry::getInstance()->get( 'Settings' );
+		// Use injected dependencies if provided (for testing), otherwise create them (for production)
+		if( $tagRepository === null )
+		{
+			// Get settings for repositories
+			$settings = Registry::getInstance()->get( 'Settings' );
 
-		// Initialize repository
-		$this->_tagRepository = new DatabaseTagRepository( $settings );
+			// Initialize repository
+			$tagRepository = new DatabaseTagRepository( $settings );
+		}
+
+		$this->_tagRepository = $tagRepository;
 	}
 
 	/**

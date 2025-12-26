@@ -28,20 +28,39 @@ class Categories extends Content
 
 	/**
 	 * @param Application|null $app
+	 * @param DatabaseCategoryRepository|null $categoryRepository
+	 * @param Creator|null $categoryCreator
+	 * @param Updater|null $categoryUpdater
+	 * @param Deleter|null $categoryDeleter
 	 * @throws \Exception
 	 */
-	public function __construct( ?Application $app = null )
+	public function __construct(
+		?Application $app = null,
+		?DatabaseCategoryRepository $categoryRepository = null,
+		?Creator $categoryCreator = null,
+		?Updater $categoryUpdater = null,
+		?Deleter $categoryDeleter = null
+	)
 	{
 		parent::__construct( $app );
 
-		// Get settings and initialize repository
-		$settings = Registry::getInstance()->get( 'Settings' );
-		$this->_categoryRepository = new DatabaseCategoryRepository( $settings );
+		// Use injected dependencies if provided (for testing), otherwise create them (for production)
+		if( $categoryRepository === null )
+		{
+			// Get settings and initialize repository
+			$settings = Registry::getInstance()->get( 'Settings' );
+			$categoryRepository = new DatabaseCategoryRepository( $settings );
 
-		// Initialize services
-		$this->_categoryCreator = new Creator( $this->_categoryRepository );
-		$this->_categoryUpdater = new Updater( $this->_categoryRepository );
-		$this->_categoryDeleter = new Deleter( $this->_categoryRepository );
+			// Initialize services
+			$categoryCreator = new Creator( $categoryRepository );
+			$categoryUpdater = new Updater( $categoryRepository );
+			$categoryDeleter = new Deleter( $categoryRepository );
+		}
+
+		$this->_categoryRepository = $categoryRepository;
+		$this->_categoryCreator = $categoryCreator;
+		$this->_categoryUpdater = $categoryUpdater;
+		$this->_categoryDeleter = $categoryDeleter;
 	}
 
 	/**

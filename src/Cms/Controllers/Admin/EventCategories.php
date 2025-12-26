@@ -28,18 +28,37 @@ class EventCategories extends Content
 
 	/**
 	 * @param Application|null $app
+	 * @param DatabaseEventCategoryRepository|null $repository
+	 * @param Creator|null $creator
+	 * @param Updater|null $updater
+	 * @param Deleter|null $deleter
 	 * @throws \Exception
 	 */
-	public function __construct( ?Application $app = null )
+	public function __construct(
+		?Application $app = null,
+		?DatabaseEventCategoryRepository $repository = null,
+		?Creator $creator = null,
+		?Updater $updater = null,
+		?Deleter $deleter = null
+	)
 	{
 		parent::__construct( $app );
 
-		$settings = Registry::getInstance()->get( 'Settings' );
+		// Use injected dependencies if provided (for testing), otherwise create them (for production)
+		if( $repository === null )
+		{
+			$settings = Registry::getInstance()->get( 'Settings' );
 
-		$this->_repository = new DatabaseEventCategoryRepository( $settings );
-		$this->_creator = new Creator( $this->_repository );
-		$this->_updater = new Updater( $this->_repository );
-		$this->_deleter = new Deleter( $this->_repository );
+			$repository = new DatabaseEventCategoryRepository( $settings );
+			$creator = new Creator( $repository );
+			$updater = new Updater( $repository );
+			$deleter = new Deleter( $repository );
+		}
+
+		$this->_repository = $repository;
+		$this->_creator = $creator;
+		$this->_updater = $updater;
+		$this->_deleter = $deleter;
 	}
 
 	/**
