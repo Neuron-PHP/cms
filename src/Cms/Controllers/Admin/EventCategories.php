@@ -7,7 +7,6 @@ use Neuron\Cms\Repositories\DatabaseEventCategoryRepository;
 use Neuron\Cms\Services\EventCategory\Creator;
 use Neuron\Cms\Services\EventCategory\Updater;
 use Neuron\Cms\Services\EventCategory\Deleter;
-use Neuron\Cms\Services\Auth\CsrfToken;
 use Neuron\Log\Log;
 use Neuron\Mvc\Application;
 use Neuron\Mvc\Requests\Request;
@@ -66,10 +65,9 @@ class EventCategories extends Content
 	 */
 	public function index( Request $request ): string
 	{
-		$sessionManager = $this->getSessionManager();
-		$csrfToken = new CsrfToken( $sessionManager );
-		Registry::getInstance()->set( 'Auth.CsrfToken', $csrfToken->getToken() );
+		$this->initializeCsrfToken();
 
+		$sessionManager = $this->getSessionManager();
 		return $this->view()
 			->title( 'Event Categories' )
 			->description( 'Manage event categories' )
@@ -88,10 +86,9 @@ class EventCategories extends Content
 	 */
 	public function create( Request $request ): string
 	{
-		$sessionManager = $this->getSessionManager();
-		$csrfToken = new CsrfToken( $sessionManager );
-		Registry::getInstance()->set( 'Auth.CsrfToken', $csrfToken->getToken() );
+		$this->initializeCsrfToken();
 
+		$sessionManager = $this->getSessionManager();
 		return $this->view()
 			->title( 'Create Event Category' )
 			->description( 'Create a new event category' )

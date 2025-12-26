@@ -53,38 +53,60 @@ class Posts extends Content
 	{
 		parent::__construct( $app );
 
-		// Use injected dependencies if provided (for testing), otherwise create them (for production)
+		// Get settings once if we need to create any repositories
+		$settings = null;
+		if( $postRepository === null || $categoryRepository === null || $tagRepository === null )
+		{
+			$settings = Registry::getInstance()->get( 'Settings' );
+		}
+
+		// Individually ensure each repository is initialized
 		if( $postRepository === null )
 		{
-			// Get settings for repositories
-			$settings = Registry::getInstance()->get( 'Settings' );
-
-			// Initialize repositories
 			$postRepository = new DatabasePostRepository( $settings );
+		}
+
+		if( $categoryRepository === null )
+		{
 			$categoryRepository = new DatabaseCategoryRepository( $settings );
+		}
+
+		if( $tagRepository === null )
+		{
 			$tagRepository = new DatabaseTagRepository( $settings );
+		}
 
-			// Initialize services
-			$tagResolver = new TagResolver(
-				$tagRepository,
-				new \Neuron\Cms\Services\Tag\Creator( $tagRepository )
-			);
+		// Build downstream services using guaranteed non-null repositories
+		// Create TagResolver if needed for Creator/Updater services
+		$tagResolver = new TagResolver(
+			$tagRepository,
+			new \Neuron\Cms\Services\Tag\Creator( $tagRepository )
+		);
 
+		if( $postCreator === null )
+		{
 			$postCreator = new Creator(
 				$postRepository,
 				$categoryRepository,
 				$tagResolver
 			);
+		}
 
+		if( $postUpdater === null )
+		{
 			$postUpdater = new Updater(
 				$postRepository,
 				$categoryRepository,
 				$tagResolver
 			);
+		}
 
+		if( $postDeleter === null )
+		{
 			$postDeleter = new Deleter( $postRepository );
 		}
 
+		// Assign to properties with defensive checks
 		$this->_postRepository = $postRepository;
 		$this->_categoryRepository = $categoryRepository;
 		$this->_tagRepository = $tagRepository;

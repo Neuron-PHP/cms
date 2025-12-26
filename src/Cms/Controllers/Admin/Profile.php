@@ -40,15 +40,22 @@ class Profile extends Content
 	{
 		parent::__construct( $app );
 
-		// Use injected dependencies if provided (for testing), otherwise create them (for production)
+		// Get settings if we need to create repository
 		if( $repository === null )
 		{
-			// Get settings and initialize repository
 			$settings = Registry::getInstance()->get( 'Settings' );
 			$repository = new DatabaseUserRepository( $settings );
-			$hasher = new PasswordHasher();
+		}
 
-			// Initialize service
+		// Create hasher if not provided
+		if( $hasher === null )
+		{
+			$hasher = new PasswordHasher();
+		}
+
+		// Create updater if not provided
+		if( $userUpdater === null )
+		{
 			$userUpdater = new Updater( $repository, $hasher );
 		}
 
@@ -67,9 +74,16 @@ class Profile extends Content
 	{
 		$this->initializeCsrfToken();
 
+		// Get authenticated user once
+		$user = auth();
+		if( !$user )
+		{
+			throw new \RuntimeException( 'Authenticated user not found' );
+		}
+
 		// Get available timezones grouped by region with selection state
 		$timezones = \DateTimeZone::listIdentifiers();
-		$groupedTimezones = group_timezones_for_select( $timezones, auth()->getTimezone() );
+		$groupedTimezones = group_timezones_for_select( $timezones, $user->getTimezone() );
 
 		return $this->view()
 			->title( 'Profile' )
@@ -92,9 +106,16 @@ class Profile extends Content
 	 */
 	public function update( Request $request ): never
 	{
+		// Get authenticated user once and check for null
+		$user = auth();
+		if( !$user )
+		{
+			$this->redirect( 'admin_profile', [], ['error', 'Authenticated user not found'] );
+		}
+
 		// Security: Only use email from POST if provided by Account Information form
 		// Password change form doesn't include email field, preventing email hijacking attacks
-		$email = $request->post( 'email', auth()->getEmail() );
+		$email = $request->post( 'email', $user->getEmail() );
 		$timezone = $request->post( 'timezone',  '' );
 		$currentPassword = $request->post( 'current_password', '' );
 		$newPassword = $request->post( 'new_password', '' );
@@ -104,7 +125,7 @@ class Profile extends Content
 		if( !empty( $newPassword ) )
 		{
 			// Verify current password
-			if( empty( $currentPassword ) || !$this->_hasher->verify( $currentPassword, auth()->getPasswordHash() ) )
+			if( empty( $currentPassword ) || !$this->_hasher->verify( $currentPassword, $user->getPasswordHash() ) )
 			{
 				$this->redirect( 'admin_profile', [], ['error', 'Current password is incorrect'] );
 			}
@@ -119,10 +140,10 @@ class Profile extends Content
 		try
 		{
 			$this->_userUpdater->update(
-				auth(),
-				auth()->getUsername(),
+				$user,
+				$user->getUsername(),
 				$email,
-				auth()->getRole(),
+				$user->getRole(),
 				!empty( $newPassword ) ? $newPassword : null,
 				!empty( $timezone ) ? $timezone : null
 			);

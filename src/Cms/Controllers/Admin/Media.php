@@ -41,8 +41,9 @@ class Media extends Content
 	{
 		parent::__construct( $app );
 
-		// Use injected dependencies if provided (for testing), otherwise create them (for production)
-		if( $uploader === null )
+		// Get settings once if we need to create any dependencies
+		$settings = null;
+		if( $uploader === null || $validator === null )
 		{
 			$settings = Registry::getInstance()->get( 'Settings' );
 
@@ -50,8 +51,17 @@ class Media extends Content
 			{
 				throw new \Exception( 'Settings not found in Registry' );
 			}
+		}
 
+		// Create uploader if not provided
+		if( $uploader === null )
+		{
 			$uploader = new CloudinaryUploader( $settings );
+		}
+
+		// Create validator if not provided
+		if( $validator === null )
+		{
 			$validator = new MediaValidator( $settings );
 		}
 
