@@ -57,6 +57,97 @@ class MediaValidatorTest extends TestCase
 		$this->assertStringContainsString( 'No file was uploaded', $this->_validator->getFirstError() );
 	}
 
+	public function testValidateReturnsFalseForIniSizeError(): void
+	{
+		$file = [
+			'error' => UPLOAD_ERR_INI_SIZE,
+			'tmp_name' => ''
+		];
+
+		$result = $this->_validator->validate( $file );
+
+		$this->assertFalse( $result );
+		$this->assertStringContainsString( 'upload_max_filesize', $this->_validator->getFirstError() );
+	}
+
+	public function testValidateReturnsFalseForFormSizeError(): void
+	{
+		$file = [
+			'error' => UPLOAD_ERR_FORM_SIZE,
+			'tmp_name' => ''
+		];
+
+		$result = $this->_validator->validate( $file );
+
+		$this->assertFalse( $result );
+		$this->assertStringContainsString( 'MAX_FILE_SIZE', $this->_validator->getFirstError() );
+	}
+
+	public function testValidateReturnsFalseForPartialUploadError(): void
+	{
+		$file = [
+			'error' => UPLOAD_ERR_PARTIAL,
+			'tmp_name' => ''
+		];
+
+		$result = $this->_validator->validate( $file );
+
+		$this->assertFalse( $result );
+		$this->assertStringContainsString( 'partially uploaded', $this->_validator->getFirstError() );
+	}
+
+	public function testValidateReturnsFalseForNoTmpDirError(): void
+	{
+		$file = [
+			'error' => UPLOAD_ERR_NO_TMP_DIR,
+			'tmp_name' => ''
+		];
+
+		$result = $this->_validator->validate( $file );
+
+		$this->assertFalse( $result );
+		$this->assertStringContainsString( 'temporary folder', $this->_validator->getFirstError() );
+	}
+
+	public function testValidateReturnsFalseForCantWriteError(): void
+	{
+		$file = [
+			'error' => UPLOAD_ERR_CANT_WRITE,
+			'tmp_name' => ''
+		];
+
+		$result = $this->_validator->validate( $file );
+
+		$this->assertFalse( $result );
+		$this->assertStringContainsString( 'write file to disk', $this->_validator->getFirstError() );
+	}
+
+	public function testValidateReturnsFalseForExtensionError(): void
+	{
+		$file = [
+			'error' => UPLOAD_ERR_EXTENSION,
+			'tmp_name' => ''
+		];
+
+		$result = $this->_validator->validate( $file );
+
+		$this->assertFalse( $result );
+		$this->assertStringContainsString( 'extension stopped', $this->_validator->getFirstError() );
+	}
+
+	public function testValidateReturnsFalseForUnknownError(): void
+	{
+		$file = [
+			'error' => 999, // Unknown error code
+			'tmp_name' => ''
+		];
+
+		$result = $this->_validator->validate( $file );
+
+		$this->assertFalse( $result );
+		$this->assertStringContainsString( 'Unknown', $this->_validator->getFirstError() );
+	}
+
 	public function testValidateReturnsFalseForNonExistentFile(): void
 	{
 		$file = [

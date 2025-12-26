@@ -169,6 +169,8 @@ class Media extends Content
 		}
 		catch( \Exception $e )
 		{
+			Log::error( 'uploadImage: ' . $e->getMessage() );
+
 			return $this->renderJson(
 				HttpResponseStatus::INTERNAL_SERVER_ERROR,
 				[
@@ -231,6 +233,8 @@ class Media extends Content
 		}
 		catch( \Exception $e )
 		{
+			Log::error( 'uploadFeaturedImage: ' . $e->getMessage() )
+			;
 			return $this->renderJson(
 				HttpResponseStatus::INTERNAL_SERVER_ERROR,
 				[

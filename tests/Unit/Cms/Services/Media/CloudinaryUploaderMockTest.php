@@ -277,4 +277,263 @@ class CloudinaryUploaderMockTest extends TestCase
 
 		$uploader->listResources();
 	}
+
+	public function testDeleteCallsUploadApiWithPublicId(): void
+	{
+		$uploadApiMock = $this->createMock( UploadApi::class );
+
+		$uploadApiMock->expects( $this->once() )
+			->method( 'destroy' )
+			->with( 'test-folder/test-image' )
+			->willReturn( [ 'result' => 'ok' ] );
+
+		$cloudinaryMock = $this->createMock( Cloudinary::class );
+		$cloudinaryMock->method( 'uploadApi' )->willReturn( $uploadApiMock );
+
+		$uploader = new CloudinaryUploader( $this->_settings );
+
+		$reflection = new \ReflectionClass( $uploader );
+		$cloudinaryProperty = $reflection->getProperty( '_cloudinary' );
+		$cloudinaryProperty->setAccessible( true );
+		$cloudinaryProperty->setValue( $uploader, $cloudinaryMock );
+
+		$result = $uploader->delete( 'test-folder/test-image' );
+
+		$this->assertTrue( $result );
+	}
+
+	public function testDeleteReturnsFalseOnFailure(): void
+	{
+		$uploadApiMock = $this->createMock( UploadApi::class );
+
+		$uploadApiMock->method( 'destroy' )
+			->willReturn( [ 'result' => 'not found' ] );
+
+		$cloudinaryMock = $this->createMock( Cloudinary::class );
+		$cloudinaryMock->method( 'uploadApi' )->willReturn( $uploadApiMock );
+
+		$uploader = new CloudinaryUploader( $this->_settings );
+
+		$reflection = new \ReflectionClass( $uploader );
+		$cloudinaryProperty = $reflection->getProperty( '_cloudinary' );
+		$cloudinaryProperty->setAccessible( true );
+		$cloudinaryProperty->setValue( $uploader, $cloudinaryMock );
+
+		$result = $uploader->delete( 'test-folder/nonexistent' );
+
+		$this->assertFalse( $result );
+	}
+
+	public function testDeleteThrowsExceptionOnApiError(): void
+	{
+		$uploadApiMock = $this->createMock( UploadApi::class );
+
+		$uploadApiMock->method( 'destroy' )
+			->willThrowException( new \Exception( 'API Error' ) );
+
+		$cloudinaryMock = $this->createMock( Cloudinary::class );
+		$cloudinaryMock->method( 'uploadApi' )->willReturn( $uploadApiMock );
+
+		$uploader = new CloudinaryUploader( $this->_settings );
+
+		$reflection = new \ReflectionClass( $uploader );
+		$cloudinaryProperty = $reflection->getProperty( '_cloudinary' );
+		$cloudinaryProperty->setAccessible( true );
+		$cloudinaryProperty->setValue( $uploader, $cloudinaryMock );
+
+		$this->expectException( \Exception::class );
+		$this->expectExceptionMessage( 'Cloudinary deletion failed' );
+
+		$uploader->delete( 'test-folder/test-image' );
+	}
+
+	public function testUploadCallsUploadApiWithCorrectOptions(): void
+	{
+		$uploadApiMock = $this->createMock( UploadApi::class );
+
+		// Create a real temporary file
+		$tmpFile = tmpfile();
+		$tmpFilePath = stream_get_meta_data( $tmpFile )['uri'];
+		fwrite( $tmpFile, 'fake image content' );
+
+		$uploadApiMock->expects( $this->once() )
+			->method( 'upload' )
+			->with(
+				$tmpFilePath,
+				$this->callback( function( $options ) {
+					return $options['folder'] === 'test-folder'
+						&& $options['resource_type'] === 'image';
+				} )
+			)
+			->willReturn( [
+				'secure_url' => 'https://example.com/test.jpg',
+				'public_id' => 'test-folder/test',
+				'width' => 800,
+				'height' => 600,
+				'format' => 'jpg',
+				'bytes' => 50000
+			] );
+
+		$cloudinaryMock = $this->createMock( Cloudinary::class );
+		$cloudinaryMock->method( 'uploadApi' )->willReturn( $uploadApiMock );
+
+		$uploader = new CloudinaryUploader( $this->_settings );
+
+		$reflection = new \ReflectionClass( $uploader );
+		$cloudinaryProperty = $reflection->getProperty( '_cloudinary' );
+		$cloudinaryProperty->setAccessible( true );
+		$cloudinaryProperty->setValue( $uploader, $cloudinaryMock );
+
+		$result = $uploader->upload( $tmpFilePath );
+
+		$this->assertArrayHasKey( 'url', $result );
+		$this->assertEquals( 'https://example.com/test.jpg', $result['url'] );
+
+		// Clean up
+		fclose( $tmpFile );
+	}
+
+	public function testUploadThrowsExceptionForNonexistentFile(): void
+	{
+		$uploader = new CloudinaryUploader( $this->_settings );
+
+		$this->expectException( \Exception::class );
+		$this->expectExceptionMessage( 'File not found' );
+
+		$uploader->upload( '/nonexistent/file.jpg' );
+	}
+
+	public function testUploadThrowsExceptionOnApiError(): void
+	{
+		$uploadApiMock = $this->createMock( UploadApi::class );
+
+		// Create a real temporary file
+		$tmpFile = tmpfile();
+		$tmpFilePath = stream_get_meta_data( $tmpFile )['uri'];
+		fwrite( $tmpFile, 'fake image content' );
+
+		$uploadApiMock->method( 'upload' )
+			->willThrowException( new \Exception( 'Upload failed' ) );
+
+		$cloudinaryMock = $this->createMock( Cloudinary::class );
+		$cloudinaryMock->method( 'uploadApi' )->willReturn( $uploadApiMock );
+
+		$uploader = new CloudinaryUploader( $this->_settings );
+
+		$reflection = new \ReflectionClass( $uploader );
+		$cloudinaryProperty = $reflection->getProperty( '_cloudinary' );
+		$cloudinaryProperty->setAccessible( true );
+		$cloudinaryProperty->setValue( $uploader, $cloudinaryMock );
+
+		$this->expectException( \Exception::class );
+		$this->expectExceptionMessage( 'Cloudinary upload failed' );
+
+		$uploader->upload( $tmpFilePath );
+
+		// Clean up
+		fclose( $tmpFile );
+	}
+
+	public function testUploadWithCustomOptions(): void
+	{
+		$uploadApiMock = $this->createMock( UploadApi::class );
+
+		// Create a real temporary file
+		$tmpFile = tmpfile();
+		$tmpFilePath = stream_get_meta_data( $tmpFile )['uri'];
+		fwrite( $tmpFile, 'fake image content' );
+
+		$uploadApiMock->expects( $this->once() )
+			->method( 'upload' )
+			->with(
+				$tmpFilePath,
+				$this->callback( function( $options ) {
+					return $options['folder'] === 'custom-folder'
+						&& $options['public_id'] === 'my-image'
+						&& isset( $options['tags'] )
+						&& in_array( 'test', $options['tags'] );
+				} )
+			)
+			->willReturn( [
+				'secure_url' => 'https://example.com/custom.jpg',
+				'public_id' => 'custom-folder/my-image',
+				'width' => 1024,
+				'height' => 768,
+				'format' => 'jpg',
+				'bytes' => 100000
+			] );
+
+		$cloudinaryMock = $this->createMock( Cloudinary::class );
+		$cloudinaryMock->method( 'uploadApi' )->willReturn( $uploadApiMock );
+
+		$uploader = new CloudinaryUploader( $this->_settings );
+
+		$reflection = new \ReflectionClass( $uploader );
+		$cloudinaryProperty = $reflection->getProperty( '_cloudinary' );
+		$cloudinaryProperty->setAccessible( true );
+		$cloudinaryProperty->setValue( $uploader, $cloudinaryMock );
+
+		$result = $uploader->upload( $tmpFilePath, [
+			'folder' => 'custom-folder',
+			'public_id' => 'my-image',
+			'tags' => ['test', 'upload']
+		] );
+
+		$this->assertEquals( 'https://example.com/custom.jpg', $result['url'] );
+		$this->assertEquals( 'custom-folder/my-image', $result['public_id'] );
+
+		// Clean up
+		fclose( $tmpFile );
+	}
+
+	public function testUploadWithTransformation(): void
+	{
+		$uploadApiMock = $this->createMock( UploadApi::class );
+
+		// Create a real temporary file
+		$tmpFile = tmpfile();
+		$tmpFilePath = stream_get_meta_data( $tmpFile )['uri'];
+		fwrite( $tmpFile, 'fake image content' );
+
+		$uploadApiMock->expects( $this->once() )
+			->method( 'upload' )
+			->with(
+				$tmpFilePath,
+				$this->callback( function( $options ) {
+					return isset( $options['transformation'] )
+						&& is_array( $options['transformation'] );
+				} )
+			)
+			->willReturn( [
+				'secure_url' => 'https://example.com/transformed.jpg',
+				'public_id' => 'test-folder/transformed',
+				'width' => 800,
+				'height' => 600,
+				'format' => 'jpg',
+				'bytes' => 50000
+			] );
+
+		$cloudinaryMock = $this->createMock( Cloudinary::class );
+		$cloudinaryMock->method( 'uploadApi' )->willReturn( $uploadApiMock );
+
+		$uploader = new CloudinaryUploader( $this->_settings );
+
+		$reflection = new \ReflectionClass( $uploader );
+		$cloudinaryProperty = $reflection->getProperty( '_cloudinary' );
+		$cloudinaryProperty->setAccessible( true );
+		$cloudinaryProperty->setValue( $uploader, $cloudinaryMock );
+
+		$result = $uploader->upload( $tmpFilePath, [
+			'transformation' => [
+				'width' => 800,
+				'height' => 600,
+				'crop' => 'fill'
+			]
+		] );
+
+		$this->assertArrayHasKey( 'url', $result );
+
+		// Clean up
+		fclose( $tmpFile );
+	}
 }
