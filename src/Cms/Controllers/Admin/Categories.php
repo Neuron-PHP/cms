@@ -28,20 +28,39 @@ class Categories extends Content
 
 	/**
 	 * @param Application|null $app
+	 * @param DatabaseCategoryRepository|null $categoryRepository
+	 * @param Creator|null $categoryCreator
+	 * @param Updater|null $categoryUpdater
+	 * @param Deleter|null $categoryDeleter
 	 * @throws \Exception
 	 */
-	public function __construct( ?Application $app = null )
+	public function __construct(
+		?Application $app = null,
+		?DatabaseCategoryRepository $categoryRepository = null,
+		?Creator $categoryCreator = null,
+		?Updater $categoryUpdater = null,
+		?Deleter $categoryDeleter = null
+	)
 	{
 		parent::__construct( $app );
 
-		// Get settings and initialize repository
-		$settings = Registry::getInstance()->get( 'Settings' );
-		$this->_categoryRepository = new DatabaseCategoryRepository( $settings );
+		// Use injected dependencies if provided (for testing), otherwise create them (for production)
+		if( $categoryRepository === null )
+		{
+			// Get settings and initialize repository
+			$settings = Registry::getInstance()->get( 'Settings' );
+			$categoryRepository = new DatabaseCategoryRepository( $settings );
 
-		// Initialize services
-		$this->_categoryCreator = new Creator( $this->_categoryRepository );
-		$this->_categoryUpdater = new Updater( $this->_categoryRepository );
-		$this->_categoryDeleter = new Deleter( $this->_categoryRepository );
+			// Initialize services
+			$categoryCreator = new Creator( $categoryRepository );
+			$categoryUpdater = new Updater( $categoryRepository );
+			$categoryDeleter = new Deleter( $categoryRepository );
+		}
+
+		$this->_categoryRepository = $categoryRepository;
+		$this->_categoryCreator = $categoryCreator;
+		$this->_categoryUpdater = $categoryUpdater;
+		$this->_categoryDeleter = $categoryDeleter;
 	}
 
 	/**
@@ -52,28 +71,15 @@ class Categories extends Content
 	 */
 	public function index( Request $request ): string
 	{
-		$user = Registry::getInstance()->get( 'Auth.User' );
+		$this->initializeCsrfToken();
 
-		if( !$user )
-		{
-			throw new \RuntimeException( 'Authenticated user not found' );
-		}
-
-		$categoriesWithCount = $this->_categoryRepository->allWithPostCount();
-
-		$viewData = [
-			'Title' => 'Categories | Admin | ' . $this->getName(),
-			'Description' => 'Manage blog categories',
-			'User' => $user,
-			'CategoriesWithCount' => $categoriesWithCount
-		];
-
-		return $this->renderHtml(
-			HttpResponseStatus::OK,
-			$viewData,
-			'index',
-			'categories'
-		);
+		return $this->view()
+			->title( 'Categories | Admin' )
+			->description( 'Manage blog categories' )
+			->withCurrentUser()
+			->withCsrfToken()
+			->with( 'CategoriesWithCount', $this->_categoryRepository->allWithPostCount() )
+			->render( 'index', 'categories' );
 	}
 
 	/**
@@ -84,25 +90,14 @@ class Categories extends Content
 	 */
 	public function create( Request $request ): string
 	{
-		$user = Registry::getInstance()->get( 'Auth.User' );
+		$this->initializeCsrfToken();
 
-		if( !$user )
-		{
-			throw new \RuntimeException( 'Authenticated user not found' );
-		}
-
-		$viewData = [
-			'Title' => 'Create Category | Admin | ' . $this->getName(),
-			'Description' => 'Create a new blog category',
-			'User' => $user
-		];
-
-		return $this->renderHtml(
-			HttpResponseStatus::OK,
-			$viewData,
-			'create',
-			'categories'
-		);
+		return $this->view()
+			->title( 'Create Category | Admin' )
+			->description( 'Create a new blog category' )
+			->withCurrentUser()
+			->withCsrfToken()
+			->render( 'create', 'categories' );
 	}
 
 	/**
@@ -136,13 +131,6 @@ class Categories extends Content
 	 */
 	public function edit( Request $request ): string
 	{
-		$user = Registry::getInstance()->get( 'Auth.User' );
-
-		if( !$user )
-		{
-			throw new \RuntimeException( 'Authenticated user not found' );
-		}
-
 		$categoryId = (int)$request->getRouteParameter( 'id' );
 		$category = $this->_categoryRepository->findById( $categoryId );
 
@@ -151,19 +139,15 @@ class Categories extends Content
 			throw new \RuntimeException( 'Category not found' );
 		}
 
-		$viewData = [
-			'Title' => 'Edit Category | Admin | ' . $this->getName(),
-			'Description' => 'Edit blog category',
-			'User' => $user,
-			'Category' => $category
-		];
+		$this->initializeCsrfToken();
 
-		return $this->renderHtml(
-			HttpResponseStatus::OK,
-			$viewData,
-			'edit',
-			'categories'
-		);
+		return $this->view()
+			->title( 'Edit Category | Admin' )
+			->description( 'Edit blog category' )
+			->withCurrentUser()
+			->withCsrfToken()
+			->with( 'Category', $category )
+			->render( 'edit', 'categories' );
 	}
 
 	/**

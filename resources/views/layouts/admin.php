@@ -29,6 +29,30 @@
 					<li class="nav-item">
 						<a class="nav-link" href="<?= route_path('admin_dashboard') ?>">Dashboard</a>
 					</li>
+					<li class="nav-item dropdown">
+						<a class="nav-link dropdown-toggle" href="#" id="contentDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+							Content
+						</a>
+						<ul class="dropdown-menu" aria-labelledby="contentDropdown">
+							<li><a class="dropdown-item" href="<?= route_path('admin_posts') ?>"><i class="bi bi-file-text me-2"></i>Posts</a></li>
+							<li><a class="dropdown-item" href="<?= route_path('admin_pages') ?>"><i class="bi bi-file-earmark me-2"></i>Pages</a></li>
+							<li><a class="dropdown-item" href="<?= route_path('admin_media') ?>"><i class="bi bi-images me-2"></i>Media</a></li>
+							<li><hr class="dropdown-divider"></li>
+							<li><a class="dropdown-item" href="<?= route_path('admin_categories') ?>"><i class="bi bi-folder me-2"></i>Categories</a></li>
+							<li><a class="dropdown-item" href="<?= route_path('admin_tags') ?>"><i class="bi bi-tags me-2"></i>Tags</a></li>
+							<li><hr class="dropdown-divider"></li>
+							<li><a class="dropdown-item" href="<?= route_path('admin_events') ?>"><i class="bi bi-calendar-event me-2"></i>Events</a></li>
+							<li><a class="dropdown-item" href="<?= route_path('admin_event_categories') ?>"><i class="bi bi-calendar3 me-2"></i>Event Categories</a></li>
+						</ul>
+					</li>
+					<li class="nav-item dropdown">
+						<a class="nav-link dropdown-toggle" href="#" id="usersDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+							Users
+						</a>
+						<ul class="dropdown-menu" aria-labelledby="usersDropdown">
+							<li><a class="dropdown-item" href="<?= route_path('admin_users') ?>"><i class="bi bi-people me-2"></i>All Users</a></li>
+						</ul>
+					</li>
 					<li class="nav-item">
 						<a class="nav-link" href="<?= route_path('home') ?>">View Site</a>
 					</li>

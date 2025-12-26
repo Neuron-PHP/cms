@@ -479,8 +479,11 @@ class InstallCommand extends Command
 		// Optionally configure Cloudinary
 		$cloudinaryConfig = $this->configureCloudinary();
 
+		// Optionally configure Email
+		$emailConfig = $this->configureEmail();
+
 		// Merge and save complete configuration
-		return $this->saveCompleteConfig( $config, $appConfig, $cloudinaryConfig );
+		return $this->saveCompleteConfig( $config, $appConfig, $cloudinaryConfig, $emailConfig );
 	}
 
 	/**
@@ -597,9 +600,160 @@ class InstallCommand extends Command
 	}
 
 	/**
+	 * Configure Email (optional)
+	 */
+	private function configureEmail(): array
+	{
+		$this->output->writeln( "\n╔═══════════════════════════════════════╗" );
+		$this->output->writeln( "║  Email Configuration (Optional)       ║" );
+		$this->output->writeln( "╚═══════════════════════════════════════╝\n" );
+
+		$this->output->writeln( "Email is used for:" );
+		$this->output->writeln( "  • Email verification for new accounts" );
+		$this->output->writeln( "  • Password reset requests" );
+		$this->output->writeln( "  • User notifications and welcome emails" );
+		$this->output->writeln( "" );
+
+		if( !$this->input->confirm( "Would you like to configure email now?", false ) )
+		{
+			$this->output->info( "Skipping email configuration." );
+			$this->output->writeln( "Email will be in test mode (emails logged, not sent)" );
+			$this->output->writeln( "You can configure email later in config/neuron.yaml" );
+
+			return [
+				'email' => [
+					'driver' => 'mail',
+					'test_mode' => true,
+					'from_address' => 'noreply@example.com',
+					'from_name' => 'Neuron CMS'
+				]
+			];
+		}
+
+		$this->output->writeln( "\n--- Email Driver ---\n" );
+
+		$driver = $this->input->choice(
+			"Select email driver:",
+			[
+				'smtp' => 'SMTP - Recommended for production (Gmail, SendGrid, Mailgun, etc.)',
+				'mail' => 'PHP mail() - Simple but less reliable (may go to spam)'
+			],
+			'smtp'
+		);
+
+		$config = [
+			'driver' => $driver,
+			'test_mode' => false
+		];
+
+		// SMTP-specific configuration
+		if( $driver === 'smtp' )
+		{
+			$this->output->writeln( "\n--- SMTP Settings ---\n" );
+			$this->output->writeln( "Common SMTP providers:" );
+			$this->output->writeln( "  • Gmail: smtp.gmail.com:587 (TLS)" );
+			$this->output->writeln( "  • SendGrid: smtp.sendgrid.net:587 (TLS)" );
+			$this->output->writeln( "  • Mailgun: smtp.mailgun.org:587 (TLS)" );
+			$this->output->writeln( "  • Amazon SES: email-smtp.[region].amazonaws.com:587 (TLS)" );
+			$this->output->writeln( "" );
+
+			$host = $this->input->ask( "SMTP host (e.g., smtp.gmail.com)" );
+
+			if( !$host )
+			{
+				$this->output->warning( "SMTP host is required. Falling back to test mode." );
+				return [
+					'email' => [
+						'driver' => 'mail',
+						'test_mode' => true,
+						'from_address' => 'noreply@example.com',
+						'from_name' => 'Neuron CMS'
+					]
+				];
+			}
+
+			$port = $this->input->ask( "SMTP port", "587" );
+			$encryption = $this->input->choice(
+				"Encryption type:",
+				[
+					'tls' => 'TLS (recommended, port 587)',
+					'ssl' => 'SSL (port 465)',
+					'none' => 'None (not recommended)'
+				],
+				'tls'
+			);
+
+			$username = $this->input->ask( "SMTP username (usually your email address)" );
+
+			if( !$username )
+			{
+				$this->output->warning( "SMTP username is required. Falling back to test mode." );
+				return [
+					'email' => [
+						'driver' => 'mail',
+						'test_mode' => true,
+						'from_address' => 'noreply@example.com',
+						'from_name' => 'Neuron CMS'
+					]
+				];
+			}
+
+			$password = $this->input->askSecret( "SMTP password (or app-specific password)" );
+
+			if( !$password )
+			{
+				$this->output->warning( "SMTP password is required. Falling back to test mode." );
+				return [
+					'email' => [
+						'driver' => 'mail',
+						'test_mode' => true,
+						'from_address' => 'noreply@example.com',
+						'from_name' => 'Neuron CMS'
+					]
+				];
+			}
+
+			$config['host'] = $host;
+			$config['port'] = (int)$port;
+			$config['username'] = $username;
+			$config['password'] = $password;
+			$config['encryption'] = $encryption;
+
+			$this->_messages[] = "Email: SMTP ($host:$port)";
+		}
+		else
+		{
+			$this->_messages[] = "Email: PHP mail()";
+		}
+
+		// Common configuration
+		$this->output->writeln( "\n--- Sender Information ---\n" );
+
+		$fromAddress = $this->input->ask( "From email address", "noreply@example.com" );
+		$fromName = $this->input->ask( "From name", "Neuron CMS" );
+
+		$config['from_address'] = $fromAddress;
+		$config['from_name'] = $fromName;
+
+		// Test mode option
+		$this->output->writeln( "" );
+		$testMode = $this->input->confirm( "Enable test mode? (emails logged, not sent - useful for development)", false );
+
+		if( $testMode )
+		{
+			$config['test_mode'] = true;
+			$this->_messages[] = "Email test mode: ENABLED (emails will be logged, not sent)";
+		}
+
+		return [
+			'email' => $config
+		];
+	}
+
+	/**
 	 * Save complete configuration with all required sections
 	 */
-	private function saveCompleteConfig( array $databaseConfig, array $appConfig, array $cloudinaryConfig = [] ): bool
+	private function saveCompleteConfig( array $databaseConfig, array $appConfig, array $cloudinaryConfig = [], array $emailConfig = [] ): bool
 	{
 		// Build complete configuration
 		$config = [
@@ -637,6 +791,12 @@ class InstallCommand extends Command
 		if( !empty( $cloudinaryConfig ) )
 		{
 			$config = array_merge( $config, $cloudinaryConfig );
+		}
+
+		// Merge Email configuration if provided
+		if( !empty( $emailConfig ) )
+		{
+			$config = array_merge( $config, $emailConfig );
 		}
 
 		// Save configuration

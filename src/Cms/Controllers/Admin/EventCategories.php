@@ -7,7 +7,6 @@ use Neuron\Cms\Repositories\DatabaseEventCategoryRepository;
 use Neuron\Cms\Services\EventCategory\Creator;
 use Neuron\Cms\Services\EventCategory\Updater;
 use Neuron\Cms\Services\EventCategory\Deleter;
-use Neuron\Cms\Services\Auth\CsrfToken;
 use Neuron\Log\Log;
 use Neuron\Mvc\Application;
 use Neuron\Mvc\Requests\Request;
@@ -28,18 +27,37 @@ class EventCategories extends Content
 
 	/**
 	 * @param Application|null $app
+	 * @param DatabaseEventCategoryRepository|null $repository
+	 * @param Creator|null $creator
+	 * @param Updater|null $updater
+	 * @param Deleter|null $deleter
 	 * @throws \Exception
 	 */
-	public function __construct( ?Application $app = null )
+	public function __construct(
+		?Application $app = null,
+		?DatabaseEventCategoryRepository $repository = null,
+		?Creator $creator = null,
+		?Updater $updater = null,
+		?Deleter $deleter = null
+	)
 	{
 		parent::__construct( $app );
 
-		$settings = Registry::getInstance()->get( 'Settings' );
+		// Use injected dependencies if provided (for testing), otherwise create them (for production)
+		if( $repository === null )
+		{
+			$settings = Registry::getInstance()->get( 'Settings' );
 
-		$this->_repository = new DatabaseEventCategoryRepository( $settings );
-		$this->_creator = new Creator( $this->_repository );
-		$this->_updater = new Updater( $this->_repository );
-		$this->_deleter = new Deleter( $this->_repository );
+			$repository = new DatabaseEventCategoryRepository( $settings );
+			$creator = new Creator( $repository );
+			$updater = new Updater( $repository );
+			$deleter = new Deleter( $repository );
+		}
+
+		$this->_repository = $repository;
+		$this->_creator = $creator;
+		$this->_updater = $updater;
+		$this->_deleter = $deleter;
 	}
 
 	/**
@@ -47,34 +65,20 @@ class EventCategories extends Content
 	 */
 	public function index( Request $request ): string
 	{
-		$user = Registry::getInstance()->get( 'Auth.User' );
-
-		if( !$user )
-		{
-			throw new \RuntimeException( 'Authenticated user not found' );
-		}
+		$this->initializeCsrfToken();
 
 		$sessionManager = $this->getSessionManager();
-		$csrfToken = new CsrfToken( $sessionManager );
-		Registry::getInstance()->set( 'Auth.CsrfToken', $csrfToken->getToken() );
-
-		$categories = $this->_repository->all();
-
-		$viewData = [
-			'Title' => 'Event Categories | ' . $this->getName(),
-			'Description' => 'Manage event categories',
-			'User' => $user,
-			'categories' => $categories,
-			'Success' => $sessionManager->getFlash( 'success' ),
-			'Error' => $sessionManager->getFlash( 'error' )
-		];
-
-		return $this->renderHtml(
-			HttpResponseStatus::OK,
-			$viewData,
-			'index',
-			'admin'
-		);
+		return $this->view()
+			->title( 'Event Categories' )
+			->description( 'Manage event categories' )
+			->withCurrentUser()
+			->withCsrfToken()
+			->with([
+				'categories' => $this->_repository->all(),
+				'Success' => $sessionManager->getFlash( 'success' ),
+				'Error' => $sessionManager->getFlash( 'error' )
+			])
+			->render( 'index', 'admin' );
 	}
 
 	/**
@@ -82,31 +86,19 @@ class EventCategories extends Content
 	 */
 	public function create( Request $request ): string
 	{
-		$user = Registry::getInstance()->get( 'Auth.User' );
-
-		if( !$user )
-		{
-			throw new \RuntimeException( 'Authenticated user not found' );
-		}
+		$this->initializeCsrfToken();
 
 		$sessionManager = $this->getSessionManager();
-		$csrfToken = new CsrfToken( $sessionManager );
-		Registry::getInstance()->set( 'Auth.CsrfToken', $csrfToken->getToken() );
-
-		$viewData = [
-			'Title' => 'Create Event Category | ' . $this->getName(),
-			'Description' => 'Create a new event category',
-			'User' => $user,
-			'errors' => $sessionManager->getFlash( 'errors' ) ?: [],
-			'old' => $sessionManager->getFlash( 'old' ) ?: []
-		];
-
-		return $this->renderHtml(
-			HttpResponseStatus::OK,
-			$viewData,
-			'create',
-			'admin'
-		);
+		return $this->view()
+			->title( 'Create Event Category' )
+			->description( 'Create a new event category' )
+			->withCurrentUser()
+			->withCsrfToken()
+			->with([
+				'errors' => $sessionManager->getFlash( 'errors' ) ?: [],
+				'old' => $sessionManager->getFlash( 'old' ) ?: []
+			])
+			->render( 'create', 'admin' );
 	}
 
 	/**
@@ -114,23 +106,6 @@ class EventCategories extends Content
 	 */
 	public function store( Request $request ): never
 	{
-		$user = Registry::getInstance()->get( 'Auth.User' );
-
-		if( !$user )
-		{
-			throw new \RuntimeException( 'Authenticated user not found' );
-		}
-
-		// Validate CSRF token before any state changes
-		$csrfToken = new CsrfToken( $this->getSessionManager() );
-		$submittedToken = $request->post( 'csrf_token', '' );
-
-		if( !$csrfToken->validate( $submittedToken ) )
-		{
-			Log::warning( "CSRF validation failed for event category creation by user {$user->getId()}" );
-			$this->redirect( 'admin_event_categories_create', [], ['error', 'Invalid security token. Please try again.'] );
-		}
-
 		$name = $request->post( 'name', '' );
 		$slug = $request->post( 'slug', '' );
 		$color = $request->post( 'color', '#3b82f6' );
@@ -168,13 +143,6 @@ class EventCategories extends Content
 	 */
 	public function edit( Request $request ): string
 	{
-		$user = Registry::getInstance()->get( 'Auth.User' );
-
-		if( !$user )
-		{
-			throw new \RuntimeException( 'Authenticated user not found' );
-		}
-
 		$categoryId = (int)$request->getRouteParameter( 'id' );
 		$category = $this->_repository->findById( $categoryId );
 
@@ -183,22 +151,15 @@ class EventCategories extends Content
 			$this->redirect( 'admin_event_categories', [], ['error', 'Category not found'] );
 		}
 
-		$csrfToken = new CsrfToken( $this->getSessionManager() );
-		Registry::getInstance()->set( 'Auth.CsrfToken', $csrfToken->getToken() );
+		$this->initializeCsrfToken();
 
-		$viewData = [
-			'Title' => 'Edit Event Category | ' . $this->getName(),
-			'Description' => 'Edit event category',
-			'User' => $user,
-			'category' => $category
-		];
-
-		return $this->renderHtml(
-			HttpResponseStatus::OK,
-			$viewData,
-			'edit',
-			'admin'
-		);
+		return $this->view()
+			->title( 'Edit Event Category' )
+			->description( 'Edit event category' )
+			->withCurrentUser()
+			->withCsrfToken()
+			->with( 'category', $category )
+			->render( 'edit', 'admin' );
 	}
 
 	/**
@@ -206,29 +167,12 @@ class EventCategories extends Content
 	 */
 	public function update( Request $request ): never
 	{
-		$user = Registry::getInstance()->get( 'Auth.User' );
-
-		if( !$user )
-		{
-			throw new \RuntimeException( 'Authenticated user not found' );
-		}
-
 		$categoryId = (int)$request->getRouteParameter( 'id' );
 		$category = $this->_repository->findById( $categoryId );
 
 		if( !$category )
 		{
 			$this->redirect( 'admin_event_categories', [], ['error', 'Category not found'] );
-		}
-
-		// Validate CSRF token before any state changes
-		$csrfToken = new CsrfToken( $this->getSessionManager() );
-		$submittedToken = $request->post( 'csrf_token', '' );
-
-		if( !$csrfToken->validate( $submittedToken ) )
-		{
-			Log::warning( "CSRF validation failed for event category update: Category {$categoryId}, user {$user->getId()}" );
-			$this->redirect( 'admin_event_categories_edit', ['id' => $categoryId], ['error', 'Invalid security token. Please try again.'] );
 		}
 
 		try
@@ -259,29 +203,12 @@ class EventCategories extends Content
 	 */
 	public function destroy( Request $request ): never
 	{
-		$user = Registry::getInstance()->get( 'Auth.User' );
-
-		if( !$user )
-		{
-			throw new \RuntimeException( 'Authenticated user not found' );
-		}
-
 		$categoryId = (int)$request->getRouteParameter( 'id' );
 		$category = $this->_repository->findById( $categoryId );
 
 		if( !$category )
 		{
 			$this->redirect( 'admin_event_categories', [], ['error', 'Category not found'] );
-		}
-
-		// Validate CSRF token before any state changes
-		$csrfToken = new CsrfToken( $this->getSessionManager() );
-		$submittedToken = $request->post( 'csrf_token', '' );
-
-		if( !$csrfToken->validate( $submittedToken ) )
-		{
-			Log::warning( "CSRF validation failed for event category deletion: Category {$categoryId}, user {$user->getId()}" );
-			$this->redirect( 'admin_event_categories', [], ['error', 'Invalid security token. Please try again.'] );
 		}
 
 		try

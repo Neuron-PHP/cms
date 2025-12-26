@@ -31,19 +31,41 @@ class Events extends Content
 
 	/**
 	 * @param Application|null $app
+	 * @param DatabaseEventRepository|null $eventRepository
+	 * @param DatabaseEventCategoryRepository|null $categoryRepository
+	 * @param Creator|null $creator
+	 * @param Updater|null $updater
+	 * @param Deleter|null $deleter
 	 * @throws \Exception
 	 */
-	public function __construct( ?Application $app = null )
+	public function __construct(
+		?Application $app = null,
+		?DatabaseEventRepository $eventRepository = null,
+		?DatabaseEventCategoryRepository $categoryRepository = null,
+		?Creator $creator = null,
+		?Updater $updater = null,
+		?Deleter $deleter = null
+	)
 	{
 		parent::__construct( $app );
 
-		$settings = Registry::getInstance()->get( 'Settings' );
+		// Use injected dependencies if provided (for testing), otherwise create them (for production)
+		if( $eventRepository === null )
+		{
+			$settings = Registry::getInstance()->get( 'Settings' );
 
-		$this->_eventRepository = new DatabaseEventRepository( $settings );
-		$this->_categoryRepository = new DatabaseEventCategoryRepository( $settings );
-		$this->_creator = new Creator( $this->_eventRepository, $this->_categoryRepository );
-		$this->_updater = new Updater( $this->_eventRepository, $this->_categoryRepository );
-		$this->_deleter = new Deleter( $this->_eventRepository );
+			$eventRepository = new DatabaseEventRepository( $settings );
+			$categoryRepository = new DatabaseEventCategoryRepository( $settings );
+			$creator = new Creator( $eventRepository, $categoryRepository );
+			$updater = new Updater( $eventRepository, $categoryRepository );
+			$deleter = new Deleter( $eventRepository );
+		}
+
+		$this->_eventRepository = $eventRepository;
+		$this->_categoryRepository = $categoryRepository;
+		$this->_creator = $creator;
+		$this->_updater = $updater;
+		$this->_deleter = $deleter;
 	}
 
 	/**
@@ -51,42 +73,30 @@ class Events extends Content
 	 */
 	public function index( Request $request ): string
 	{
-		$user = Registry::getInstance()->get( 'Auth.User' );
-
-		if( !$user )
-		{
-			throw new \RuntimeException( 'Authenticated user not found' );
-		}
-
-		$sessionManager = $this->getSessionManager();
-		$csrfToken = new CsrfToken( $sessionManager );
-		Registry::getInstance()->set( 'Auth.CsrfToken', $csrfToken->getToken() );
+		$this->initializeCsrfToken();
 
 		// Get all events or filter by creator if not admin/editor
-		if( $user->isAdmin() || $user->isEditor() )
+		if( is_admin() || is_editor() )
 		{
 			$events = $this->_eventRepository->all();
 		}
 		else
 		{
-			$events = $this->_eventRepository->getByCreator( $user->getId() );
+			$events = $this->_eventRepository->getByCreator( user_id() );
 		}
 
-		$viewData = [
-			'Title' => 'Events | ' . $this->getName(),
-			'Description' => 'Manage calendar events',
-			'User' => $user,
-			'events' => $events,
-			'Success' => $sessionManager->getFlash( 'success' ),
-			'Error' => $sessionManager->getFlash( 'error' )
-		];
-
-		return $this->renderHtml(
-			HttpResponseStatus::OK,
-			$viewData,
-			'index',
-			'admin'
-		);
+		$sessionManager = $this->getSessionManager();
+		return $this->view()
+			->title( 'Events' )
+			->description( 'Manage calendar events' )
+			->withCurrentUser()
+			->withCsrfToken()
+			->with([
+				'events' => $events,
+				'Success' => $sessionManager->getFlash( 'success' ),
+				'Error' => $sessionManager->getFlash( 'error' )
+			])
+			->render( 'index', 'admin' );
 	}
 
 	/**
@@ -94,29 +104,15 @@ class Events extends Content
 	 */
 	public function create( Request $request ): string
 	{
-		$user = Registry::getInstance()->get( 'Auth.User' );
+		$this->initializeCsrfToken();
 
-		if( !$user )
-		{
-			throw new \RuntimeException( 'Authenticated user not found' );
-		}
-
-		$csrfToken = new CsrfToken( $this->getSessionManager() );
-		Registry::getInstance()->set( 'Auth.CsrfToken', $csrfToken->getToken() );
-
-		$viewData = [
-			'Title' => 'Create Event | ' . $this->getName(),
-			'Description' => 'Create a new calendar event',
-			'User' => $user,
-			'categories' => $this->_categoryRepository->all()
-		];
-
-		return $this->renderHtml(
-			HttpResponseStatus::OK,
-			$viewData,
-			'create',
-			'admin'
-		);
+		return $this->view()
+			->title( 'Create Event' )
+			->description( 'Create a new calendar event' )
+			->withCurrentUser()
+			->withCsrfToken()
+			->with( 'categories', $this->_categoryRepository->all() )
+			->render( 'create', 'admin' );
 	}
 
 	/**
@@ -124,23 +120,6 @@ class Events extends Content
 	 */
 	public function store( Request $request ): never
 	{
-		$user = Registry::getInstance()->get( 'Auth.User' );
-
-		if( !$user )
-		{
-			throw new \RuntimeException( 'Authenticated user not found' );
-		}
-
-		// Validate CSRF token before any state changes or processing
-		$csrfToken = new CsrfToken( $this->getSessionManager() );
-		$submittedToken = $request->post( 'csrf_token', '' );
-
-		if( !$csrfToken->validate( $submittedToken ) )
-		{
-			Log::warning( "CSRF validation failed for event creation by user {$user->getId()}" );
-			$this->redirect( 'admin_events_create', [], ['error', 'Invalid security token. Please try again.'] );
-		}
-
 		try
 		{
 			$title = $request->post( 'title', '' );
@@ -161,7 +140,7 @@ class Events extends Content
 			$this->_creator->create(
 				$title,
 				new DateTimeImmutable( $startDate ),
-				$user->getId(),
+				user_id(),
 				$status,
 				$slug ?: null,
 				$description ?: null,
@@ -189,13 +168,6 @@ class Events extends Content
 	 */
 	public function edit( Request $request ): string
 	{
-		$user = Registry::getInstance()->get( 'Auth.User' );
-
-		if( !$user )
-		{
-			throw new \RuntimeException( 'Authenticated user not found' );
-		}
-
 		$eventId = (int)$request->getRouteParameter( 'id' );
 		$event = $this->_eventRepository->findById( $eventId );
 
@@ -205,28 +177,23 @@ class Events extends Content
 		}
 
 		// Check permissions
-		if( !$user->isAdmin() && !$user->isEditor() && $event->getCreatedBy() !== $user->getId() )
+		if( !is_admin() && !is_editor() && $event->getCreatedBy() !== user_id() )
 		{
 			throw new \RuntimeException( 'Unauthorized to edit this event' );
 		}
 
-		$csrfToken = new CsrfToken( $this->getSessionManager() );
-		Registry::getInstance()->set( 'Auth.CsrfToken', $csrfToken->getToken() );
+		$this->initializeCsrfToken();
 
-		$viewData = [
-			'Title' => 'Edit Event | ' . $this->getName(),
-			'Description' => 'Edit calendar event',
-			'User' => $user,
-			'event' => $event,
-			'categories' => $this->_categoryRepository->all()
-		];
-
-		return $this->renderHtml(
-			HttpResponseStatus::OK,
-			$viewData,
-			'edit',
-			'admin'
-		);
+		return $this->view()
+			->title( 'Edit Event' )
+			->description( 'Edit calendar event' )
+			->withCurrentUser()
+			->withCsrfToken()
+			->with([
+				'event' => $event,
+				'categories' => $this->_categoryRepository->all()
+			])
+			->render( 'edit', 'admin' );
 	}
 
 	/**
@@ -234,13 +201,6 @@ class Events extends Content
 	 */
 	public function update( Request $request ): never
 	{
-		$user = Registry::getInstance()->get( 'Auth.User' );
-
-		if( !$user )
-		{
-			throw new \RuntimeException( 'Authenticated user not found' );
-		}
-
 		$eventId = (int)$request->getRouteParameter( 'id' );
 		$event = $this->_eventRepository->findById( $eventId );
 
@@ -250,19 +210,9 @@ class Events extends Content
 		}
 
 		// Check permissions
-		if( !$user->isAdmin() && !$user->isEditor() && $event->getCreatedBy() !== $user->getId() )
+		if( !is_admin() && !is_editor() && $event->getCreatedBy() !== user_id() )
 		{
 			throw new \RuntimeException( 'Unauthorized to edit this event' );
-		}
-
-		// Validate CSRF token before any state changes or processing
-		$csrfToken = new CsrfToken( $this->getSessionManager() );
-		$submittedToken = $request->post( 'csrf_token', '' );
-
-		if( !$csrfToken->validate( $submittedToken ) )
-		{
-			Log::warning( "CSRF validation failed for event update: Event {$eventId}, user {$user->getId()}" );
-			$this->redirect( 'admin_events_edit', ['id' => $eventId], ['error', 'Invalid security token. Please try again.'] );
 		}
 
 		try
@@ -313,13 +263,6 @@ class Events extends Content
 	 */
 	public function destroy( Request $request ): never
 	{
-		$user = Registry::getInstance()->get( 'Auth.User' );
-
-		if( !$user )
-		{
-			throw new \RuntimeException( 'Authenticated user not found' );
-		}
-
 		$eventId = (int)$request->getRouteParameter( 'id' );
 		$event = $this->_eventRepository->findById( $eventId );
 
@@ -329,19 +272,9 @@ class Events extends Content
 		}
 
 		// Check permissions
-		if( !$user->isAdmin() && !$user->isEditor() && $event->getCreatedBy() !== $user->getId() )
+		if( !is_admin() && !is_editor() && $event->getCreatedBy() !== user_id() )
 		{
 			$this->redirect( 'admin_events', [], ['error', 'Unauthorized to delete this event'] );
-		}
-
-		// Validate CSRF token before any state changes
-		$csrfToken = new CsrfToken( $this->getSessionManager() );
-		$submittedToken = $request->post( 'csrf_token', '' );
-
-		if( !$csrfToken->validate( $submittedToken ) )
-		{
-			Log::warning( "CSRF validation failed for event deletion: Event {$eventId}, user {$user->getId()}" );
-			$this->redirect( 'admin_events', [], ['error', 'Invalid security token. Please try again.'] );
 		}
 
 		try
