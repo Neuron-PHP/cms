@@ -7,6 +7,8 @@ use Neuron\Cms\Services\Media\CloudinaryUploader;
 use Neuron\Cms\Services\Media\MediaValidator;
 use Neuron\Data\Settings\SettingManager;
 use Neuron\Log\Log;
+use Neuron\Mvc\Application;
+use Neuron\Mvc\Requests\Request;
 use Neuron\Mvc\Responses\HttpResponseStatus;
 use Neuron\Patterns\Registry;
 
@@ -25,9 +27,9 @@ class Media extends Content
 	/**
 	 * Constructor
 	 *
-	 * @param \Neuron\Mvc\Application|null $app
+	 * @param Application|null $app
 	 */
-	public function __construct( ?\Neuron\Mvc\Application $app = null )
+	public function __construct( ?Application $app = null )
 	{
 		parent::__construct( $app );
 
@@ -48,9 +50,11 @@ class Media extends Content
 	 * Shows all uploaded images from Cloudinary in a grid view.
 	 * Supports pagination and search/filter.
 	 *
+	 * @param Request $request
 	 * @return string Rendered view
+	 * @throws \Exception
 	 */
-	public function index(): string
+	public function index( Request $request ): string
 	{
 		$user = Registry::getInstance()->get( 'Auth.User' );
 
@@ -61,10 +65,8 @@ class Media extends Content
 
 		try
 		{
-			// Get pagination cursor from query string
-			$nextCursor = isset($_GET['cursor']) && is_string($_GET['cursor']) 
-				? filter_var($_GET['cursor'], FILTER_SANITIZE_STRING) 
-				: null;
+			// Get pagination cursor from query string using framework's filter
+			$nextCursor = $request->get( 'cursor' );
 
 			// List resources from Cloudinary
 			$result = $this->_uploader->listResources( [
@@ -117,20 +119,22 @@ class Media extends Content
 	 * Handles POST /admin/upload/image
 	 * Returns JSON in Editor.js format
 	 *
-	 * @return void
+	 * @return string JSON response
 	 */
-	public function uploadImage(): void
+	public function uploadImage(): string
 	{
-		// Set JSON response header
-		header( 'Content-Type: application/json' );
-
 		try
 		{
 			// Check if file was uploaded
 			if( !isset( $_FILES['image'] ) )
 			{
-				$this->returnEditorJsError( 'No file was uploaded' );
-				return;
+				return $this->renderJson(
+					HttpResponseStatus::BAD_REQUEST,
+					[
+						'success' => 0,
+						'message' => 'No file was uploaded'
+					]
+				);
 			}
 
 			$file = $_FILES['image'];
@@ -138,19 +142,40 @@ class Media extends Content
 			// Validate file
 			if( !$this->_validator->validate( $file ) )
 			{
-				$this->returnEditorJsError( $this->_validator->getFirstError() );
-				return;
+				return $this->renderJson(
+					HttpResponseStatus::BAD_REQUEST,
+					[
+						'success' => 0,
+						'message' => $this->_validator->getFirstError()
+					]
+				);
 			}
 
 			// Upload to Cloudinary
 			$result = $this->_uploader->upload( $file['tmp_name'] );
 
 			// Return success response in Editor.js format
-			$this->returnEditorJsSuccess( $result );
+			return $this->renderJson(
+				HttpResponseStatus::OK,
+				[
+					'success' => 1,
+					'file' => [
+						'url' => $result['url'],
+						'width' => $result['width'],
+						'height' => $result['height']
+					]
+				]
+			);
 		}
 		catch( \Exception $e )
 		{
-			$this->returnEditorJsError( $e->getMessage() );
+			return $this->renderJson(
+				HttpResponseStatus::INTERNAL_SERVER_ERROR,
+				[
+					'success' => 0,
+					'message' => $e->getMessage()
+				]
+			);
 		}
 	}
 
@@ -160,20 +185,22 @@ class Media extends Content
 	 * Handles POST /admin/upload/featured-image
 	 * Returns JSON with upload result
 	 *
-	 * @return void
+	 * @return string JSON response
 	 */
-	public function uploadFeaturedImage(): void
+	public function uploadFeaturedImage(): string
 	{
-		// Set JSON response header
-		header( 'Content-Type: application/json' );
-
 		try
 		{
 			// Check if file was uploaded
 			if( !isset( $_FILES['image'] ) )
 			{
-				$this->returnError( 'No file was uploaded' );
-				return;
+				return $this->renderJson(
+					HttpResponseStatus::BAD_REQUEST,
+					[
+						'success' => false,
+						'error' => 'No file was uploaded'
+					]
+				);
 			}
 
 			$file = $_FILES['image'];
@@ -181,85 +208,36 @@ class Media extends Content
 			// Validate file
 			if( !$this->_validator->validate( $file ) )
 			{
-				$this->returnError( $this->_validator->getFirstError() );
-				return;
+				return $this->renderJson(
+					HttpResponseStatus::BAD_REQUEST,
+					[
+						'success' => false,
+						'error' => $this->_validator->getFirstError()
+					]
+				);
 			}
 
 			// Upload to Cloudinary
 			$result = $this->_uploader->upload( $file['tmp_name'] );
 
 			// Return success response
-			$this->returnSuccess( $result );
+			return $this->renderJson(
+				HttpResponseStatus::OK,
+				[
+					'success' => true,
+					'data' => $result
+				]
+			);
 		}
 		catch( \Exception $e )
 		{
-			$this->returnError( $e->getMessage() );
+			return $this->renderJson(
+				HttpResponseStatus::INTERNAL_SERVER_ERROR,
+				[
+					'success' => false,
+					'error' => $e->getMessage()
+				]
+			);
 		}
-	}
-
-	/**
-	 * Return Editor.js success response
-	 *
-	 * @param array $result Upload result
-	 * @return void
-	 */
-	private function returnEditorJsSuccess( array $result ): void
-	{
-		echo json_encode( [
-			'success' => 1,
-			'file' => [
-				'url' => $result['url'],
-				'width' => $result['width'],
-				'height' => $result['height']
-			]
-		] );
-		exit;
-	}
-
-	/**
-	 * Return Editor.js error response
-	 *
-	 * @param string $message Error message
-	 * @return void
-	 */
-	private function returnEditorJsError( string $message ): void
-	{
-		http_response_code( 400 );
-		echo json_encode( [
-			'success' => 0,
-			'message' => $message
-		] );
-		exit;
-	}
-
-	/**
-	 * Return standard success response
-	 *
-	 * @param array $result Upload result
-	 * @return void
-	 */
-	private function returnSuccess( array $result ): void
-	{
-		echo json_encode( [
-			'success' => true,
-			'data' => $result
-		] );
-		exit;
-	}
-
-	/**
-	 * Return standard error response
-	 *
-	 * @param string $message Error message
-	 * @return void
-	 */
-	private function returnError( string $message ): void
-	{
-		http_response_code( 400 );
-		echo json_encode( [
-			'success' => false,
-			'error' => $message
-		] );
-		exit;
 	}
 }
