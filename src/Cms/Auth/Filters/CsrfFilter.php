@@ -5,6 +5,7 @@ namespace Neuron\Cms\Auth\Filters;
 use Neuron\Routing\Filter;
 use Neuron\Routing\RouteMap;
 use Neuron\Cms\Services\Auth\CsrfToken;
+use Neuron\Cms\Exceptions\CsrfValidationException;
 use Neuron\Log\Log;
 
 /**
@@ -32,6 +33,8 @@ class CsrfFilter extends Filter
 
 	/**
 	 * Validate CSRF token
+	 *
+	 * @throws CsrfValidationException When token is missing or invalid
 	 */
 	protected function validateCsrfToken( RouteMap $route ): void
 	{
@@ -49,14 +52,20 @@ class CsrfFilter extends Filter
 		if( !$token )
 		{
 			Log::warning( 'CSRF token missing from request' );
-			$this->respondForbidden( 'CSRF token missing' );
+			throw new CsrfValidationException(
+				'CSRF token missing from request',
+				'CSRF token missing'
+			);
 		}
 
 		// Validate token
 		if( !$this->_csrfToken->validate( $token ) )
 		{
 			Log::warning( 'Invalid CSRF token' );
-			$this->respondForbidden( 'Invalid CSRF token' );
+			throw new CsrfValidationException(
+				'Invalid CSRF token provided',
+				'Invalid CSRF token'
+			);
 		}
 	}
 
@@ -79,16 +88,5 @@ class CsrfFilter extends Filter
 		}
 
 		return null;
-	}
-
-	/**
-	 * Respond with 403 Forbidden
-	 */
-	private function respondForbidden( string $message ): void
-	{
-		http_response_code( 403 );
-		echo '<h1>403 Forbidden</h1>';
-		echo '<p>' . htmlspecialchars( $message ) . '</p>';
-		exit;
 	}
 }

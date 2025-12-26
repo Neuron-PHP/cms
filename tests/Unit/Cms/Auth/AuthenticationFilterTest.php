@@ -111,15 +111,63 @@ class AuthenticationFilterTest extends TestCase
 	}
 
 	/**
+	 * Test that filter throws exception for unauthenticated user.
+	 *
+	 * When user is null (not authenticated), the filter should throw
+	 * UnauthenticatedException with redirect URL to login page.
+	 */
+	public function testThrowsExceptionForUnauthenticatedUser(): void
+	{
+		// Mock authentication to return null (unauthenticated)
+		$this->_authentication
+			->method( 'user' )
+			->willReturn( null );
+
+		// Expect UnauthenticatedException when user is not authenticated
+		$this->expectException( \Neuron\Cms\Exceptions\UnauthenticatedException::class );
+		$this->expectExceptionCode( 401 );
+
+		// Execute filter - should throw exception
+		$this->_filter->pre( $this->_route );
+	}
+
+	/**
+	 * Test that UnauthenticatedException includes redirect information.
+	 *
+	 * The exception should include the redirect URL (login page) and
+	 * the intended URL (original page user was trying to access).
+	 */
+	public function testExceptionIncludesRedirectInformation(): void
+	{
+		// Mock authentication to return null
+		$this->_authentication
+			->method( 'user' )
+			->willReturn( null );
+
+		try
+		{
+			$this->_filter->pre( $this->_route );
+			$this->fail( 'Expected UnauthenticatedException was not thrown' );
+		}
+		catch( \Neuron\Cms\Exceptions\UnauthenticatedException $e )
+		{
+			// Verify exception includes redirect URL (login page with query param)
+			$redirectUrl = $e->getRedirectUrl();
+			$this->assertStringContainsString( '/login', $redirectUrl );
+			$this->assertStringContainsString( 'redirect=', $redirectUrl );
+
+			// Verify exception includes intended URL (original route path)
+			$this->assertEquals( '/admin/users', $e->getIntendedUrl() );
+
+			// Verify exception code
+			$this->assertEquals( 401, $e->getCode() );
+		}
+	}
+
+	/**
 	 * Test that filter does not populate Registry for unauthenticated user.
 	 *
-	 * This test verifies the core authentication logic: when user is null,
-	 * the filter correctly detects this state and does not populate Registry.
-	 *
-	 * We cannot invoke $this->_filter->pre() because it calls exit(), which
-	 * terminates the test process and causes test failure. The redirect/exit
-	 * behavior is integration-tested, but here we verify the authentication
-	 * check logic and Registry state management.
+	 * When authentication fails, Registry should remain unpopulated.
 	 */
 	public function testDoesNotPopulateRegistryForNullUser(): void
 	{
@@ -128,31 +176,31 @@ class AuthenticationFilterTest extends TestCase
 			->method( 'user' )
 			->willReturn( null );
 
-		// Verify precondition: authentication returns null
-		$this->assertNull(
-			$this->_authentication->user(),
-			'Authentication service should return null for unauthenticated user'
-		);
+		// Verify Registry is not populated before filter runs
+		$this->assertNull( Registry::getInstance()->get( 'Auth.User' ) );
+		$this->assertNull( Registry::getInstance()->get( 'Auth.UserId' ) );
+		$this->assertNull( Registry::getInstance()->get( 'Auth.UserRole' ) );
 
-		// Verify Registry is not populated when user is null
-		// (This is the observable state before filter would redirect)
-		$this->assertNull(
-			Registry::getInstance()->get( 'Auth.User' ),
-			'Auth.User should not be set in Registry when user is unauthenticated'
-		);
-		$this->assertNull(
-			Registry::getInstance()->get( 'Auth.UserId' ),
-			'Auth.UserId should not be set in Registry when user is unauthenticated'
-		);
-		$this->assertNull(
-			Registry::getInstance()->get( 'Auth.UserRole' ),
-			'Auth.UserRole should not be set in Registry when user is unauthenticated'
-		);
-
-		// Note: Cannot call $this->_filter->pre($this->_route) here because
-		// it calls header()/exit() which terminates the test process.
-		// To make this fully testable, the filter would need to accept an
-		// injected redirect handler instead of directly calling exit().
+		try
+		{
+			$this->_filter->pre( $this->_route );
+		}
+		catch( \Neuron\Cms\Exceptions\UnauthenticatedException $e )
+		{
+			// Expected exception - verify Registry still not populated
+			$this->assertNull(
+				Registry::getInstance()->get( 'Auth.User' ),
+				'Auth.User should not be set when authentication fails'
+			);
+			$this->assertNull(
+				Registry::getInstance()->get( 'Auth.UserId' ),
+				'Auth.UserId should not be set when authentication fails'
+			);
+			$this->assertNull(
+				Registry::getInstance()->get( 'Auth.UserRole' ),
+				'Auth.UserRole should not be set when authentication fails'
+			);
+		}
 	}
 
 	public function testHandlesDifferentUserRoles(): void

@@ -103,45 +103,45 @@ class CsrfFilterTest extends TestCase
 	}
 
 	/**
-	 * Test that PUT requests are subject to CSRF validation.
+	 * Test that PUT requests without CSRF token throw validation exception.
 	 *
-	 * Note: Cannot invoke filter->pre() in unit tests because the filter uses
-	 * filter_input(INPUT_POST) which doesn't work with manually set $_POST.
-	 * This test verifies that PUT is not in the exempt methods list.
+	 * PUT is not in the exempt methods list, so it requires CSRF validation.
+	 * When no token is provided, the filter should throw CsrfValidationException.
 	 */
 	public function testPutRequestsRequireCsrfValidation(): void
 	{
 		$_SERVER['REQUEST_METHOD'] = 'PUT';
+		unset( $_POST['csrf_token'] );
+		unset( $_SERVER['HTTP_X_CSRF_TOKEN'] );
 
-		// Verify PUT is not in the exempt methods list
-		// Exempt methods are: GET, HEAD, OPTIONS
-		$exemptMethods = ['GET', 'HEAD', 'OPTIONS'];
-		$this->assertNotContains(
-			'PUT',
-			$exemptMethods,
-			'PUT requests should require CSRF validation'
-		);
+		// Expect CsrfValidationException when token is missing
+		$this->expectException( \Neuron\Cms\Exceptions\CsrfValidationException::class );
+		$this->expectExceptionMessage( 'CSRF token missing from request' );
+		$this->expectExceptionCode( 403 );
+
+		// Execute filter - should throw exception
+		$this->_filter->pre( $this->_route );
 	}
 
 	/**
-	 * Test that DELETE requests are subject to CSRF validation.
+	 * Test that DELETE requests without CSRF token throw validation exception.
 	 *
-	 * Note: Cannot invoke filter->pre() in unit tests because the filter uses
-	 * filter_input(INPUT_POST) which doesn't work with manually set $_POST.
-	 * This test verifies that DELETE is not in the exempt methods list.
+	 * DELETE is not in the exempt methods list, so it requires CSRF validation.
+	 * When no token is provided, the filter should throw CsrfValidationException.
 	 */
 	public function testDeleteRequestsRequireCsrfValidation(): void
 	{
 		$_SERVER['REQUEST_METHOD'] = 'DELETE';
+		unset( $_POST['csrf_token'] );
+		unset( $_SERVER['HTTP_X_CSRF_TOKEN'] );
 
-		// Verify DELETE is not in the exempt methods list
-		// Exempt methods are: GET, HEAD, OPTIONS
-		$exemptMethods = ['GET', 'HEAD', 'OPTIONS'];
-		$this->assertNotContains(
-			'DELETE',
-			$exemptMethods,
-			'DELETE requests should require CSRF validation'
-		);
+		// Expect CsrfValidationException when token is missing
+		$this->expectException( \Neuron\Cms\Exceptions\CsrfValidationException::class );
+		$this->expectExceptionMessage( 'CSRF token missing from request' );
+		$this->expectExceptionCode( 403 );
+
+		// Execute filter - should throw exception
+		$this->_filter->pre( $this->_route );
 	}
 
 	/**
@@ -166,58 +166,77 @@ class CsrfFilterTest extends TestCase
 	}
 
 	/**
-	 * Test that invalid token is correctly detected by CSRF service.
+	 * Test that invalid token throws validation exception.
 	 *
-	 * Note: Cannot invoke filter->pre() here because it calls exit() when
-	 * validation fails. This test verifies the token validation logic itself.
-	 * The 403 response and exit() behavior is verified in integration tests.
+	 * When an invalid token is provided, the filter should throw
+	 * CsrfValidationException with appropriate message.
 	 */
 	public function testDetectsInvalidToken(): void
 	{
 		$_SERVER['REQUEST_METHOD'] = 'POST';
-		$_POST['csrf_token'] = 'invalid-token';
+		$_SERVER['HTTP_X_CSRF_TOKEN'] = 'invalid-token';
 
-		// Verify token validation correctly identifies invalid token
+		// Mock CSRF service to reject the token
 		$this->_csrfToken
+			->expects( $this->once() )
 			->method( 'validate' )
 			->with( 'invalid-token' )
 			->willReturn( false );
 
-		// Verify the CSRF service correctly rejects the invalid token
-		$this->assertFalse(
-			$this->_csrfToken->validate( 'invalid-token' ),
-			'CSRF service correctly rejects invalid token'
-		);
+		// Expect CsrfValidationException when token is invalid
+		$this->expectException( \Neuron\Cms\Exceptions\CsrfValidationException::class );
+		$this->expectExceptionMessage( 'Invalid CSRF token provided' );
+		$this->expectExceptionCode( 403 );
 
-		// Cannot call $this->_filter->pre() because it would call exit()
-		// when validation fails, terminating the test process.
+		// Execute filter - should throw exception
+		$this->_filter->pre( $this->_route );
 	}
 
 	/**
-	 * Test that missing token condition is correctly detected.
+	 * Test that missing token throws validation exception.
 	 *
-	 * Note: Cannot invoke filter->pre() here because it calls exit() when
-	 * token is missing. This test verifies the precondition that triggers
-	 * the 403 response.
+	 * When no token is provided (neither POST nor header), the filter
+	 * should throw CsrfValidationException.
 	 */
-	public function testDetectsMissingTokenCondition(): void
+	public function testDetectsMissingToken(): void
 	{
 		$_SERVER['REQUEST_METHOD'] = 'POST';
 		unset( $_POST['csrf_token'] );
 		unset( $_SERVER['HTTP_X_CSRF_TOKEN'] );
 
-		// Verify the condition that would trigger 403 response
-		$this->assertFalse(
-			isset( $_POST['csrf_token'] ),
-			'CSRF token not in POST data'
-		);
-		$this->assertFalse(
-			isset( $_SERVER['HTTP_X_CSRF_TOKEN'] ),
-			'CSRF token not in HTTP header'
-		);
+		// Expect CsrfValidationException when no token is present
+		$this->expectException( \Neuron\Cms\Exceptions\CsrfValidationException::class );
+		$this->expectExceptionMessage( 'CSRF token missing from request' );
+		$this->expectExceptionCode( 403 );
 
-		// Cannot call $this->_filter->pre() because it would call exit()
-		// when no token is found, terminating the test process.
+		// Execute filter - should throw exception
+		$this->_filter->pre( $this->_route );
+	}
+
+	/**
+	 * Test that CsrfValidationException includes user-friendly message.
+	 *
+	 * The exception should provide a getUserMessage() method that returns
+	 * a message suitable for displaying to users.
+	 */
+	public function testExceptionIncludesUserMessage(): void
+	{
+		$_SERVER['REQUEST_METHOD'] = 'POST';
+		unset( $_POST['csrf_token'] );
+		unset( $_SERVER['HTTP_X_CSRF_TOKEN'] );
+
+		try
+		{
+			$this->_filter->pre( $this->_route );
+			$this->fail( 'Expected CsrfValidationException was not thrown' );
+		}
+		catch( \Neuron\Cms\Exceptions\CsrfValidationException $e )
+		{
+			// Verify exception has user message
+			$this->assertEquals( 'CSRF token missing', $e->getUserMessage() );
+			$this->assertEquals( 'CSRF token missing from request', $e->getMessage() );
+			$this->assertEquals( 403, $e->getCode() );
+		}
 	}
 
 	/**

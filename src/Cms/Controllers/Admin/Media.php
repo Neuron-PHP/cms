@@ -131,8 +131,8 @@ class Media extends Content
 					'resources' => $result['resources'],
 					'nextCursor' => $result['next_cursor'],
 					'totalCount' => $result['total_count'],
-					'Success' => $sessionManager->getFlash( 'success' ),
-					'Error' => $sessionManager->getFlash( 'error' )
+					'success' => $sessionManager->getFlash( 'success' ),
+					'error' => $sessionManager->getFlash( 'error' )
 				])
 				->render( 'index', 'admin' );
 		}
@@ -152,8 +152,8 @@ class Media extends Content
 					'resources' => [],
 					'nextCursor' => null,
 					'totalCount' => 0,
-					'Success' => $sessionManager->getFlash( 'success' ),
-					'Error' => 'Failed to load media library. Please try again.'
+					'success' => $sessionManager->getFlash( 'success' ),
+					'error' => 'Failed to load media library. Please try again.'
 				])
 				->render( 'index', 'admin' );
 		}
@@ -229,9 +229,12 @@ class Media extends Content
 		}
 		catch( \Exception $e )
 		{
+			// Safely retrieve filename with explicit isset check to prevent undefined index
+			$filename = isset( $_FILES['image']['name'] ) ? $_FILES['image']['name'] : 'unknown';
+
 			Log::error( 'Image upload failed', [
 				'user_id' => user_id(),
-				'filename' => $_FILES['image']['name'] ?? 'unknown',
+				'filename' => $filename,
 				'exception' => $e,
 				'message' => $e->getMessage()
 			] );
@@ -312,9 +315,12 @@ class Media extends Content
 		}
 		catch( \Exception $e )
 		{
+			// Safely retrieve filename with explicit isset check to prevent undefined index
+			$filename = isset( $_FILES['image']['name'] ) ? $_FILES['image']['name'] : 'unknown';
+
 			Log::error( 'Featured image upload failed', [
 				'user_id' => user_id(),
-				'filename' => $_FILES['image']['name'] ?? 'unknown',
+				'filename' => $filename,
 				'exception' => $e,
 				'message' => $e->getMessage()
 			] );

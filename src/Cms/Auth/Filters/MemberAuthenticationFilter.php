@@ -5,6 +5,8 @@ namespace Neuron\Cms\Auth\Filters;
 use Neuron\Routing\Filter;
 use Neuron\Routing\RouteMap;
 use Neuron\Cms\Services\Auth\Authentication;
+use Neuron\Cms\Exceptions\UnauthenticatedException;
+use Neuron\Cms\Exceptions\EmailVerificationRequiredException;
 use Neuron\Patterns\Registry;
 
 /**
@@ -42,6 +44,9 @@ class MemberAuthenticationFilter extends Filter
 
 	/**
 	 * Check if user is authenticated and verified
+	 *
+	 * @throws UnauthenticatedException When user is not authenticated
+	 * @throws EmailVerificationRequiredException When email verification is required but not completed
 	 */
 	protected function checkAuthentication( RouteMap $route ): void
 	{
@@ -53,21 +58,25 @@ class MemberAuthenticationFilter extends Filter
 			// Store intended URL for post-login redirect
 			$intendedUrl = $_SERVER['REQUEST_URI'] ?? $route->getPath();
 
-			// Redirect to login page
+			// Build redirect URL to login page
 			$separator = ( strpos( $this->_loginUrl, '?' ) === false ) ? '?' : '&';
 			$query = http_build_query( [ $this->_redirectParam => $intendedUrl ] );
 			$redirectUrl = $this->_loginUrl . $separator . $query;
 
-			header( 'Location: ' . $redirectUrl );
-			exit;
+			throw new UnauthenticatedException(
+				$redirectUrl,
+				$intendedUrl,
+				'User not authenticated, redirect required to: ' . $redirectUrl
+			);
 		}
 
 		// Check if email verification is required
 		if( $this->_requireEmailVerification && !$user->isEmailVerified() )
 		{
-			// Redirect to email verification required page
-			header( 'Location: ' . $this->_verifyEmailUrl );
-			exit;
+			throw new EmailVerificationRequiredException(
+				$this->_verifyEmailUrl,
+				'Email verification required for user ID: ' . $user->getId()
+			);
 		}
 
 		// Set user in Registry for controllers to access
