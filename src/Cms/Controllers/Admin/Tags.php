@@ -47,10 +47,15 @@ class Tags extends Content
 			throw new \RuntimeException( 'Authenticated user not found' );
 		}
 
+		// Generate CSRF token
+		$csrfToken = new \Neuron\Cms\Services\Auth\CsrfToken( $this->getSessionManager() );
+		\Neuron\Patterns\Registry::getInstance()->set( 'Auth.CsrfToken', $csrfToken->getToken() );
+
 		return $this->view()
 			->title( 'Tags | Admin' )
 			->description( 'Manage blog tags' )
 			->withCurrentUser()
+			->withCsrfToken()
 			->with( 'TagsWithCount', $this->_tagRepository->allWithPostCount() )
 			->render( 'index', 'tags' );
 	}
@@ -68,10 +73,15 @@ class Tags extends Content
 			throw new \RuntimeException( 'Authenticated user not found' );
 		}
 
+		// Generate CSRF token
+		$csrfToken = new \Neuron\Cms\Services\Auth\CsrfToken( $this->getSessionManager() );
+		\Neuron\Patterns\Registry::getInstance()->set( 'Auth.CsrfToken', $csrfToken->getToken() );
+
 		return $this->view()
 			->title( 'Create Tag | Admin' )
 			->description( 'Create a new blog tag' )
 			->withCurrentUser()
+			->withCsrfToken()
 			->render( 'create', 'tags' );
 	}
 
@@ -127,10 +137,15 @@ class Tags extends Content
 			throw new \RuntimeException( 'Tag not found' );
 		}
 
+		// Generate CSRF token
+		$csrfToken = new \Neuron\Cms\Services\Auth\CsrfToken( $this->getSessionManager() );
+		\Neuron\Patterns\Registry::getInstance()->set( 'Auth.CsrfToken', $csrfToken->getToken() );
+
 		return $this->view()
 			->title( 'Edit Tag | Admin' )
 			->description( 'Edit blog tag' )
 			->withCurrentUser()
+			->withCsrfToken()
 			->with( 'Tag', $tag )
 			->render( 'edit', 'tags' );
 	}

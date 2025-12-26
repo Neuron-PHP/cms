@@ -57,10 +57,15 @@ class Categories extends Content
 			throw new \RuntimeException( 'Authenticated user not found' );
 		}
 
+		// Generate CSRF token
+		$csrfToken = new \Neuron\Cms\Services\Auth\CsrfToken( $this->getSessionManager() );
+		\Neuron\Patterns\Registry::getInstance()->set( 'Auth.CsrfToken', $csrfToken->getToken() );
+
 		return $this->view()
 			->title( 'Categories | Admin' )
 			->description( 'Manage blog categories' )
 			->withCurrentUser()
+			->withCsrfToken()
 			->with( 'CategoriesWithCount', $this->_categoryRepository->allWithPostCount() )
 			->render( 'index', 'categories' );
 	}
@@ -78,10 +83,15 @@ class Categories extends Content
 			throw new \RuntimeException( 'Authenticated user not found' );
 		}
 
+		// Generate CSRF token
+		$csrfToken = new \Neuron\Cms\Services\Auth\CsrfToken( $this->getSessionManager() );
+		\Neuron\Patterns\Registry::getInstance()->set( 'Auth.CsrfToken', $csrfToken->getToken() );
+
 		return $this->view()
 			->title( 'Create Category | Admin' )
 			->description( 'Create a new blog category' )
 			->withCurrentUser()
+			->withCsrfToken()
 			->render( 'create', 'categories' );
 	}
 
@@ -129,10 +139,15 @@ class Categories extends Content
 			throw new \RuntimeException( 'Category not found' );
 		}
 
+		// Generate CSRF token
+		$csrfToken = new \Neuron\Cms\Services\Auth\CsrfToken( $this->getSessionManager() );
+		\Neuron\Patterns\Registry::getInstance()->set( 'Auth.CsrfToken', $csrfToken->getToken() );
+
 		return $this->view()
 			->title( 'Edit Category | Admin' )
 			->description( 'Edit blog category' )
 			->withCurrentUser()
+			->withCsrfToken()
 			->with( 'Category', $category )
 			->render( 'edit', 'categories' );
 	}

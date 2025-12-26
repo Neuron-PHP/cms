@@ -73,31 +73,52 @@ class Media extends Content
 		try
 		{
 			// Get pagination cursor from query string
-			$nextCursor = $request->get( 'cursor' );
+			$rawCursor = $request->get( 'cursor' );
 
-			// List resources from Cloudinary
-			$result = $this->_uploader->listResources( [
-				'next_cursor' => $nextCursor,
-				'max_results' => 30
-			] );
+			// Validate cursor - must be alphanumeric plus underscore/hyphen/equals (Cloudinary format)
+			// Fail closed by not passing invalid cursors to the API
+			$validatedCursor = null;
+			if( !empty( $rawCursor ) )
+			{
+				// Cloudinary cursors are typically base64-like strings with alphanumeric, _, -, and = characters
+				if( preg_match( '/^[a-zA-Z0-9_\-=]+$/', $rawCursor ) )
+				{
+					$validatedCursor = $rawCursor;
+				}
+				else
+				{
+					// Log invalid cursor attempt for security monitoring
+					Log::warning( 'Invalid pagination cursor rejected', [
+						'cursor' => substr( $rawCursor, 0, 50 ), // Limit logged data
+						'user_id' => user_id(),
+						'ip' => $_SERVER['REMOTE_ADDR'] ?? 'unknown'
+					] );
+				}
+			}
 
-			$viewData = [
-				'Title' => 'Media Library | ' . $this->getName(),
-				'Description' => 'Manage uploaded images',
-				'User' => $user,
-				'resources' => $result['resources'],
-				'nextCursor' => $result['next_cursor'],
-				'totalCount' => $result['total_count'],
-				'Success' => $sessionManager->getFlash( 'success' ),
-				'Error' => $sessionManager->getFlash( 'error' )
-			];
+			// Build options array - only include next_cursor if validated
+			$options = ['max_results' => 30];
+			if( $validatedCursor !== null )
+			{
+				$options['next_cursor'] = $validatedCursor;
+			}
 
-			return $this->renderHtml(
-				HttpResponseStatus::OK,
-				$viewData,
-				'index',
-				'admin'
-			);
+			// List resources from Cloudinary with validated cursor
+			$result = $this->_uploader->listResources( $options );
+
+			return $this->view()
+				->title( 'Media Library' )
+				->description( 'Manage uploaded images' )
+				->withCurrentUser()
+				->withCsrfToken()
+				->with([
+					'resources' => $result['resources'],
+					'nextCursor' => $result['next_cursor'],
+					'totalCount' => $result['total_count'],
+					'Success' => $sessionManager->getFlash( 'success' ),
+					'Error' => $sessionManager->getFlash( 'error' )
+				])
+				->render( 'index', 'admin' );
 		}
 		catch( \Exception $e )
 		{
@@ -106,23 +127,19 @@ class Media extends Content
 				'user_id' => user_id()
 			] );
 
-			$viewData = [
-				'Title' => 'Media Library | ' . $this->getName(),
-				'Description' => 'Manage uploaded images',
-				'User' => $user,
-				'resources' => [],
-				'nextCursor' => null,
-				'totalCount' => 0,
-				'Success' => $sessionManager->getFlash( 'success' ),
-				'Error' => 'Failed to load media library. Please try again.'
-			];
-
-			return $this->renderHtml(
-				HttpResponseStatus::OK,
-				$viewData,
-				'index',
-				'admin'
-			);
+			return $this->view()
+				->title( 'Media Library' )
+				->description( 'Manage uploaded images' )
+				->withCurrentUser()
+				->withCsrfToken()
+				->with([
+					'resources' => [],
+					'nextCursor' => null,
+					'totalCount' => 0,
+					'Success' => $sessionManager->getFlash( 'success' ),
+					'Error' => 'Failed to load media library. Please try again.'
+				])
+				->render( 'index', 'admin' );
 		}
 	}
 
