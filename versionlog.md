@@ -1,4 +1,8 @@
 ## 0.8.12
+* Added media management.
+* Added page management.
+* Lots of refactoring.
+* Added more tests.
 
 ## 0.8.11 2025-12-25
 * Fixed the installer.
