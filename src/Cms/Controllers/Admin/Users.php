@@ -167,6 +167,11 @@ class Users extends Content
 	 */
 	public function update( Request $request ): never
 	{
+		if( !auth() )
+		{
+			throw new \RuntimeException( 'Authenticated user not found' );
+		}
+
 		$id = (int)$request->getRouteParameter( 'id' );
 		$user = $this->_repository->findById( $id );
 
@@ -209,11 +214,15 @@ class Users extends Content
 	 */
 	public function destroy( Request $request ): never
 	{
+		if( !auth() )
+		{
+			throw new \RuntimeException( 'Authenticated user not found' );
+		}
+
 		$id = (int)$request->getRouteParameter( 'id' );
-		$currentUser = auth();
 
 		// Prevent self-deletion
-		if( $currentUser && user_id() === $id )
+		if( user_id() === $id )
 		{
 			$this->redirect( 'admin_users', [], ['error', 'Cannot delete your own account'] );
 		}

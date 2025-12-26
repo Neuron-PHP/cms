@@ -35,6 +35,17 @@ class Tags extends Content
 	}
 
 	/**
+	 * Initialize CSRF token and store in Registry
+	 *
+	 * @return void
+	 */
+	protected function initializeCsrfToken(): void
+	{
+		$csrfToken = new \Neuron\Cms\Services\Auth\CsrfToken( $this->getSessionManager() );
+		\Neuron\Patterns\Registry::getInstance()->set( 'Auth.CsrfToken', $csrfToken->getToken() );
+	}
+
+	/**
 	 * List all tags
 	 * @param Request $request
 	 * @return string
@@ -47,9 +58,7 @@ class Tags extends Content
 			throw new \RuntimeException( 'Authenticated user not found' );
 		}
 
-		// Generate CSRF token
-		$csrfToken = new \Neuron\Cms\Services\Auth\CsrfToken( $this->getSessionManager() );
-		\Neuron\Patterns\Registry::getInstance()->set( 'Auth.CsrfToken', $csrfToken->getToken() );
+		$this->initializeCsrfToken();
 
 		return $this->view()
 			->title( 'Tags | Admin' )
@@ -73,9 +82,7 @@ class Tags extends Content
 			throw new \RuntimeException( 'Authenticated user not found' );
 		}
 
-		// Generate CSRF token
-		$csrfToken = new \Neuron\Cms\Services\Auth\CsrfToken( $this->getSessionManager() );
-		\Neuron\Patterns\Registry::getInstance()->set( 'Auth.CsrfToken', $csrfToken->getToken() );
+		$this->initializeCsrfToken();
 
 		return $this->view()
 			->title( 'Create Tag | Admin' )
@@ -93,6 +100,21 @@ class Tags extends Content
 	 */
 	public function store( Request $request ): never
 	{
+		if( !auth() )
+		{
+			throw new \RuntimeException( 'Authenticated user not found' );
+		}
+
+		// Validate CSRF token before any state changes or processing
+		$csrfToken = new \Neuron\Cms\Services\Auth\CsrfToken( $this->getSessionManager() );
+		$submittedToken = $request->post( 'csrf_token', '' );
+
+		if( !$csrfToken->validate( $submittedToken ) )
+		{
+			\Neuron\Log\Log::warning( 'CSRF validation failed for tag creation by user ' . user_id() );
+			$this->redirect( 'admin_tags_create', [], ['error', 'Invalid security token. Please try again.'] );
+		}
+
 		try
 		{
 			// Get form data
@@ -137,9 +159,7 @@ class Tags extends Content
 			throw new \RuntimeException( 'Tag not found' );
 		}
 
-		// Generate CSRF token
-		$csrfToken = new \Neuron\Cms\Services\Auth\CsrfToken( $this->getSessionManager() );
-		\Neuron\Patterns\Registry::getInstance()->set( 'Auth.CsrfToken', $csrfToken->getToken() );
+		$this->initializeCsrfToken();
 
 		return $this->view()
 			->title( 'Edit Tag | Admin' )
@@ -159,12 +179,27 @@ class Tags extends Content
 	 */
 	public function update( Request $request ): never
 	{
+		if( !auth() )
+		{
+			throw new \RuntimeException( 'Authenticated user not found' );
+		}
+
 		$tagId = (int)$request->getRouteParameter( 'id' );
 		$tag = $this->_tagRepository->findById( $tagId );
 
 		if( !$tag )
 		{
 			$this->redirect( 'admin_tags', [], ['error', 'Tag not found'] );
+		}
+
+		// Validate CSRF token before any state changes or processing
+		$csrfToken = new \Neuron\Cms\Services\Auth\CsrfToken( $this->getSessionManager() );
+		$submittedToken = $request->post( 'csrf_token', '' );
+
+		if( !$csrfToken->validate( $submittedToken ) )
+		{
+			\Neuron\Log\Log::warning( "CSRF validation failed for tag update: Tag {$tagId}, user " . user_id() );
+			$this->redirect( 'admin_tags_edit', ['id' => $tagId], ['error', 'Invalid security token. Please try again.'] );
 		}
 
 		try
@@ -197,7 +232,22 @@ class Tags extends Content
 	 */
 	public function destroy( Request $request ): never
 	{
+		if( !auth() )
+		{
+			throw new \RuntimeException( 'Authenticated user not found' );
+		}
+
 		$tagId = (int)$request->getRouteParameter( 'id' );
+
+		// Validate CSRF token before any state changes
+		$csrfToken = new \Neuron\Cms\Services\Auth\CsrfToken( $this->getSessionManager() );
+		$submittedToken = $request->post( 'csrf_token', '' );
+
+		if( !$csrfToken->validate( $submittedToken ) )
+		{
+			\Neuron\Log\Log::warning( "CSRF validation failed for tag deletion: Tag {$tagId}, user " . user_id() );
+			$this->redirect( 'admin_tags', [], ['error', 'Invalid security token. Please try again.'] );
+		}
 
 		try
 		{

@@ -145,11 +145,6 @@ class Posts extends Content
 	 */
 	public function store( Request $request ): never
 	{
-		if( !auth() )
-		{
-			throw new \RuntimeException( 'Authenticated user not found' );
-		}
-
 		try
 		{
 			// Get form data
@@ -234,10 +229,6 @@ class Posts extends Content
 	 */
 	public function update( Request $request ): never
 	{
-		if( !auth() )
-		{
-			throw new \RuntimeException( 'Authenticated user not found' );
-		}
 
 		$postId = (int)$request->getRouteParameter( 'id' );
 		$post = $this->_postRepository->findById( $postId );
@@ -293,10 +284,6 @@ class Posts extends Content
 	 */
 	public function destroy( Request $request ): never
 	{
-		if( !auth() )
-		{
-			throw new \RuntimeException( 'Authenticated user not found' );
-		}
 
 		$postId = (int)$request->getRouteParameter( 'id' );
 		$post = $this->_postRepository->findById( $postId );
