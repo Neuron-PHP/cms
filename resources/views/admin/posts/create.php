@@ -43,8 +43,16 @@
 				</div>
 
 				<div class="mb-3">
-					<label for="featured_image" class="form-label">Featured Image URL</label>
-					<input type="url" class="form-control" id="featured_image" name="featured_image">
+					<label for="featured_image" class="form-label">Featured Image</label>
+					<div class="input-group">
+						<input type="url" class="form-control" id="featured_image" name="featured_image" placeholder="Enter URL or browse from media library">
+						<button type="button" class="btn btn-outline-secondary" onclick="openMediaPicker('featured_image')">
+							<i class="bi bi-images"></i> Browse
+						</button>
+					</div>
+					<div class="mt-2">
+						<img id="featured_image_preview" class="img-thumbnail d-none" style="max-width: 300px;" alt="Featured image preview">
+					</div>
 				</div>
 
 				<div class="mb-3">
@@ -80,6 +88,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@editorjs/code@2.9.0/dist/code.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@editorjs/delimiter@1.4.0/dist/delimiter.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@editorjs/raw@2.5.0/dist/raw.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@editorjs/embed@2.7.4/dist/embed.umd.min.js"></script>
 
 <script>
 let editor;
@@ -93,12 +102,14 @@ window.addEventListener('load', function() {
 		console.log('Checking plugins...', {
 			EditorJS: typeof EditorJS !== 'undefined',
 			Header: typeof Header !== 'undefined',
-			List: typeof List !== 'undefined'
+			List: typeof List !== 'undefined',
+			Embed: typeof Embed !== 'undefined'
 		});
 
 		if (typeof EditorJS !== 'undefined' &&
 		    typeof Header !== 'undefined' &&
-		    typeof List !== 'undefined') {
+		    typeof List !== 'undefined' &&
+		    typeof Embed !== 'undefined') {
 			clearInterval(checkPluginsLoaded);
 			console.log('All plugins loaded, initializing editor...');
 			initializeEditor();
@@ -155,6 +166,20 @@ function initializeEditor() {
 					config: {
 						placeholder: 'Enter HTML or shortcodes like [latest-posts limit="5"]'
 					}
+				},
+				embed: {
+					class: Embed,
+					config: {
+						services: {
+							youtube: true,
+							vimeo: true,
+							twitter: true,
+							instagram: true,
+							facebook: true,
+							codepen: true,
+							github: true
+						}
+					}
 				}
 			},
 
@@ -192,4 +217,19 @@ function initializeEditor() {
 		alert('Failed to initialize editor: ' + error.message);
 	}
 }
+
+// Featured image preview
+document.getElementById('featured_image').addEventListener('change', function() {
+	const preview = document.getElementById('featured_image_preview');
+	const url = this.value.trim();
+
+	if (url) {
+		preview.src = url;
+		preview.classList.remove('d-none');
+	} else {
+		preview.classList.add('d-none');
+	}
+});
 </script>
+
+<?php include __DIR__ . '/../../partials/media-picker-modal.php'; ?>

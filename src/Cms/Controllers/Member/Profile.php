@@ -49,36 +49,28 @@ class Profile extends Content
 	 */
 	public function edit( Request $request ): string
 	{
-		$user = Registry::getInstance()->get( 'Auth.User' );
+		$this->initializeCsrfToken();
 
+		// Get authenticated user once
+		$user = auth();
 		if( !$user )
 		{
 			throw new \RuntimeException( 'Authenticated user not found' );
 		}
 
-		// Generate CSRF token
-		$csrfToken = new CsrfToken( $this->getSessionManager() );
-		Registry::getInstance()->set( 'Auth.CsrfToken', $csrfToken->getToken() );
-
 		// Get available timezones grouped by region with selection state
 		$timezones = \DateTimeZone::listIdentifiers();
 		$groupedTimezones = group_timezones_for_select( $timezones, $user->getTimezone() );
 
-		$viewData = [
-			'Title' => 'Profile | ' . $this->getName(),
-			'Description' => 'Edit Your Profile',
-			'User' => $user,
-			'groupedTimezones' => $groupedTimezones,
-			'success' => $this->getSessionManager()->getFlash( 'success' ),
-			'error' => $this->getSessionManager()->getFlash( 'error' )
-		];
-
-		return $this->renderHtml(
-			HttpResponseStatus::OK,
-			$viewData,
-			'edit',
-			'member'
-		);
+		return $this->view()
+			->title( 'Profile' )
+			->description( 'Edit Your Profile' )
+			->withCurrentUser()
+			->withCsrfToken()
+			->with( 'groupedTimezones', $groupedTimezones )
+			->with( 'success', $this->getSessionManager()->getFlash( 'success' ) )
+			->with( 'error', $this->getSessionManager()->getFlash( 'error' ) )
+			->render( 'edit', 'member' );
 	}
 
 	/**
@@ -90,11 +82,11 @@ class Profile extends Content
 	 */
 	public function update( Request $request ): never
 	{
-		$user = Registry::getInstance()->get( 'Auth.User' );
-
+		// Get authenticated user once and check for null
+		$user = auth();
 		if( !$user )
 		{
-			throw new \RuntimeException( 'Authenticated user not found' );
+			$this->redirect( 'member_profile', [], ['error', 'Authenticated user not found'] );
 		}
 
 		// Security: Only use email from POST if provided by Account Information form

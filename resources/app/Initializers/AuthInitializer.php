@@ -59,7 +59,7 @@ class AuthInitializer implements IRunnable
 				$sessionManager = new SessionManager();
 				$passwordHasher = new PasswordHasher();
 				$authentication = new Authentication( $userRepository, $sessionManager, $passwordHasher );
-				$csrfToken = new CsrfToken();
+				$csrfToken = new CsrfToken( $sessionManager );
 
 				// Create filters
 				$authFilter = new AuthenticationFilter( $authentication, '/login' );

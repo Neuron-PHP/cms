@@ -558,4 +558,368 @@ class EditorJsRendererTest extends TestCase
 		$ulCount = substr_count( $result, '<ul' );
 		$this->assertEquals( 1, $ulCount );
 	}
+
+	public function testRenderEmbedBlockYouTube(): void
+	{
+		$data = [
+			'blocks' => [
+				[
+					'type' => 'embed',
+					'data' => [
+						'service' => 'youtube',
+						'source' => 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+						'embed' => 'https://www.youtube.com/embed/dQw4w9WgXcQ',
+						'width' => 580,
+						'height' => 320,
+						'caption' => 'Sample Video'
+					]
+				]
+			]
+		];
+
+		$result = $this->renderer->render( $data );
+
+		$this->assertStringContainsString( '<figure', $result );
+		$this->assertStringContainsString( '<iframe', $result );
+		$this->assertStringContainsString( 'youtube.com/embed', $result );
+		$this->assertStringContainsString( 'Sample Video', $result );
+		$this->assertStringContainsString( 'sandbox=', $result );
+		$this->assertStringContainsString( '</figure>', $result );
+	}
+
+	public function testRenderEmbedBlockVimeo(): void
+	{
+		$data = [
+			'blocks' => [
+				[
+					'type' => 'embed',
+					'data' => [
+						'service' => 'vimeo',
+						'source' => 'https://vimeo.com/123456789',
+						'embed' => 'https://player.vimeo.com/video/123456789',
+						'width' => 580,
+						'height' => 320
+					]
+				]
+			]
+		];
+
+		$result = $this->renderer->render( $data );
+
+		$this->assertStringContainsString( '<iframe', $result );
+		$this->assertStringContainsString( 'player.vimeo.com', $result );
+		$this->assertStringNotContainsString( '<figcaption', $result ); // No caption
+	}
+
+	public function testRenderEmbedBlockWithCaption(): void
+	{
+		$data = [
+			'blocks' => [
+				[
+					'type' => 'embed',
+					'data' => [
+						'service' => 'codepen',
+						'embed' => 'https://codepen.io/embed/abc123',
+						'caption' => 'Cool CodePen Demo'
+					]
+				]
+			]
+		];
+
+		$result = $this->renderer->render( $data );
+
+		$this->assertStringContainsString( '<figcaption', $result );
+		$this->assertStringContainsString( 'Cool CodePen Demo', $result );
+	}
+
+	public function testRenderEmbedBlockMissingUrl(): void
+	{
+		$data = [
+			'blocks' => [
+				[
+					'type' => 'embed',
+					'data' => [
+						'service' => 'youtube'
+						// Missing 'embed' URL
+					]
+				]
+			]
+		];
+
+		$result = $this->renderer->render( $data );
+
+		$this->assertStringContainsString( '<!-- Embed block missing URL -->', $result );
+	}
+
+	public function testRenderEmbedBlockUntrustedDomain(): void
+	{
+		$data = [
+			'blocks' => [
+				[
+					'type' => 'embed',
+					'data' => [
+						'service' => 'unknown',
+						'embed' => 'https://evil.com/malicious.html'
+					]
+				]
+			]
+		];
+
+		$result = $this->renderer->render( $data );
+
+		$this->assertStringContainsString( '<!-- Embed from untrusted domain', $result );
+		$this->assertStringNotContainsString( '<iframe', $result );
+	}
+
+	public function testRenderEmbedBlockSecuritySandbox(): void
+	{
+		$data = [
+			'blocks' => [
+				[
+					'type' => 'embed',
+					'data' => [
+						'service' => 'youtube',
+						'embed' => 'https://www.youtube.com/embed/test123'
+					]
+				]
+			]
+		];
+
+		$result = $this->renderer->render( $data );
+
+		// Verify sandbox attributes for security
+		$this->assertStringContainsString( "sandbox='allow-scripts allow-same-origin allow-presentation allow-popups'", $result );
+	}
+
+	public function testRenderEmbedBlockResponsive(): void
+	{
+		$data = [
+			'blocks' => [
+				[
+					'type' => 'embed',
+					'data' => [
+						'service' => 'youtube',
+						'embed' => 'https://www.youtube.com/embed/test123'
+					]
+				]
+			]
+		];
+
+		$result = $this->renderer->render( $data );
+
+		// Verify responsive wrapper
+		$this->assertStringContainsString( "class='ratio ratio-16x9'", $result );
+		$this->assertStringContainsString( "class='embed-responsive my-4'", $result );
+	}
+
+	public function testRenderEmbedBlockEscapesCaption(): void
+	{
+		$data = [
+			'blocks' => [
+				[
+					'type' => 'embed',
+					'data' => [
+						'service' => 'youtube',
+						'embed' => 'https://www.youtube.com/embed/test123',
+						'caption' => '<script>alert("xss")</script>Safe Caption'
+					]
+				]
+			]
+		];
+
+		$result = $this->renderer->render( $data );
+
+		// Should escape HTML in caption
+		$this->assertStringNotContainsString( '<script>', $result );
+		$this->assertStringContainsString( '&lt;script&gt;', $result );
+		$this->assertStringContainsString( 'Safe Caption', $result );
+	}
+
+	public function testRenderEmbedWithTwitterService(): void
+	{
+		$data = [
+			'blocks' => [
+				[
+					'type' => 'embed',
+					'data' => [
+						'service' => 'twitter',
+						'embed' => 'https://platform.twitter.com/embed/Tweet.html?id=123456'
+					]
+				]
+			]
+		];
+
+		$result = $this->renderer->render( $data );
+
+		$this->assertStringContainsString( '<iframe', $result );
+		$this->assertStringContainsString( 'platform.twitter.com', $result );
+	}
+
+	public function testRenderEmbedWithInstagramService(): void
+	{
+		$data = [
+			'blocks' => [
+				[
+					'type' => 'embed',
+					'data' => [
+						'service' => 'instagram',
+						'embed' => 'https://www.instagram.com/p/ABC123/embed'
+					]
+				]
+			]
+		];
+
+		$result = $this->renderer->render( $data );
+
+		$this->assertStringContainsString( '<iframe', $result );
+		$this->assertStringContainsString( 'instagram.com', $result );
+	}
+
+	public function testRenderEmbedWithGitHubGistService(): void
+	{
+		$data = [
+			'blocks' => [
+				[
+					'type' => 'embed',
+					'data' => [
+						'service' => 'github',
+						'embed' => 'https://gist.github.com/username/abc123'
+					]
+				]
+			]
+		];
+
+		$result = $this->renderer->render( $data );
+
+		$this->assertStringContainsString( '<iframe', $result );
+		$this->assertStringContainsString( 'gist.github.com', $result );
+	}
+
+	public function testRenderParagraphWithShortcode(): void
+	{
+		$shortcodeParser = new ShortcodeParser();
+		$shortcodeParser->register( 'test', fn() => 'SHORTCODE_OUTPUT' );
+
+		$renderer = new EditorJsRenderer( $shortcodeParser );
+
+		$data = [
+			'blocks' => [
+				[
+					'type' => 'paragraph',
+					'data' => [
+						'text' => 'Content with [test] shortcode'
+					]
+				]
+			]
+		];
+
+		$result = $renderer->render( $data );
+
+		$this->assertStringContainsString( 'SHORTCODE_OUTPUT', $result );
+		$this->assertStringContainsString( 'Content with', $result );
+		$this->assertStringContainsString( 'shortcode', $result );
+	}
+
+	public function testRenderHeaderWithShortcode(): void
+	{
+		$shortcodeParser = new ShortcodeParser();
+		$shortcodeParser->register( 'dynamic', fn() => 'DYNAMIC_CONTENT' );
+
+		$renderer = new EditorJsRenderer( $shortcodeParser );
+
+		$data = [
+			'blocks' => [
+				[
+					'type' => 'header',
+					'data' => [
+						'text' => 'Title [dynamic]',
+						'level' => 2
+					]
+				]
+			]
+		];
+
+		$result = $renderer->render( $data );
+
+		$this->assertStringContainsString( '<h2', $result );
+		$this->assertStringContainsString( 'DYNAMIC_CONTENT', $result );
+	}
+
+	public function testConstructorWithShortcodeParser(): void
+	{
+		$shortcodeParser = new ShortcodeParser();
+		$renderer = new EditorJsRenderer( $shortcodeParser );
+
+		// Verify it was constructed successfully by using it
+		$result = $renderer->render( [ 'blocks' => [] ] );
+		$this->assertSame( '', $result );
+	}
+
+	public function testRenderEmbedWithSubdomain(): void
+	{
+		// Test that www.youtube.com (subdomain) is allowed when youtube.com is in whitelist
+		$data = [
+			'blocks' => [
+				[
+					'type' => 'embed',
+					'data' => [
+						'service' => 'youtube',
+						'embed' => 'https://www.youtube.com/embed/abc123'
+					]
+				]
+			]
+		];
+
+		$result = $this->renderer->render( $data );
+
+		$this->assertStringContainsString( '<iframe', $result );
+		$this->assertStringContainsString( 'www.youtube.com', $result );
+	}
+
+	public function testRenderEmbedWithMalformedUrl(): void
+	{
+		$data = [
+			'blocks' => [
+				[
+					'type' => 'embed',
+					'data' => [
+						'service' => 'youtube',
+						'embed' => 'not-a-valid-url'
+					]
+				]
+			]
+		];
+
+		$result = $this->renderer->render( $data );
+
+		// Should fail domain validation since parse_url will return empty host
+		$this->assertStringContainsString( '<!-- Embed from untrusted domain', $result );
+	}
+
+	public function testRenderListWithInvalidItem(): void
+	{
+		// Test the fallback for invalid list item types (edge case)
+		$data = [
+			'blocks' => [
+				[
+					'type' => 'list',
+					'data' => [
+						'style' => 'unordered',
+						'items' => [
+							'Valid item',
+							123, // Invalid: number instead of string/array
+							[ 'invalid' => 'structure' ], // Invalid: array without 'content' key
+							'Another valid item'
+						]
+					]
+				]
+			]
+		];
+
+		$result = $this->renderer->render( $data );
+
+		$this->assertStringContainsString( 'Valid item', $result );
+		$this->assertStringContainsString( 'Another valid item', $result );
+		$this->assertStringContainsString( '<!-- Invalid list item -->', $result );
+	}
 }

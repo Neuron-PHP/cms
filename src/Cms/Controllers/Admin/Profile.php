@@ -26,19 +26,42 @@ class Profile extends Content
 
 	/**
 	 * @param Application|null $app
+	 * @param DatabaseUserRepository|null $repository
+	 * @param PasswordHasher|null $hasher
+	 * @param Updater|null $userUpdater
 	 * @throws \Exception
 	 */
-	public function __construct( ?Application $app = null )
+	public function __construct(
+		?Application $app = null,
+		?DatabaseUserRepository $repository = null,
+		?PasswordHasher $hasher = null,
+		?Updater $userUpdater = null
+	)
 	{
 		parent::__construct( $app );
 
-		// Get settings and initialize repository
-		$settings = Registry::getInstance()->get( 'Settings' );
-		$this->_repository = new DatabaseUserRepository( $settings );
-		$this->_hasher = new PasswordHasher();
+		// Get settings if we need to create repository
+		if( $repository === null )
+		{
+			$settings = Registry::getInstance()->get( 'Settings' );
+			$repository = new DatabaseUserRepository( $settings );
+		}
 
-		// Initialize service
-		$this->_userUpdater = new Updater( $this->_repository, $this->_hasher );
+		// Create hasher if not provided
+		if( $hasher === null )
+		{
+			$hasher = new PasswordHasher();
+		}
+
+		// Create updater if not provided
+		if( $userUpdater === null )
+		{
+			$userUpdater = new Updater( $repository, $hasher );
+		}
+
+		$this->_repository = $repository;
+		$this->_hasher = $hasher;
+		$this->_userUpdater = $userUpdater;
 	}
 
 	/**
@@ -49,36 +72,30 @@ class Profile extends Content
 	 */
 	public function edit( Request $request ): string
 	{
-		$user = Registry::getInstance()->get( 'Auth.User' );
+		$this->initializeCsrfToken();
 
+		// Get authenticated user once
+		$user = auth();
 		if( !$user )
 		{
 			throw new \RuntimeException( 'Authenticated user not found' );
 		}
 
-		// Generate CSRF token
-		$csrfToken = new CsrfToken( $this->getSessionManager() );
-		Registry::getInstance()->set( 'Auth.CsrfToken', $csrfToken->getToken() );
-
 		// Get available timezones grouped by region with selection state
 		$timezones = \DateTimeZone::listIdentifiers();
 		$groupedTimezones = group_timezones_for_select( $timezones, $user->getTimezone() );
 
-		$viewData = [
-			'Title' => 'Profile | ' . $this->getName(),
-			'Description' => 'Edit Your Profile',
-			'User' => $user,
-			'groupedTimezones' => $groupedTimezones,
-			'success' => $this->getSessionManager()->getFlash( 'success' ),
-			'error' => $this->getSessionManager()->getFlash( 'error' )
-		];
-
-		return $this->renderHtml(
-			HttpResponseStatus::OK,
-			$viewData,
-			'edit',
-			'admin'
-		);
+		return $this->view()
+			->title( 'Profile' )
+			->description( 'Edit Your Profile' )
+			->withCurrentUser()
+			->withCsrfToken()
+			->with([
+				'groupedTimezones' => $groupedTimezones,
+				'success' => $this->getSessionManager()->getFlash( 'success' ),
+				'error' => $this->getSessionManager()->getFlash( 'error' )
+			])
+			->render( 'edit', 'admin' );
 	}
 
 	/**
@@ -89,11 +106,11 @@ class Profile extends Content
 	 */
 	public function update( Request $request ): never
 	{
-		$user = Registry::getInstance()->get( 'Auth.User' );
-
+		// Get authenticated user once and check for null
+		$user = auth();
 		if( !$user )
 		{
-			throw new \RuntimeException( 'Authenticated user not found' );
+			$this->redirect( 'admin_profile', [], ['error', 'Authenticated user not found'] );
 		}
 
 		// Security: Only use email from POST if provided by Account Information form

@@ -113,6 +113,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@editorjs/code@latest"></script>
 <script src="https://cdn.jsdelivr.net/npm/@editorjs/delimiter@latest"></script>
 <script src="https://cdn.jsdelivr.net/npm/@editorjs/raw@latest"></script>
+<script src="https://cdn.jsdelivr.net/npm/@editorjs/embed@2.7.4/dist/embed.umd.min.js"></script>
 
 <script>
 const editor = new EditorJS({
@@ -150,6 +151,20 @@ const editor = new EditorJS({
 			class: RawTool,
 			config: {
 				placeholder: 'Enter HTML or shortcodes like [latest-posts limit="5"]'
+			}
+		},
+		embed: {
+			class: Embed,
+			config: {
+				services: {
+					youtube: true,
+					vimeo: true,
+					twitter: true,
+					instagram: true,
+					facebook: true,
+					codepen: true,
+					github: true
+				}
 			}
 		}
 	},

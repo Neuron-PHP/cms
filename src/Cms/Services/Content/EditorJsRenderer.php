@@ -57,6 +57,7 @@ class EditorJsRenderer
 			'code' => $this->renderCode( $data ),
 			'delimiter' => $this->renderDelimiter( $data ),
 			'raw' => $this->renderRaw( $data ),
+			'embed' => $this->renderEmbed( $data ),
 			default => $this->renderUnknown( $type )
 		};
 	}
@@ -244,6 +245,87 @@ class EditorJsRenderer
 
 		// Sanitize HTML to prevent XSS
 		return $this->sanitizeHtml( $html ) . "\n";
+	}
+
+	/**
+	 * Render embed block
+	 */
+	private function renderEmbed( array $data ): string
+	{
+		$service = $data['service'] ?? '';
+		$source = $data['source'] ?? '';
+		$embed = $data['embed'] ?? '';
+		$width = $data['width'] ?? 580;
+		$height = $data['height'] ?? 320;
+		$caption = htmlspecialchars( $data['caption'] ?? '' );
+
+		// If no embed URL, return comment
+		if( empty( $embed ) )
+		{
+			return "<!-- Embed block missing URL -->\n";
+		}
+
+		// Sanitize embed URL - only allow trusted domains
+		$allowedDomains = [
+			'youtube.com',
+			'youtube-nocookie.com',
+			'youtu.be',
+			'vimeo.com',
+			'player.vimeo.com',
+			'twitter.com',
+			'platform.twitter.com',
+			'instagram.com',
+			'facebook.com',
+			'codepen.io',
+			'github.com',
+			'gist.github.com',
+			'coub.com',
+			'imgur.com',
+			'gfycat.com',
+			'giphy.com',
+			'reddit.com',
+			'open.spotify.com',
+			'soundcloud.com',
+			'twitch.tv',
+			'player.twitch.tv',
+			'miro.com',
+			'figma.com'
+		];
+
+		$embedUrl = htmlspecialchars( $embed );
+		$parsedUrl = parse_url( $embed );
+		$host = $parsedUrl['host'] ?? '';
+
+		// Check if domain is allowed
+		$isAllowed = false;
+		foreach( $allowedDomains as $domain )
+		{
+			if( $host === $domain || str_ends_with( $host, '.' . $domain ) )
+			{
+				$isAllowed = true;
+				break;
+			}
+		}
+
+		if( !$isAllowed )
+		{
+			return "<!-- Embed from untrusted domain: {$host} -->\n";
+		}
+
+		// Create responsive embed container
+		$html = "<figure class='embed-responsive my-4'>\n";
+		$html .= "  <div class='ratio ratio-16x9'>\n";
+		$html .= "    <iframe src='{$embedUrl}' frameborder='0' allowfullscreen sandbox='allow-scripts allow-same-origin allow-presentation allow-popups'></iframe>\n";
+		$html .= "  </div>\n";
+
+		if( $caption )
+		{
+			$html .= "  <figcaption class='text-center text-muted mt-2'>{$caption}</figcaption>\n";
+		}
+
+		$html .= "</figure>\n";
+
+		return $html;
 	}
 
 	/**

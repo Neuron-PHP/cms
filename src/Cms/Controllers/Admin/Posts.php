@@ -33,39 +33,86 @@ class Posts extends Content
 
 	/**
 	 * @param Application|null $app
+	 * @param DatabasePostRepository|null $postRepository
+	 * @param DatabaseCategoryRepository|null $categoryRepository
+	 * @param DatabaseTagRepository|null $tagRepository
+	 * @param Creator|null $postCreator
+	 * @param Updater|null $postUpdater
+	 * @param Deleter|null $postDeleter
 	 * @throws \Exception
 	 */
-	public function __construct( ?Application $app = null )
+	public function __construct(
+		?Application $app = null,
+		?DatabasePostRepository $postRepository = null,
+		?DatabaseCategoryRepository $categoryRepository = null,
+		?DatabaseTagRepository $tagRepository = null,
+		?Creator $postCreator = null,
+		?Updater $postUpdater = null,
+		?Deleter $postDeleter = null
+	)
 	{
 		parent::__construct( $app );
 
-		// Get settings for repositories
-		$settings = Registry::getInstance()->get( 'Settings' );
+		// Get settings once if we need to create any repositories
+		$settings = null;
+		if( $postRepository === null || $categoryRepository === null || $tagRepository === null )
+		{
+			$settings = Registry::getInstance()->get( 'Settings' );
+		}
 
-		// Initialize repositories
-		$this->_postRepository = new DatabasePostRepository( $settings );
-		$this->_categoryRepository = new DatabaseCategoryRepository( $settings );
-		$this->_tagRepository = new DatabaseTagRepository( $settings );
+		// Individually ensure each repository is initialized
+		if( $postRepository === null )
+		{
+			$postRepository = new DatabasePostRepository( $settings );
+		}
 
-		// Initialize services
+		if( $categoryRepository === null )
+		{
+			$categoryRepository = new DatabaseCategoryRepository( $settings );
+		}
+
+		if( $tagRepository === null )
+		{
+			$tagRepository = new DatabaseTagRepository( $settings );
+		}
+
+		// Build downstream services using guaranteed non-null repositories
+		// Create TagResolver if needed for Creator/Updater services
 		$tagResolver = new TagResolver(
-			$this->_tagRepository,
-			new \Neuron\Cms\Services\Tag\Creator( $this->_tagRepository )
+			$tagRepository,
+			new \Neuron\Cms\Services\Tag\Creator( $tagRepository )
 		);
 
-		$this->_postCreator = new Creator(
-			$this->_postRepository,
-			$this->_categoryRepository,
-			$tagResolver
-		);
+		if( $postCreator === null )
+		{
+			$postCreator = new Creator(
+				$postRepository,
+				$categoryRepository,
+				$tagResolver
+			);
+		}
 
-		$this->_postUpdater = new Updater(
-			$this->_postRepository,
-			$this->_categoryRepository,
-			$tagResolver
-		);
+		if( $postUpdater === null )
+		{
+			$postUpdater = new Updater(
+				$postRepository,
+				$categoryRepository,
+				$tagResolver
+			);
+		}
 
-		$this->_postDeleter = new Deleter( $this->_postRepository );
+		if( $postDeleter === null )
+		{
+			$postDeleter = new Deleter( $postRepository );
+		}
+
+		// Assign to properties with defensive checks
+		$this->_postRepository = $postRepository;
+		$this->_categoryRepository = $categoryRepository;
+		$this->_tagRepository = $tagRepository;
+		$this->_postCreator = $postCreator;
+		$this->_postUpdater = $postUpdater;
+		$this->_postDeleter = $postDeleter;
 	}
 
 	/**
@@ -76,43 +123,30 @@ class Posts extends Content
 	 */
 	public function index( Request $request ): string
 	{
-		$user = Registry::getInstance()->get( 'Auth.User' );
-
-		if( !$user )
-		{
-			throw new \RuntimeException( 'Authenticated user not found' );
-		}
-
-		// Generate CSRF token
-		$sessionManager = $this->getSessionManager();
-		$csrfToken = new CsrfToken( $sessionManager );
-		Registry::getInstance()->set( 'Auth.CsrfToken', $csrfToken->getToken() );
+		$this->initializeCsrfToken();
 
 		// Get all posts or filter by author if not admin
-		if( $user->isAdmin() || $user->isEditor() )
+		if( is_admin() || is_editor() )
 		{
 			$posts = $this->_postRepository->all();
 		}
 		else
 		{
-			$posts = $this->_postRepository->getByAuthor( $user->getUsername() );
+			$posts = $this->_postRepository->getByAuthor( user_id() );
 		}
 
-		$viewData = [
-			'Title' => 'Posts | ' . $this->getName(),
-			'Description' => 'Manage blog posts',
-			'User' => $user,
-			'posts' => $posts,
-			'Success' => $sessionManager->getFlash( 'success' ),
-			'Error' => $sessionManager->getFlash( 'error' )
-		];
-
-		return $this->renderHtml(
-			HttpResponseStatus::OK,
-			$viewData,
-			'index',
-			'admin'
-		);
+		$sessionManager = $this->getSessionManager();
+		return $this->view()
+			->title( 'Posts' )
+			->description( 'Manage blog posts' )
+			->withCurrentUser()
+			->withCsrfToken()
+			->with([
+				'posts' => $posts,
+				'Success' => $sessionManager->getFlash( 'success' ),
+				'Error' => $sessionManager->getFlash( 'error' )
+			])
+			->render( 'index', 'admin' );
 	}
 
 	/**
@@ -123,30 +157,15 @@ class Posts extends Content
 	 */
 	public function create( Request $request ): string
 	{
-		$user = Registry::getInstance()->get( 'Auth.User' );
+		$this->initializeCsrfToken();
 
-		if( !$user )
-		{
-			throw new \RuntimeException( 'Authenticated user not found' );
-		}
-
-		// Generate CSRF token
-		$csrfToken = new CsrfToken( $this->getSessionManager() );
-		Registry::getInstance()->set( 'Auth.CsrfToken', $csrfToken->getToken() );
-
-		$viewData = [
-			'Title' => 'Create Post | ' . $this->getName(),
-			'Description' => 'Create a new blog post',
-			'User' => $user,
-			'categories' => $this->_categoryRepository->all()
-		];
-
-		return $this->renderHtml(
-			HttpResponseStatus::OK,
-			$viewData,
-			'create',
-			'admin'
-		);
+		return $this->view()
+			->title( 'Create Post' )
+			->description( 'Create a new blog post' )
+			->withCurrentUser()
+			->withCsrfToken()
+			->with( 'categories', $this->_categoryRepository->all() )
+			->render( 'create', 'admin' );
 	}
 
 	/**
@@ -157,13 +176,6 @@ class Posts extends Content
 	 */
 	public function store( Request $request ): never
 	{
-		$user = Registry::getInstance()->get( 'Auth.User' );
-
-		if( !$user )
-		{
-			throw new \RuntimeException( 'Authenticated user not found' );
-		}
-
 		try
 		{
 			// Get form data
@@ -180,7 +192,7 @@ class Posts extends Content
 			$this->_postCreator->create(
 				$title,
 				$content,
-				$user->getId(),
+				user_id(),
 				$status,
 				$slug ?: null,
 				$excerpt ?: null,
@@ -205,13 +217,6 @@ class Posts extends Content
 	 */
 	public function edit( Request $request ): string
 	{
-		$user = Registry::getInstance()->get( 'Auth.User' );
-
-		if( !$user )
-		{
-			throw new \RuntimeException( 'Authenticated user not found' );
-		}
-
 		$postId = (int)$request->getRouteParameter( 'id' );
 		$post = $this->_postRepository->findById( $postId );
 
@@ -221,29 +226,23 @@ class Posts extends Content
 		}
 
 		// Check permissions
-		if( !$user->isAdmin() && !$user->isEditor() && $post->getAuthorId() !== $user->getId() )
+		if( !is_admin() && !is_editor() && $post->getAuthorId() !== user_id() )
 		{
 			throw new \RuntimeException( 'Unauthorized to edit this post' );
 		}
 
-		// Generate CSRF token
-		$csrfToken = new CsrfToken( $this->getSessionManager() );
-		Registry::getInstance()->set( 'Auth.CsrfToken', $csrfToken->getToken() );
+		$this->initializeCsrfToken();
 
-		$viewData = [
-			'Title' => 'Edit Post | ' . $this->getName(),
-			'Description' => 'Edit blog post',
-			'User' => $user,
-			'post' => $post,
-			'categories' => $this->_categoryRepository->all()
-		];
-
-		return $this->renderHtml(
-			HttpResponseStatus::OK,
-			$viewData,
-			'edit',
-			'admin'
-		);
+		return $this->view()
+			->title( 'Edit Post' )
+			->description( 'Edit blog post' )
+			->withCurrentUser()
+			->withCsrfToken()
+			->with([
+				'post' => $post,
+				'categories' => $this->_categoryRepository->all()
+			])
+			->render( 'edit', 'admin' );
 	}
 
 	/**
@@ -254,12 +253,6 @@ class Posts extends Content
 	 */
 	public function update( Request $request ): never
 	{
-		$user = Registry::getInstance()->get( 'Auth.User' );
-
-		if( !$user )
-		{
-			throw new \RuntimeException( 'Authenticated user not found' );
-		}
 
 		$postId = (int)$request->getRouteParameter( 'id' );
 		$post = $this->_postRepository->findById( $postId );
@@ -270,7 +263,7 @@ class Posts extends Content
 		}
 
 		// Check permissions
-		if( !$user->isAdmin() && !$user->isEditor() && $post->getAuthorId() !== $user->getId() )
+		if( !is_admin() && !is_editor() && $post->getAuthorId() !== user_id() )
 		{
 			throw new \RuntimeException( 'Unauthorized to edit this post' );
 		}
@@ -315,12 +308,6 @@ class Posts extends Content
 	 */
 	public function destroy( Request $request ): never
 	{
-		$user = Registry::getInstance()->get( 'Auth.User' );
-
-		if( !$user )
-		{
-			throw new \RuntimeException( 'Authenticated user not found' );
-		}
 
 		$postId = (int)$request->getRouteParameter( 'id' );
 		$post = $this->_postRepository->findById( $postId );
@@ -331,7 +318,7 @@ class Posts extends Content
 		}
 
 		// Check permissions
-		if( !$user->isAdmin() && !$user->isEditor() && $post->getAuthorId() !== $user->getId() )
+		if( !is_admin() && !is_editor() && $post->getAuthorId() !== user_id() )
 		{
 			$this->redirect( 'admin_posts', [], ['error', 'Unauthorized to delete this post'] );
 		}

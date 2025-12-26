@@ -21,17 +21,27 @@ class Tags extends Content
 
 	/**
 	 * @param Application|null $app
+	 * @param DatabaseTagRepository|null $tagRepository
 	 * @throws \Exception
 	 */
-	public function __construct( ?Application $app = null )
+	public function __construct(
+		?Application $app = null,
+		?DatabaseTagRepository $tagRepository = null
+	)
 	{
 		parent::__construct( $app );
 
-		// Get settings for repositories
-		$settings = Registry::getInstance()->get( 'Settings' );
+		// Use injected dependencies if provided (for testing), otherwise create them (for production)
+		if( $tagRepository === null )
+		{
+			// Get settings for repositories
+			$settings = Registry::getInstance()->get( 'Settings' );
 
-		// Initialize repository
-		$this->_tagRepository = new DatabaseTagRepository( $settings );
+			// Initialize repository
+			$tagRepository = new DatabaseTagRepository( $settings );
+		}
+
+		$this->_tagRepository = $tagRepository;
 	}
 
 	/**
@@ -42,28 +52,15 @@ class Tags extends Content
 	 */
 	public function index( Request $request ): string
 	{
-		$user = Registry::getInstance()->get( 'Auth.User' );
+		$this->initializeCsrfToken();
 
-		if( !$user )
-		{
-			throw new \RuntimeException( 'Authenticated user not found' );
-		}
-
-		$tagsWithCount = $this->_tagRepository->allWithPostCount();
-
-		$viewData = [
-			'Title' => 'Tags | Admin | ' . $this->getName(),
-			'Description' => 'Manage blog tags',
-			'User' => $user,
-			'TagsWithCount' => $tagsWithCount
-		];
-
-		return $this->renderHtml(
-			HttpResponseStatus::OK,
-			$viewData,
-			'index',
-			'tags'
-		);
+		return $this->view()
+			->title( 'Tags | Admin' )
+			->description( 'Manage blog tags' )
+			->withCurrentUser()
+			->withCsrfToken()
+			->with( 'TagsWithCount', $this->_tagRepository->allWithPostCount() )
+			->render( 'index', 'tags' );
 	}
 
 	/**
@@ -74,25 +71,14 @@ class Tags extends Content
 	 */
 	public function create( Request $request ): string
 	{
-		$user = Registry::getInstance()->get( 'Auth.User' );
+		$this->initializeCsrfToken();
 
-		if( !$user )
-		{
-			throw new \RuntimeException( 'Authenticated user not found' );
-		}
-
-		$viewData = [
-			'Title' => 'Create Tag | Admin | ' . $this->getName(),
-			'Description' => 'Create a new blog tag',
-			'User' => $user
-		];
-
-		return $this->renderHtml(
-			HttpResponseStatus::OK,
-			$viewData,
-			'create',
-			'tags'
-		);
+		return $this->view()
+			->title( 'Create Tag | Admin' )
+			->description( 'Create a new blog tag' )
+			->withCurrentUser()
+			->withCsrfToken()
+			->render( 'create', 'tags' );
 	}
 
 	/**
@@ -134,13 +120,6 @@ class Tags extends Content
 	 */
 	public function edit( Request $request ): string
 	{
-		$user = Registry::getInstance()->get( 'Auth.User' );
-
-		if( !$user )
-		{
-			throw new \RuntimeException( 'Authenticated user not found' );
-		}
-
 		$tagId = (int)$request->getRouteParameter( 'id' );
 		$tag = $this->_tagRepository->findById( $tagId );
 
@@ -149,19 +128,15 @@ class Tags extends Content
 			throw new \RuntimeException( 'Tag not found' );
 		}
 
-		$viewData = [
-			'Title' => 'Edit Tag | Admin | ' . $this->getName(),
-			'Description' => 'Edit blog tag',
-			'User' => $user,
-			'Tag' => $tag
-		];
+		$this->initializeCsrfToken();
 
-		return $this->renderHtml(
-			HttpResponseStatus::OK,
-			$viewData,
-			'edit',
-			'tags'
-		);
+		return $this->view()
+			->title( 'Edit Tag | Admin' )
+			->description( 'Edit blog tag' )
+			->withCurrentUser()
+			->withCsrfToken()
+			->with( 'Tag', $tag )
+			->render( 'edit', 'tags' );
 	}
 
 	/**

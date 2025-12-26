@@ -5,6 +5,7 @@ namespace Neuron\Cms\Auth\Filters;
 use Neuron\Routing\Filter;
 use Neuron\Routing\RouteMap;
 use Neuron\Cms\Services\Auth\Authentication;
+use Neuron\Cms\Exceptions\UnauthenticatedException;
 use Neuron\Patterns\Registry;
 
 /**
@@ -34,6 +35,8 @@ class AuthenticationFilter extends Filter
 
 	/**
 	 * Check if user is authenticated
+	 *
+	 * @throws UnauthenticatedException When user is not authenticated
 	 */
 	protected function checkAuthentication( RouteMap $route ): void
 	{
@@ -43,13 +46,16 @@ class AuthenticationFilter extends Filter
 			// Store intended URL for post-login redirect
 			$intendedUrl = $_SERVER['REQUEST_URI'] ?? $route->getPath();
 
-			// Redirect to login page
+			// Build redirect URL to login page
 			$separator = ( strpos( $this->_loginUrl, '?' ) === false ) ? '?' : '&';
 			$query = http_build_query( [ $this->_redirectParam => $intendedUrl ] );
 			$redirectUrl = $this->_loginUrl . $separator . $query;
 
-			header( 'Location: ' . $redirectUrl );
-			exit;
+			throw new UnauthenticatedException(
+				$redirectUrl,
+				$intendedUrl,
+				'User not authenticated, redirect required to: ' . $redirectUrl
+			);
 		}
 
 		Registry::getInstance()->set( 'Auth.User', $user );

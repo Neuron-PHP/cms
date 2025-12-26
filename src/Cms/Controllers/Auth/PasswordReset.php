@@ -58,20 +58,14 @@ class PasswordReset extends Content
 		// Set CSRF token in Registry so csrf_field() helper works
 		Registry::getInstance()->set( 'Auth.CsrfToken', $this->_csrfToken->getToken() );
 
-		$viewData = [
-			'Title' => 'Forgot Password | ' . $this->getName(),
-			'Description' => 'Reset your password',
-			'PageSubtitle' => 'Reset Password',
-			'Error' => $this->_sessionManager->getFlash( 'error' ),
-			'Success' => $this->_sessionManager->getFlash( 'success' )
-		];
-
-		return $this->renderHtml(
-			HttpResponseStatus::OK,
-			$viewData,
-			'forgot-password',
-			'auth'
-		);
+		return $this->view()
+			->title( 'Forgot Password' )
+			->description( 'Reset your password' )
+			->withCsrfToken()
+			->with( 'PageSubtitle', 'Reset Password' )
+			->with( 'Error', $this->_sessionManager->getFlash( 'error' ) )
+			->with( 'Success', $this->_sessionManager->getFlash( 'success' ) )
+			->render( 'forgot-password', 'auth' );
 	}
 
 	/**
@@ -157,22 +151,16 @@ class PasswordReset extends Content
 		// Set CSRF token in Registry so csrf_field() helper works
 		Registry::getInstance()->set( 'Auth.CsrfToken', $this->_csrfToken->getToken() );
 
-		$viewData = [
-			'Title' => 'Reset Password | ' . $this->getName(),
-			'Description' => 'Enter your new password',
-			'PageSubtitle' => 'Create New Password',
-			'Error' => $this->_sessionManager->getFlash( 'error' ),
-			'Success' => $this->_sessionManager->getFlash( 'success' ),
-			'Token' => $token,
-			'Email' => $tokenObj->getEmail()
-		];
-
-		return $this->renderHtml(
-			HttpResponseStatus::OK,
-			$viewData,
-			'reset-password',
-			'auth'
-		);
+		return $this->view()
+			->title( 'Reset Password' )
+			->description( 'Enter your new password' )
+			->withCsrfToken()
+			->with( 'PageSubtitle', 'Create New Password' )
+			->with( 'Error', $this->_sessionManager->getFlash( 'error' ) )
+			->with( 'Success', $this->_sessionManager->getFlash( 'success' ) )
+			->with( 'Token', $token )
+			->with( 'Email', $tokenObj->getEmail() )
+			->render( 'reset-password', 'auth' );
 	}
 
 	/**

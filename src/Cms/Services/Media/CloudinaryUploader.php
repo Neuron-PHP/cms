@@ -4,6 +4,7 @@ namespace Neuron\Cms\Services\Media;
 
 use Cloudinary\Cloudinary;
 use Cloudinary\Api\Upload\UploadApi;
+use Cloudinary\Api\Admin\AdminApi;
 use Neuron\Data\Settings\SettingManager;
 
 /**
@@ -135,6 +136,50 @@ class CloudinaryUploader implements IMediaUploader
 		catch( \Exception $e )
 		{
 			throw new \Exception( "Cloudinary deletion failed: " . $e->getMessage(), 0, $e );
+		}
+	}
+
+	/**
+	 * List resources from Cloudinary
+	 *
+	 * @param array $options Options for listing (max_results, next_cursor, prefix, etc.)
+	 * @return array Resources list with pagination info
+	 * @throws \Exception If listing fails
+	 */
+	public function listResources( array $options = [] ): array
+	{
+		try
+		{
+			$adminApi = $this->_cloudinary->adminApi();
+
+			// Get folder prefix from settings or options
+			$folder = $options['folder'] ?? $this->_settings->get( 'cloudinary', 'folder' ) ?? 'neuron-cms/images';
+
+			$listOptions = [
+				'type' => 'upload',
+				'prefix' => $folder,
+				'max_results' => $options['max_results'] ?? 30,
+				'resource_type' => 'image'
+			];
+
+			// Add pagination cursor if provided
+			if( isset( $options['next_cursor'] ) )
+			{
+				$listOptions['next_cursor'] = $options['next_cursor'];
+			}
+
+			$result = $adminApi->assets( $listOptions );
+
+			// Format the result
+			return [
+				'resources' => array_map( [ $this, 'formatResult' ], $result['resources'] ?? [] ),
+				'next_cursor' => $result['next_cursor'] ?? null,
+				'total_count' => $result['total_count'] ?? 0
+			];
+		}
+		catch( \Exception $e )
+		{
+			throw new \Exception( "Cloudinary list resources failed: " . $e->getMessage(), 0, $e );
 		}
 	}
 
