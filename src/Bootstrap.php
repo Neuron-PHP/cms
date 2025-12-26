@@ -6,6 +6,7 @@ use Neuron\Data\Settings\Source\Yaml;
 use Neuron\Mvc\Application;
 use Neuron\Orm\Model;
 use Neuron\Cms\Database\ConnectionFactory;
+use Neuron\Patterns\Registry;
 
 // Load authentication helper functions
 require_once __DIR__ . '/Cms/Auth/helpers.php';
@@ -39,6 +40,14 @@ require_once __DIR__ . '/Cms/Auth/helpers.php';
 function boot( string $configPath ) : Application
 {
 	$app = \Neuron\Mvc\boot( $configPath );
+
+	// Register CMS exceptions that should bubble up to application-level handlers
+	// These exceptions require special handling (redirects, specific error pages)
+	Registry::getInstance()->set( 'BubbleExceptions', [
+		'Neuron\\Cms\\Exceptions\\UnauthenticatedException',
+		'Neuron\\Cms\\Exceptions\\EmailVerificationRequiredException',
+		'Neuron\\Cms\\Exceptions\\CsrfValidationException'
+	] );
 
 	// Initialize ORM with PDO connection from settings
 	try

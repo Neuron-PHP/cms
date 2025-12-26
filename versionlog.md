@@ -1,3 +1,5 @@
+## 0.8.14 2025-12-26
+
 ## 0.8.13 2025-12-26
 * Auth exception handling improvements.
 
