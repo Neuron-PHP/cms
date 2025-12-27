@@ -60,7 +60,7 @@ class Tags extends Content
 			->withCurrentUser()
 			->withCsrfToken()
 			->with( 'tags', $this->_tagRepository->allWithPostCount() )
-			->render( 'index' );
+			->render( 'index', 'admin' );
 	}
 
 	/**
@@ -78,7 +78,7 @@ class Tags extends Content
 			->description( 'Create a new blog tag' )
 			->withCurrentUser()
 			->withCsrfToken()
-			->render( 'create' );
+			->render( 'create', 'admin' );
 	}
 
 	/**
@@ -136,7 +136,7 @@ class Tags extends Content
 			->withCurrentUser()
 			->withCsrfToken()
 			->with( 'tag', $tag )
-			->render( 'edit' );
+			->render( 'edit', 'admin' );
 	}
 
 	/**

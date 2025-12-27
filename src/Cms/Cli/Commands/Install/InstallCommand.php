@@ -5,8 +5,10 @@ namespace Neuron\Cms\Cli\Commands\Install;
 use Neuron\Cli\Commands\Command;
 use Neuron\Cms\Models\User;
 use Neuron\Cms\Models\EventCategory;
+use Neuron\Cms\Models\Category;
 use Neuron\Cms\Repositories\DatabaseUserRepository;
 use Neuron\Cms\Repositories\DatabaseEventCategoryRepository;
+use Neuron\Cms\Repositories\DatabaseCategoryRepository;
 use Neuron\Cms\Auth\PasswordHasher;
 use Neuron\Data\Settings\SettingManager;
 use Neuron\Data\Settings\Source\Yaml;
@@ -1287,28 +1289,48 @@ class InstallCommand extends Command
 				return false;
 			}
 
-			$categoryRepository = new DatabaseEventCategoryRepository( $settings );
+			$success = true;
 
-			// Check if default category already exists
-			$existingCategory = $categoryRepository->findBySlug( 'general-events' );
+			// Seed default event category
+			$eventCategoryRepository = new DatabaseEventCategoryRepository( $settings );
+			$existingEventCategory = $eventCategoryRepository->findBySlug( 'general-events' );
 
-			if( $existingCategory )
+			if( !$existingEventCategory )
+			{
+				$eventCategory = new EventCategory();
+				$eventCategory->setName( 'General Events' );
+				$eventCategory->setSlug( 'general-events' );
+				$eventCategory->setColor( '#3b82f6' );
+				$eventCategory->setDescription( 'General community events and activities' );
+
+				$eventCategoryRepository->create( $eventCategory );
+				$this->output->success( "  Created default event category: General Events" );
+			}
+			else
 			{
 				$this->output->info( "  Default event category already exists" );
-				return true;
 			}
 
-			// Create default event category
-			$category = new EventCategory();
-			$category->setName( 'General Events' );
-			$category->setSlug( 'general-events' );
-			$category->setColor( '#3b82f6' );
-			$category->setDescription( 'General community events and activities' );
+			// Seed default post category
+			$postCategoryRepository = new DatabaseCategoryRepository( $settings );
+			$existingPostCategory = $postCategoryRepository->findBySlug( 'general' );
 
-			$categoryRepository->create( $category );
+			if( !$existingPostCategory )
+			{
+				$postCategory = new Category();
+				$postCategory->setName( 'General' );
+				$postCategory->setSlug( 'general' );
+				$postCategory->setDescription( 'General blog posts and articles' );
 
-			$this->output->success( "  Created default event category: General Events" );
-			return true;
+				$postCategoryRepository->create( $postCategory );
+				$this->output->success( "  Created default post category: General" );
+			}
+			else
+			{
+				$this->output->info( "  Default post category already exists" );
+			}
+
+			return $success;
 		}
 		catch( \Exception $e )
 		{
