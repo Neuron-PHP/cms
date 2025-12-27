@@ -79,7 +79,7 @@ class Categories extends Content
 			->withCurrentUser()
 			->withCsrfToken()
 			->with( 'CategoriesWithCount', $this->_categoryRepository->allWithPostCount() )
-			->render( 'index', 'categories' );
+			->render( 'index', 'admin' );
 	}
 
 	/**
@@ -97,7 +97,7 @@ class Categories extends Content
 			->description( 'Create a new blog category' )
 			->withCurrentUser()
 			->withCsrfToken()
-			->render( 'create', 'categories' );
+			->render( 'create', 'admin' );
 	}
 
 	/**
@@ -147,7 +147,7 @@ class Categories extends Content
 			->withCurrentUser()
 			->withCsrfToken()
 			->with( 'Category', $category )
-			->render( 'edit', 'categories' );
+			->render( 'edit', 'admin' );
 	}
 
 	/**
