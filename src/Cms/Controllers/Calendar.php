@@ -72,7 +72,7 @@ class Calendar extends Content
 			HttpResponseStatus::OK,
 			$viewData,
 			'index',
-			'public'
+			'default'
 		);
 	}
 
@@ -102,7 +102,7 @@ class Calendar extends Content
 			HttpResponseStatus::OK,
 			$viewData,
 			'show',
-			'public'
+			'default'
 		);
 	}
 
@@ -133,7 +133,7 @@ class Calendar extends Content
 			HttpResponseStatus::OK,
 			$viewData,
 			'category',
-			'public'
+			'default'
 		);
 	}
 }
