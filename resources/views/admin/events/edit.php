@@ -1,0 +1,315 @@
+<div class="container-fluid">
+	<div class="d-flex justify-content-between align-items-center mb-4">
+		<h2>Edit Event: <?= htmlspecialchars($event->getTitle()) ?></h2>
+		<a href="<?= route_path('admin_events') ?>" class="btn btn-secondary">Back to Events</a>
+	</div>
+
+	<form method="POST" action="<?= route_path('admin_events_update', ['id' => $event->getId()]) ?>" id="event-form">
+		<input type="hidden" name="_method" value="PUT">
+		<?= csrf_field() ?>
+
+		<div class="row">
+			<div class="col-md-8">
+				<div class="card mb-4">
+					<div class="card-header">
+						<h5 class="mb-0">Event Details</h5>
+					</div>
+					<div class="card-body">
+						<div class="mb-3">
+							<label for="title" class="form-label">Title <span class="text-danger">*</span></label>
+							<input type="text" class="form-control" id="title" name="title" value="<?= htmlspecialchars($event->getTitle()) ?>" required>
+							<small class="form-text text-muted">The name of your event</small>
+						</div>
+
+						<div class="mb-3">
+							<label for="slug" class="form-label">Slug</label>
+							<div class="input-group">
+								<span class="input-group-text">/calendar/event/</span>
+								<input type="text" class="form-control" id="slug" name="slug" value="<?= htmlspecialchars($event->getSlug()) ?>" pattern="[a-z0-9-]+" required>
+							</div>
+							<small class="form-text text-muted">URL-friendly version</small>
+						</div>
+
+						<div class="mb-3">
+							<label for="description" class="form-label">Short Description</label>
+							<textarea class="form-control" id="description" name="description" rows="3" maxlength="300"><?= htmlspecialchars($event->getDescription() ?? '') ?></textarea>
+							<small class="form-text text-muted">A brief summary (300 chars max). Displayed in event listings.</small>
+						</div>
+
+						<div class="mb-3">
+							<label class="form-label">Full Description</label>
+							<div id="editorjs" style="border: 1px solid #ddd; border-radius: 0.25rem; padding: 20px; min-height: 300px; background: #fff;"></div>
+							<input type="hidden" name="content" id="content-json">
+							<small class="form-text text-muted">Detailed event information</small>
+						</div>
+
+						<div class="row">
+							<div class="col-md-6 mb-3">
+								<label for="start_date" class="form-label">Start Date/Time <span class="text-danger">*</span></label>
+								<input type="datetime-local" class="form-control" id="start_date" name="start_date" value="<?= $event->getStartDate()->format('Y-m-d\TH:i') ?>" required>
+							</div>
+
+							<div class="col-md-6 mb-3">
+								<label for="end_date" class="form-label">End Date/Time</label>
+								<input type="datetime-local" class="form-control" id="end_date" name="end_date" value="<?= $event->getEndDate()?->format('Y-m-d\TH:i') ?? '' ?>">
+								<small class="form-text text-muted">Optional. Leave blank for single-time events</small>
+							</div>
+						</div>
+
+						<div class="mb-3">
+							<div class="form-check">
+								<input class="form-check-input" type="checkbox" id="all_day" name="all_day" value="1" <?= $event->isAllDay() ? 'checked' : '' ?>>
+								<label class="form-check-label" for="all_day">
+									All Day Event
+								</label>
+							</div>
+						</div>
+
+						<div class="mb-3">
+							<label for="location" class="form-label">Location</label>
+							<input type="text" class="form-control" id="location" name="location" value="<?= htmlspecialchars($event->getLocation() ?? '') ?>" placeholder="e.g., Main Auditorium, 123 Main St, Sarasota, FL">
+							<small class="form-text text-muted">Physical location or virtual meeting link</small>
+						</div>
+
+						<div class="mb-3">
+							<label for="organizer" class="form-label">Organizer</label>
+							<input type="text" class="form-control" id="organizer" name="organizer" value="<?= htmlspecialchars($event->getOrganizer() ?? '') ?>" placeholder="e.g., Sarasota Teen Court">
+						</div>
+
+						<div class="row">
+							<div class="col-md-6 mb-3">
+								<label for="contact_email" class="form-label">Contact Email</label>
+								<input type="email" class="form-control" id="contact_email" name="contact_email" value="<?= htmlspecialchars($event->getContactEmail() ?? '') ?>">
+							</div>
+
+							<div class="col-md-6 mb-3">
+								<label for="contact_phone" class="form-label">Contact Phone</label>
+								<input type="tel" class="form-control" id="contact_phone" name="contact_phone" value="<?= htmlspecialchars($event->getContactPhone() ?? '') ?>">
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<div class="col-md-4">
+				<div class="card mb-4">
+					<div class="card-header">
+						<h5 class="mb-0">Publish Settings</h5>
+					</div>
+					<div class="card-body">
+						<div class="mb-3">
+							<label for="status" class="form-label">Status</label>
+							<select class="form-select" id="status" name="status">
+								<option value="draft" <?= $event->getStatus() === 'draft' ? 'selected' : '' ?>>Draft</option>
+								<option value="published" <?= $event->getStatus() === 'published' ? 'selected' : '' ?>>Published</option>
+							</select>
+							<small class="form-text text-muted">Only published events are visible to visitors</small>
+						</div>
+
+						<div class="mb-3">
+							<label for="category_id" class="form-label">Category</label>
+							<select class="form-select" id="category_id" name="category_id">
+								<option value="">Uncategorized</option>
+								<?php foreach($categories as $category): ?>
+									<option value="<?= $category->getId() ?>" <?= $event->getCategoryId() === $category->getId() ? 'selected' : '' ?>>
+										<?= htmlspecialchars($category->getName()) ?>
+									</option>
+								<?php endforeach; ?>
+							</select>
+						</div>
+
+						<div class="alert alert-secondary small">
+							<strong>Created:</strong> <?= $event->getCreatedAt()?->format('M j, Y') ?? 'N/A' ?><br>
+							<strong>Updated:</strong> <?= $event->getUpdatedAt()?->format('M j, Y') ?? 'Never' ?><br>
+							<strong>Views:</strong> <?= $event->getViewCount() ?>
+						</div>
+					</div>
+				</div>
+
+				<div class="card mb-4">
+					<div class="card-header">
+						<h5 class="mb-0">Featured Image</h5>
+					</div>
+					<div class="card-body">
+						<div class="mb-3">
+							<label for="featured_image" class="form-label">Image URL</label>
+							<input type="url" class="form-control" id="featured_image" name="featured_image" value="<?= htmlspecialchars($event->getFeaturedImage() ?? '') ?>" placeholder="https://">
+							<small class="form-text text-muted">Upload via Media Library or paste URL</small>
+						</div>
+
+						<div id="featured-image-preview" class="mb-2" <?= $event->getFeaturedImage() ? '' : 'style="display: none;"' ?>>
+							<img src="<?= htmlspecialchars($event->getFeaturedImage() ?? '') ?>" alt="Preview" class="img-thumbnail" style="max-width: 100%;">
+						</div>
+
+						<a href="<?= route_path('admin_media') ?>" class="btn btn-sm btn-outline-secondary w-100" target="_blank">
+							<i class="bi bi-images"></i> Open Media Library
+						</a>
+					</div>
+				</div>
+
+				<button type="submit" class="btn btn-primary w-100 mb-2">
+					<i class="bi bi-check-circle"></i> Update Event
+				</button>
+				<?php if($event->isPublished()): ?>
+					<a href="<?= route_path('calendar_event', ['slug' => $event->getSlug()]) ?>" class="btn btn-outline-secondary w-100 mb-2" target="_blank">
+						<i class="bi bi-eye"></i> View Event
+					</a>
+				<?php endif; ?>
+				<a href="<?= route_path('admin_events') ?>" class="btn btn-outline-secondary w-100">
+					Cancel
+				</a>
+			</div>
+		</div>
+	</form>
+</div>
+
+<!-- Load Editor.js -->
+<script src="https://cdn.jsdelivr.net/npm/@editorjs/editorjs@latest"></script>
+<script src="https://cdn.jsdelivr.net/npm/@editorjs/header@latest"></script>
+<script src="https://cdn.jsdelivr.net/npm/@editorjs/list@latest"></script>
+<script src="https://cdn.jsdelivr.net/npm/@editorjs/image@latest"></script>
+<script src="https://cdn.jsdelivr.net/npm/@editorjs/quote@latest"></script>
+<script src="https://cdn.jsdelivr.net/npm/@editorjs/code@latest"></script>
+<script src="https://cdn.jsdelivr.net/npm/@editorjs/delimiter@latest"></script>
+<script src="https://cdn.jsdelivr.net/npm/@editorjs/embed@2.7.4/dist/embed.umd.min.js"></script>
+
+<script>
+// Load existing content safely
+const existingContentJson = <?= json_encode($event->getContentRaw(), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
+
+let existingContent;
+try {
+	existingContent = JSON.parse(existingContentJson);
+} catch (error) {
+	console.error('Failed to parse existing content:', error);
+	existingContent = { blocks: [] };
+}
+
+let editor;
+
+// Wait for all scripts to load before initializing editor
+window.addEventListener('load', function() {
+	// Check if all required classes are loaded
+	const checkPluginsLoaded = setInterval(() => {
+		if (typeof EditorJS !== 'undefined' &&
+		    typeof Header !== 'undefined' &&
+		    typeof List !== 'undefined' &&
+		    typeof ImageTool !== 'undefined' &&
+		    typeof Quote !== 'undefined' &&
+		    typeof CodeTool !== 'undefined' &&
+		    typeof Delimiter !== 'undefined' &&
+		    typeof Embed !== 'undefined') {
+			clearInterval(checkPluginsLoaded);
+			initializeEditor();
+		}
+	}, 100);
+
+	// Timeout after 5 seconds
+	setTimeout(() => {
+		clearInterval(checkPluginsLoaded);
+		if (typeof EditorJS === 'undefined') {
+			console.error('Failed to load Editor.js');
+			alert('Editor failed to load. Please refresh the page.');
+		}
+	}, 5000);
+});
+
+function initializeEditor() {
+	try {
+		editor = new EditorJS({
+			holder: 'editorjs',
+
+			data: existingContent,
+
+			autofocus: true,
+
+			placeholder: 'Provide detailed event information...',
+
+			tools: {
+				header: {
+					class: Header,
+					config: {
+						levels: [2, 3, 4],
+						defaultLevel: 2
+					}
+				},
+				list: {
+					class: List,
+					inlineToolbar: true
+				},
+				image: {
+					class: ImageTool,
+					config: {
+						endpoints: {
+							byFile: '/admin/upload/image'
+						}
+					}
+				},
+				quote: {
+					class: Quote,
+					inlineToolbar: true
+				},
+				code: CodeTool,
+				delimiter: Delimiter,
+				embed: {
+					class: Embed,
+					config: {
+						services: {
+							youtube: true,
+							vimeo: true,
+							twitter: true,
+							instagram: true,
+							facebook: true,
+							codepen: true,
+							github: true
+						}
+					}
+				}
+			},
+
+			onReady: () => {
+				console.log('Editor.js is ready!');
+			},
+
+			onChange: async () => {
+				try {
+					const savedData = await editor.save();
+					document.getElementById('content-json').value = JSON.stringify(savedData);
+				} catch (error) {
+					console.error('Error saving content:', error);
+				}
+			}
+		});
+	} catch (error) {
+		console.error('Error initializing Editor.js:', error);
+		alert('Failed to initialize editor. Please refresh the page.');
+	}
+}
+
+// Featured image preview
+document.getElementById('featured_image').addEventListener('input', function() {
+	const preview = document.getElementById('featured-image-preview');
+	const img = preview.querySelector('img');
+
+	if (this.value) {
+		img.src = this.value;
+		preview.style.display = 'block';
+	} else {
+		preview.style.display = 'none';
+	}
+});
+
+// Save content before submit
+document.getElementById('event-form').addEventListener('submit', async (e) => {
+	e.preventDefault();
+
+	try {
+		const savedData = await editor.save();
+		document.getElementById('content-json').value = JSON.stringify(savedData);
+		e.target.submit();
+	} catch (error) {
+		console.error('Error saving editor content:', error);
+		alert('Error preparing content. Please try again.');
+	}
+});
+</script>
