@@ -59,7 +59,7 @@ class Tags extends Content
 			->description( 'Manage blog tags' )
 			->withCurrentUser()
 			->withCsrfToken()
-			->with( 'TagsWithCount', $this->_tagRepository->allWithPostCount() )
+			->with( 'tags', $this->_tagRepository->allWithPostCount() )
 			->render( 'index', 'tags' );
 	}
 
@@ -135,7 +135,7 @@ class Tags extends Content
 			->description( 'Edit blog tag' )
 			->withCurrentUser()
 			->withCsrfToken()
-			->with( 'Tag', $tag )
+			->with( 'tag', $tag )
 			->render( 'edit', 'tags' );
 	}
 

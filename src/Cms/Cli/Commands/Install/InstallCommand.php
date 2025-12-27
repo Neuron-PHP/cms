@@ -4,7 +4,9 @@ namespace Neuron\Cms\Cli\Commands\Install;
 
 use Neuron\Cli\Commands\Command;
 use Neuron\Cms\Models\User;
+use Neuron\Cms\Models\EventCategory;
 use Neuron\Cms\Repositories\DatabaseUserRepository;
+use Neuron\Cms\Repositories\DatabaseEventCategoryRepository;
 use Neuron\Cms\Auth\PasswordHasher;
 use Neuron\Data\Settings\SettingManager;
 use Neuron\Data\Settings\Source\Yaml;
@@ -110,6 +112,15 @@ class InstallCommand extends Command
 				$this->output->error( "Migration failed!" );
 				$this->output->info( "You can run it manually with: php neuron db:migrate" );
 				return 1;
+			}
+
+			// Seed default data after successful migration
+			$this->output->writeln( "" );
+			$this->output->writeln( "Seeding default data..." );
+			if( !$this->seedDefaultData() )
+			{
+				$this->output->warning( "Failed to seed default data" );
+				$this->output->info( "You can create default categories manually in the admin panel" );
 			}
 		}
 		else
@@ -1257,6 +1268,51 @@ class InstallCommand extends Command
 		catch( \Exception $e )
 		{
 			$this->output->error( "Error creating user: " . $e->getMessage() );
+			return false;
+		}
+	}
+
+	/**
+	 * Seed default data after migration
+	 */
+	private function seedDefaultData(): bool
+	{
+		try
+		{
+			$settings = Registry::getInstance()->get( 'Settings' );
+
+			if( !$settings )
+			{
+				$this->output->error( "Settings not found in Registry" );
+				return false;
+			}
+
+			$categoryRepository = new DatabaseEventCategoryRepository( $settings );
+
+			// Check if default category already exists
+			$existingCategory = $categoryRepository->findBySlug( 'general-events' );
+
+			if( $existingCategory )
+			{
+				$this->output->info( "  Default event category already exists" );
+				return true;
+			}
+
+			// Create default event category
+			$category = new EventCategory();
+			$category->setName( 'General Events' );
+			$category->setSlug( 'general-events' );
+			$category->setColor( '#3b82f6' );
+			$category->setDescription( 'General community events and activities' );
+
+			$categoryRepository->create( $category );
+
+			$this->output->success( "  Created default event category: General Events" );
+			return true;
+		}
+		catch( \Exception $e )
+		{
+			$this->output->error( "  Error seeding default data: " . $e->getMessage() );
 			return false;
 		}
 	}

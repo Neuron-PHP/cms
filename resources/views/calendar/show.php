@@ -122,42 +122,39 @@
 				<?php endif; ?>
 
 				<!-- Event Details Card -->
-				<div class="card mb-4">
-					<div class="card-header">
-						<h5 class="mb-0">Event Details</h5>
+				<?php if($event->getOrganizer() || $event->getContactEmail() || $event->getContactPhone()): ?>
+					<div class="card mb-4">
+						<div class="card-header">
+							<h5 class="mb-0">Event Details</h5>
+						</div>
+						<div class="card-body">
+							<dl class="row mb-0">
+								<?php if($event->getOrganizer()): ?>
+									<dt class="col-sm-3">Organizer</dt>
+									<dd class="col-sm-9"><?= htmlspecialchars($event->getOrganizer()) ?></dd>
+								<?php endif; ?>
+
+								<?php if($event->getContactEmail()): ?>
+									<dt class="col-sm-3">Contact Email</dt>
+									<dd class="col-sm-9">
+										<a href="mailto:<?= htmlspecialchars($event->getContactEmail()) ?>">
+											<?= htmlspecialchars($event->getContactEmail()) ?>
+										</a>
+									</dd>
+								<?php endif; ?>
+
+								<?php if($event->getContactPhone()): ?>
+									<dt class="col-sm-3">Contact Phone</dt>
+									<dd class="col-sm-9">
+										<a href="tel:<?= htmlspecialchars($event->getContactPhone()) ?>">
+											<?= htmlspecialchars($event->getContactPhone()) ?>
+										</a>
+									</dd>
+								<?php endif; ?>
+							</dl>
+						</div>
 					</div>
-					<div class="card-body">
-						<dl class="row mb-0">
-							<?php if($event->getOrganizer()): ?>
-								<dt class="col-sm-3">Organizer</dt>
-								<dd class="col-sm-9"><?= htmlspecialchars($event->getOrganizer()) ?></dd>
-							<?php endif; ?>
-
-							<?php if($event->getContactEmail()): ?>
-								<dt class="col-sm-3">Contact Email</dt>
-								<dd class="col-sm-9">
-									<a href="mailto:<?= htmlspecialchars($event->getContactEmail()) ?>">
-										<?= htmlspecialchars($event->getContactEmail()) ?>
-									</a>
-								</dd>
-							<?php endif; ?>
-
-							<?php if($event->getContactPhone()): ?>
-								<dt class="col-sm-3">Contact Phone</dt>
-								<dd class="col-sm-9">
-									<a href="tel:<?= htmlspecialchars($event->getContactPhone()) ?>">
-										<?= htmlspecialchars($event->getContactPhone()) ?>
-									</a>
-								</dd>
-							<?php endif; ?>
-
-							<?php if($event->isAllDay()): ?>
-								<dt class="col-sm-3">Duration</dt>
-								<dd class="col-sm-9">All Day Event</dd>
-							<?php endif; ?>
-						</dl>
-					</div>
-				</div>
+				<?php endif; ?>
 
 				<!-- Back to Calendar Link -->
 				<div class="text-center">

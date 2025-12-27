@@ -107,14 +107,20 @@
 
 						<div class="mb-3">
 							<label for="category_id" class="form-label">Category</label>
-							<select class="form-select" id="category_id" name="category_id">
-								<option value="">Uncategorized</option>
-								<?php foreach($categories as $category): ?>
-									<option value="<?= $category->getId() ?>">
-										<?= htmlspecialchars($category->getName()) ?>
-									</option>
-								<?php endforeach; ?>
-							</select>
+							<?php if(empty($categories)): ?>
+								<p class="text-muted">
+									No categories available.
+									<a href="<?= route_path('admin_event_categories_create') ?>" target="_blank">Create a category first</a>.
+								</p>
+							<?php else: ?>
+								<select class="form-select" id="category_id" name="category_id" required>
+									<?php foreach($categories as $index => $category): ?>
+										<option value="<?= $category->getId() ?>" <?= $index === 0 ? 'selected' : '' ?>>
+											<?= htmlspecialchars($category->getName()) ?>
+										</option>
+									<?php endforeach; ?>
+								</select>
+							<?php endif; ?>
 						</div>
 					</div>
 				</div>
