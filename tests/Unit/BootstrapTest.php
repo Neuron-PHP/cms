@@ -3,6 +3,7 @@
 namespace Tests;
 
 use Neuron\Mvc\Application;
+use Neuron\Patterns\Registry;
 use org\bovigo\vfs\vfsStream;
 use PHPUnit\Framework\TestCase;
 
@@ -172,5 +173,46 @@ YAML;
 		// Let's test with a valid config in examples directory
 		$app = Boot( 'examples/config' );
 		$this->assertInstanceOf( Application::class, $app );
+	}
+
+	/**
+	 * Test that CMS Boot registers bubble exceptions in Registry
+	 */
+	public function testBootRegistersBubbleExceptions()
+	{
+		// Clear registry before test
+		Registry::getInstance()->set( 'BubbleExceptions', null );
+
+		// Boot the CMS application
+		$app = Boot( 'examples/config' );
+
+		// Verify bubble exceptions are registered
+		$bubbleExceptions = Registry::getInstance()->get( 'BubbleExceptions' );
+
+		$this->assertIsArray( $bubbleExceptions );
+		$this->assertContains( 'Neuron\\Cms\\Exceptions\\UnauthenticatedException', $bubbleExceptions );
+		$this->assertContains( 'Neuron\\Cms\\Exceptions\\EmailVerificationRequiredException', $bubbleExceptions );
+		$this->assertContains( 'Neuron\\Cms\\Exceptions\\CsrfValidationException', $bubbleExceptions );
+	}
+
+	/**
+	 * Test that registered bubble exceptions are the correct classes
+	 */
+	public function testBubbleExceptionsAreValidClasses()
+	{
+		// Boot the CMS application
+		$app = Boot( 'examples/config' );
+
+		// Get registered exceptions
+		$bubbleExceptions = Registry::getInstance()->get( 'BubbleExceptions' );
+
+		// Verify each exception class exists
+		foreach( $bubbleExceptions as $exceptionClass )
+		{
+			$this->assertTrue(
+				class_exists( $exceptionClass ),
+				"Bubble exception class does not exist: $exceptionClass"
+			);
+		}
 	}
 }
