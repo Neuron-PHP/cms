@@ -12,7 +12,8 @@ use Neuron\Cms\Exceptions\EmailVerificationRequiredException;
 
 require '../vendor/autoload.php';
 
-error_reporting( E_ALL );
+// Exclude deprecation warnings from being displayed (they will still be logged)
+error_reporting( E_ALL & ~E_DEPRECATED & ~E_USER_DEPRECATED );
 
 $app = boot( '../config' );
 

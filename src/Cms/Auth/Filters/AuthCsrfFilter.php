@@ -49,11 +49,17 @@ class AuthCsrfFilter extends Filter
 	protected function validate( RouteMap $route ): void
 	{
 		// 1. Check authentication first
-		if( !$this->_authentication->check() )
+		$user = $this->_authentication->user();
+		if( !$user )
 		{
 			Log::warning( 'Unauthenticated access attempt to protected route: ' . $route->Path );
 			$this->redirectToLogin();
 		}
+
+		// Set authenticated user in Registry for access by controllers
+		\Neuron\Patterns\Registry::getInstance()->set( 'Auth.User', $user );
+		\Neuron\Patterns\Registry::getInstance()->set( 'Auth.UserId', $user->getId() );
+		\Neuron\Patterns\Registry::getInstance()->set( 'Auth.UserRole', $user->getRole() );
 
 		// 2. Check CSRF token for state-changing methods
 		$method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
