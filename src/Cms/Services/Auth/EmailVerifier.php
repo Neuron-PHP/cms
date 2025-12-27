@@ -12,6 +12,7 @@ use Neuron\Core\System\RealRandom;
 use Neuron\Data\Settings\SettingManager;
 use Neuron\Log\Log;
 use Exception;
+use Neuron\Cms\Enums\UserStatus;
 
 /**
  * Email verification service.
@@ -155,9 +156,9 @@ class EmailVerifier
 		// Update user email verification status
 		$user->setEmailVerified( true );
 
-		if( $user->getStatus() === User::STATUS_INACTIVE )
+		if( $user->getStatus() === UserStatus::INACTIVE->value )
 		{
-			$user->setStatus( User::STATUS_ACTIVE );
+			$user->setStatus( UserStatus::ACTIVE->value );
 		}
 		$this->_userRepository->update( $user );
 

@@ -2,6 +2,7 @@
 
 namespace Neuron\Cms\Controllers\Admin;
 
+use Neuron\Cms\Enums\FlashMessageType;
 use Neuron\Cms\Controllers\Content;
 use Neuron\Cms\Repositories\DatabaseEventRepository;
 use Neuron\Cms\Repositories\DatabaseEventCategoryRepository;
@@ -93,8 +94,8 @@ class Events extends Content
 			->withCsrfToken()
 			->with([
 				'events' => $events,
-				'Success' => $sessionManager->getFlash( 'success' ),
-				'Error' => $sessionManager->getFlash( 'error' )
+				FlashMessageType::SUCCESS->value => $sessionManager->getFlash( FlashMessageType::SUCCESS->value ),
+				FlashMessageType::ERROR->value => $sessionManager->getFlash( FlashMessageType::ERROR->value )
 			])
 			->render( 'index', 'admin' );
 	}
@@ -155,11 +156,11 @@ class Events extends Content
 				$contactPhone ?: null
 			);
 
-			$this->redirect( 'admin_events', [], ['success', 'Event created successfully'] );
+			$this->redirect( 'admin_events', [], [FlashMessageType::SUCCESS->value, 'Event created successfully'] );
 		}
 		catch( \Exception $e )
 		{
-			$this->redirect( 'admin_events_create', [], ['error', 'Failed to create event: ' . $e->getMessage()] );
+			$this->redirect( 'admin_events_create', [], [FlashMessageType::ERROR->value, 'Failed to create event: ' . $e->getMessage()] );
 		}
 	}
 
@@ -173,7 +174,7 @@ class Events extends Content
 
 		if( !$event )
 		{
-			$this->redirect( 'admin_events', [], ['error', 'Event not found'] );
+			$this->redirect( 'admin_events', [], [FlashMessageType::ERROR->value, 'Event not found'] );
 		}
 
 		// Check permissions
@@ -206,7 +207,7 @@ class Events extends Content
 
 		if( !$event )
 		{
-			$this->redirect( 'admin_events', [], ['error', 'Event not found'] );
+			$this->redirect( 'admin_events', [], [FlashMessageType::ERROR->value, 'Event not found'] );
 		}
 
 		// Check permissions
@@ -250,11 +251,11 @@ class Events extends Content
 				$contactPhone ?: null
 			);
 
-			$this->redirect( 'admin_events', [], ['success', 'Event updated successfully'] );
+			$this->redirect( 'admin_events', [], [FlashMessageType::SUCCESS->value, 'Event updated successfully'] );
 		}
 		catch( \Exception $e )
 		{
-			$this->redirect( 'admin_events_edit', ['id' => $eventId], ['error', 'Failed to update event: ' . $e->getMessage()] );
+			$this->redirect( 'admin_events_edit', ['id' => $eventId], [FlashMessageType::ERROR->value, 'Failed to update event: ' . $e->getMessage()] );
 		}
 	}
 
@@ -268,23 +269,23 @@ class Events extends Content
 
 		if( !$event )
 		{
-			$this->redirect( 'admin_events', [], ['error', 'Event not found'] );
+			$this->redirect( 'admin_events', [], [FlashMessageType::ERROR->value, 'Event not found'] );
 		}
 
 		// Check permissions
 		if( !is_admin() && !is_editor() && $event->getCreatedBy() !== user_id() )
 		{
-			$this->redirect( 'admin_events', [], ['error', 'Unauthorized to delete this event'] );
+			$this->redirect( 'admin_events', [], [FlashMessageType::ERROR->value, 'Unauthorized to delete this event'] );
 		}
 
 		try
 		{
 			$this->_deleter->delete( $event );
-			$this->redirect( 'admin_events', [], ['success', 'Event deleted successfully'] );
+			$this->redirect( 'admin_events', [], [FlashMessageType::SUCCESS->value, 'Event deleted successfully'] );
 		}
 		catch( \Exception $e )
 		{
-			$this->redirect( 'admin_events', [], ['error', 'Failed to delete event: ' . $e->getMessage()] );
+			$this->redirect( 'admin_events', [], [FlashMessageType::ERROR->value, 'Failed to delete event: ' . $e->getMessage()] );
 		}
 	}
 }

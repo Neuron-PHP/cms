@@ -6,6 +6,7 @@ use Neuron\Cms\Models\Post;
 use Neuron\Cms\Repositories\IPostRepository;
 use DateTimeImmutable;
 use Exception;
+use Neuron\Cms\Enums\ContentStatus;
 
 /**
  * Post publishing service.
@@ -33,12 +34,12 @@ class Publisher
 	public function publish( Post $post ): Post
 	{
 		// Validate post isn't already published
-		if( $post->getStatus() === Post::STATUS_PUBLISHED )
+		if( $post->getStatus() === ContentStatus::PUBLISHED->value )
 		{
 			throw new Exception( 'Post is already published' );
 		}
 
-		$post->setStatus( Post::STATUS_PUBLISHED );
+		$post->setStatus( ContentStatus::PUBLISHED->value );
 		$post->setPublishedAt( new DateTimeImmutable() );
 
 		if( !$this->_postRepository->update( $post ) )
@@ -59,12 +60,12 @@ class Publisher
 	public function unpublish( Post $post ): Post
 	{
 		// Validate post is currently published
-		if( $post->getStatus() !== Post::STATUS_PUBLISHED )
+		if( $post->getStatus() !== ContentStatus::PUBLISHED->value )
 		{
 			throw new Exception( 'Post is not currently published' );
 		}
 
-		$post->setStatus( Post::STATUS_DRAFT );
+		$post->setStatus( ContentStatus::DRAFT->value );
 		$post->setPublishedAt( null );
 
 		if( !$this->_postRepository->update( $post ) )
@@ -91,7 +92,7 @@ class Publisher
 			throw new Exception( 'Scheduled publish date must be in the future' );
 		}
 
-		$post->setStatus( Post::STATUS_SCHEDULED );
+		$post->setStatus( ContentStatus::SCHEDULED->value );
 		$post->setPublishedAt( $publishAt );
 
 		if( !$this->_postRepository->update( $post ) )

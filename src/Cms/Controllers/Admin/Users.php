@@ -2,6 +2,7 @@
 
 namespace Neuron\Cms\Controllers\Admin;
 
+use Neuron\Cms\Enums\FlashMessageType;
 use Neuron\Cms\Controllers\Content;
 use Neuron\Cms\Models\User;
 use Neuron\Cms\Repositories\DatabaseUserRepository;
@@ -15,6 +16,7 @@ use Neuron\Mvc\Application;
 use Neuron\Mvc\Requests\Request;
 use Neuron\Mvc\Responses\HttpResponseStatus;
 use Neuron\Patterns\Registry;
+use Neuron\Cms\Enums\UserRole;
 
 /**
  * User management controller.
@@ -85,8 +87,8 @@ class Users extends Content
 			->withCsrfToken()
 			->with([
 				'users' => $this->_repository->all(),
-				'Success' => $sessionManager->getFlash( 'success' ),
-				'Error' => $sessionManager->getFlash( 'error' )
+				FlashMessageType::SUCCESS->value => $sessionManager->getFlash( FlashMessageType::SUCCESS->value ),
+				FlashMessageType::ERROR->value => $sessionManager->getFlash( FlashMessageType::ERROR->value )
 			])
 			->render( 'index', 'admin' );
 	}
@@ -106,7 +108,7 @@ class Users extends Content
 			->description( 'Create New User' )
 			->withCurrentUser()
 			->withCsrfToken()
-			->with( 'roles', [User::ROLE_ADMIN, User::ROLE_EDITOR, User::ROLE_AUTHOR, User::ROLE_SUBSCRIBER] )
+			->with( 'roles', [UserRole::ADMIN->value, UserRole::EDITOR->value, UserRole::AUTHOR->value, UserRole::SUBSCRIBER->value] )
 			->render( 'create', 'admin' );
 	}
 
@@ -121,22 +123,22 @@ class Users extends Content
 		$username = $request->post( 'username','' );
 		$email = $request->post( 'email', '' );
 		$password = $request->post( 'password', '' );
-		$role = $request->post( 'role', User::ROLE_SUBSCRIBER );
+		$role = $request->post( 'role', UserRole::SUBSCRIBER->value );
 
 		// Basic validation
 		if( empty( $username ) || empty( $email ) || empty( $password ) )
 		{
-			$this->redirect( 'admin_users_create', [], ['error', 'All fields are required'] );
+			$this->redirect( 'admin_users_create', [], [FlashMessageType::ERROR->value, 'All fields are required'] );
 		}
 
 		try
 		{
 			$this->_userCreator->create( $username, $email, $password, $role );
-			$this->redirect( 'admin_users', [], ['success', 'User created successfully'] );
+			$this->redirect( 'admin_users', [], [FlashMessageType::SUCCESS->value, 'User created successfully'] );
 		}
 		catch( \Exception $e )
 		{
-			$this->redirect( 'admin_users_create', [], ['error', $e->getMessage()] );
+			$this->redirect( 'admin_users_create', [], [FlashMessageType::ERROR->value, $e->getMessage()] );
 		}
 	}
 
@@ -154,7 +156,7 @@ class Users extends Content
 
 		if( !$user )
 		{
-			$this->redirect( 'admin_users', [], ['error', 'User not found'] );
+			$this->redirect( 'admin_users', [], [FlashMessageType::ERROR->value, 'User not found'] );
 		}
 
 		$this->initializeCsrfToken();
@@ -166,7 +168,7 @@ class Users extends Content
 			->withCsrfToken()
 			->with([
 				'user' => $user,
-				'roles' => [User::ROLE_ADMIN, User::ROLE_EDITOR, User::ROLE_AUTHOR, User::ROLE_SUBSCRIBER]
+				'roles' => [UserRole::ADMIN->value, UserRole::EDITOR->value, UserRole::AUTHOR->value, UserRole::SUBSCRIBER->value]
 			])
 			->render( 'edit', 'admin' );
 	}
@@ -185,7 +187,7 @@ class Users extends Content
 
 		if( !$user )
 		{
-			$this->redirect( 'admin_users', [], ['error', 'User not found'] );
+			$this->redirect( 'admin_users', [], [FlashMessageType::ERROR->value, 'User not found'] );
 		}
 
 		$usernameInput = $request->post( 'username', null );
@@ -196,7 +198,7 @@ class Users extends Content
 
 		if( $username === '' || $email === '' )
 		{
-			$this->redirect( 'admin_users_edit', ['id' => $id], ['error', 'Username and email are required'] );
+			$this->redirect( 'admin_users_edit', ['id' => $id], [FlashMessageType::ERROR->value, 'Username and email are required'] );
 		}
 
 		$role = $request->post( 'role', $user->getRole() );
@@ -205,11 +207,11 @@ class Users extends Content
 		try
 		{
 			$this->_userUpdater->update( $user, $username, $email, $role, $password );
-			$this->redirect( 'admin_users', [], ['success', 'User updated successfully'] );
+			$this->redirect( 'admin_users', [], [FlashMessageType::SUCCESS->value, 'User updated successfully'] );
 		}
 		catch( \Exception $e )
 		{
-			$this->redirect( 'admin_users_edit', ['id' => $id], ['error', $e->getMessage()] );
+			$this->redirect( 'admin_users_edit', ['id' => $id], [FlashMessageType::ERROR->value, $e->getMessage()] );
 		}
 	}
 
@@ -227,17 +229,17 @@ class Users extends Content
 		// Prevent self-deletion
 		if( user_id() === $id )
 		{
-			$this->redirect( 'admin_users', [], ['error', 'Cannot delete your own account'] );
+			$this->redirect( 'admin_users', [], [FlashMessageType::ERROR->value, 'Cannot delete your own account'] );
 		}
 
 		try
 		{
 			$this->_userDeleter->delete( $id );
-			$this->redirect( 'admin_users', [], ['success', 'User deleted successfully'] );
+			$this->redirect( 'admin_users', [], [FlashMessageType::SUCCESS->value, 'User deleted successfully'] );
 		}
 		catch( \Exception $e )
 		{
-			$this->redirect( 'admin_users', [], ['error', $e->getMessage()] );
+			$this->redirect( 'admin_users', [], [FlashMessageType::ERROR->value, $e->getMessage()] );
 		}
 	}
 }

@@ -2,6 +2,7 @@
 
 namespace Neuron\Cms\Controllers\Admin;
 
+use Neuron\Cms\Enums\FlashMessageType;
 use Neuron\Cms\Controllers\Content;
 use Neuron\Cms\Repositories\DatabaseCategoryRepository;
 use Neuron\Cms\Services\Category\Creator;
@@ -115,11 +116,11 @@ class Categories extends Content
 			$description = $request->post( 'description' );
 
 			$this->_categoryCreator->create( $name, $slug, $description );
-			$this->redirect( 'admin_categories', [], ['success', 'Category created successfully'] );
+			$this->redirect( 'admin_categories', [], [FlashMessageType::SUCCESS->value, 'Category created successfully'] );
 		}
 		catch( \Exception $e )
 		{
-			$this->redirect( 'admin_categories_create', [], ['error', $e->getMessage()] );
+			$this->redirect( 'admin_categories_create', [], [FlashMessageType::ERROR->value, $e->getMessage()] );
 		}
 	}
 
@@ -163,7 +164,7 @@ class Categories extends Content
 
 		if( !$category )
 		{
-			$this->redirect( 'admin_categories', [], ['error', 'Category not found'] );
+			$this->redirect( 'admin_categories', [], [FlashMessageType::ERROR->value, 'Category not found'] );
 		}
 
 		try
@@ -173,11 +174,11 @@ class Categories extends Content
 			$description = $request->post( 'description' );
 
 			$this->_categoryUpdater->update( $category, $name, $slug, $description );
-			$this->redirect( 'admin_categories', [], ['success', 'Category updated successfully'] );
+			$this->redirect( 'admin_categories', [], [FlashMessageType::SUCCESS->value, 'Category updated successfully'] );
 		}
 		catch( \Exception $e )
 		{
-			$this->redirect( 'admin_categories_edit', ['id' => $categoryId], ['error', $e->getMessage()] );
+			$this->redirect( 'admin_categories_edit', ['id' => $categoryId], [FlashMessageType::ERROR->value, $e->getMessage()] );
 		}
 	}
 
@@ -194,11 +195,11 @@ class Categories extends Content
 		try
 		{
 			$this->_categoryDeleter->delete( $categoryId );
-			$this->redirect( 'admin_categories', [], ['success', 'Category deleted successfully'] );
+			$this->redirect( 'admin_categories', [], [FlashMessageType::SUCCESS->value, 'Category deleted successfully'] );
 		}
 		catch( \Exception $e )
 		{
-			$this->redirect( 'admin_categories', [], ['error', $e->getMessage()] );
+			$this->redirect( 'admin_categories', [], [FlashMessageType::ERROR->value, $e->getMessage()] );
 		}
 	}
 }

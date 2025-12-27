@@ -2,6 +2,7 @@
 
 namespace Neuron\Cms\Controllers\Admin;
 
+use Neuron\Cms\Enums\FlashMessageType;
 use Neuron\Cms\Controllers\Content;
 use Neuron\Cms\Repositories\DatabaseEventCategoryRepository;
 use Neuron\Cms\Services\EventCategory\Creator;
@@ -75,8 +76,8 @@ class EventCategories extends Content
 			->withCsrfToken()
 			->with([
 				'categories' => $this->_repository->all(),
-				'Success' => $sessionManager->getFlash( 'success' ),
-				'Error' => $sessionManager->getFlash( 'error' )
+				FlashMessageType::SUCCESS->value => $sessionManager->getFlash( FlashMessageType::SUCCESS->value ),
+				FlashMessageType::ERROR->value => $sessionManager->getFlash( FlashMessageType::ERROR->value )
 			])
 			->render( 'index', 'admin' );
 	}
@@ -120,7 +121,7 @@ class EventCategories extends Content
 				$description ?: null
 			);
 
-			$this->redirect( 'admin_event_categories', [], ['success', 'Event category created successfully'] );
+			$this->redirect( 'admin_event_categories', [], [FlashMessageType::SUCCESS->value, 'Event category created successfully'] );
 		}
 		catch( \Exception $e )
 		{
@@ -148,7 +149,7 @@ class EventCategories extends Content
 
 		if( !$category )
 		{
-			$this->redirect( 'admin_event_categories', [], ['error', 'Category not found'] );
+			$this->redirect( 'admin_event_categories', [], [FlashMessageType::ERROR->value, 'Category not found'] );
 		}
 
 		$this->initializeCsrfToken();
@@ -172,7 +173,7 @@ class EventCategories extends Content
 
 		if( !$category )
 		{
-			$this->redirect( 'admin_event_categories', [], ['error', 'Category not found'] );
+			$this->redirect( 'admin_event_categories', [], [FlashMessageType::ERROR->value, 'Category not found'] );
 		}
 
 		try
@@ -190,11 +191,11 @@ class EventCategories extends Content
 				$description ?: null
 			);
 
-			$this->redirect( 'admin_event_categories', [], ['success', 'Event category updated successfully'] );
+			$this->redirect( 'admin_event_categories', [], [FlashMessageType::SUCCESS->value, 'Event category updated successfully'] );
 		}
 		catch( \Exception $e )
 		{
-			$this->redirect( 'admin_event_categories_edit', ['id' => $categoryId], ['error', 'Failed to update category: ' . $e->getMessage()] );
+			$this->redirect( 'admin_event_categories_edit', ['id' => $categoryId], [FlashMessageType::ERROR->value, 'Failed to update category: ' . $e->getMessage()] );
 		}
 	}
 
@@ -208,17 +209,17 @@ class EventCategories extends Content
 
 		if( !$category )
 		{
-			$this->redirect( 'admin_event_categories', [], ['error', 'Category not found'] );
+			$this->redirect( 'admin_event_categories', [], [FlashMessageType::ERROR->value, 'Category not found'] );
 		}
 
 		try
 		{
 			$this->_deleter->delete( $category );
-			$this->redirect( 'admin_event_categories', [], ['success', 'Event category deleted successfully'] );
+			$this->redirect( 'admin_event_categories', [], [FlashMessageType::SUCCESS->value, 'Event category deleted successfully'] );
 		}
 		catch( \Exception $e )
 		{
-			$this->redirect( 'admin_event_categories', [], ['error', 'Failed to delete category: ' . $e->getMessage()] );
+			$this->redirect( 'admin_event_categories', [], [FlashMessageType::ERROR->value, 'Failed to delete category: ' . $e->getMessage()] );
 		}
 	}
 }

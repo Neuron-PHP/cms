@@ -4,6 +4,8 @@ namespace Neuron\Cms\Models;
 
 use DateTimeImmutable;
 use Exception;
+use Neuron\Cms\Enums\ContentStatus;
+use Neuron\Cms\Enums\PageTemplate;
 use Neuron\Orm\Model;
 use Neuron\Orm\Attributes\{Table, BelongsTo};
 
@@ -36,12 +38,14 @@ class Page extends Model
 
 	/**
 	 * Page status constants
+	 * @deprecated Use ContentStatus enum instead
 	 */
 	public const STATUS_DRAFT = 'draft';
 	public const STATUS_PUBLISHED = 'published';
 
 	/**
 	 * Template constants
+	 * @deprecated Use PageTemplate enum instead
 	 */
 	public const TEMPLATE_DEFAULT = 'default';
 	public const TEMPLATE_FULL_WIDTH = 'full-width';

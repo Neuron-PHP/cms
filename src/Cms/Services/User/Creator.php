@@ -8,6 +8,7 @@ use Neuron\Cms\Auth\PasswordHasher;
 use Neuron\Cms\Events\UserCreatedEvent;
 use Neuron\Patterns\Registry;
 use DateTimeImmutable;
+use Neuron\Cms\Enums\UserStatus;
 
 /**
  * User creation service.
@@ -59,7 +60,7 @@ class Creator
 		$user->setEmail( $email );
 		$user->setPasswordHash( $this->_passwordHasher->hash( $password ) );
 		$user->setRole( $role );
-		$user->setStatus( User::STATUS_ACTIVE );
+		$user->setStatus( UserStatus::ACTIVE->value );
 		$user->setEmailVerified( true );
 		$user->setCreatedAt( new DateTimeImmutable() );
 

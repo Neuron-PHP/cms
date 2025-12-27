@@ -2,6 +2,7 @@
 
 namespace Neuron\Cms\Controllers\Admin;
 
+use Neuron\Cms\Enums\FlashMessageType;
 use Neuron\Cms\Controllers\Content;
 use Neuron\Cms\Models\Post;
 use Neuron\Cms\Repositories\DatabasePostRepository;
@@ -16,6 +17,7 @@ use Neuron\Mvc\Application;
 use Neuron\Mvc\Requests\Request;
 use Neuron\Mvc\Responses\HttpResponseStatus;
 use Neuron\Patterns\Registry;
+use Neuron\Cms\Enums\ContentStatus;
 
 /**
  * Admin post management controller.
@@ -143,8 +145,8 @@ class Posts extends Content
 			->withCsrfToken()
 			->with([
 				'posts' => $posts,
-				'Success' => $sessionManager->getFlash( 'success' ),
-				'Error' => $sessionManager->getFlash( 'error' )
+				FlashMessageType::SUCCESS->value => $sessionManager->getFlash( FlashMessageType::SUCCESS->value ),
+				FlashMessageType::ERROR->value => $sessionManager->getFlash( FlashMessageType::ERROR->value )
 			])
 			->render( 'index', 'admin' );
 	}
@@ -184,7 +186,7 @@ class Posts extends Content
 			$content = $request->post('content', '' );
 			$excerpt = $request->post( 'excerpt', '' );
 			$featuredImage = $request->post('featured_image', '' );
-			$status = $request->post( 'status', Post::STATUS_DRAFT );
+			$status = $request->post( 'status', ContentStatus::DRAFT->value );
 			$categoryIds = $request->post( 'categories', [] );
 			$tagNames = $request->post( 'tags', '' );
 
@@ -201,11 +203,11 @@ class Posts extends Content
 				$tagNames
 			);
 
-			$this->redirect( 'admin_posts', [], ['success', 'Post created successfully'] );
+			$this->redirect( 'admin_posts', [], [FlashMessageType::SUCCESS->value, 'Post created successfully'] );
 		}
 		catch( \Exception $e )
 		{
-			$this->redirect( 'admin_posts_create', [], ['error', 'Failed to create post: ' . $e->getMessage()] );
+			$this->redirect( 'admin_posts_create', [], [FlashMessageType::ERROR->value, 'Failed to create post: ' . $e->getMessage()] );
 		}
 	}
 
@@ -222,7 +224,7 @@ class Posts extends Content
 
 		if( !$post )
 		{
-			$this->redirect( 'admin_posts', [], ['error', 'Post not found'] );
+			$this->redirect( 'admin_posts', [], [FlashMessageType::ERROR->value, 'Post not found'] );
 		}
 
 		// Check permissions
@@ -259,7 +261,7 @@ class Posts extends Content
 
 		if( !$post )
 		{
-			$this->redirect( 'admin_posts', [], ['error', 'Post not found'] );
+			$this->redirect( 'admin_posts', [], [FlashMessageType::ERROR->value, 'Post not found'] );
 		}
 
 		// Check permissions
@@ -276,7 +278,7 @@ class Posts extends Content
 			$content = $request->post( 'content', '' );
 			$excerpt = $request->post( 'excerpt' ,'' );
 			$featuredImage = $request->post( 'featured_image', '' );
-			$status = $request->post( 'status', Post::STATUS_DRAFT );
+			$status = $request->post( 'status', ContentStatus::DRAFT->value );
 			$categoryIds = $request->post( 'categories', [] );
 			$tagNames = $request->post( 'tags','' );
 
@@ -293,11 +295,11 @@ class Posts extends Content
 				$tagNames
 			);
 
-			$this->redirect( 'admin_posts', [], ['success', 'Post updated successfully'] );
+			$this->redirect( 'admin_posts', [], [FlashMessageType::SUCCESS->value, 'Post updated successfully'] );
 		}
 		catch( \Exception $e )
 		{
-			$this->redirect( 'admin_posts_edit', ['id' => $postId], ['error', 'Failed to update post: ' . $e->getMessage()] );
+			$this->redirect( 'admin_posts_edit', ['id' => $postId], [FlashMessageType::ERROR->value, 'Failed to update post: ' . $e->getMessage()] );
 		}
 	}
 
@@ -314,23 +316,23 @@ class Posts extends Content
 
 		if( !$post )
 		{
-			$this->redirect( 'admin_posts', [], ['error', 'Post not found'] );
+			$this->redirect( 'admin_posts', [], [FlashMessageType::ERROR->value, 'Post not found'] );
 		}
 
 		// Check permissions
 		if( !is_admin() && !is_editor() && $post->getAuthorId() !== user_id() )
 		{
-			$this->redirect( 'admin_posts', [], ['error', 'Unauthorized to delete this post'] );
+			$this->redirect( 'admin_posts', [], [FlashMessageType::ERROR->value, 'Unauthorized to delete this post'] );
 		}
 
 		try
 		{
 			$this->_postDeleter->delete( $post );
-			$this->redirect( 'admin_posts', [], ['success', 'Post deleted successfully'] );
+			$this->redirect( 'admin_posts', [], [FlashMessageType::SUCCESS->value, 'Post deleted successfully'] );
 		}
 		catch( \Exception $e )
 		{
-			$this->redirect( 'admin_posts', [], ['error', 'Failed to delete post: ' . $e->getMessage()] );
+			$this->redirect( 'admin_posts', [], [FlashMessageType::ERROR->value, 'Failed to delete post: ' . $e->getMessage()] );
 		}
 	}
 }

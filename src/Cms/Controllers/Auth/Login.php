@@ -3,6 +3,7 @@
 namespace Neuron\Cms\Controllers\Auth;
 
 use Neuron\Cms\Controllers\Content;
+use Neuron\Cms\Enums\FlashMessageType;
 use Neuron\Cms\Services\Auth\Authentication;
 use Neuron\Cms\Services\Auth\CsrfToken;
 use Neuron\Core\Exceptions\NotFound;
@@ -74,8 +75,8 @@ class Login extends Content
 			->title( 'Login' )
 			->description( 'Login to ' . $this->getName() )
 			->withCsrfToken()
-			->with( 'Error', $this->getSessionManager()->getFlash( 'error' ) )
-			->with( 'Success', $this->getSessionManager()->getFlash( 'success' ) )
+			->with( FlashMessageType::ERROR->value, $this->getSessionManager()->getFlash( 'error' ) )
+			->with( FlashMessageType::SUCCESS->value, $this->getSessionManager()->getFlash( 'success' ) )
 			->with( 'RedirectUrl', $redirectUrl )
 			->render( 'login', 'auth' );
 	}
@@ -93,7 +94,7 @@ class Login extends Content
 
 		if( !$this->_csrfToken->validate( $token ) )
 		{
-			$this->redirect( 'login', [], ['error', 'Invalid CSRF token. Please try again.'] );
+			$this->redirect( 'login', [], [FlashMessageType::ERROR->value, 'Invalid CSRF token. Please try again.'] );
 		}
 
 		// Get credentials
@@ -104,13 +105,13 @@ class Login extends Content
 		// Validate input
 		if( empty( $username ) || empty( $password ) )
 		{
-			$this->redirect( 'login', [], ['error', 'Please enter both username and password.'] );
+			$this->redirect( 'login', [], [FlashMessageType::ERROR->value, 'Please enter both username and password.'] );
 		}
 
 		// Attempt authentication
 		if( !$this->_authentication->attempt( $username, $password, $remember ) )
 		{
-			$this->redirect( 'login', [], ['error', 'Invalid username or password.'] );
+			$this->redirect( 'login', [], [FlashMessageType::ERROR->value, 'Invalid username or password.'] );
 		}
 
 		// Successful login - redirect to intended URL or dashboard
@@ -122,7 +123,7 @@ class Login extends Content
 			? $requestedRedirect
 			: $defaultRedirect;
 
-		$this->redirectToUrl( $redirectUrl, [ 'success', 'Welcome back!' ] );
+		$this->redirectToUrl( $redirectUrl, [ FlashMessageType::SUCCESS->value, 'Welcome back!' ] );
 	}
 
 	/**
@@ -133,7 +134,7 @@ class Login extends Content
 	public function logout( Request $request ): never
 	{
 		$this->_authentication->logout();
-		$this->redirect( 'home', [], ['success', 'You have been logged out successfully.'] );
+		$this->redirect( 'home', [], [FlashMessageType::SUCCESS->value, 'You have been logged out successfully.'] );
 	}
 
 	/**

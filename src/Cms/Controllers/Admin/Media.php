@@ -2,6 +2,7 @@
 
 namespace Neuron\Cms\Controllers\Admin;
 
+use Neuron\Cms\Enums\FlashMessageType;
 use Neuron\Cms\Controllers\Content;
 use Neuron\Cms\Services\Media\CloudinaryUploader;
 use Neuron\Cms\Services\Media\MediaValidator;
@@ -131,8 +132,8 @@ class Media extends Content
 					'resources' => $result['resources'],
 					'nextCursor' => $result['next_cursor'],
 					'totalCount' => $result['total_count'],
-					'success' => $sessionManager->getFlash( 'success' ),
-					'error' => $sessionManager->getFlash( 'error' )
+					FlashMessageType::SUCCESS->value => $sessionManager->getFlash( FlashMessageType::SUCCESS->value ),
+					FlashMessageType::ERROR->value => $sessionManager->getFlash( FlashMessageType::ERROR->value )
 				])
 				->render( 'index', 'admin' );
 		}
@@ -152,8 +153,8 @@ class Media extends Content
 					'resources' => [],
 					'nextCursor' => null,
 					'totalCount' => 0,
-					'success' => $sessionManager->getFlash( 'success' ),
-					'error' => 'Failed to load media library. Please try again.'
+					FlashMessageType::SUCCESS->value => $sessionManager->getFlash( FlashMessageType::SUCCESS->value ),
+					FlashMessageType::ERROR->value => 'Failed to load media library. Please try again.'
 				])
 				->render( 'index', 'admin' );
 		}
@@ -178,7 +179,7 @@ class Media extends Content
 				return $this->renderJson(
 					HttpResponseStatus::BAD_REQUEST,
 					[
-						'success' => 0,
+						FlashMessageType::SUCCESS->value => 0,
 						'message' => 'No file was uploaded'
 					]
 				);
@@ -192,13 +193,13 @@ class Media extends Content
 				Log::warning( 'Image upload validation failed', [
 					'user_id' => user_id(),
 					'filename' => $file['name'] ?? 'unknown',
-					'error' => $this->_validator->getFirstError()
+					FlashMessageType::ERROR->value => $this->_validator->getFirstError()
 				] );
 
 				return $this->renderJson(
 					HttpResponseStatus::BAD_REQUEST,
 					[
-						'success' => 0,
+						FlashMessageType::SUCCESS->value => 0,
 						'message' => $this->_validator->getFirstError()
 					]
 				);
@@ -218,7 +219,7 @@ class Media extends Content
 			return $this->renderJson(
 				HttpResponseStatus::OK,
 				[
-					'success' => 1,
+					FlashMessageType::SUCCESS->value => 1,
 					'file' => [
 						'url' => $result['url'],
 						'width' => $result['width'],
@@ -242,7 +243,7 @@ class Media extends Content
 			return $this->renderJson(
 				HttpResponseStatus::INTERNAL_SERVER_ERROR,
 				[
-					'success' => 0,
+					FlashMessageType::SUCCESS->value => 0,
 					'message' => 'Upload failed. Please try again.'
 				]
 			);
@@ -268,8 +269,8 @@ class Media extends Content
 				return $this->renderJson(
 					HttpResponseStatus::BAD_REQUEST,
 					[
-						'success' => false,
-						'error' => 'No file was uploaded'
+						FlashMessageType::SUCCESS->value => false,
+						FlashMessageType::ERROR->value => 'No file was uploaded'
 					]
 				);
 			}
@@ -282,14 +283,14 @@ class Media extends Content
 				Log::warning( 'Featured image upload validation failed', [
 					'user_id' => user_id(),
 					'filename' => $file['name'] ?? 'unknown',
-					'error' => $this->_validator->getFirstError()
+					FlashMessageType::ERROR->value => $this->_validator->getFirstError()
 				] );
 
 				return $this->renderJson(
 					HttpResponseStatus::BAD_REQUEST,
 					[
-						'success' => false,
-						'error' => $this->_validator->getFirstError()
+						FlashMessageType::SUCCESS->value => false,
+						FlashMessageType::ERROR->value => $this->_validator->getFirstError()
 					]
 				);
 			}
@@ -308,7 +309,7 @@ class Media extends Content
 			return $this->renderJson(
 				HttpResponseStatus::OK,
 				[
-					'success' => true,
+					FlashMessageType::SUCCESS->value => true,
 					'data' => $result
 				]
 			);
@@ -328,8 +329,8 @@ class Media extends Content
 			return $this->renderJson(
 				HttpResponseStatus::INTERNAL_SERVER_ERROR,
 				[
-					'success' => false,
-					'error' => 'Upload failed. Please try again.'
+					FlashMessageType::SUCCESS->value => false,
+					FlashMessageType::ERROR->value => 'Upload failed. Please try again.'
 				]
 			);
 		}

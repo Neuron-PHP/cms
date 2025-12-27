@@ -7,16 +7,16 @@
 		</a>
 	</div>
 
-	<?php if(isset($Success) && $Success): ?>
+	<?php if(isset($success) && $success): ?>
 		<div class="alert alert-success alert-dismissible fade show">
-			<?= htmlspecialchars($Success) ?>
+			<?= htmlspecialchars($success) ?>
 			<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
 		</div>
 	<?php endif; ?>
 
-	<?php if(isset($Error) && $Error): ?>
+	<?php if(isset($error) && $error): ?>
 		<div class="alert alert-danger alert-dismissible fade show">
-			<?= htmlspecialchars($Error) ?>
+			<?= htmlspecialchars($error) ?>
 			<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
 		</div>
 	<?php endif; ?>

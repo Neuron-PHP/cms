@@ -11,6 +11,8 @@ use Neuron\Dto\Dto;
 use Neuron\Events\Emitter;
 use Neuron\Cms\Events\UserCreatedEvent;
 use Exception;
+use Neuron\Cms\Enums\UserRole;
+use Neuron\Cms\Enums\UserStatus;
 
 /**
  * Member registration service.
@@ -94,7 +96,7 @@ class RegistrationService
 		$user->setPasswordHash( $this->_passwordHasher->hash( $password ) );
 
 		// Set default role from settings
-		$defaultRole = $this->_settings->get( 'member', 'default_role' ) ?? User::ROLE_SUBSCRIBER;
+		$defaultRole = $this->_settings->get( 'member', 'default_role' ) ?? UserRole::SUBSCRIBER->value;
 		$user->setRole( $defaultRole );
 
 		// Determine if email verification is required
@@ -103,13 +105,13 @@ class RegistrationService
 		if( $requireVerification )
 		{
 			// User starts as inactive until email is verified
-			$user->setStatus( User::STATUS_INACTIVE );
+			$user->setStatus( UserStatus::INACTIVE->value );
 			$user->setEmailVerified( false );
 		}
 		else
 		{
 			// User is immediately active if verification not required
-			$user->setStatus( User::STATUS_ACTIVE );
+			$user->setStatus( UserStatus::ACTIVE->value );
 			$user->setEmailVerified( true );
 		}
 
@@ -176,7 +178,7 @@ class RegistrationService
 		$user->setPasswordHash( $this->_passwordHasher->hash( $password ) );
 
 		// Set default role from settings
-		$defaultRole = $this->_settings->get( 'member', 'default_role' ) ?? User::ROLE_SUBSCRIBER;
+		$defaultRole = $this->_settings->get( 'member', 'default_role' ) ?? UserRole::SUBSCRIBER->value;
 		$user->setRole( $defaultRole );
 
 		// Determine if email verification is required
@@ -185,13 +187,13 @@ class RegistrationService
 		if( $requireVerification )
 		{
 			// User starts as inactive until email is verified
-			$user->setStatus( User::STATUS_INACTIVE );
+			$user->setStatus( UserStatus::INACTIVE->value );
 			$user->setEmailVerified( false );
 		}
 		else
 		{
 			// User is immediately active if verification not required
-			$user->setStatus( User::STATUS_ACTIVE );
+			$user->setStatus( UserStatus::ACTIVE->value );
 			$user->setEmailVerified( true );
 		}
 
