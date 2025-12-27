@@ -8,6 +8,7 @@ use Neuron\Cms\Repositories\ICategoryRepository;
 use Neuron\Cms\Services\Tag\Resolver as TagResolver;
 use Neuron\Core\System\IRandom;
 use Neuron\Core\System\RealRandom;
+use Neuron\Cms\Enums\ContentStatus;
 
 /**
  * Post update service.
@@ -70,7 +71,7 @@ class Updater
 		$post->setStatus( $status );
 
 		// Business rule: auto-set published date when changing to published status
-		if( $status === Post::STATUS_PUBLISHED && !$post->getPublishedAt() )
+		if( $status === ContentStatus::PUBLISHED->value && !$post->getPublishedAt() )
 		{
 			$post->setPublishedAt( new \DateTimeImmutable() );
 		}

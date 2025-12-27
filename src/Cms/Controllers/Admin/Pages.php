@@ -3,6 +3,7 @@
 namespace Neuron\Cms\Controllers\Admin;
 
 use Neuron\Cms\Controllers\Content;
+use Neuron\Cms\Enums\FlashMessageType;
 use Neuron\Cms\Models\Page;
 use Neuron\Cms\Repositories\DatabasePageRepository;
 use Neuron\Cms\Services\Page\Creator;
@@ -14,6 +15,8 @@ use Neuron\Mvc\Requests\Request;
 use Neuron\Mvc\Responses\HttpResponseStatus;
 use Neuron\Patterns\Registry;
 use Neuron\Log\Log;
+use Neuron\Cms\Enums\ContentStatus;
+use Neuron\Cms\Enums\PageTemplate;
 
 /**
  * Admin page management controller.
@@ -96,10 +99,10 @@ class Pages extends Content
 			->withCsrfToken()
 			->with([
 				'pages' => $pages,
-				'Success' => $sessionManager->getFlash( 'success' ),
-				'Error' => $sessionManager->getFlash( 'error' )
+				FlashMessageType::SUCCESS->value => $sessionManager->getFlash( FlashMessageType::SUCCESS->value ),
+				FlashMessageType::ERROR->value => $sessionManager->getFlash( FlashMessageType::ERROR->value )
 			])
-			->render( 'pages/index', 'admin' );
+			->render( 'index', 'admin' );
 	}
 
 	/**
@@ -117,7 +120,7 @@ class Pages extends Content
 			->description( 'Create a new page' )
 			->withCurrentUser()
 			->withCsrfToken()
-			->render( 'pages/create', 'admin' );
+			->render( 'create', 'admin' );
 	}
 
 	/**
@@ -134,11 +137,11 @@ class Pages extends Content
 			$title = $request->post( 'title', '' );
 			$slug = $request->post( 'slug', '' );
 			$content = $request->post( 'content', '{"blocks":[]}' );
-			$template = $request->post( 'template', Page::TEMPLATE_DEFAULT );
+			$template = $request->post( 'template', PageTemplate::DEFAULT->value );
 			$metaTitle = $request->post( 'meta_title', '' );
 			$metaDescription = $request->post( 'meta_description', '' );
 			$metaKeywords = $request->post( 'meta_keywords', '' );
-			$status = $request->post( 'status', Page::STATUS_DRAFT );
+			$status = $request->post( 'status', ContentStatus::DRAFT->value );
 
 			// Create page using service
 			$page = $this->_pageCreator->create(
@@ -156,11 +159,11 @@ class Pages extends Content
 			if( !$page )
 			{
 				Log::error( "Page creation failed for user " . user_id() . ", title: {$title}" );
-				$this->redirect( 'admin_pages_create', [], ['error', 'Failed to create page. Please try again.'] );
+				$this->redirect( 'admin_pages_create', [], [FlashMessageType::ERROR->value, 'Failed to create page. Please try again.'] );
 			}
 
 			Log::info( "Page created successfully: ID {$page->getId()}, title: {$title}, by user " . user_id() );
-			$this->redirect( 'admin_pages', [], ['success', 'Page created successfully'] );
+			$this->redirect( 'admin_pages', [], [FlashMessageType::SUCCESS->value, 'Page created successfully'] );
 		}
 		catch( \Exception $e )
 		{
@@ -168,7 +171,7 @@ class Pages extends Content
 				'exception' => $e,
 				'trace' => $e->getTraceAsString()
 			] );
-			$this->redirect( 'admin_pages_create', [], ['error', 'Failed to create page. Please try again.'] );
+			$this->redirect( 'admin_pages_create', [], [FlashMessageType::ERROR->value, 'Failed to create page. Please try again.'] );
 		}
 	}
 
@@ -185,14 +188,14 @@ class Pages extends Content
 
 		if( !$page )
 		{
-			$this->redirect( 'admin_pages', [], ['error', 'Page not found'] );
+			$this->redirect( 'admin_pages', [], [FlashMessageType::ERROR->value, 'Page not found'] );
 		}
 
 		// Check permissions
 		if( !is_admin() && !is_editor() && $page->getAuthorId() !== user_id() )
 		{
 			Log::warning( "Unauthorized edit attempt by user " . user_id() . " on page {$pageId}" );
-			$this->redirect( 'admin_pages', [], ['error', 'Unauthorized to edit this page'] );
+			$this->redirect( 'admin_pages', [], [FlashMessageType::ERROR->value, 'Unauthorized to edit this page'] );
 		}
 
 		$this->initializeCsrfToken();
@@ -203,7 +206,7 @@ class Pages extends Content
 			->withCurrentUser()
 			->withCsrfToken()
 			->with( 'page', $page )
-			->render( 'pages/edit', 'admin' );
+			->render( 'edit', 'admin' );
 	}
 
 	/**
@@ -219,14 +222,14 @@ class Pages extends Content
 
 		if( !$page )
 		{
-			$this->redirect( 'admin_pages', [], ['error', 'Page not found'] );
+			$this->redirect( 'admin_pages', [], [FlashMessageType::ERROR->value, 'Page not found'] );
 		}
 
 		// Check permissions
 		if( !is_admin() && !is_editor() && $page->getAuthorId() !== user_id() )
 		{
 			Log::warning( "Unauthorized page update attempt: User " . user_id() . " tried to edit page {$pageId}" );
-			$this->redirect( 'admin_pages', [], ['error', 'Unauthorized to edit this page'] );
+			$this->redirect( 'admin_pages', [], [FlashMessageType::ERROR->value, 'Unauthorized to edit this page'] );
 		}
 
 		try
@@ -235,11 +238,11 @@ class Pages extends Content
 			$title = $request->post( 'title', '' );
 			$slug = $request->post( 'slug', '' );
 			$content = $request->post( 'content', '{"blocks":[]}' );
-			$template = $request->post( 'template', Page::TEMPLATE_DEFAULT );
+			$template = $request->post( 'template', PageTemplate::DEFAULT->value );
 			$metaTitle = $request->post( 'meta_title', '' );
 			$metaDescription = $request->post( 'meta_description', '' );
 			$metaKeywords = $request->post( 'meta_keywords', '' );
-			$status = $request->post( 'status', Page::STATUS_DRAFT );
+			$status = $request->post( 'status', ContentStatus::DRAFT->value );
 
 			// Update page using service
 			$success = $this->_pageUpdater->update(
@@ -257,11 +260,11 @@ class Pages extends Content
 			if( !$success )
 			{
 				Log::error( "Page update failed: Page {$pageId}, user " . user_id() . ", title: {$title}" );
-				$this->redirect( 'admin_pages_edit', ['id' => $pageId], ['error', 'Failed to update page. Please try again.'] );
+				$this->redirect( 'admin_pages_edit', ['id' => $pageId], [FlashMessageType::ERROR->value, 'Failed to update page. Please try again.'] );
 			}
 
 			Log::info( "Page updated successfully: Page {$pageId}, title: {$title}, by user " . user_id() );
-			$this->redirect( 'admin_pages', [], ['success', 'Page updated successfully'] );
+			$this->redirect( 'admin_pages', [], [FlashMessageType::SUCCESS->value, 'Page updated successfully'] );
 		}
 		catch( \Exception $e )
 		{
@@ -269,7 +272,7 @@ class Pages extends Content
 				'exception' => $e,
 				'trace' => $e->getTraceAsString()
 			] );
-			$this->redirect( 'admin_pages_edit', ['id' => $pageId], ['error', 'Failed to update page. Please try again.'] );
+			$this->redirect( 'admin_pages_edit', ['id' => $pageId], [FlashMessageType::ERROR->value, 'Failed to update page. Please try again.'] );
 		}
 	}
 
@@ -285,14 +288,14 @@ class Pages extends Content
 
 		if( !$page )
 		{
-			$this->redirect( 'admin_pages', [], ['error', 'Page not found'] );
+			$this->redirect( 'admin_pages', [], [FlashMessageType::ERROR->value, 'Page not found'] );
 		}
 
 		// Check permissions
 		if( !is_admin() && !is_editor() && $page->getAuthorId() !== user_id() )
 		{
 			Log::warning( "Unauthorized page deletion attempt: User " . user_id() . " tried to delete page {$pageId}" );
-			$this->redirect( 'admin_pages', [], ['error', 'Unauthorized to delete this page'] );
+			$this->redirect( 'admin_pages', [], [FlashMessageType::ERROR->value, 'Unauthorized to delete this page'] );
 		}
 
 		try
@@ -304,11 +307,11 @@ class Pages extends Content
 			if( !$success )
 			{
 				Log::error( "Page deletion failed: Page {$pageId}, user " . user_id() );
-				$this->redirect( 'admin_pages', [], ['error', 'Failed to delete page. Please try again.'] );
+				$this->redirect( 'admin_pages', [], [FlashMessageType::ERROR->value, 'Failed to delete page. Please try again.'] );
 			}
 
 			Log::info( "Page deleted successfully: Page {$pageId}, title: {$pageTitle}, by user " . user_id() );
-			$this->redirect( 'admin_pages', [], ['success', 'Page deleted successfully'] );
+			$this->redirect( 'admin_pages', [], [FlashMessageType::SUCCESS->value, 'Page deleted successfully'] );
 		}
 		catch( \Exception $e )
 		{
@@ -316,7 +319,7 @@ class Pages extends Content
 				'exception' => $e,
 				'trace' => $e->getTraceAsString()
 			] );
-			$this->redirect( 'admin_pages', [], ['error', 'Failed to delete page. Please try again.'] );
+			$this->redirect( 'admin_pages', [], [FlashMessageType::ERROR->value, 'Failed to delete page. Please try again.'] );
 		}
 	}
 }

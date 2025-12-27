@@ -7,6 +7,8 @@ use Neuron\Cms\Models\User;
 use Neuron\Cms\Repositories\DatabaseUserRepository;
 use Neuron\Cms\Auth\PasswordHasher;
 use Neuron\Patterns\Registry;
+use Neuron\Cms\Enums\UserRole;
+use Neuron\Cms\Enums\UserStatus;
 
 /**
  * Create a new user
@@ -124,13 +126,13 @@ class CreateCommand extends Command
 		$roleChoice = trim( $roleChoice ) ?: '3';
 
 		$roles = [
-			'1' => User::ROLE_ADMIN,
-			'2' => User::ROLE_EDITOR,
-			'3' => User::ROLE_AUTHOR,
-			'4' => User::ROLE_SUBSCRIBER,
+			'1' => UserRole::ADMIN->value,
+			'2' => UserRole::EDITOR->value,
+			'3' => UserRole::AUTHOR->value,
+			'4' => UserRole::SUBSCRIBER->value,
 		];
 
-		$role = $roles[ $roleChoice ] ?? User::ROLE_AUTHOR;
+		$role = $roles[ $roleChoice ] ?? UserRole::AUTHOR->value;
 
 		// Create user
 		$user = new User();
@@ -138,7 +140,7 @@ class CreateCommand extends Command
 		$user->setEmail( $email );
 		$user->setPasswordHash( $hasher->hash( $password ) );
 		$user->setRole( $role );
-		$user->setStatus( User::STATUS_ACTIVE );
+		$user->setStatus( UserStatus::ACTIVE->value );
 		$user->setEmailVerified( true );
 
 		try

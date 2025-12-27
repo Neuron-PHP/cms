@@ -13,6 +13,8 @@ use Neuron\Cms\Auth\PasswordHasher;
 use Neuron\Data\Settings\SettingManager;
 use Neuron\Data\Settings\Source\Yaml;
 use Neuron\Patterns\Registry;
+use Neuron\Cms\Enums\UserRole;
+use Neuron\Cms\Enums\UserStatus;
 
 /**
  * Install the CMS admin UI into the project
@@ -1251,8 +1253,8 @@ class InstallCommand extends Command
 		$user->setUsername( $username );
 		$user->setEmail( $email );
 		$user->setPasswordHash( $hasher->hash( $password ) );
-		$user->setRole( User::ROLE_ADMIN );
-		$user->setStatus( User::STATUS_ACTIVE );
+		$user->setRole( UserRole::ADMIN->value );
+		$user->setStatus( UserStatus::ACTIVE->value );
 		$user->setEmailVerified( true );
 
 		try

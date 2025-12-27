@@ -11,6 +11,7 @@ use Neuron\Data\Settings\SettingManager;
 use PDO;
 use Exception;
 use RuntimeException;
+use Neuron\Cms\Enums\ContentStatus;
 
 /**
  * Database-backed post repository using ORM.
@@ -256,7 +257,7 @@ class DatabasePostRepository implements IPostRepository
 	 */
 	public function getPublished( int $limit = 0, int $offset = 0 ): array
 	{
-		return $this->all( Post::STATUS_PUBLISHED, $limit, $offset );
+		return $this->all( ContentStatus::PUBLISHED->value, $limit, $offset );
 	}
 
 	/**
@@ -264,7 +265,7 @@ class DatabasePostRepository implements IPostRepository
 	 */
 	public function getDrafts(): array
 	{
-		return $this->all( Post::STATUS_DRAFT );
+		return $this->all( ContentStatus::DRAFT->value );
 	}
 
 	/**
@@ -272,7 +273,7 @@ class DatabasePostRepository implements IPostRepository
 	 */
 	public function getScheduled(): array
 	{
-		return $this->all( Post::STATUS_SCHEDULED );
+		return $this->all( ContentStatus::SCHEDULED->value );
 	}
 
 	/**

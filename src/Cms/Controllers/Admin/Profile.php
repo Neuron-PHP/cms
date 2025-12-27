@@ -2,6 +2,7 @@
 
 namespace Neuron\Cms\Controllers\Admin;
 
+use Neuron\Cms\Enums\FlashMessageType;
 use Neuron\Cms\Controllers\Content;
 use Neuron\Cms\Repositories\DatabaseUserRepository;
 use Neuron\Cms\Services\User\Updater;
@@ -92,8 +93,8 @@ class Profile extends Content
 			->withCsrfToken()
 			->with([
 				'groupedTimezones' => $groupedTimezones,
-				'success' => $this->getSessionManager()->getFlash( 'success' ),
-				'error' => $this->getSessionManager()->getFlash( 'error' )
+				FlashMessageType::SUCCESS->value => $this->getSessionManager()->getFlash( FlashMessageType::SUCCESS->value ),
+				FlashMessageType::ERROR->value => $this->getSessionManager()->getFlash( FlashMessageType::ERROR->value )
 			])
 			->render( 'edit', 'admin' );
 	}
@@ -110,7 +111,7 @@ class Profile extends Content
 		$user = auth();
 		if( !$user )
 		{
-			$this->redirect( 'admin_profile', [], ['error', 'Authenticated user not found'] );
+			$this->redirect( 'admin_profile', [], [FlashMessageType::ERROR->value, 'Authenticated user not found'] );
 		}
 
 		// Security: Only use email from POST if provided by Account Information form
@@ -127,13 +128,13 @@ class Profile extends Content
 			// Verify current password
 			if( empty( $currentPassword ) || !$this->_hasher->verify( $currentPassword, $user->getPasswordHash() ) )
 			{
-				$this->redirect( 'admin_profile', [], ['error', 'Current password is incorrect'] );
+				$this->redirect( 'admin_profile', [], [FlashMessageType::ERROR->value, 'Current password is incorrect'] );
 			}
 
 			// Validate new password matches confirmation
 			if( $newPassword !== $confirmPassword )
 			{
-				$this->redirect( 'admin_profile', [], ['error', 'New passwords do not match'] );
+				$this->redirect( 'admin_profile', [], [FlashMessageType::ERROR->value, 'New passwords do not match'] );
 			}
 		}
 
@@ -147,11 +148,11 @@ class Profile extends Content
 				!empty( $newPassword ) ? $newPassword : null,
 				!empty( $timezone ) ? $timezone : null
 			);
-			$this->redirect( 'admin_profile', [], ['success', 'Profile updated successfully'] );
+			$this->redirect( 'admin_profile', [], [FlashMessageType::SUCCESS->value, 'Profile updated successfully'] );
 		}
 		catch( \Exception $e )
 		{
-			$this->redirect( 'admin_profile', [], ['error', $e->getMessage()] );
+			$this->redirect( 'admin_profile', [], [FlashMessageType::ERROR->value, $e->getMessage()] );
 		}
 	}
 }

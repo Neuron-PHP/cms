@@ -2,6 +2,7 @@
 
 namespace Neuron\Cms\Controllers\Admin;
 
+use Neuron\Cms\Enums\FlashMessageType;
 use Neuron\Cms\Controllers\Content;
 use Neuron\Cms\Models\Tag;
 use Neuron\Cms\Repositories\DatabaseTagRepository;
@@ -103,11 +104,11 @@ class Tags extends Content
 			// Save tag
 			$this->_tagRepository->create( $tag );
 
-			$this->redirect( 'admin_tags', [], ['success', 'Tag created successfully'] );
+			$this->redirect( 'admin_tags', [], [FlashMessageType::SUCCESS->value, 'Tag created successfully'] );
 		}
 		catch( \Exception $e )
 		{
-			$this->redirect( 'admin_tags_create', [], ['error', $e->getMessage()] );
+			$this->redirect( 'admin_tags_create', [], [FlashMessageType::ERROR->value, $e->getMessage()] );
 		}
 	}
 
@@ -153,7 +154,7 @@ class Tags extends Content
 
 		if( !$tag )
 		{
-			$this->redirect( 'admin_tags', [], ['error', 'Tag not found'] );
+			$this->redirect( 'admin_tags', [], [FlashMessageType::ERROR->value, 'Tag not found'] );
 		}
 
 		try
@@ -169,11 +170,11 @@ class Tags extends Content
 			// Save tag
 			$this->_tagRepository->update( $tag );
 
-			$this->redirect( 'admin_tags', [], ['success', 'Tag updated successfully'] );
+			$this->redirect( 'admin_tags', [], [FlashMessageType::SUCCESS->value, 'Tag updated successfully'] );
 		}
 		catch( \Exception $e )
 		{
-			$this->redirect( 'admin_tags_edit', ['id' => $tagId], ['error', $e->getMessage()] );
+			$this->redirect( 'admin_tags_edit', ['id' => $tagId], [FlashMessageType::ERROR->value, $e->getMessage()] );
 		}
 	}
 
@@ -191,11 +192,11 @@ class Tags extends Content
 		try
 		{
 			$this->_tagRepository->delete( $tagId );
-			$this->redirect( 'admin_tags', [], ['success', 'Tag deleted successfully'] );
+			$this->redirect( 'admin_tags', [], [FlashMessageType::SUCCESS->value, 'Tag deleted successfully'] );
 		}
 		catch( \Exception $e )
 		{
-			$this->redirect( 'admin_tags', [], ['error', 'Failed to delete tag: ' . $e->getMessage()] );
+			$this->redirect( 'admin_tags', [], [FlashMessageType::ERROR->value, 'Failed to delete tag: ' . $e->getMessage()] );
 		}
 	}
 

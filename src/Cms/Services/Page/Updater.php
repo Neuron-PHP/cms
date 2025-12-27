@@ -5,6 +5,8 @@ namespace Neuron\Cms\Services\Page;
 use Neuron\Cms\Models\Page;
 use Neuron\Cms\Repositories\IPageRepository;
 use DateTimeImmutable;
+use Neuron\Cms\Enums\ContentStatus;
+use Neuron\Cms\Enums\PageTemplate;
 
 /**
  * Page update service.
@@ -42,7 +44,7 @@ class Updater
 		string $content,
 		string $status,
 		?string $slug = null,
-		string $template = Page::TEMPLATE_DEFAULT,
+		string $template = PageTemplate::DEFAULT->value,
 		?string $metaTitle = null,
 		?string $metaDescription = null,
 		?string $metaKeywords = null
@@ -62,7 +64,7 @@ class Updater
 		}
 
 		// Business rule: set published date when status changes to published
-		if( $status === Page::STATUS_PUBLISHED && !$page->getPublishedAt() )
+		if( $status === ContentStatus::PUBLISHED->value && !$page->getPublishedAt() )
 		{
 			$page->setPublishedAt( new DateTimeImmutable() );
 		}

@@ -4,6 +4,7 @@ namespace Neuron\Cms\Models;
 
 use DateTimeImmutable;
 use Exception;
+use Neuron\Cms\Enums\ContentStatus;
 use Neuron\Orm\Model;
 use Neuron\Orm\Attributes\{Table, BelongsTo};
 
@@ -44,6 +45,7 @@ class Event extends Model
 
 	/**
 	 * Event status constants
+	 * @deprecated Use ContentStatus enum instead
 	 */
 	public const STATUS_DRAFT = 'draft';
 	public const STATUS_PUBLISHED = 'published';

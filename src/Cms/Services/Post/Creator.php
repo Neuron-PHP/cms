@@ -9,6 +9,7 @@ use Neuron\Cms\Services\Tag\Resolver as TagResolver;
 use Neuron\Core\System\IRandom;
 use Neuron\Core\System\RealRandom;
 use DateTimeImmutable;
+use Neuron\Cms\Enums\ContentStatus;
 
 /**
  * Post creation service.
@@ -74,7 +75,7 @@ class Creator
 		$post->setCreatedAt( new DateTimeImmutable() );
 
 		// Business rule: auto-set published date for published posts
-		if( $status === Post::STATUS_PUBLISHED )
+		if( $status === ContentStatus::PUBLISHED->value )
 		{
 			$post->setPublishedAt( new DateTimeImmutable() );
 		}

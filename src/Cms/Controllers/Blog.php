@@ -15,6 +15,7 @@ use Neuron\Mvc\Application;
 use Neuron\Mvc\Requests\Request;
 use Neuron\Mvc\Responses\HttpResponseStatus;
 use Neuron\Patterns\Registry;
+use Neuron\Cms\Enums\ContentStatus;
 
 class Blog extends Content
 {
@@ -141,7 +142,7 @@ class Blog extends Content
 		$posts = [];
 		if( $user )
 		{
-			$posts = $this->_postRepository->getByAuthor( $user->getId(), Post::STATUS_PUBLISHED );
+			$posts = $this->_postRepository->getByAuthor( $user->getId(), ContentStatus::PUBLISHED->value );
 		}
 
 		$categories = $this->_categoryRepository->all();
@@ -180,7 +181,7 @@ class Blog extends Content
 		}
 		else
 		{
-			$status = Post::STATUS_PUBLISHED;
+			$status = ContentStatus::PUBLISHED->value;
 			$posts = $this->_postRepository->getByTag( $tag->getId(), $status );
 			$tagName = $tag->getName();
 		}
@@ -220,7 +221,7 @@ class Blog extends Content
 		}
 		else
 		{
-			$status = Post::STATUS_PUBLISHED;
+			$status = ContentStatus::PUBLISHED->value;
 			$posts = $this->_postRepository->getByCategory( $category->getId(), $status );
 			$categoryName = $category->getName();
 		}

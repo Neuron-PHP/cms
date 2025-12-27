@@ -9,6 +9,7 @@ use Neuron\Cms\Exceptions\DuplicateEntityException;
 use Neuron\Data\Settings\SettingManager;
 use PDO;
 use Exception;
+use Neuron\Cms\Enums\ContentStatus;
 
 /**
  * Database-backed page repository using ORM.
@@ -136,7 +137,7 @@ class DatabasePageRepository implements IPageRepository
 	 */
 	public function getPublished( int $limit = 0, int $offset = 0 ): array
 	{
-		return $this->all( Page::STATUS_PUBLISHED, $limit, $offset );
+		return $this->all( ContentStatus::PUBLISHED->value, $limit, $offset );
 	}
 
 	/**
@@ -144,7 +145,7 @@ class DatabasePageRepository implements IPageRepository
 	 */
 	public function getDrafts(): array
 	{
-		return $this->all( Page::STATUS_DRAFT );
+		return $this->all( ContentStatus::DRAFT->value );
 	}
 
 	/**

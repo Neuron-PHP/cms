@@ -7,6 +7,8 @@ use Neuron\Cms\Repositories\IPageRepository;
 use Neuron\Core\System\IRandom;
 use Neuron\Core\System\RealRandom;
 use DateTimeImmutable;
+use Neuron\Cms\Enums\ContentStatus;
+use Neuron\Cms\Enums\PageTemplate;
 
 /**
  * Page creation service.
@@ -46,7 +48,7 @@ class Creator
 		int $authorId,
 		string $status,
 		?string $slug = null,
-		string $template = Page::TEMPLATE_DEFAULT,
+		string $template = PageTemplate::DEFAULT->value,
 		?string $metaTitle = null,
 		?string $metaDescription = null,
 		?string $metaKeywords = null
@@ -65,7 +67,7 @@ class Creator
 		$page->setCreatedAt( new DateTimeImmutable() );
 
 		// Business rule: auto-set published date for published pages
-		if( $status === Page::STATUS_PUBLISHED )
+		if( $status === ContentStatus::PUBLISHED->value )
 		{
 			$page->setPublishedAt( new DateTimeImmutable() );
 		}

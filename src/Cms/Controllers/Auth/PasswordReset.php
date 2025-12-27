@@ -3,6 +3,7 @@
 namespace Neuron\Cms\Controllers\Auth;
 
 use Neuron\Cms\Controllers\Content;
+use Neuron\Cms\Enums\FlashMessageType;
 use Neuron\Cms\Services\Auth\PasswordResetter;
 use Neuron\Cms\Auth\SessionManager;
 use Neuron\Cms\Services\Auth\CsrfToken;
@@ -63,8 +64,8 @@ class PasswordReset extends Content
 			->description( 'Reset your password' )
 			->withCsrfToken()
 			->with( 'PageSubtitle', 'Reset Password' )
-			->with( 'Error', $this->_sessionManager->getFlash( 'error' ) )
-			->with( 'Success', $this->_sessionManager->getFlash( 'success' ) )
+			->with( FlashMessageType::ERROR->value, $this->_sessionManager->getFlash( 'error' ) )
+			->with( FlashMessageType::SUCCESS->value, $this->_sessionManager->getFlash( 'success' ) )
 			->render( 'forgot-password', 'auth' );
 	}
 
@@ -80,7 +81,7 @@ class PasswordReset extends Content
 		$token = $request->post( 'csrf_token', '' );
 		if( !$this->_csrfToken->validate( $token ) )
 		{
-			$this->_sessionManager->flash( 'error', 'Invalid CSRF token. Please try again.' );
+			$this->_sessionManager->flash( FlashMessageType::ERROR->value,'Invalid CSRF token. Please try again.' );
 			header( 'Location: /forgot-password' );
 			exit;
 		}
@@ -91,7 +92,7 @@ class PasswordReset extends Content
 		// Validate input
 		if( empty( $email ) || !filter_var( $email, FILTER_VALIDATE_EMAIL ) )
 		{
-			$this->redirect( 'forgot_password', [], ['error', 'Please enter a valid email address.'] );
+			$this->redirect( 'forgot_password', [], [FlashMessageType::ERROR->value, 'Please enter a valid email address.'] );
 		}
 
 		try
@@ -133,7 +134,7 @@ class PasswordReset extends Content
 
 		if( empty( $token ) )
 		{
-			$this->_sessionManager->flash( 'error', 'Invalid or missing reset token.' );
+			$this->_sessionManager->flash( FlashMessageType::ERROR->value,'Invalid or missing reset token.' );
 			header( 'Location: /forgot-password' );
 			exit;
 		}
@@ -143,7 +144,7 @@ class PasswordReset extends Content
 
 		if( !$tokenObj )
 		{
-			$this->_sessionManager->flash( 'error', 'This password reset link is invalid or has expired.' );
+			$this->_sessionManager->flash( FlashMessageType::ERROR->value,'This password reset link is invalid or has expired.' );
 			header( 'Location: /forgot-password' );
 			exit;
 		}
@@ -156,8 +157,8 @@ class PasswordReset extends Content
 			->description( 'Enter your new password' )
 			->withCsrfToken()
 			->with( 'PageSubtitle', 'Create New Password' )
-			->with( 'Error', $this->_sessionManager->getFlash( 'error' ) )
-			->with( 'Success', $this->_sessionManager->getFlash( 'success' ) )
+			->with( FlashMessageType::ERROR->value, $this->_sessionManager->getFlash( 'error' ) )
+			->with( FlashMessageType::SUCCESS->value, $this->_sessionManager->getFlash( 'success' ) )
 			->with( 'Token', $token )
 			->with( 'Email', $tokenObj->getEmail() )
 			->render( 'reset-password', 'auth' );
@@ -174,7 +175,7 @@ class PasswordReset extends Content
 		$csrfToken = $request->post( 'csrf_token', '' );
 		if( !$this->_csrfToken->validate( $csrfToken ) )
 		{
-			$this->redirect( 'forgot_password', [], ['error', 'Invalid CSRF token.'] );
+			$this->redirect( 'forgot_password', [], [FlashMessageType::ERROR->value, 'Invalid CSRF token.'] );
 		}
 
 		// Get form data
@@ -185,13 +186,13 @@ class PasswordReset extends Content
 		// Validate input
 		if( empty( $token ) || empty( $password ) || empty( $passwordConfirmation ) )
 		{
-			$this->redirectToUrl( '/reset-password?token=' . urlencode( $token ), ['error', 'All fields are required.'] );
+			$this->redirectToUrl( '/reset-password?token=' . urlencode( $token ), [FlashMessageType::ERROR->value, 'All fields are required.'] );
 		}
 
 		// Validate passwords match
 		if( $password !== $passwordConfirmation )
 		{
-			$this->redirectToUrl( '/reset-password?token=' . urlencode( $token ), ['error', 'Passwords do not match.'] );
+			$this->redirectToUrl( '/reset-password?token=' . urlencode( $token ), [FlashMessageType::ERROR->value, 'Passwords do not match.'] );
 		}
 
 		try
@@ -201,15 +202,15 @@ class PasswordReset extends Content
 
 			if( !$success )
 			{
-				$this->redirect( 'forgot_password', [], ['error', 'This password reset link is invalid or has expired.'] );
+				$this->redirect( 'forgot_password', [], [FlashMessageType::ERROR->value, 'This password reset link is invalid or has expired.'] );
 			}
 
 			// Success
-			$this->redirect( 'login', [], ['success', 'Your password has been reset successfully. You can now log in.'] );
+			$this->redirect( 'login', [], [FlashMessageType::SUCCESS->value, 'Your password has been reset successfully. You can now log in.'] );
 		}
 		catch( Exception $e )
 		{
-			$this->redirectToUrl( '/reset-password?token=' . urlencode( $token ), ['error', $e->getMessage() ] );
+			$this->redirectToUrl( '/reset-password?token=' . urlencode( $token ), [FlashMessageType::ERROR->value, $e->getMessage() ] );
 		}
 	}
 }

@@ -8,6 +8,7 @@ use Neuron\Cms\Models\User;
 use Neuron\Cms\Repositories\IUserRepository;
 use DateTimeImmutable;
 use DateInterval;
+use Neuron\Cms\Enums\UserRole;
 
 /**
  * Authentication service.
@@ -352,7 +353,7 @@ class Authentication
 	 */
 	public function isAdmin(): bool
 	{
-		return $this->hasRole( User::ROLE_ADMIN );
+		return $this->hasRole( UserRole::ADMIN->value );
 	}
 
 	/**
@@ -366,7 +367,7 @@ class Authentication
 			return false;
 		}
 
-		return in_array( $user->getRole(), [User::ROLE_ADMIN, User::ROLE_EDITOR] );
+		return in_array( $user->getRole(), [UserRole::ADMIN->value, UserRole::EDITOR->value] );
 	}
 
 	/**
@@ -380,6 +381,6 @@ class Authentication
 			return false;
 		}
 
-		return in_array( $user->getRole(), [User::ROLE_ADMIN, User::ROLE_EDITOR, User::ROLE_AUTHOR] );
+		return in_array( $user->getRole(), [UserRole::ADMIN->value, UserRole::EDITOR->value, UserRole::AUTHOR->value] );
 	}
 }

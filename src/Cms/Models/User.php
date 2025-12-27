@@ -3,6 +3,8 @@
 namespace Neuron\Cms\Models;
 
 use DateTimeImmutable;
+use Neuron\Cms\Enums\UserRole;
+use Neuron\Cms\Enums\UserStatus;
 use Neuron\Orm\Model;
 use Neuron\Orm\Attributes\{Table, HasMany};
 
@@ -37,6 +39,7 @@ class User extends Model
 
 	/**
 	 * User roles
+	 * @deprecated Use UserRole enum instead
 	 */
 	public const ROLE_ADMIN = 'admin';
 	public const ROLE_EDITOR = 'editor';
@@ -45,6 +48,7 @@ class User extends Model
 
 	/**
 	 * User statuses
+	 * @deprecated Use UserStatus enum instead
 	 */
 	public const STATUS_ACTIVE = 'active';
 	public const STATUS_INACTIVE = 'inactive';
