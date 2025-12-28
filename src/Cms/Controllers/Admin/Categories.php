@@ -4,6 +4,7 @@ namespace Neuron\Cms\Controllers\Admin;
 
 use Neuron\Cms\Enums\FlashMessageType;
 use Neuron\Cms\Controllers\Content;
+use Neuron\Cms\Repositories\ICategoryRepository;
 use Neuron\Cms\Repositories\DatabaseCategoryRepository;
 use Neuron\Cms\Services\Category\Creator;
 use Neuron\Cms\Services\Category\Updater;
@@ -22,14 +23,14 @@ use Neuron\Patterns\Registry;
  */
 class Categories extends Content
 {
-	private DatabaseCategoryRepository $_categoryRepository;
+	private ICategoryRepository $_categoryRepository;
 	private Creator $_categoryCreator;
 	private Updater $_categoryUpdater;
 	private Deleter $_categoryDeleter;
 
 	/**
 	 * @param Application|null $app
-	 * @param DatabaseCategoryRepository|null $categoryRepository
+	 * @param ICategoryRepository|null $categoryRepository
 	 * @param Creator|null $categoryCreator
 	 * @param Updater|null $categoryUpdater
 	 * @param Deleter|null $categoryDeleter
@@ -37,7 +38,7 @@ class Categories extends Content
 	 */
 	public function __construct(
 		?Application $app = null,
-		?DatabaseCategoryRepository $categoryRepository = null,
+		?ICategoryRepository $categoryRepository = null,
 		?Creator $categoryCreator = null,
 		?Updater $categoryUpdater = null,
 		?Deleter $categoryDeleter = null

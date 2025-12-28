@@ -3,6 +3,10 @@ namespace Neuron\Cms\Controllers;
 
 use JetBrains\PhpStorm\NoReturn;
 use Neuron\Cms\Models\Post;
+use Neuron\Cms\Repositories\IPostRepository;
+use Neuron\Cms\Repositories\ICategoryRepository;
+use Neuron\Cms\Repositories\ITagRepository;
+use Neuron\Cms\Repositories\IUserRepository;
 use Neuron\Cms\Repositories\DatabasePostRepository;
 use Neuron\Cms\Repositories\DatabaseCategoryRepository;
 use Neuron\Cms\Repositories\DatabaseTagRepository;
@@ -19,10 +23,10 @@ use Neuron\Cms\Enums\ContentStatus;
 
 class Blog extends Content
 {
-	private DatabasePostRepository $_postRepository;
-	private DatabaseCategoryRepository $_categoryRepository;
-	private DatabaseTagRepository $_tagRepository;
-	private DatabaseUserRepository $_userRepository;
+	private IPostRepository $_postRepository;
+	private ICategoryRepository $_categoryRepository;
+	private ITagRepository $_tagRepository;
+	private IUserRepository $_userRepository;
 	private EditorJsRenderer $_renderer;
 
 	/**

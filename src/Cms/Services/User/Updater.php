@@ -15,7 +15,7 @@ use Neuron\Patterns\Registry;
  *
  * @package Neuron\Cms\Services\User
  */
-class Updater
+class Updater implements IUserUpdater
 {
 	private IUserRepository $_userRepository;
 	private PasswordHasher $_passwordHasher;

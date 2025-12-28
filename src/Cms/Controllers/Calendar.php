@@ -2,6 +2,8 @@
 
 namespace Neuron\Cms\Controllers;
 
+use Neuron\Cms\Repositories\IEventRepository;
+use Neuron\Cms\Repositories\IEventCategoryRepository;
 use Neuron\Cms\Repositories\DatabaseEventRepository;
 use Neuron\Cms\Repositories\DatabaseEventCategoryRepository;
 use Neuron\Mvc\Application;
@@ -19,8 +21,8 @@ use DateTimeImmutable;
  */
 class Calendar extends Content
 {
-	private DatabaseEventRepository $_eventRepository;
-	private DatabaseEventCategoryRepository $_categoryRepository;
+	private IEventRepository $_eventRepository;
+	private IEventCategoryRepository $_categoryRepository;
 
 	/**
 	 * @param Application|null $app

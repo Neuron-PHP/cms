@@ -4,18 +4,12 @@ namespace Neuron\Cms\Controllers\Admin;
 
 use Neuron\Cms\Enums\FlashMessageType;
 use Neuron\Cms\Controllers\Content;
-use Neuron\Cms\Models\User;
-use Neuron\Cms\Repositories\DatabaseUserRepository;
-use Neuron\Cms\Services\User\Creator;
-use Neuron\Cms\Services\User\Updater;
-use Neuron\Cms\Services\User\Deleter;
-use Neuron\Cms\Auth\PasswordHasher;
-use Neuron\Cms\Services\Auth\CsrfToken;
-use Neuron\Data\Settings\SettingManager;
+use Neuron\Cms\Repositories\IUserRepository;
+use Neuron\Cms\Services\User\IUserCreator;
+use Neuron\Cms\Services\User\IUserUpdater;
+use Neuron\Cms\Services\User\IUserDeleter;
 use Neuron\Mvc\Application;
 use Neuron\Mvc\Requests\Request;
-use Neuron\Mvc\Responses\HttpResponseStatus;
-use Neuron\Patterns\Registry;
 use Neuron\Cms\Enums\UserRole;
 
 /**
@@ -25,47 +19,34 @@ use Neuron\Cms\Enums\UserRole;
  */
 class Users extends Content
 {
-	private DatabaseUserRepository $_repository;
-	private Creator $_userCreator;
-	private Updater $_userUpdater;
-	private Deleter $_userDeleter;
+	private IUserRepository $_repository;
+	private IUserCreator $_userCreator;
+	private IUserUpdater $_userUpdater;
+	private IUserDeleter $_userDeleter;
 
 	/**
 	 * @param Application|null $app
-	 * @param DatabaseUserRepository|null $repository
-	 * @param Creator|null $userCreator
-	 * @param Updater|null $userUpdater
-	 * @param Deleter|null $userDeleter
-	 * @throws \Exception
+	 * @param IUserRepository|null $repository
+	 * @param IUserCreator|null $userCreator
+	 * @param IUserUpdater|null $userUpdater
+	 * @param IUserDeleter|null $userDeleter
 	 */
 	public function __construct(
 		?Application $app = null,
-		?DatabaseUserRepository $repository = null,
-		?Creator $userCreator = null,
-		?Updater $userUpdater = null,
-		?Deleter $userDeleter = null
+		?IUserRepository $repository = null,
+		?IUserCreator $userCreator = null,
+		?IUserUpdater $userUpdater = null,
+		?IUserDeleter $userDeleter = null
 	)
 	{
 		parent::__construct( $app );
 
-		// Use injected dependencies if provided (for testing), otherwise create them (for production)
-		if( $repository === null )
-		{
-			// Get settings and initialize repository
-			$settings = Registry::getInstance()->get( 'Settings' );
-			$repository = new DatabaseUserRepository( $settings );
-
-			// Initialize services
-			$hasher = new PasswordHasher();
-			$userCreator = new Creator( $repository, $hasher );
-			$userUpdater = new Updater( $repository, $hasher );
-			$userDeleter = new Deleter( $repository );
-		}
-
-		$this->_repository = $repository;
-		$this->_userCreator = $userCreator;
-		$this->_userUpdater = $userUpdater;
-		$this->_userDeleter = $userDeleter;
+		// Use dependency injection when available (container provides dependencies)
+		// Otherwise resolve from container (fallback for compatibility)
+		$this->_repository = $repository ?? $app?->getContainer()?->get( IUserRepository::class );
+		$this->_userCreator = $userCreator ?? $app?->getContainer()?->get( IUserCreator::class );
+		$this->_userUpdater = $userUpdater ?? $app?->getContainer()?->get( IUserUpdater::class );
+		$this->_userDeleter = $userDeleter ?? $app?->getContainer()?->get( IUserDeleter::class );
 	}
 
 	/**

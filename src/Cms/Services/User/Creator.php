@@ -17,7 +17,7 @@ use Neuron\Cms\Enums\UserStatus;
  *
  * @package Neuron\Cms\Services\User
  */
-class Creator
+class Creator implements IUserCreator
 {
 	private IUserRepository $_userRepository;
 	private PasswordHasher $_passwordHasher;
@@ -38,6 +38,7 @@ class Creator
 	 * @param string $email Email address
 	 * @param string $password Plain text password
 	 * @param string $role User role (admin, editor, author, subscriber)
+	 * @param string|null $timezone Optional user timezone
 	 * @return User
 	 * @throws \Exception If password doesn't meet requirements or user creation fails
 	 */
@@ -45,7 +46,8 @@ class Creator
 		string $username,
 		string $email,
 		string $password,
-		string $role
+		string $role,
+		?string $timezone = null
 	): User
 	{
 		// Validate password meets requirements
@@ -63,6 +65,12 @@ class Creator
 		$user->setStatus( UserStatus::ACTIVE->value );
 		$user->setEmailVerified( true );
 		$user->setCreatedAt( new DateTimeImmutable() );
+
+		// Set timezone if provided
+		if( $timezone !== null && $timezone !== '' )
+		{
+			$user->setTimezone( $timezone );
+		}
 
 		$user = $this->_userRepository->create( $user );
 

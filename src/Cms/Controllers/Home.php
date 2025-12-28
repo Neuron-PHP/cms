@@ -5,6 +5,7 @@ use Neuron\Core\Exceptions\NotFound;
 use Neuron\Mvc\Requests\Request;
 use Neuron\Mvc\Responses\HttpResponseStatus;
 use Neuron\Patterns\Registry;
+use Neuron\Routing\Attributes\Get;
 
 /**
  * Home controller for the main landing page
@@ -24,6 +25,7 @@ class Home extends Content
 	 * @return string Rendered HTML response
 	 * @throws NotFound
 	 */
+	#[Get('/', name: 'home')]
 	public function index( Request $request ): string
 	{
 		// Check if registration is enabled

@@ -3,6 +3,8 @@
 namespace Neuron\Cms\Controllers;
 
 use Neuron\Cms\Models\Page as PageModel;
+use Neuron\Cms\Repositories\IPageRepository;
+use Neuron\Cms\Repositories\IPostRepository;
 use Neuron\Cms\Repositories\DatabasePageRepository;
 use Neuron\Cms\Repositories\DatabasePostRepository;
 use Neuron\Cms\Services\Content\EditorJsRenderer;
@@ -23,7 +25,7 @@ use Neuron\Patterns\Registry;
  */
 class Pages extends Content
 {
-	private DatabasePageRepository $_pageRepository;
+	private IPageRepository $_pageRepository;
 	private EditorJsRenderer $_renderer;
 
 	/**

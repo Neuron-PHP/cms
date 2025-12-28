@@ -3,7 +3,9 @@
 namespace Neuron\Cms\Controllers\Member;
 
 use Neuron\Cms\Controllers\Content;
+use Neuron\Cms\Repositories\IUserRepository;
 use Neuron\Cms\Repositories\DatabaseUserRepository;
+use Neuron\Cms\Services\User\IUserUpdater;
 use Neuron\Cms\Services\User\Updater;
 use Neuron\Cms\Auth\PasswordHasher;
 use Neuron\Cms\Services\Auth\CsrfToken;
@@ -19,9 +21,9 @@ use Neuron\Patterns\Registry;
  */
 class Profile extends Content
 {
-	private DatabaseUserRepository $_repository;
+	private IUserRepository $_repository;
 	private PasswordHasher $_hasher;
-	private Updater $_userUpdater;
+	private IUserUpdater $_userUpdater;
 
 	/**
 	 * @param Application|null $app

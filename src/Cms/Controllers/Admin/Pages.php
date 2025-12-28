@@ -5,6 +5,7 @@ namespace Neuron\Cms\Controllers\Admin;
 use Neuron\Cms\Controllers\Content;
 use Neuron\Cms\Enums\FlashMessageType;
 use Neuron\Cms\Models\Page;
+use Neuron\Cms\Repositories\IPageRepository;
 use Neuron\Cms\Repositories\DatabasePageRepository;
 use Neuron\Cms\Services\Page\Creator;
 use Neuron\Cms\Services\Page\Updater;
@@ -25,14 +26,14 @@ use Neuron\Cms\Enums\PageTemplate;
  */
 class Pages extends Content
 {
-	private DatabasePageRepository $_pageRepository;
+	private IPageRepository $_pageRepository;
 	private Creator $_pageCreator;
 	private Updater $_pageUpdater;
 	private Deleter $_pageDeleter;
 
 	/**
 	 * @param Application|null $app
-	 * @param DatabasePageRepository|null $pageRepository
+	 * @param IPageRepository|null $pageRepository
 	 * @param Creator|null $pageCreator
 	 * @param Updater|null $pageUpdater
 	 * @param Deleter|null $pageDeleter
@@ -40,7 +41,7 @@ class Pages extends Content
 	 */
 	public function __construct(
 		?Application $app = null,
-		?DatabasePageRepository $pageRepository = null,
+		?IPageRepository $pageRepository = null,
 		?Creator $pageCreator = null,
 		?Updater $pageUpdater = null,
 		?Deleter $pageDeleter = null

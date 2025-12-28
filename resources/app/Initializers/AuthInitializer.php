@@ -6,7 +6,6 @@ use Neuron\Cms\Services\Auth\Authentication;
 use Neuron\Cms\Services\Auth\CsrfToken;
 use Neuron\Cms\Auth\Filters\AuthenticationFilter;
 use Neuron\Cms\Auth\Filters\CsrfFilter;
-use Neuron\Cms\Auth\Filters\AuthCsrfFilter;
 use Neuron\Cms\Auth\PasswordHasher;
 use Neuron\Cms\Auth\SessionManager;
 use Neuron\Cms\Repositories\DatabaseUserRepository;
@@ -64,12 +63,11 @@ class AuthInitializer implements IRunnable
 				// Create filters
 				$authFilter = new AuthenticationFilter( $authentication, '/login' );
 				$csrfFilter = new CsrfFilter( $csrfToken );
-				$authCsrfFilter = new AuthCsrfFilter( $authentication, $csrfToken, '/login' );
 
 				// Register filters with the Router
+				// Note: Routes can now combine multiple filters using filters: [auth, csrf]
 				$app->getRouter()->registerFilter( 'auth', $authFilter );
 				$app->getRouter()->registerFilter( 'csrf', $csrfFilter );
-				$app->getRouter()->registerFilter( 'auth-csrf', $authCsrfFilter );
 
 				// Store services in Registry for easy access
 				Registry::getInstance()->set( 'Authentication', $authentication );

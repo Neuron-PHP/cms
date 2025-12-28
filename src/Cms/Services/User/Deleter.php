@@ -13,7 +13,7 @@ use Neuron\Patterns\Registry;
  *
  * @package Neuron\Cms\Services\User
  */
-class Deleter
+class Deleter implements IUserDeleter
 {
 	private IUserRepository $_userRepository;
 

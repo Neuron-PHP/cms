@@ -4,6 +4,8 @@ namespace Neuron\Cms\Controllers\Admin;
 
 use Neuron\Cms\Enums\FlashMessageType;
 use Neuron\Cms\Controllers\Content;
+use Neuron\Cms\Repositories\IEventRepository;
+use Neuron\Cms\Repositories\IEventCategoryRepository;
 use Neuron\Cms\Repositories\DatabaseEventRepository;
 use Neuron\Cms\Repositories\DatabaseEventCategoryRepository;
 use Neuron\Cms\Services\Event\Creator;
@@ -24,16 +26,16 @@ use DateTimeImmutable;
  */
 class Events extends Content
 {
-	private DatabaseEventRepository $_eventRepository;
-	private DatabaseEventCategoryRepository $_categoryRepository;
+	private IEventRepository $_eventRepository;
+	private IEventCategoryRepository $_categoryRepository;
 	private Creator $_creator;
 	private Updater $_updater;
 	private Deleter $_deleter;
 
 	/**
 	 * @param Application|null $app
-	 * @param DatabaseEventRepository|null $eventRepository
-	 * @param DatabaseEventCategoryRepository|null $categoryRepository
+	 * @param IEventRepository|null $eventRepository
+	 * @param IEventCategoryRepository|null $categoryRepository
 	 * @param Creator|null $creator
 	 * @param Updater|null $updater
 	 * @param Deleter|null $deleter
@@ -41,8 +43,8 @@ class Events extends Content
 	 */
 	public function __construct(
 		?Application $app = null,
-		?DatabaseEventRepository $eventRepository = null,
-		?DatabaseEventCategoryRepository $categoryRepository = null,
+		?IEventRepository $eventRepository = null,
+		?IEventCategoryRepository $categoryRepository = null,
 		?Creator $creator = null,
 		?Updater $updater = null,
 		?Deleter $deleter = null

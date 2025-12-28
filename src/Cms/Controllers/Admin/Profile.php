@@ -4,7 +4,9 @@ namespace Neuron\Cms\Controllers\Admin;
 
 use Neuron\Cms\Enums\FlashMessageType;
 use Neuron\Cms\Controllers\Content;
+use Neuron\Cms\Repositories\IUserRepository;
 use Neuron\Cms\Repositories\DatabaseUserRepository;
+use Neuron\Cms\Services\User\IUserUpdater;
 use Neuron\Cms\Services\User\Updater;
 use Neuron\Cms\Auth\PasswordHasher;
 use Neuron\Cms\Services\Auth\CsrfToken;
@@ -21,22 +23,22 @@ use Neuron\Patterns\Registry;
  */
 class Profile extends Content
 {
-	private DatabaseUserRepository $_repository;
+	private IUserRepository $_repository;
 	private PasswordHasher $_hasher;
-	private Updater $_userUpdater;
+	private IUserUpdater $_userUpdater;
 
 	/**
 	 * @param Application|null $app
-	 * @param DatabaseUserRepository|null $repository
+	 * @param IUserRepository|null $repository
 	 * @param PasswordHasher|null $hasher
-	 * @param Updater|null $userUpdater
+	 * @param IUserUpdater|null $userUpdater
 	 * @throws \Exception
 	 */
 	public function __construct(
 		?Application $app = null,
-		?DatabaseUserRepository $repository = null,
+		?IUserRepository $repository = null,
 		?PasswordHasher $hasher = null,
-		?Updater $userUpdater = null
+		?IUserUpdater $userUpdater = null
 	)
 	{
 		parent::__construct( $app );

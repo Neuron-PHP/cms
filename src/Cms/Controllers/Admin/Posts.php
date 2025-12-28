@@ -5,6 +5,9 @@ namespace Neuron\Cms\Controllers\Admin;
 use Neuron\Cms\Enums\FlashMessageType;
 use Neuron\Cms\Controllers\Content;
 use Neuron\Cms\Models\Post;
+use Neuron\Cms\Repositories\IPostRepository;
+use Neuron\Cms\Repositories\ICategoryRepository;
+use Neuron\Cms\Repositories\ITagRepository;
 use Neuron\Cms\Repositories\DatabasePostRepository;
 use Neuron\Cms\Repositories\DatabaseCategoryRepository;
 use Neuron\Cms\Repositories\DatabaseTagRepository;
@@ -26,18 +29,18 @@ use Neuron\Cms\Enums\ContentStatus;
  */
 class Posts extends Content
 {
-	private DatabasePostRepository $_postRepository;
-	private DatabaseCategoryRepository $_categoryRepository;
-	private DatabaseTagRepository $_tagRepository;
+	private IPostRepository $_postRepository;
+	private ICategoryRepository $_categoryRepository;
+	private ITagRepository $_tagRepository;
 	private Creator $_postCreator;
 	private Updater $_postUpdater;
 	private Deleter $_postDeleter;
 
 	/**
 	 * @param Application|null $app
-	 * @param DatabasePostRepository|null $postRepository
-	 * @param DatabaseCategoryRepository|null $categoryRepository
-	 * @param DatabaseTagRepository|null $tagRepository
+	 * @param IPostRepository|null $postRepository
+	 * @param ICategoryRepository|null $categoryRepository
+	 * @param ITagRepository|null $tagRepository
 	 * @param Creator|null $postCreator
 	 * @param Updater|null $postUpdater
 	 * @param Deleter|null $postDeleter
@@ -45,9 +48,9 @@ class Posts extends Content
 	 */
 	public function __construct(
 		?Application $app = null,
-		?DatabasePostRepository $postRepository = null,
-		?DatabaseCategoryRepository $categoryRepository = null,
-		?DatabaseTagRepository $tagRepository = null,
+		?IPostRepository $postRepository = null,
+		?ICategoryRepository $categoryRepository = null,
+		?ITagRepository $tagRepository = null,
 		?Creator $postCreator = null,
 		?Updater $postUpdater = null,
 		?Deleter $postDeleter = null
