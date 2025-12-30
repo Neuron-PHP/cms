@@ -5,7 +5,8 @@ namespace Neuron\Cms\Models;
 use DateTimeImmutable;
 use Exception;
 use Neuron\Orm\Model;
-use Neuron\Orm\Attributes\{Table, BelongsToMany};
+use Neuron\Orm\Attributes\{Table, HasMany};
+use Neuron\Orm\DependentStrategy;
 
 /**
  * EventCategory entity representing a calendar event category.
@@ -24,7 +25,8 @@ class EventCategory extends Model
 	private ?DateTimeImmutable $_updatedAt = null;
 
 	// Relationships
-	#[BelongsToMany(Event::class, pivotTable: 'events', foreignKey: 'category_id')]
+	// Nullify: When event category is deleted, set category_id to NULL on events (keep events, remove category)
+	#[HasMany(Event::class, foreignKey: 'category_id', dependent: DependentStrategy::Nullify)]
 	private array $_events = [];
 
 	public function __construct()

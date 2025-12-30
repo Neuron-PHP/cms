@@ -4,6 +4,7 @@ namespace Neuron\Cms\Services\Widget;
 
 use Neuron\Cms\Repositories\IPostRepository;
 use Neuron\Cms\Repositories\IEventRepository;
+use Neuron\Cms\Repositories\IEventCategoryRepository;
 use Neuron\Cms\Models\Post;
 
 /**
@@ -19,18 +20,24 @@ class WidgetRenderer
 {
 	private ?IPostRepository $_postRepository = null;
 	private ?IEventRepository $_eventRepository = null;
+	private ?IEventCategoryRepository $_eventCategoryRepository = null;
 
-	public function __construct( ?IPostRepository $postRepository = null, ?IEventRepository $eventRepository = null )
+	public function __construct(
+		?IPostRepository $postRepository = null,
+		?IEventRepository $eventRepository = null,
+		?IEventCategoryRepository $eventCategoryRepository = null
+	)
 	{
 		$this->_postRepository = $postRepository;
 		$this->_eventRepository = $eventRepository;
+		$this->_eventCategoryRepository = $eventCategoryRepository;
 	}
 
 	/**
 	 * Render a widget by type
 	 *
 	 * @param string $widgetType Widget type name
-	 * @param array $config Widget configuration/attributes
+	 * @param array<string, mixed> $config Widget configuration/attributes
 	 * @return string Rendered HTML
 	 */
 	public function render( string $widgetType, array $config ): string
@@ -49,6 +56,9 @@ class WidgetRenderer
 	 * Attributes:
 	 * - category: Filter by category slug (optional)
 	 * - limit: Number of posts to show (default: 5)
+	 *
+	 * @param array<string, mixed> $config
+	 * @return string
 	 */
 	private function renderLatestPosts( array $config ): string
 	{
@@ -104,15 +114,25 @@ class WidgetRenderer
 	 * - category: Filter by category slug (optional)
 	 * - limit: Number of events to show (default: 5)
 	 * - upcoming: Show upcoming events (true) or past events (false) (default: true)
+	 *
+	 * @param array<string, mixed> $config
+	 * @return string
 	 */
 	private function renderCalendar( array $config ): string
 	{
-		if( !$this->_eventRepository )
+		if( !$this->_eventRepository || !$this->_eventCategoryRepository )
 		{
-			return "<!-- Calendar widget requires EventRepository -->";
+			return "<!-- Calendar widget requires EventRepository and EventCategoryRepository -->";
 		}
 
-		$widget = new CalendarWidget();
+		// CalendarWidget requires concrete database repositories - cast from interfaces
+		if( !($this->_eventRepository instanceof \Neuron\Cms\Repositories\DatabaseEventRepository) ||
+			!($this->_eventCategoryRepository instanceof \Neuron\Cms\Repositories\DatabaseEventCategoryRepository) )
+		{
+			return "<!-- Calendar widget requires DatabaseEventRepository and DatabaseEventCategoryRepository -->";
+		}
+
+		$widget = new CalendarWidget( $this->_eventRepository, $this->_eventCategoryRepository );
 		return $widget->render( $config );
 	}
 

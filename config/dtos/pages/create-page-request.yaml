@@ -1,0 +1,52 @@
+# DTO for creating a new page
+# Maps to Page\Creator::create() method
+dto:
+  title:
+    type: string
+    required: true
+    length:
+      min: 1
+      max: 255
+
+  slug:
+    type: string
+    required: false
+    length:
+      max: 255
+    pattern: '/^[a-z0-9-]*$/'  # URL-friendly slug
+
+  content:
+    type: string
+    required: true
+
+  template:
+    type: string
+    required: true
+    default: 'default'
+
+  meta_title:
+    type: string
+    required: false
+    length:
+      max: 255
+
+  meta_description:
+    type: string
+    required: false
+    length:
+      max: 500
+
+  meta_keywords:
+    type: string
+    required: false
+    length:
+      max: 500
+
+  author_id:
+    type: integer
+    required: true
+
+  status:
+    type: string
+    required: true
+    enum: ['draft', 'published']

@@ -77,7 +77,7 @@ class InstallCommand extends Command
 			$this->output->writeln( "Resources directory exists: resources/views/admin/" );
 			$this->output->writeln( "" );
 
-			if( !$this->input->confirm( "Do you want to reinstall? This will overwrite existing files", false ) )
+			if( !$this->confirm( "Do you want to reinstall? This will overwrite existing files", false ) )
 			{
 				$this->output->error( "Installation cancelled." );
 				return 1;
@@ -109,7 +109,7 @@ class InstallCommand extends Command
 
 		// Ask to run migration
 		$this->output->writeln( "" );
-		if( $this->input->confirm( "Would you like to run the migration now?", true ) )
+		if( $this->confirm( "Would you like to run the migration now?", true ) )
 		{
 			if( !$this->runMigration() )
 			{
@@ -138,7 +138,7 @@ class InstallCommand extends Command
 
 		// Create first admin user
 		$this->output->writeln( "" );
-		if( $this->input->confirm( "Would you like to create an admin user now?", true ) )
+		if( $this->confirm( "Would you like to create an admin user now?", true ) )
 		{
 			$this->createAdminUser();
 		}
@@ -153,7 +153,7 @@ class InstallCommand extends Command
 	/**
 	 * Check if CMS is already installed
 	 */
-	private function isAlreadyInstalled(): bool
+	protected function isAlreadyInstalled(): bool
 	{
 		return is_dir( $this->_projectPath . '/resources/views/admin' );
 	}
@@ -161,7 +161,7 @@ class InstallCommand extends Command
 	/**
 	 * Create necessary directories
 	 */
-	private function createDirectories(): bool
+	protected function createDirectories(): bool
 	{
 		$directories = [
 			// View directories
@@ -231,7 +231,7 @@ class InstallCommand extends Command
 	/**
 	 * Publish view templates
 	 */
-	private function publishViews(): bool
+	protected function publishViews(): bool
 	{
 		// Copy all view directories
 		$viewDirs = [ 'admin', 'auth', 'blog', 'content', 'emails', 'home', 'http_codes', 'layouts', 'member' ];
@@ -261,7 +261,7 @@ class InstallCommand extends Command
 	/**
 	 * Publish initializers
 	 */
-	private function publishInitializers(): bool
+	protected function publishInitializers(): bool
 	{
 		$initializerSource = $this->_componentPath . '/resources/app/Initializers';
 		$initializerDest = $this->_projectPath . '/app/Initializers';
@@ -279,7 +279,7 @@ class InstallCommand extends Command
 	/**
 	 * Create route configuration
 	 */
-	private function createRouteConfig(): bool
+	protected function createRouteConfig(): bool
 	{
 		$routeFile = $this->_projectPath . '/config/routes.yaml';
 		$resourceFile = $this->_componentPath . '/resources/config/routes.yaml';
@@ -315,7 +315,7 @@ class InstallCommand extends Command
 	/**
 	 * Create auth configuration
 	 */
-	private function createAuthConfig(): bool
+	protected function createAuthConfig(): bool
 	{
 		$authFile = $this->_projectPath . '/config/auth.yaml';
 		$resourceFile = $this->_componentPath . '/resources/config/auth.yaml';
@@ -339,7 +339,7 @@ class InstallCommand extends Command
 	/**
 	 * Create public folder and copy all static assets
 	 */
-	private function createPublicFiles(): bool
+	protected function createPublicFiles(): bool
 	{
 		$publicDir = $this->_projectPath . '/public';
 
@@ -401,7 +401,7 @@ class InstallCommand extends Command
 	/**
 	 * Copy directory recursively
 	 */
-	private function copyDirectory( string $source, string $dest ): bool
+	protected function copyDirectory( string $source, string $dest ): bool
 	{
 		if( !is_dir( $source ) )
 		{
@@ -448,13 +448,13 @@ class InstallCommand extends Command
 	/**
 	 * Setup database configuration
 	 */
-	private function setupDatabase(): bool
+	protected function setupDatabase(): bool
 	{
 		$this->output->writeln( "\n╔═══════════════════════════════════════╗" );
 		$this->output->writeln( "║  Database Configuration               ║" );
 		$this->output->writeln( "╚═══════════════════════════════════════╝\n" );
 
-		$choice = $this->input->choice(
+		$choice = $this->choice(
 			"Select database adapter:",
 			[
 				'sqlite' => 'SQLite - Recommended for development (zero config, single file)',
@@ -504,7 +504,7 @@ class InstallCommand extends Command
 	/**
 	 * Configure application settings
 	 */
-	private function configureApplication(): array
+	protected function configureApplication(): array
 	{
 		$this->output->writeln( "\n╔═══════════════════════════════════════╗" );
 		$this->output->writeln( "║  Application Configuration            ║" );
@@ -512,12 +512,12 @@ class InstallCommand extends Command
 
 		// System timezone
 		$defaultTimezone = date_default_timezone_get();
-		$timezone = $this->input->ask( "System timezone", $defaultTimezone );
+		$timezone = $this->prompt( "System timezone", $defaultTimezone );
 
 		// Site configuration
 		$this->output->writeln( "\n--- Site Information ---\n" );
 
-		$siteName = $this->input->ask( "Site name" );
+		$siteName = $this->prompt( "Site name" );
 
 		if( !$siteName )
 		{
@@ -525,8 +525,8 @@ class InstallCommand extends Command
 			return [];
 		}
 
-		$siteTitle = $this->input->ask( "Site title (displayed in browser)", $siteName );
-		$siteUrl = $this->input->ask( "Site URL (e.g., https://example.com)" );
+		$siteTitle = $this->prompt( "Site title (displayed in browser)", $siteName );
+		$siteUrl = $this->prompt( "Site URL (e.g., https://example.com)" );
 
 		if( !$siteUrl )
 		{
@@ -534,7 +534,7 @@ class InstallCommand extends Command
 			return [];
 		}
 
-		$siteDescription = $this->input->ask( "Site description (optional)", "" );
+		$siteDescription = $this->prompt( "Site description (optional)", "" );
 
 		$this->_messages[] = "Site: $siteName ($siteUrl)";
 		$this->_messages[] = "Timezone: $timezone";
@@ -551,7 +551,7 @@ class InstallCommand extends Command
 	/**
 	 * Configure Cloudinary (optional)
 	 */
-	private function configureCloudinary(): array
+	protected function configureCloudinary(): array
 	{
 		$this->output->writeln( "\n╔═══════════════════════════════════════╗" );
 		$this->output->writeln( "║  Cloudinary Configuration (Optional)  ║" );
@@ -564,7 +564,7 @@ class InstallCommand extends Command
 		$this->output->writeln( "Find credentials at: https://console.cloudinary.com/settings/general" );
 		$this->output->writeln( "" );
 
-		if( !$this->input->confirm( "Would you like to configure Cloudinary now?", false ) )
+		if( !$this->confirm( "Would you like to configure Cloudinary now?", false ) )
 		{
 			$this->output->info( "Skipping Cloudinary configuration." );
 			$this->output->writeln( "You can add credentials later in config/neuron.yaml" );
@@ -573,7 +573,7 @@ class InstallCommand extends Command
 
 		$this->output->writeln( "\n--- Cloudinary Credentials ---\n" );
 
-		$cloudName = $this->input->ask( "Cloud name (from Cloudinary dashboard)" );
+		$cloudName = $this->prompt( "Cloud name (from Cloudinary dashboard)" );
 
 		if( !$cloudName )
 		{
@@ -581,7 +581,7 @@ class InstallCommand extends Command
 			return [];
 		}
 
-		$apiKey = $this->input->ask( "API key (from Cloudinary dashboard)" );
+		$apiKey = $this->prompt( "API key (from Cloudinary dashboard)" );
 
 		if( !$apiKey )
 		{
@@ -589,7 +589,7 @@ class InstallCommand extends Command
 			return [];
 		}
 
-		$apiSecret = $this->input->askSecret( "API secret (from Cloudinary dashboard)" );
+		$apiSecret = $this->secret( "API secret (from Cloudinary dashboard)" );
 
 		if( !$apiSecret )
 		{
@@ -597,8 +597,8 @@ class InstallCommand extends Command
 			return [];
 		}
 
-		$folder = $this->input->ask( "Upload folder (optional)", "neuron-cms/images" );
-		$maxFileSize = $this->input->ask( "Max file size in bytes", "5242880" );  // 5MB default
+		$folder = $this->prompt( "Upload folder (optional)", "neuron-cms/images" );
+		$maxFileSize = $this->prompt( "Max file size in bytes", "5242880" );  // 5MB default
 
 		$this->_messages[] = "Cloudinary: $cloudName (folder: $folder)";
 
@@ -617,7 +617,7 @@ class InstallCommand extends Command
 	/**
 	 * Configure Email (optional)
 	 */
-	private function configureEmail(): array
+	protected function configureEmail(): array
 	{
 		$this->output->writeln( "\n╔═══════════════════════════════════════╗" );
 		$this->output->writeln( "║  Email Configuration (Optional)       ║" );
@@ -629,7 +629,7 @@ class InstallCommand extends Command
 		$this->output->writeln( "  • User notifications and welcome emails" );
 		$this->output->writeln( "" );
 
-		if( !$this->input->confirm( "Would you like to configure email now?", false ) )
+		if( !$this->confirm( "Would you like to configure email now?", false ) )
 		{
 			$this->output->info( "Skipping email configuration." );
 			$this->output->writeln( "Email will be in test mode (emails logged, not sent)" );
@@ -647,7 +647,7 @@ class InstallCommand extends Command
 
 		$this->output->writeln( "\n--- Email Driver ---\n" );
 
-		$driver = $this->input->choice(
+		$driver = $this->choice(
 			"Select email driver:",
 			[
 				'smtp' => 'SMTP - Recommended for production (Gmail, SendGrid, Mailgun, etc.)',
@@ -672,7 +672,7 @@ class InstallCommand extends Command
 			$this->output->writeln( "  • Amazon SES: email-smtp.[region].amazonaws.com:587 (TLS)" );
 			$this->output->writeln( "" );
 
-			$host = $this->input->ask( "SMTP host (e.g., smtp.gmail.com)" );
+			$host = $this->prompt( "SMTP host (e.g., smtp.gmail.com)" );
 
 			if( !$host )
 			{
@@ -687,8 +687,8 @@ class InstallCommand extends Command
 				];
 			}
 
-			$port = $this->input->ask( "SMTP port", "587" );
-			$encryption = $this->input->choice(
+			$port = $this->prompt( "SMTP port", "587" );
+			$encryption = $this->choice(
 				"Encryption type:",
 				[
 					'tls' => 'TLS (recommended, port 587)',
@@ -698,7 +698,7 @@ class InstallCommand extends Command
 				'tls'
 			);
 
-			$username = $this->input->ask( "SMTP username (usually your email address)" );
+			$username = $this->prompt( "SMTP username (usually your email address)" );
 
 			if( !$username )
 			{
@@ -713,7 +713,7 @@ class InstallCommand extends Command
 				];
 			}
 
-			$password = $this->input->askSecret( "SMTP password (or app-specific password)" );
+			$password = $this->secret( "SMTP password (or app-specific password)" );
 
 			if( !$password )
 			{
@@ -744,15 +744,15 @@ class InstallCommand extends Command
 		// Common configuration
 		$this->output->writeln( "\n--- Sender Information ---\n" );
 
-		$fromAddress = $this->input->ask( "From email address", "noreply@example.com" );
-		$fromName = $this->input->ask( "From name", "Neuron CMS" );
+		$fromAddress = $this->prompt( "From email address", "noreply@example.com" );
+		$fromName = $this->prompt( "From name", "Neuron CMS" );
 
 		$config['from_address'] = $fromAddress;
 		$config['from_name'] = $fromName;
 
 		// Test mode option
 		$this->output->writeln( "" );
-		$testMode = $this->input->confirm( "Enable test mode? (emails logged, not sent - useful for development)", false );
+		$testMode = $this->confirm( "Enable test mode? (emails logged, not sent - useful for development)", false );
 
 		if( $testMode )
 		{
@@ -768,7 +768,7 @@ class InstallCommand extends Command
 	/**
 	 * Save complete configuration with all required sections
 	 */
-	private function saveCompleteConfig( array $databaseConfig, array $appConfig, array $cloudinaryConfig = [], array $emailConfig = [] ): bool
+	protected function saveCompleteConfig( array $databaseConfig, array $appConfig, array $cloudinaryConfig = [], array $emailConfig = [] ): bool
 	{
 		// Build complete configuration
 		$config = [
@@ -821,11 +821,11 @@ class InstallCommand extends Command
 	/**
 	 * Configure SQLite
 	 */
-	private function configureSqlite(): array
+	protected function configureSqlite(): array
 	{
 		$this->output->writeln( "\n--- SQLite Configuration ---\n" );
 
-		$dbPath = $this->input->ask( "Database file path", "storage/database.sqlite3" );
+		$dbPath = $this->prompt( "Database file path", "storage/database.sqlite3" );
 
 		// Make path absolute if relative
 		if( !empty( $dbPath ) && $dbPath[0] !== '/' )
@@ -857,13 +857,13 @@ class InstallCommand extends Command
 	/**
 	 * Configure MySQL
 	 */
-	private function configureMysql(): array
+	protected function configureMysql(): array
 	{
 		$this->output->writeln( "\n--- MySQL Configuration ---\n" );
 
-		$host = $this->input->ask( "Host", "localhost" );
-		$port = $this->input->ask( "Port", "3306" );
-		$name = $this->input->ask( "Database name" );
+		$host = $this->prompt( "Host", "localhost" );
+		$port = $this->prompt( "Port", "3306" );
+		$name = $this->prompt( "Database name" );
 
 		if( !$name )
 		{
@@ -871,7 +871,7 @@ class InstallCommand extends Command
 			return [];
 		}
 
-		$user = $this->input->ask( "Database username" );
+		$user = $this->prompt( "Database username" );
 
 		if( !$user )
 		{
@@ -879,8 +879,8 @@ class InstallCommand extends Command
 			return [];
 		}
 
-		$pass = $this->input->askSecret( "Database password" );
-		$charset = $this->input->ask( "Character set (utf8mb4 recommended)", "utf8mb4" );
+		$pass = $this->secret( "Database password" );
+		$charset = $this->prompt( "Character set (utf8mb4 recommended)", "utf8mb4" );
 
 		$this->_messages[] = "Database: MySQL ($host:$port/$name)";
 
@@ -900,13 +900,13 @@ class InstallCommand extends Command
 	/**
 	 * Configure PostgreSQL
 	 */
-	private function configurePostgresql(): array
+	protected function configurePostgresql(): array
 	{
 		$this->output->writeln( "\n--- PostgreSQL Configuration ---\n" );
 
-		$host = $this->input->ask( "Host", "localhost" );
-		$port = $this->input->ask( "Port", "5432" );
-		$name = $this->input->ask( "Database name" );
+		$host = $this->prompt( "Host", "localhost" );
+		$port = $this->prompt( "Port", "5432" );
+		$name = $this->prompt( "Database name" );
 
 		if( !$name )
 		{
@@ -914,7 +914,7 @@ class InstallCommand extends Command
 			return [];
 		}
 
-		$user = $this->input->ask( "Database username" );
+		$user = $this->prompt( "Database username" );
 
 		if( !$user )
 		{
@@ -922,7 +922,7 @@ class InstallCommand extends Command
 			return [];
 		}
 
-		$pass = $this->input->askSecret( "Database password" );
+		$pass = $this->secret( "Database password" );
 
 		$this->_messages[] = "Database: PostgreSQL ($host:$port/$name)";
 
@@ -941,7 +941,7 @@ class InstallCommand extends Command
 	/**
 	 * Save configuration to YAML file
 	 */
-	private function saveConfig( array $config ): bool
+	protected function saveConfig( array $config ): bool
 	{
 		$configFile = $this->_projectPath . '/config/neuron.yaml';
 
@@ -993,7 +993,7 @@ class InstallCommand extends Command
 	/**
 	 * Convert array to YAML format (simple implementation)
 	 */
-	private function arrayToYaml( array $data, int $indent = 0 ): string
+	protected function arrayToYaml( array $data, int $indent = 0 ): string
 	{
 		$yaml = '';
 		$indentStr = str_repeat( '  ', $indent );
@@ -1017,7 +1017,7 @@ class InstallCommand extends Command
 	/**
 	 * Format value for YAML
 	 */
-	private function yamlValue( $value ): string
+	protected function yamlValue( $value ): string
 	{
 		if( is_bool( $value ) )
 		{
@@ -1040,7 +1040,7 @@ class InstallCommand extends Command
 	/**
 	 * Copy database migrations from component to project
 	 */
-	private function copyMigrations(): bool
+	protected function copyMigrations(): bool
 	{
 		$migrationsDir = $this->_projectPath . '/db/migrate';
 		$componentMigrationsDir = $this->_componentPath . '/resources/database/migrate';
@@ -1100,7 +1100,7 @@ class InstallCommand extends Command
 	/**
 	 * Run the migration
 	 */
-	private function runMigration(): bool
+	protected function runMigration(): bool
 	{
 		$this->output->writeln( "\nRunning migration...\n" );
 
@@ -1163,7 +1163,7 @@ class InstallCommand extends Command
 	/**
 	 * Display installation summary
 	 */
-	private function displaySummary(): void
+	protected function displaySummary(): void
 	{
 		$this->output->writeln( "Installation Summary:" );
 		$this->output->writeln( "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" );
@@ -1183,7 +1183,7 @@ class InstallCommand extends Command
 	/**
 	 * Create admin user interactively
 	 */
-	private function createAdminUser(): bool
+	protected function createAdminUser(): bool
 	{
 		$this->output->writeln( "\n╔═══════════════════════════════════════╗" );
 		$this->output->writeln( "║  Create Admin User                    ║" );
@@ -1211,7 +1211,7 @@ class InstallCommand extends Command
 		$hasher = new PasswordHasher();
 
 		// Get username
-		$username = $this->input->ask( "Username (alphanumeric, 3-50 chars)", "admin" );
+		$username = $this->prompt( "Username (alphanumeric, 3-50 chars)", "admin" );
 
 		// Check if user exists
 		if( $repository->findByUsername( $username ) )
@@ -1222,11 +1222,11 @@ class InstallCommand extends Command
 		}
 
 		// Get email
-		$email = $this->input->ask( "Email address", "admin@example.com" );
+		$email = $this->prompt( "Email address", "admin@example.com" );
 
 		// Get password
 		$this->output->writeln( "Password requirements: min 8 chars, uppercase, lowercase, number, special char" );
-		$password = $this->input->askSecret( "Password" );
+		$password = $this->secret( "Password" );
 
 		if( strlen( $password ) < 8 )
 		{
@@ -1279,7 +1279,7 @@ class InstallCommand extends Command
 	/**
 	 * Seed default data after migration
 	 */
-	private function seedDefaultData(): bool
+	protected function seedDefaultData(): bool
 	{
 		try
 		{

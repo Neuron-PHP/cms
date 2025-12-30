@@ -50,7 +50,7 @@ class CsrfToken
 	}
 
 	/**
-	 * Validate a CSRF token
+	 * Validate a CSRF token (single-use)
 	 */
 	public function validate( string $token ): bool
 	{
@@ -62,7 +62,15 @@ class CsrfToken
 		}
 
 		// Use hash_equals to prevent timing attacks
-		return hash_equals( $storedToken, $token );
+		$isValid = hash_equals( $storedToken, $token );
+
+		// Remove token after validation (single-use)
+		if( $isValid )
+		{
+			$this->_sessionManager->remove( $this->_tokenKey );
+		}
+
+		return $isValid;
 	}
 
 	/**

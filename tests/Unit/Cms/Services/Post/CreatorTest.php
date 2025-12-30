@@ -10,6 +10,8 @@ use Neuron\Cms\Repositories\ICategoryRepository;
 use Neuron\Cms\Repositories\IPostRepository;
 use Neuron\Cms\Services\Post\Creator;
 use Neuron\Cms\Services\Tag\Resolver as TagResolver;
+use Neuron\Dto\Factory;
+use Neuron\Dto\Dto;
 use PHPUnit\Framework\TestCase;
 
 class CreatorTest extends TestCase
@@ -30,6 +32,43 @@ class CreatorTest extends TestCase
 			$this->_mockCategoryRepository,
 			$this->_mockTagResolver
 		);
+	}
+
+	/**
+	 * Helper method to create a DTO with test data
+	 */
+	private function createDto(
+		string $title,
+		string $content,
+		int $authorId,
+		string $status,
+		?string $slug = null,
+		?string $excerpt = null,
+		?string $featuredImage = null
+	): Dto
+	{
+		$factory = new Factory( __DIR__ . '/../../../../../config/dtos/posts/create-post-request.yaml' );
+		$dto = $factory->create();
+
+		$dto->title = $title;
+		$dto->content = $content;
+		$dto->author_id = $authorId;
+		$dto->status = $status;
+
+		if( $slug !== null )
+		{
+			$dto->slug = $slug;
+		}
+		if( $excerpt !== null )
+		{
+			$dto->excerpt = $excerpt;
+		}
+		if( $featuredImage !== null )
+		{
+			$dto->featured_image = $featuredImage;
+		}
+
+		return $dto;
 	}
 
 	public function testCreatesPostWithRequiredFields(): void
@@ -57,12 +96,14 @@ class CreatorTest extends TestCase
 			} ) )
 			->willReturnArgument( 0 );
 
-		$result = $this->_creator->create(
+		$dto = $this->createDto(
 			'Test Post',
 			$editorJsContent,
 			1,
 			Post::STATUS_DRAFT
 		);
+
+		$result = $this->_creator->create( $dto );
 
 		$this->assertEquals( 'Test Post', $result->getTitle() );
 		$this->assertEquals( $editorJsContent, $result->getContentRaw() );
@@ -87,12 +128,14 @@ class CreatorTest extends TestCase
 			} ) )
 			->willReturnArgument( 0 );
 
-		$result = $this->_creator->create(
+		$dto = $this->createDto(
 			'Test Post Title',
 			'{"blocks":[{"type":"paragraph","data":{"text":"Body"}}]}',
 			1,
 			Post::STATUS_DRAFT
 		);
+
+		$result = $this->_creator->create( $dto );
 
 		$this->assertEquals( 'test-post-title', $result->getSlug() );
 	}
@@ -115,13 +158,15 @@ class CreatorTest extends TestCase
 			} ) )
 			->willReturnArgument( 0 );
 
-		$result = $this->_creator->create(
+		$dto = $this->createDto(
 			'Test Post',
 			'{"blocks":[{"type":"paragraph","data":{"text":"Body"}}]}',
 			1,
 			Post::STATUS_DRAFT,
 			'custom-slug'
 		);
+
+		$result = $this->_creator->create( $dto );
 
 		$this->assertEquals( 'custom-slug', $result->getSlug() );
 	}
@@ -145,12 +190,14 @@ class CreatorTest extends TestCase
 			} ) )
 			->willReturnArgument( 0 );
 
-		$result = $this->_creator->create(
+		$dto = $this->createDto(
 			'Published Post',
 			'{"blocks":[{"type":"paragraph","data":{"text":"Body"}}]}',
 			1,
 			Post::STATUS_PUBLISHED
 		);
+
+		$result = $this->_creator->create( $dto );
 
 		$this->assertInstanceOf( DateTimeImmutable::class, $result->getPublishedAt() );
 	}
@@ -174,12 +221,14 @@ class CreatorTest extends TestCase
 			} ) )
 			->willReturnArgument( 0 );
 
-		$result = $this->_creator->create(
+		$dto = $this->createDto(
 			'Draft Post',
 			'{"blocks":[{"type":"paragraph","data":{"text":"Body"}}]}',
 			1,
 			Post::STATUS_DRAFT
 		);
+
+		$result = $this->_creator->create( $dto );
 
 		$this->assertNull( $result->getPublishedAt() );
 	}
@@ -215,16 +264,14 @@ class CreatorTest extends TestCase
 			} ) )
 			->willReturnArgument( 0 );
 
-		$result = $this->_creator->create(
+		$dto = $this->createDto(
 			'Test Post',
 			'{"blocks":[{"type":"paragraph","data":{"text":"Body"}}]}',
 			1,
-			Post::STATUS_DRAFT,
-			null,
-			null,
-			null,
-			[ 1, 2 ]
+			Post::STATUS_DRAFT
 		);
+
+		$result = $this->_creator->create( $dto, [ 1, 2 ] );
 
 		$this->assertCount( 2, $result->getCategories() );
 	}
@@ -260,17 +307,14 @@ class CreatorTest extends TestCase
 			} ) )
 			->willReturnArgument( 0 );
 
-		$result = $this->_creator->create(
+		$dto = $this->createDto(
 			'Test Post',
 			'{"blocks":[{"type":"paragraph","data":{"text":"Body"}}]}',
 			1,
-			Post::STATUS_DRAFT,
-			null,
-			null,
-			null,
-			[],
-			'PHP, Testing'
+			Post::STATUS_DRAFT
 		);
+
+		$result = $this->_creator->create( $dto, [], 'PHP, Testing' );
 
 		$this->assertCount( 2, $result->getTags() );
 	}
@@ -294,7 +338,7 @@ class CreatorTest extends TestCase
 			} ) )
 			->willReturnArgument( 0 );
 
-		$result = $this->_creator->create(
+		$dto = $this->createDto(
 			'Test Post',
 			'{"blocks":[{"type":"paragraph","data":{"text":"Body"}}]}',
 			1,
@@ -303,6 +347,8 @@ class CreatorTest extends TestCase
 			'Test excerpt',
 			'image.jpg'
 		);
+
+		$result = $this->_creator->create( $dto );
 
 		$this->assertEquals( 'Test excerpt', $result->getExcerpt() );
 		$this->assertEquals( 'image.jpg', $result->getFeaturedImage() );

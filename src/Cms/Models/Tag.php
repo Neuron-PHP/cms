@@ -6,6 +6,7 @@ use DateTimeImmutable;
 use Exception;
 use Neuron\Orm\Model;
 use Neuron\Orm\Attributes\{Table, BelongsToMany};
+use Neuron\Orm\DependentStrategy;
 
 /**
  * Tag entity representing a blog post tag.
@@ -22,7 +23,8 @@ class Tag extends Model
 	private ?DateTimeImmutable $_updatedAt = null;
 
 	// Relationships
-	#[BelongsToMany(Post::class, pivotTable: 'post_tags')]
+	// DeleteAll: When tag is deleted, remove pivot entries (keep posts)
+	#[BelongsToMany(Post::class, pivotTable: 'post_tags', dependent: DependentStrategy::DeleteAll)]
 	private array $_posts = [];
 
 	public function __construct()

@@ -2,13 +2,14 @@
 
 namespace Neuron\Cms\Controllers;
 
-use Neuron\Cms\Repositories\DatabaseEventRepository;
-use Neuron\Cms\Repositories\DatabaseEventCategoryRepository;
+use Neuron\Cms\Repositories\IEventRepository;
+use Neuron\Cms\Repositories\IEventCategoryRepository;
 use Neuron\Mvc\Application;
 use Neuron\Mvc\Requests\Request;
 use Neuron\Mvc\Responses\HttpResponseStatus;
-use Neuron\Patterns\Registry;
 use DateTimeImmutable;
+use Neuron\Routing\Attributes\Get;
+use Neuron\Routing\Attributes\RouteGroup;
 
 /**
  * Public calendar controller.
@@ -17,27 +18,36 @@ use DateTimeImmutable;
  *
  * @package Neuron\Cms\Controllers
  */
+#[RouteGroup(prefix: '/calendar')]
 class Calendar extends Content
 {
-	private DatabaseEventRepository $_eventRepository;
-	private DatabaseEventCategoryRepository $_categoryRepository;
+	private IEventRepository $_eventRepository;
+	private IEventCategoryRepository $_categoryRepository;
 
 	/**
 	 * @param Application|null $app
+	 * @param IEventRepository|null $eventRepository
+	 * @param IEventCategoryRepository|null $categoryRepository
 	 * @throws \Exception
 	 */
-	public function __construct( ?Application $app = null )
+	public function __construct(
+		?Application $app = null,
+		?IEventRepository $eventRepository = null,
+		?IEventCategoryRepository $categoryRepository = null
+	)
 	{
 		parent::__construct( $app );
 
-		$settings = Registry::getInstance()->get( 'Settings' );
-		$this->_eventRepository = new DatabaseEventRepository( $settings );
-		$this->_categoryRepository = new DatabaseEventCategoryRepository( $settings );
+		// Use dependency injection when available (container provides dependencies)
+		// Otherwise resolve from container (fallback for compatibility)
+		$this->_eventRepository = $eventRepository ?? $app?->getContainer()?->get( IEventRepository::class );
+		$this->_categoryRepository = $categoryRepository ?? $app?->getContainer()?->get( IEventCategoryRepository::class );
 	}
 
 	/**
 	 * Calendar index - show events in calendar/list view
 	 */
+	#[Get('/', name: 'calendar')]
 	public function index( Request $request ): string
 	{
 		// Get month/year from query params (default to current month)
@@ -79,6 +89,7 @@ class Calendar extends Content
 	/**
 	 * Show single event detail
 	 */
+	#[Get('/event/:slug', name: 'calendar_event')]
 	public function show( Request $request ): string
 	{
 		$slug = $request->getRouteParameter( 'slug' );
@@ -109,6 +120,7 @@ class Calendar extends Content
 	/**
 	 * Show events filtered by category
 	 */
+	#[Get('/category/:slug', name: 'calendar_category')]
 	public function category( Request $request ): string
 	{
 		$slug = $request->getRouteParameter( 'slug' );

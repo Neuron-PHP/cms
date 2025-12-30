@@ -1,10 +1,12 @@
 <?php
 namespace Neuron\Cms\Controllers;
 
+use Neuron\Cms\Services\Member\IRegistrationService;
 use Neuron\Core\Exceptions\NotFound;
+use Neuron\Mvc\Application;
 use Neuron\Mvc\Requests\Request;
 use Neuron\Mvc\Responses\HttpResponseStatus;
-use Neuron\Patterns\Registry;
+use Neuron\Routing\Attributes\Get;
 
 /**
  * Home controller for the main landing page
@@ -17,6 +19,25 @@ use Neuron\Patterns\Registry;
  */
 class Home extends Content
 {
+	private ?IRegistrationService $_registrationService;
+
+	/**
+	 * @param Application|null $app
+	 * @param IRegistrationService|null $registrationService
+	 * @throws \Exception
+	 */
+	public function __construct(
+		?Application $app = null,
+		?IRegistrationService $registrationService = null
+	)
+	{
+		parent::__construct( $app );
+
+		// Use dependency injection when available (container provides dependencies)
+		// Otherwise resolve from container (fallback for compatibility)
+		$this->_registrationService = $registrationService ?? $app?->getContainer()?->get( IRegistrationService::class );
+	}
+
 	/**
 	 * Display the homepage
 	 *
@@ -24,16 +45,11 @@ class Home extends Content
 	 * @return string Rendered HTML response
 	 * @throws NotFound
 	 */
+	#[Get('/', name: 'home')]
 	public function index( Request $request ): string
 	{
 		// Check if registration is enabled
-		$registrationEnabled = false;
-		$registrationService = Registry::getInstance()->get( 'RegistrationService' );
-
-		if( $registrationService && method_exists( $registrationService, 'isRegistrationEnabled' ) )
-		{
-			$registrationEnabled = $registrationService->isRegistrationEnabled();
-		}
+		$registrationEnabled = $this->_registrationService?->isRegistrationEnabled() ?? false;
 
 		return $this->renderHtml(
 			HttpResponseStatus::OK,

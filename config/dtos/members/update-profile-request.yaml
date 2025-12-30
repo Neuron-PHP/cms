@@ -1,0 +1,56 @@
+# DTO for updating member profile
+# Used by members to update their own profile (NOT admin updates)
+dto:
+  id:
+    type: integer
+    required: true
+    validators:
+      - type: required
+        message: "User ID is required"
+      - type: min
+        params: [ 1 ]
+        message: "User ID must be a positive integer"
+
+  email:
+    type: email
+    required: true
+    validators:
+      - type: required
+        message: "Email is required"
+      - type: email
+        message: "Email must be a valid email address"
+
+  timezone:
+    type: string
+    required: false
+    validators:
+      - type: maxLength
+        params: [ 100 ]
+        message: "Timezone must not exceed 100 characters"
+
+  current_password:
+    type: string
+    required: false
+    validators:
+      - type: minLength
+        params: [ 8 ]
+        message: "Current password must be at least 8 characters"
+
+  new_password:
+    type: string
+    required: false
+    validators:
+      - type: minLength
+        params: [ 8 ]
+        message: "New password must be at least 8 characters"
+      - type: maxLength
+        params: [ 255 ]
+        message: "New password must not exceed 255 characters"
+
+  confirm_password:
+    type: string
+    required: false
+    validators:
+      - type: minLength
+        params: [ 8 ]
+        message: "Password confirmation must be at least 8 characters"

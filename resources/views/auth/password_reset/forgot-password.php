@@ -1,30 +1,18 @@
-<div class="text-center mb-3">
-	<p class="text-muted small">
-		Enter your email address and we'll send you a link to reset your password.
-	</p>
-</div>
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Forgot Password</title>
+</head>
+<body>
+    <h1>Forgot Password</h1>
+    <p>Enter your email address and we'll send you a password reset link.</p>
+    <form method="POST" action="/auth/password-reset/send">
+        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrfToken ?? '') ?>">
 
-<form method="POST" action="<?= route_path('forgot_password_post') ?>">
-	<?= csrf_field() ?>
+        <label>Email:</label>
+        <input type="email" name="email" required>
 
-	<div class="mb-3">
-		<label for="email" class="form-label">Email Address</label>
-		<input
-			type="email"
-			id="email"
-			name="email"
-			class="form-control"
-			placeholder="Enter your email address"
-			required
-			autofocus
-		>
-	</div>
-
-	<button type="submit" class="btn btn-primary w-100">
-		Send Reset Link
-	</button>
-</form>
-
-<div class="text-center mt-3">
-	<a href="<?= route_path('login') ?>" class="small">← Back to Login</a>
-</div>
+        <button type="submit">Send Reset Link</button>
+    </form>
+</body>
+</html>

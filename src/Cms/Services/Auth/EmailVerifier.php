@@ -21,7 +21,7 @@ use Neuron\Cms\Enums\UserStatus;
  *
  * @package Neuron\Cms\Services\Auth
  */
-class EmailVerifier
+class EmailVerifier implements IEmailVerifier
 {
 	private IEmailVerificationTokenRepository $_tokenRepository;
 	private IUserRepository $_userRepository;

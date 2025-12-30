@@ -1,0 +1,12 @@
+# Common timestamp fields for all entities
+# Usage: Include via 'ref' parameter in other DTOs
+dto:
+  created_at:
+    type: datetime
+    required: false
+    description: Timestamp when the entity was created
+
+  updated_at:
+    type: datetime
+    required: false
+    description: Timestamp when the entity was last updated

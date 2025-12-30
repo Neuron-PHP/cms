@@ -21,7 +21,7 @@ use Neuron\Cms\Enums\UserStatus;
  *
  * @package Neuron\Cms\Services\Member
  */
-class RegistrationService
+class RegistrationService implements IRegistrationService
 {
 	private IUserRepository $_userRepository;
 	private PasswordHasher $_passwordHasher;

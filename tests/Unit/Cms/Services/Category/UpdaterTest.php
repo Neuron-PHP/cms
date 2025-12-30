@@ -5,6 +5,8 @@ namespace Tests\Cms\Services\Category;
 use Neuron\Cms\Models\Category;
 use Neuron\Cms\Repositories\ICategoryRepository;
 use Neuron\Cms\Services\Category\Updater;
+use Neuron\Dto\Factory;
+use Neuron\Dto\Dto;
 use PHPUnit\Framework\TestCase;
 
 class UpdaterTest extends TestCase
@@ -19,6 +21,34 @@ class UpdaterTest extends TestCase
 		$this->_updater = new Updater( $this->_mockCategoryRepository );
 	}
 
+	/**
+	 * Helper method to create a DTO with test data
+	 */
+	private function createDto(
+		int $id,
+		string $name,
+		?string $slug = null,
+		?string $description = null
+	): Dto
+	{
+		$factory = new Factory( __DIR__ . '/../../../../../config/dtos/categories/update-category-request.yaml' );
+		$dto = $factory->create();
+
+		$dto->id = $id;
+		$dto->name = $name;
+
+		if( $slug !== null )
+		{
+			$dto->slug = $slug;
+		}
+		if( $description !== null )
+		{
+			$dto->description = $description;
+		}
+
+		return $dto;
+	}
+
 	public function testUpdatesCategory(): void
 	{
 		$category = new Category();
@@ -29,6 +59,12 @@ class UpdaterTest extends TestCase
 
 		$this->_mockCategoryRepository
 			->expects( $this->once() )
+			->method( 'findById' )
+			->with( 1 )
+			->willReturn( $category );
+
+		$this->_mockCategoryRepository
+			->expects( $this->once() )
 			->method( 'update' )
 			->with( $this->callback( function( Category $c ) {
 				return $c->getName() === 'New Name'
@@ -36,12 +72,14 @@ class UpdaterTest extends TestCase
 					&& $c->getDescription() === 'New description';
 			} ) );
 
-		$result = $this->_updater->update(
-			$category,
-			'New Name',
-			'new-slug',
-			'New description'
+		$dto = $this->createDto(
+			id: 1,
+			name: 'New Name',
+			slug: 'new-slug',
+			description: 'New description'
 		);
+
+		$result = $this->_updater->update( $dto );
 
 		$this->assertEquals( 'New Name', $result->getName() );
 		$this->assertEquals( 'new-slug', $result->getSlug() );
@@ -56,18 +94,25 @@ class UpdaterTest extends TestCase
 		$category->setSlug( 'old-slug' );
 
 		$this->_mockCategoryRepository
+			->method( 'findById' )
+			->with( 1 )
+			->willReturn( $category );
+
+		$this->_mockCategoryRepository
 			->expects( $this->once() )
 			->method( 'update' )
 			->with( $this->callback( function( Category $c ) {
 				return $c->getSlug() === 'technology-news';
 			} ) );
 
-		$result = $this->_updater->update(
-			$category,
-			'Technology News',
-			'',
-			'Tech updates'
+		$dto = $this->createDto(
+			id: 1,
+			name: 'Technology News',
+			slug: '',
+			description: 'Tech updates'
 		);
+
+		$result = $this->_updater->update( $dto );
 
 		$this->assertEquals( 'technology-news', $result->getSlug() );
 	}
@@ -78,18 +123,25 @@ class UpdaterTest extends TestCase
 		$category->setId( 1 );
 
 		$this->_mockCategoryRepository
+			->method( 'findById' )
+			->with( 1 )
+			->willReturn( $category );
+
+		$this->_mockCategoryRepository
 			->expects( $this->once() )
 			->method( 'update' )
 			->with( $this->callback( function( Category $c ) {
 				return $c->getSlug() === 'tips-tricks';
 			} ) );
 
-		$result = $this->_updater->update(
-			$category,
-			'Tips & Tricks!',
-			'',
-			''
+		$dto = $this->createDto(
+			id: 1,
+			name: 'Tips & Tricks!',
+			slug: '',
+			description: ''
 		);
+
+		$result = $this->_updater->update( $dto );
 
 		$this->assertEquals( 'tips-tricks', $result->getSlug() );
 	}
@@ -100,18 +152,25 @@ class UpdaterTest extends TestCase
 		$category->setId( 1 );
 
 		$this->_mockCategoryRepository
+			->method( 'findById' )
+			->with( 1 )
+			->willReturn( $category );
+
+		$this->_mockCategoryRepository
 			->expects( $this->once() )
 			->method( 'update' )
 			->with( $this->callback( function( Category $c ) {
 				return $c->getSlug() === 'my-custom-slug';
 			} ) );
 
-		$result = $this->_updater->update(
-			$category,
-			'Category Name',
-			'my-custom-slug',
-			''
+		$dto = $this->createDto(
+			id: 1,
+			name: 'Category Name',
+			slug: 'my-custom-slug',
+			description: ''
 		);
+
+		$result = $this->_updater->update( $dto );
 
 		$this->assertEquals( 'my-custom-slug', $result->getSlug() );
 	}
@@ -123,18 +182,25 @@ class UpdaterTest extends TestCase
 		$category->setDescription( 'Old description' );
 
 		$this->_mockCategoryRepository
+			->method( 'findById' )
+			->with( 1 )
+			->willReturn( $category );
+
+		$this->_mockCategoryRepository
 			->expects( $this->once() )
 			->method( 'update' )
 			->with( $this->callback( function( Category $c ) {
 				return $c->getDescription() === '';
 			} ) );
 
-		$result = $this->_updater->update(
-			$category,
-			'Name',
-			'slug',
-			''
+		$dto = $this->createDto(
+			id: 1,
+			name: 'Name',
+			slug: 'slug',
+			description: ''
 		);
+
+		$result = $this->_updater->update( $dto );
 
 		$this->assertEquals( '', $result->getDescription() );
 	}

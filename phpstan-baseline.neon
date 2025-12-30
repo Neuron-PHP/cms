@@ -1,0 +1,406 @@
+parameters:
+	ignoreErrors:
+		-
+			message: "#^Left side of && is always true\\.$#"
+			count: 1
+			path: src/Cms/Cli/Commands/Install/UpgradeCommand.php
+
+		-
+			message: "#^Class Neuron\\\\Cms\\\\Services\\\\Auth\\\\EmailVerifier constructor invoked with 2 parameters, 5\\-6 required\\.$#"
+			count: 1
+			path: src/Cms/Container/Container.php
+
+		-
+			message: "#^PHPDoc tag @return with type Psr\\\\Container\\\\ContainerInterface\\|null is not subtype of native type Neuron\\\\Patterns\\\\Container\\\\IContainer\\|null\\.$#"
+			count: 1
+			path: src/Cms/Container/Container.php
+
+		-
+			message: "#^Parameter \\#2 \\$userRepository of class Neuron\\\\Cms\\\\Services\\\\Auth\\\\EmailVerifier constructor expects Neuron\\\\Cms\\\\Repositories\\\\IUserRepository, Neuron\\\\Data\\\\Settings\\\\SettingManager given\\.$#"
+			count: 1
+			path: src/Cms/Container/Container.php
+
+		-
+			message: "#^Parameter \\#1 \\$category of method Neuron\\\\Cms\\\\Repositories\\\\IEventCategoryRepository\\:\\:delete\\(\\) expects Neuron\\\\Cms\\\\Models\\\\EventCategory, int given\\.$#"
+			count: 1
+			path: src/Cms/Controllers/Admin/EventCategories.php
+
+		-
+			message: "#^Parameter \\#1 \\$event of method Neuron\\\\Cms\\\\Repositories\\\\IEventRepository\\:\\:delete\\(\\) expects Neuron\\\\Cms\\\\Models\\\\Event, int given\\.$#"
+			count: 1
+			path: src/Cms/Controllers/Admin/Events.php
+
+		-
+			message: "#^Call to an undefined method Neuron\\\\Cms\\\\Controllers\\\\Admin\\\\Profile\\:\\:getApplication\\(\\)\\.$#"
+			count: 1
+			path: src/Cms/Controllers/Admin/Profile.php
+
+		-
+			message: "#^Caught class Neuron\\\\Core\\\\Exceptions\\\\Validation not found\\.$#"
+			count: 1
+			path: src/Cms/Controllers/Admin/Profile.php
+
+		-
+			message: "#^Method Neuron\\\\Cms\\\\Controllers\\\\Admin\\\\Tags\\:\\:generateSlug\\(\\) is unused\\.$#"
+			count: 1
+			path: src/Cms/Controllers/Admin/Tags.php
+
+		-
+			message: "#^PHPDoc tag @param for parameter \\$request with type Neuron\\\\Mvc\\\\Requests\\\\Request\\|null is not subtype of native type Neuron\\\\Mvc\\\\Requests\\\\Request\\.$#"
+			count: 2
+			path: src/Cms/Controllers/Admin/Tags.php
+
+		-
+			message: "#^Call to an undefined method Neuron\\\\Cms\\\\Controllers\\\\Auth\\\\Login\\:\\:getApplication\\(\\)\\.$#"
+			count: 1
+			path: src/Cms/Controllers/Auth/Login.php
+
+		-
+			message: "#^Call to an undefined method Neuron\\\\Cms\\\\Controllers\\\\Auth\\\\Login\\:\\:urlFor\\(\\)\\.$#"
+			count: 1
+			path: src/Cms/Controllers/Auth/Login.php
+
+		-
+			message: "#^Caught class Neuron\\\\Core\\\\Exceptions\\\\Validation not found\\.$#"
+			count: 1
+			path: src/Cms/Controllers/Auth/Login.php
+
+		-
+			message: "#^Call to an undefined method Neuron\\\\Cms\\\\Controllers\\\\Auth\\\\PasswordReset\\:\\:getApplication\\(\\)\\.$#"
+			count: 1
+			path: src/Cms/Controllers/Auth/PasswordReset.php
+
+		-
+			message: "#^Caught class Neuron\\\\Core\\\\Exceptions\\\\Validation not found\\.$#"
+			count: 1
+			path: src/Cms/Controllers/Auth/PasswordReset.php
+
+		-
+			message: "#^Attribute class JetBrains\\\\PhpStorm\\\\NoReturn does not exist\\.$#"
+			count: 1
+			path: src/Cms/Controllers/Blog.php
+
+		-
+			message: "#^Call to an undefined method Neuron\\\\Cms\\\\Controllers\\\\Blog\\:\\:renderHtml\\(\\)\\.$#"
+			count: 5
+			path: src/Cms/Controllers/Blog.php
+
+		-
+			message: "#^Else branch is unreachable because ternary operator condition is always true\\.$#"
+			count: 1
+			path: src/Cms/Controllers/Blog.php
+
+		-
+			message: "#^Method Neuron\\\\Mvc\\\\Requests\\\\Request\\:\\:getRouteParameter\\(\\) invoked with 2 parameters, 1 required\\.$#"
+			count: 4
+			path: src/Cms/Controllers/Blog.php
+
+		-
+			message: "#^PHPDoc tag @param for parameter \\$request with type Neuron\\\\Mvc\\\\Requests\\\\Request\\|null is not subtype of native type Neuron\\\\Mvc\\\\Requests\\\\Request\\.$#"
+			count: 1
+			path: src/Cms/Controllers/Blog.php
+
+		-
+			message: "#^Call to an undefined method Neuron\\\\Cms\\\\Controllers\\\\Calendar\\:\\:renderHtml\\(\\)\\.$#"
+			count: 3
+			path: src/Cms/Controllers/Calendar.php
+
+		-
+			message: "#^Call to an undefined method Neuron\\\\Cms\\\\Controllers\\\\Content\\:\\:renderMarkdown\\(\\)\\.$#"
+			count: 1
+			path: src/Cms/Controllers/Content.php
+
+		-
+			message: "#^Call to an undefined method Neuron\\\\Cms\\\\Controllers\\\\Content\\:\\:urlFor\\(\\)\\.$#"
+			count: 1
+			path: src/Cms/Controllers/Content.php
+
+		-
+			message: "#^Neuron\\\\Cms\\\\Controllers\\\\Content\\:\\:__construct\\(\\) calls parent\\:\\:__construct\\(\\) but Neuron\\\\Cms\\\\Controllers\\\\Content does not extend any class\\.$#"
+			count: 1
+			path: src/Cms/Controllers/Content.php
+
+		-
+			message: "#^Call to an undefined method Neuron\\\\Cms\\\\Controllers\\\\Home\\:\\:renderHtml\\(\\)\\.$#"
+			count: 1
+			path: src/Cms/Controllers/Home.php
+
+		-
+			message: "#^Call to an undefined method Neuron\\\\Cms\\\\Controllers\\\\Member\\\\Registration\\:\\:getApplication\\(\\)\\.$#"
+			count: 1
+			path: src/Cms/Controllers/Member/Registration.php
+
+		-
+			message: "#^Caught class Neuron\\\\Core\\\\Exceptions\\\\Validation not found\\.$#"
+			count: 1
+			path: src/Cms/Controllers/Member/Registration.php
+
+		-
+			message: "#^Call to an undefined method Neuron\\\\Cms\\\\Controllers\\\\Pages\\:\\:renderHtml\\(\\)\\.$#"
+			count: 1
+			path: src/Cms/Controllers/Pages.php
+
+		-
+			message: "#^Method Neuron\\\\Mvc\\\\Requests\\\\Request\\:\\:getRouteParameter\\(\\) invoked with 2 parameters, 1 required\\.$#"
+			count: 1
+			path: src/Cms/Controllers/Pages.php
+
+		-
+			message: "#^Parameter \\#1 \\$settings of class Neuron\\\\Cms\\\\Services\\\\Email\\\\Sender constructor expects Neuron\\\\Data\\\\Settings\\\\SettingManager\\|null, Neuron\\\\Data\\\\Settings\\\\ISettingSource\\|null given\\.$#"
+			count: 3
+			path: src/Cms/Email/helpers.php
+
+		-
+			message: "#^Parameter \\$settings of function email\\(\\) has invalid type Neuron\\\\Data\\\\Settings\\\\ISettingSource\\.$#"
+			count: 2
+			path: src/Cms/Email/helpers.php
+
+		-
+			message: "#^Parameter \\$settings of function sendEmail\\(\\) has invalid type Neuron\\\\Data\\\\Settings\\\\ISettingSource\\.$#"
+			count: 2
+			path: src/Cms/Email/helpers.php
+
+		-
+			message: "#^Parameter \\$settings of function sendEmailTemplate\\(\\) has invalid type Neuron\\\\Data\\\\Settings\\\\ISettingSource\\.$#"
+			count: 2
+			path: src/Cms/Email/helpers.php
+
+		-
+			message: "#^Method Neuron\\\\Cms\\\\Models\\\\Category\\:\\:fromArray\\(\\) should return static\\(Neuron\\\\Cms\\\\Models\\\\Category\\) but returns Neuron\\\\Cms\\\\Models\\\\Category\\.$#"
+			count: 1
+			path: src/Cms/Models/Category.php
+
+		-
+			message: "#^Method Neuron\\\\Cms\\\\Models\\\\Event\\:\\:fromArray\\(\\) should return static\\(Neuron\\\\Cms\\\\Models\\\\Event\\) but returns Neuron\\\\Cms\\\\Models\\\\Event\\.$#"
+			count: 1
+			path: src/Cms/Models/Event.php
+
+		-
+			message: "#^Method Neuron\\\\Cms\\\\Models\\\\EventCategory\\:\\:fromArray\\(\\) should return static\\(Neuron\\\\Cms\\\\Models\\\\EventCategory\\) but returns Neuron\\\\Cms\\\\Models\\\\EventCategory\\.$#"
+			count: 1
+			path: src/Cms/Models/EventCategory.php
+
+		-
+			message: "#^Method Neuron\\\\Cms\\\\Models\\\\Page\\:\\:fromArray\\(\\) should return static\\(Neuron\\\\Cms\\\\Models\\\\Page\\) but returns Neuron\\\\Cms\\\\Models\\\\Page\\.$#"
+			count: 1
+			path: src/Cms/Models/Page.php
+
+		-
+			message: "#^Method Neuron\\\\Cms\\\\Models\\\\Post\\:\\:fromArray\\(\\) should return static\\(Neuron\\\\Cms\\\\Models\\\\Post\\) but returns Neuron\\\\Cms\\\\Models\\\\Post\\.$#"
+			count: 1
+			path: src/Cms/Models/Post.php
+
+		-
+			message: "#^Method Neuron\\\\Cms\\\\Models\\\\Tag\\:\\:fromArray\\(\\) should return static\\(Neuron\\\\Cms\\\\Models\\\\Tag\\) but returns Neuron\\\\Cms\\\\Models\\\\Tag\\.$#"
+			count: 1
+			path: src/Cms/Models/Tag.php
+
+		-
+			message: "#^Method Neuron\\\\Cms\\\\Models\\\\User\\:\\:fromArray\\(\\) should return static\\(Neuron\\\\Cms\\\\Models\\\\User\\) but returns Neuron\\\\Cms\\\\Models\\\\User\\.$#"
+			count: 1
+			path: src/Cms/Models/User.php
+
+		-
+			message: "#^Method Neuron\\\\Cms\\\\Repositories\\\\DatabaseCategoryRepository\\:\\:findByName\\(\\) should return Neuron\\\\Cms\\\\Models\\\\Category\\|null but returns Neuron\\\\Orm\\\\Model\\|null\\.$#"
+			count: 1
+			path: src/Cms/Repositories/DatabaseCategoryRepository.php
+
+		-
+			message: "#^Method Neuron\\\\Cms\\\\Repositories\\\\DatabaseCategoryRepository\\:\\:findBySlug\\(\\) should return Neuron\\\\Cms\\\\Models\\\\Category\\|null but returns Neuron\\\\Orm\\\\Model\\|null\\.$#"
+			count: 1
+			path: src/Cms/Repositories/DatabaseCategoryRepository.php
+
+		-
+			message: "#^PHPDoc tag @param for parameter \\$entity with type T is not subtype of native type object\\.$#"
+			count: 2
+			path: src/Cms/Repositories/DatabaseCategoryRepository.php
+
+		-
+			message: "#^PHPDoc tag @return with type T is not subtype of native type object\\.$#"
+			count: 2
+			path: src/Cms/Repositories/DatabaseCategoryRepository.php
+
+		-
+			message: "#^Template type T of method Neuron\\\\Cms\\\\Repositories\\\\DatabaseCategoryRepository\\:\\:createEntity\\(\\) is not referenced in a parameter\\.$#"
+			count: 1
+			path: src/Cms/Repositories/DatabaseCategoryRepository.php
+
+		-
+			message: "#^Template type T of method Neuron\\\\Cms\\\\Repositories\\\\DatabaseCategoryRepository\\:\\:saveAndRefresh\\(\\) is not referenced in a parameter\\.$#"
+			count: 1
+			path: src/Cms/Repositories/DatabaseCategoryRepository.php
+
+		-
+			message: "#^Method Neuron\\\\Cms\\\\Repositories\\\\DatabasePageRepository\\:\\:findById\\(\\) should return Neuron\\\\Cms\\\\Models\\\\Page\\|null but returns Neuron\\\\Orm\\\\Model\\|null\\.$#"
+			count: 1
+			path: src/Cms/Repositories/DatabasePageRepository.php
+
+		-
+			message: "#^Method Neuron\\\\Cms\\\\Repositories\\\\DatabasePageRepository\\:\\:findBySlug\\(\\) should return Neuron\\\\Cms\\\\Models\\\\Page\\|null but returns Neuron\\\\Orm\\\\Model\\|null\\.$#"
+			count: 1
+			path: src/Cms/Repositories/DatabasePageRepository.php
+
+		-
+			message: "#^Method Neuron\\\\Orm\\\\Query\\\\QueryBuilder\\:\\:increment\\(\\) invoked with 3 parameters, 1\\-2 required\\.$#"
+			count: 1
+			path: src/Cms/Repositories/DatabasePageRepository.php
+
+		-
+			message: "#^PHPDoc tag @param for parameter \\$entity with type T is not subtype of native type object\\.$#"
+			count: 2
+			path: src/Cms/Repositories/DatabasePageRepository.php
+
+		-
+			message: "#^PHPDoc tag @return with type T is not subtype of native type object\\.$#"
+			count: 2
+			path: src/Cms/Repositories/DatabasePageRepository.php
+
+		-
+			message: "#^Template type T of method Neuron\\\\Cms\\\\Repositories\\\\DatabasePageRepository\\:\\:createEntity\\(\\) is not referenced in a parameter\\.$#"
+			count: 1
+			path: src/Cms/Repositories/DatabasePageRepository.php
+
+		-
+			message: "#^Template type T of method Neuron\\\\Cms\\\\Repositories\\\\DatabasePageRepository\\:\\:saveAndRefresh\\(\\) is not referenced in a parameter\\.$#"
+			count: 1
+			path: src/Cms/Repositories/DatabasePageRepository.php
+
+		-
+			message: "#^Method Neuron\\\\Cms\\\\Repositories\\\\DatabasePostRepository\\:\\:findById\\(\\) should return Neuron\\\\Cms\\\\Models\\\\Post\\|null but returns Neuron\\\\Orm\\\\Model\\|null\\.$#"
+			count: 1
+			path: src/Cms/Repositories/DatabasePostRepository.php
+
+		-
+			message: "#^Method Neuron\\\\Cms\\\\Repositories\\\\DatabasePostRepository\\:\\:findBySlug\\(\\) should return Neuron\\\\Cms\\\\Models\\\\Post\\|null but returns Neuron\\\\Orm\\\\Model\\|null\\.$#"
+			count: 1
+			path: src/Cms/Repositories/DatabasePostRepository.php
+
+		-
+			message: "#^Method Neuron\\\\Orm\\\\Query\\\\QueryBuilder\\:\\:increment\\(\\) invoked with 3 parameters, 1\\-2 required\\.$#"
+			count: 1
+			path: src/Cms/Repositories/DatabasePostRepository.php
+
+		-
+			message: "#^PHPDoc tag @param for parameter \\$entity with type T is not subtype of native type object\\.$#"
+			count: 2
+			path: src/Cms/Repositories/DatabasePostRepository.php
+
+		-
+			message: "#^PHPDoc tag @return with type T is not subtype of native type object\\.$#"
+			count: 2
+			path: src/Cms/Repositories/DatabasePostRepository.php
+
+		-
+			message: "#^Template type T of method Neuron\\\\Cms\\\\Repositories\\\\DatabasePostRepository\\:\\:createEntity\\(\\) is not referenced in a parameter\\.$#"
+			count: 1
+			path: src/Cms/Repositories/DatabasePostRepository.php
+
+		-
+			message: "#^Template type T of method Neuron\\\\Cms\\\\Repositories\\\\DatabasePostRepository\\:\\:saveAndRefresh\\(\\) is not referenced in a parameter\\.$#"
+			count: 1
+			path: src/Cms/Repositories/DatabasePostRepository.php
+
+		-
+			message: "#^Method Neuron\\\\Cms\\\\Repositories\\\\DatabaseTagRepository\\:\\:findByName\\(\\) should return Neuron\\\\Cms\\\\Models\\\\Tag\\|null but returns Neuron\\\\Orm\\\\Model\\|null\\.$#"
+			count: 1
+			path: src/Cms/Repositories/DatabaseTagRepository.php
+
+		-
+			message: "#^Method Neuron\\\\Cms\\\\Repositories\\\\DatabaseTagRepository\\:\\:findBySlug\\(\\) should return Neuron\\\\Cms\\\\Models\\\\Tag\\|null but returns Neuron\\\\Orm\\\\Model\\|null\\.$#"
+			count: 1
+			path: src/Cms/Repositories/DatabaseTagRepository.php
+
+		-
+			message: "#^PHPDoc tag @param for parameter \\$entity with type T is not subtype of native type object\\.$#"
+			count: 2
+			path: src/Cms/Repositories/DatabaseTagRepository.php
+
+		-
+			message: "#^PHPDoc tag @return with type T is not subtype of native type object\\.$#"
+			count: 2
+			path: src/Cms/Repositories/DatabaseTagRepository.php
+
+		-
+			message: "#^Template type T of method Neuron\\\\Cms\\\\Repositories\\\\DatabaseTagRepository\\:\\:createEntity\\(\\) is not referenced in a parameter\\.$#"
+			count: 1
+			path: src/Cms/Repositories/DatabaseTagRepository.php
+
+		-
+			message: "#^Template type T of method Neuron\\\\Cms\\\\Repositories\\\\DatabaseTagRepository\\:\\:saveAndRefresh\\(\\) is not referenced in a parameter\\.$#"
+			count: 1
+			path: src/Cms/Repositories/DatabaseTagRepository.php
+
+		-
+			message: "#^Method Neuron\\\\Cms\\\\Repositories\\\\DatabaseUserRepository\\:\\:findByEmail\\(\\) should return Neuron\\\\Cms\\\\Models\\\\User\\|null but returns Neuron\\\\Orm\\\\Model\\|null\\.$#"
+			count: 1
+			path: src/Cms/Repositories/DatabaseUserRepository.php
+
+		-
+			message: "#^Method Neuron\\\\Cms\\\\Repositories\\\\DatabaseUserRepository\\:\\:findByRememberToken\\(\\) should return Neuron\\\\Cms\\\\Models\\\\User\\|null but returns Neuron\\\\Orm\\\\Model\\|null\\.$#"
+			count: 1
+			path: src/Cms/Repositories/DatabaseUserRepository.php
+
+		-
+			message: "#^Method Neuron\\\\Cms\\\\Repositories\\\\DatabaseUserRepository\\:\\:findByUsername\\(\\) should return Neuron\\\\Cms\\\\Models\\\\User\\|null but returns Neuron\\\\Orm\\\\Model\\|null\\.$#"
+			count: 1
+			path: src/Cms/Repositories/DatabaseUserRepository.php
+
+		-
+			message: "#^Method Neuron\\\\Orm\\\\Query\\\\QueryBuilder\\:\\:increment\\(\\) invoked with 3 parameters, 1\\-2 required\\.$#"
+			count: 1
+			path: src/Cms/Repositories/DatabaseUserRepository.php
+
+		-
+			message: "#^PHPDoc tag @param for parameter \\$entity with type T is not subtype of native type object\\.$#"
+			count: 2
+			path: src/Cms/Repositories/DatabaseUserRepository.php
+
+		-
+			message: "#^PHPDoc tag @return with type T is not subtype of native type object\\.$#"
+			count: 2
+			path: src/Cms/Repositories/DatabaseUserRepository.php
+
+		-
+			message: "#^PHPDoc tag @throws with type Neuron\\\\Cms\\\\Repositories\\\\Exception is not subtype of Throwable$#"
+			count: 1
+			path: src/Cms/Repositories/DatabaseUserRepository.php
+
+		-
+			message: "#^Template type T of method Neuron\\\\Cms\\\\Repositories\\\\DatabaseUserRepository\\:\\:createEntity\\(\\) is not referenced in a parameter\\.$#"
+			count: 1
+			path: src/Cms/Repositories/DatabaseUserRepository.php
+
+		-
+			message: "#^Template type T of method Neuron\\\\Cms\\\\Repositories\\\\DatabaseUserRepository\\:\\:saveAndRefresh\\(\\) is not referenced in a parameter\\.$#"
+			count: 1
+			path: src/Cms/Repositories/DatabaseUserRepository.php
+
+		-
+			message: "#^Access to private property \\$name of parent class Neuron\\\\Dto\\\\Compound\\\\Base\\.$#"
+			count: 1
+			path: src/Cms/Services/Category/Creator.php
+
+		-
+			message: "#^Access to private property \\$name of parent class Neuron\\\\Dto\\\\Compound\\\\Base\\.$#"
+			count: 1
+			path: src/Cms/Services/Category/Updater.php
+
+		-
+			message: "#^Offset 2 on array\\{string, non\\-empty\\-string, string\\} on left side of \\?\\? always exists and is not nullable\\.$#"
+			count: 1
+			path: src/Cms/Services/Content/ShortcodeParser.php
+
+		-
+			message: "#^Access to private property \\$name of parent class Neuron\\\\Dto\\\\Compound\\\\Base\\.$#"
+			count: 1
+			path: src/Cms/Services/EventCategory/Creator.php
+
+		-
+			message: "#^Access to private property \\$name of parent class Neuron\\\\Dto\\\\Compound\\\\Base\\.$#"
+			count: 1
+			path: src/Cms/Services/EventCategory/Updater.php
+
+		-
+			message: "#^Parameter \\#1 \\$result of method Neuron\\\\Cms\\\\Services\\\\Media\\\\CloudinaryUploader\\:\\:formatResult\\(\\) expects array, Cloudinary\\\\Api\\\\ApiResponse given\\.$#"
+			count: 2
+			path: src/Cms/Services/Media/CloudinaryUploader.php

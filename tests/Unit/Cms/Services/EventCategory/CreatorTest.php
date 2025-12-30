@@ -5,6 +5,8 @@ namespace Tests\Unit\Cms\Services\EventCategory;
 use Neuron\Cms\Services\EventCategory\Creator;
 use Neuron\Cms\Models\EventCategory;
 use Neuron\Cms\Repositories\IEventCategoryRepository;
+use Neuron\Dto\Factory;
+use Neuron\Dto\Dto;
 use PHPUnit\Framework\TestCase;
 
 class CreatorTest extends TestCase
@@ -17,6 +19,37 @@ class CreatorTest extends TestCase
 		$this->categoryRepository = $this->createMock( IEventCategoryRepository::class );
 
 		$this->creator = new Creator( $this->categoryRepository );
+	}
+
+	/**
+	 * Helper method to create a DTO with test data
+	 */
+	private function createDto(
+		string $name,
+		?string $slug = null,
+		?string $color = null,
+		?string $description = null
+	): Dto
+	{
+		$factory = new Factory( __DIR__ . '/../../../../../config/dtos/event-categories/create-event-category-request.yaml' );
+		$dto = $factory->create();
+
+		$dto->name = $name;
+
+		if( $slug !== null )
+		{
+			$dto->slug = $slug;
+		}
+		if( $color !== null )
+		{
+			$dto->color = $color;
+		}
+		if( $description !== null )
+		{
+			$dto->description = $description;
+		}
+
+		return $dto;
 	}
 
 	public function test_create_basic_category(): void
@@ -38,7 +71,9 @@ class CreatorTest extends TestCase
 				return $category;
 			});
 
-		$result = $this->creator->create( 'Workshops' );
+		$dto = $this->createDto( name: 'Workshops' );
+
+		$result = $this->creator->create( $dto );
 
 		$this->assertInstanceOf( EventCategory::class, $result );
 		$this->assertEquals( 'Workshops', $capturedCategory->getName() );
@@ -66,10 +101,12 @@ class CreatorTest extends TestCase
 				return $category;
 			});
 
-		$this->creator->create(
-			'Workshops',
-			'custom-slug'
+		$dto = $this->createDto(
+			name: 'Workshops',
+			slug: 'custom-slug'
 		);
+
+		$this->creator->create( $dto );
 
 		$this->assertEquals( 'custom-slug', $capturedCategory->getSlug() );
 	}
@@ -93,12 +130,14 @@ class CreatorTest extends TestCase
 				return $category;
 			});
 
-		$this->creator->create(
-			'Tech Events',
-			'tech-events',
-			'#ff0000',
-			'Technology related events and conferences'
+		$dto = $this->createDto(
+			name: 'Tech Events',
+			slug: 'tech-events',
+			color: '#ff0000',
+			description: 'Technology related events and conferences'
 		);
+
+		$this->creator->create( $dto );
 
 		$this->assertEquals( 'Tech Events', $capturedCategory->getName() );
 		$this->assertEquals( 'tech-events', $capturedCategory->getSlug() );
@@ -125,7 +164,9 @@ class CreatorTest extends TestCase
 				return $category;
 			});
 
-		$this->creator->create( 'My Awesome Category!!!' );
+		$dto = $this->createDto( name: 'My Awesome Category!!!' );
+
+		$this->creator->create( $dto );
 
 		$this->assertEquals( 'my-awesome-category', $capturedCategory->getSlug() );
 	}
@@ -150,7 +191,9 @@ class CreatorTest extends TestCase
 				return $category;
 			});
 
-		$this->creator->create( '日本語' );
+		$dto = $this->createDto( name: '日本語' );
+
+		$this->creator->create( $dto );
 
 		$this->assertEquals( '日本語', $capturedCategory->getName() );
 		$this->assertStringStartsWith( 'category-', $capturedCategory->getSlug() );
@@ -169,10 +212,12 @@ class CreatorTest extends TestCase
 		$this->expectException( \RuntimeException::class );
 		$this->expectExceptionMessage( 'A category with this slug already exists' );
 
-		$this->creator->create(
-			'Test Category',
-			'duplicate-slug'
+		$dto = $this->createDto(
+			name: 'Test Category',
+			slug: 'duplicate-slug'
 		);
+
+		$this->creator->create( $dto );
 	}
 
 	public function test_create_uses_default_color_when_not_provided(): void
@@ -193,7 +238,9 @@ class CreatorTest extends TestCase
 				return $category;
 			});
 
-		$this->creator->create( 'Test Category' );
+		$dto = $this->createDto( name: 'Test Category' );
+
+		$this->creator->create( $dto );
 
 		$this->assertEquals( '#3b82f6', $capturedCategory->getColor() );
 	}
@@ -216,11 +263,12 @@ class CreatorTest extends TestCase
 				return $category;
 			});
 
-		$this->creator->create(
-			'Test Category',
-			null,
-			'#00ff00'
+		$dto = $this->createDto(
+			name: 'Test Category',
+			color: '#00ff00'
 		);
+
+		$this->creator->create( $dto );
 
 		$this->assertEquals( '#00ff00', $capturedCategory->getColor() );
 	}
@@ -244,7 +292,9 @@ class CreatorTest extends TestCase
 				return $category;
 			});
 
-		$this->creator->create( 'Test @Category #123!' );
+		$dto = $this->createDto( name: 'Test @Category #123!' );
+
+		$this->creator->create( $dto );
 
 		$this->assertEquals( 'test-category-123', $capturedCategory->getSlug() );
 	}

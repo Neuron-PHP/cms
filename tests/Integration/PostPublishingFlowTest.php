@@ -268,14 +268,14 @@ class PostPublishingFlowTest extends IntegrationTestCase
 	}
 
 	/**
-	 * Test foreign key constraint - deleting user cascades to posts
+	 * Test foreign key constraint - deleting user nullifies author_id on posts
 	 */
-	public function testUserDeletionCascadesToPosts(): void
+	public function testUserDeletionNullifiesPostsAuthorId(): void
 	{
 		// Create user
 		$userId = $this->createTestUser([
-			'username' => 'cascadeuser',
-			'email' => 'cascade@example.com'
+			'username' => 'nullifyuser',
+			'email' => 'nullify@example.com'
 		]);
 
 		// Create post
@@ -286,7 +286,7 @@ class PostPublishingFlowTest extends IntegrationTestCase
 
 		$stmt->execute([
 			'Test Post',
-			'test-post-cascade',
+			'test-post-nullify',
 			'Content',
 			'{"blocks":[]}',
 			$userId,
@@ -296,21 +296,22 @@ class PostPublishingFlowTest extends IntegrationTestCase
 
 		$postId = (int)$this->pdo->lastInsertId();
 
-		// Verify post exists
-		$stmt = $this->pdo->prepare( "SELECT COUNT(*) FROM posts WHERE author_id = ?" );
-		$stmt->execute( [$userId] );
-		$count = (int)$stmt->fetchColumn();
-		$this->assertEquals( 1, $count );
+		// Verify post exists with author
+		$stmt = $this->pdo->prepare( "SELECT author_id FROM posts WHERE id = ?" );
+		$stmt->execute( [$postId] );
+		$authorId = $stmt->fetchColumn();
+		$this->assertEquals( $userId, $authorId );
 
 		// Delete user
 		$stmt = $this->pdo->prepare( "DELETE FROM users WHERE id = ?" );
 		$stmt->execute( [$userId] );
 
-		// Verify post was cascade deleted
-		$stmt = $this->pdo->prepare( "SELECT COUNT(*) FROM posts WHERE id = ?" );
+		// Verify post still exists but author_id is NULL
+		$stmt = $this->pdo->prepare( "SELECT * FROM posts WHERE id = ?" );
 		$stmt->execute( [$postId] );
-		$count = (int)$stmt->fetchColumn();
-		$this->assertEquals( 0, $count, 'Post should be cascade deleted when user is deleted' );
+		$post = $stmt->fetch();
+		$this->assertNotFalse( $post, 'Post should still exist after user deletion' );
+		$this->assertNull( $post['author_id'], 'Author ID should be NULL after user deletion' );
 	}
 
 	/**

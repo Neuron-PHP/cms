@@ -212,17 +212,4 @@ class EnableCommand extends Command
 
 		return null;
 	}
-
-	/**
-	 * Ask for confirmation
-	 *
-	 * @param string $question
-	 * @return bool
-	 */
-	private function confirm( string $question ): bool
-	{
-		$this->output->write( $question . ' [y/N] ' );
-		$answer = trim( fgets( STDIN ) );
-		return strtolower( $answer ) === 'y' || strtolower( $answer ) === 'yes';
-	}
 }

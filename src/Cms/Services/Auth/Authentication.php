@@ -17,7 +17,7 @@ use Neuron\Cms\Enums\UserRole;
  *
  * @package Neuron\Cms\Services\Auth
  */
-class Authentication
+class Authentication implements IAuthenticationService
 {
 	private IUserRepository $_userRepository;
 	private SessionManager $_sessionManager;

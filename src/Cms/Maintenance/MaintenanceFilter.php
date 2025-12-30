@@ -2,6 +2,7 @@
 
 namespace Neuron\Cms\Maintenance;
 
+use Neuron\Cms\Config\CacheConfig;
 use Neuron\Routing\Filter;
 use Neuron\Routing\RouteMap;
 
@@ -130,8 +131,8 @@ class MaintenanceFilter extends Filter
 		$estimatedTime = '';
 		if( $retryAfter )
 		{
-			$hours = floor( $retryAfter / 3600 );
-			$minutes = floor( ($retryAfter % 3600) / 60 );
+			$hours = floor( $retryAfter / CacheConfig::DEFAULT_TTL );
+			$minutes = floor( ($retryAfter % CacheConfig::DEFAULT_TTL) / 60 );
 
 			if( $hours > 0 )
 			{

@@ -5,9 +5,9 @@ namespace Neuron\Cms\Services\Category;
 use Neuron\Cms\Models\Category;
 use Neuron\Cms\Repositories\ICategoryRepository;
 use Neuron\Cms\Events\CategoryUpdatedEvent;
-use Neuron\Core\System\IRandom;
-use Neuron\Core\System\RealRandom;
-use Neuron\Patterns\Registry;
+use Neuron\Cms\Services\SlugGenerator;
+use Neuron\Events\Emitter;
+use Neuron\Dto\Dto;
 use DateTimeImmutable;
 
 /**
@@ -17,34 +17,45 @@ use DateTimeImmutable;
  *
  * @package Neuron\Cms\Services\Category
  */
-class Updater
+class Updater implements ICategoryUpdater
 {
 	private ICategoryRepository $_categoryRepository;
-	private IRandom $_random;
+	private SlugGenerator $_slugGenerator;
+	private ?Emitter $_eventEmitter;
 
-	public function __construct( ICategoryRepository $categoryRepository, ?IRandom $random = null )
+	public function __construct(
+		ICategoryRepository $categoryRepository,
+		?SlugGenerator $slugGenerator = null,
+		?Emitter $eventEmitter = null
+	)
 	{
 		$this->_categoryRepository = $categoryRepository;
-		$this->_random = $random ?? new RealRandom();
+		$this->_slugGenerator = $slugGenerator ?? new SlugGenerator();
+		$this->_eventEmitter = $eventEmitter;
 	}
 
 	/**
-	 * Update an existing category
+	 * Update an existing category from DTO
 	 *
-	 * @param Category $category The category to update
-	 * @param string $name Category name
-	 * @param string $slug URL-friendly slug
-	 * @param string|null $description Optional description
+	 * @param Dto $request DTO containing id, name, slug, description
 	 * @return Category
-	 * @throws \Exception If category update fails
+	 * @throws \Exception If category not found or update fails
 	 */
-	public function update(
-		Category $category,
-		string $name,
-		string $slug,
-		?string $description = null
-	): Category
+	public function update( Dto $request ): Category
 	{
+		// Extract values from DTO
+		$id = $request->id;
+		$name = $request->name;
+		$slug = $request->slug ?? '';
+		$description = $request->description ?? null;
+
+		// Look up the category
+		$category = $this->_categoryRepository->findById( $id );
+		if( !$category )
+		{
+			throw new \Exception( "Category with ID {$id} not found" );
+		}
+
 		// Auto-generate slug from name if empty
 		if( empty( $slug ) )
 		{
@@ -59,10 +70,9 @@ class Updater
 		$this->_categoryRepository->update( $category );
 
 		// Emit category updated event
-		$emitter = Registry::getInstance()->get( 'EventEmitter' );
-		if( $emitter )
+		if( $this->_eventEmitter )
 		{
-			$emitter->emit( new CategoryUpdatedEvent( $category ) );
+			$this->_eventEmitter->emit( new CategoryUpdatedEvent( $category ) );
 		}
 
 		return $category;
@@ -79,17 +89,6 @@ class Updater
 	 */
 	private function generateSlug( string $name ): string
 	{
-		$slug = strtolower( trim( $name ) );
-		$slug = preg_replace( '/[^a-z0-9-]/', '-', $slug );
-		$slug = preg_replace( '/-+/', '-', $slug );
-		$slug = trim( $slug, '-' );
-
-		// Fallback for names with no ASCII characters
-		if( $slug === '' )
-		{
-			$slug = 'category-' . $this->_random->uniqueId();
-		}
-
-		return $slug;
+		return $this->_slugGenerator->generate( $name, 'category' );
 	}
 }

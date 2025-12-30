@@ -4,18 +4,20 @@ namespace Neuron\Cms\Controllers\Member;
 
 use Neuron\Cms\Controllers\Content;
 use Neuron\Cms\Controllers\Traits\UsesDtos;
-use Neuron\Cms\Services\Auth\CsrfToken;
-use Neuron\Cms\Services\Auth\EmailVerifier;
 use Neuron\Cms\Auth\ResendVerificationThrottle;
-use Neuron\Cms\Services\Member\RegistrationService;
+use Neuron\Cms\Auth\SessionManager;
+use Neuron\Cms\Services\Member\IRegistrationService;
+use Neuron\Cms\Services\Auth\IEmailVerifier;
 use Neuron\Core\Exceptions\NotFound;
+use Neuron\Data\Settings\SettingManager;
 use Neuron\Mvc\Application;
 use Neuron\Mvc\Requests\Request;
 use Neuron\Mvc\Responses\HttpResponseStatus;
-use Neuron\Patterns\Registry;
 use Neuron\Routing\DefaultIpResolver;
 use Neuron\Routing\IIpResolver;
 use Exception;
+use Neuron\Routing\Attributes\Get;
+use Neuron\Routing\Attributes\Post;
 
 /**
  * Member registration controller.
@@ -27,37 +29,39 @@ use Exception;
 class Registration extends Content
 {
 	use UsesDtos;
-	private RegistrationService $_registrationService;
-	private EmailVerifier $_emailVerifier;
-	private CsrfToken $_csrfToken;
+	private IRegistrationService $_registrationService;
+	private IEmailVerifier $_emailVerifier;
 	private ResendVerificationThrottle $_resendThrottle;
 	private IIpResolver $_ipResolver;
 
 	/**
 	 * @param Application|null $app
+	 * @param IRegistrationService|null $registrationService
+	 * @param IEmailVerifier|null $emailVerifier
+	 * @param SettingManager|null $settings
+	 * @param SessionManager|null $sessionManager
+	 * @param ResendVerificationThrottle|null $resendThrottle
+	 * @param IIpResolver|null $ipResolver
 	 * @throws \Exception
 	 */
-	public function __construct( ?Application $app = null )
+	public function __construct(
+		?Application $app = null,
+		?IRegistrationService $registrationService = null,
+		?IEmailVerifier $emailVerifier = null,
+		?SettingManager $settings = null,
+		?SessionManager $sessionManager = null,
+		?ResendVerificationThrottle $resendThrottle = null,
+		?IIpResolver $ipResolver = null
+	)
 	{
-		parent::__construct( $app );
+		parent::__construct( $app, $settings, $sessionManager );
 
-		// Get services from Registry
-		$this->_registrationService = Registry::getInstance()->get( 'RegistrationService' );
-		$this->_emailVerifier = Registry::getInstance()->get( 'EmailVerifier' );
-
-		if( !$this->_registrationService || !$this->_emailVerifier )
-		{
-			throw new \RuntimeException( 'Registration services not found in Registry.' );
-		}
-
-		// Initialize CSRF manager
-		$this->_csrfToken = new CsrfToken( $this->getSessionManager() );
-
-		// Initialize resend verification throttle
-		$this->_resendThrottle = new ResendVerificationThrottle();
-
-		// Initialize IP resolver
-		$this->_ipResolver = new DefaultIpResolver();
+		// Use dependency injection when available (container provides dependencies)
+		// Otherwise resolve from container (fallback for compatibility)
+		$this->_registrationService = $registrationService ?? $app?->getContainer()?->get( IRegistrationService::class );
+		$this->_emailVerifier = $emailVerifier ?? $app?->getContainer()?->get( IEmailVerifier::class );
+		$this->_resendThrottle = $resendThrottle ?? $app?->getContainer()?->get( ResendVerificationThrottle::class );
+		$this->_ipResolver = $ipResolver ?? $app?->getContainer()?->get( IIpResolver::class );
 	}
 
 	/**
@@ -66,6 +70,7 @@ class Registration extends Content
 	 * @param Request $request
 	 * @return string
 	 */
+	#[Get('/register', name: 'register')]
 	public function showRegistrationForm( Request $request ): string
 	{
 		// Check if registration is enabled
@@ -77,8 +82,7 @@ class Registration extends Content
 				->render( 'registration-disabled', 'member' );
 		}
 
-		// Set CSRF token in Registry
-		Registry::getInstance()->set( 'Auth.CsrfToken', $this->_csrfToken->getToken() );
+		$this->initializeCsrfToken();
 
 		return $this->view()
 			->title( 'Register' )
@@ -94,23 +98,9 @@ class Registration extends Content
 	 * @param Request $request
 	 * @return never
 	 */
+	#[Post('/register', name: 'register_post', filters: ['csrf'])]
 	public function processRegistration( Request $request ): never
 	{
-		// Validate CSRF token - defensively handle null/non-string values
-		$tokenRaw = $request->post( 'csrf_token' );
-
-		if( $tokenRaw === null || $tokenRaw === '' )
-		{
-			$this->redirect( 'register', [], ['error', 'Invalid CSRF token. Please try again.'] );
-		}
-
-		$token = (string)$tokenRaw;
-
-		if( !$this->_csrfToken->validate( $token ) )
-		{
-			$this->redirect( 'register', [], ['error', 'Invalid CSRF token. Please try again.'] );
-		}
-
 		try
 		{
 			// Create and populate RegisterUser DTO from request
@@ -122,8 +112,7 @@ class Registration extends Content
 			// Register user using DTO
 			$this->_registrationService->registerWithDto( $dto );
 			// Check if verification is required
-			$settings = Registry::getInstance()->get( 'Settings' );
-			$requireVerification = $settings->get( 'member', 'require_email_verification' ) ?? true;
+			$requireVerification = $this->_settings->get( 'member', 'require_email_verification' ) ?? true;
 
 			if( $requireVerification )
 			{
@@ -150,6 +139,7 @@ class Registration extends Content
 	 * @return string
 	 * @throws NotFound
 	 */
+	#[Get('/verify-email-sent', name: 'verify_email_sent')]
 	public function showVerificationSent( Request $request ): string
 	{
 		return $this->view()
@@ -166,6 +156,7 @@ class Registration extends Content
 	 * @return string
 	 * @throws NotFound
 	 */
+	#[Get('/verify-email', name: 'verify_email')]
 	public function verify( Request $request ): string
 	{
 		// Get token from query string
@@ -222,23 +213,9 @@ class Registration extends Content
 	 * @param Request $request
 	 * @return never
 	 */
+	#[Post('/resend-verification', name: 'resend_verification', filters: ['csrf'])]
 	public function resendVerification( Request $request ): never
 	{
-		// Validate CSRF token - defensively handle null/non-string values
-		$tokenRaw = $request->post( 'csrf_token' );
-
-		if( $tokenRaw === null || $tokenRaw === '' )
-		{
-			$this->redirect( 'register', [], ['error', 'Invalid CSRF token. Please try again.'] );
-		}
-
-		$token = (string)$tokenRaw;
-
-		if( !$this->_csrfToken->validate( $token ) )
-		{
-			$this->redirect( 'register', [], ['error', 'Invalid CSRF token. Please try again.'] );
-		}
-
 		// Get email and client IP
 		$email = $request->post( 'email' ) ?? '';
 		$clientIp = $this->_ipResolver->resolve( $_SERVER );

@@ -6,7 +6,8 @@ use Neuron\Cms\Models\User;
 use Neuron\Cms\Repositories\IUserRepository;
 use Neuron\Cms\Auth\PasswordHasher;
 use Neuron\Cms\Events\UserUpdatedEvent;
-use Neuron\Patterns\Registry;
+use Neuron\Events\Emitter;
+use Neuron\Dto\Dto;
 
 /**
  * User update service.
@@ -15,41 +16,46 @@ use Neuron\Patterns\Registry;
  *
  * @package Neuron\Cms\Services\User
  */
-class Updater
+class Updater implements IUserUpdater
 {
 	private IUserRepository $_userRepository;
 	private PasswordHasher $_passwordHasher;
+	private ?Emitter $_eventEmitter;
 
 	public function __construct(
 		IUserRepository $userRepository,
-		PasswordHasher $passwordHasher
+		PasswordHasher $passwordHasher,
+		?Emitter $eventEmitter = null
 	)
 	{
 		$this->_userRepository = $userRepository;
 		$this->_passwordHasher = $passwordHasher;
+		$this->_eventEmitter = $eventEmitter;
 	}
 
 	/**
-	 * Update an existing user
+	 * Update an existing user from DTO
 	 *
-	 * @param User $user The user to update
-	 * @param string $username Username
-	 * @param string $email Email address
-	 * @param string $role User role
-	 * @param string|null $password Optional new password (if provided, will be validated and hashed)
-	 * @param string|null $timezone Optional user timezone
+	 * @param Dto $request DTO containing id, username, email, role, password (optional)
 	 * @return User
-	 * @throws \Exception If password doesn't meet requirements or update fails
+	 * @throws \Exception If user not found, password doesn't meet requirements, or update fails
 	 */
-	public function update(
-		User $user,
-		string $username,
-		string $email,
-		string $role,
-		?string $password = null,
-		?string $timezone = null
-	): User
+	public function update( Dto $request ): User
 	{
+		// Extract values from DTO
+		$id = $request->id;
+		$username = $request->username;
+		$email = $request->email;
+		$role = $request->role;
+		$password = $request->password ?? null;
+
+		// Look up the user
+		$user = $this->_userRepository->findById( $id );
+		if( !$user )
+		{
+			throw new \Exception( "User with ID {$id} not found" );
+		}
+
 		// If password is provided, validate and hash it
 		if( $password !== null && $password !== '' )
 		{
@@ -65,21 +71,14 @@ class Updater
 		$user->setEmail( $email );
 		$user->setRole( $role );
 
-		// Update timezone if provided
-		if( $timezone !== null && $timezone !== '' )
-		{
-			$user->setTimezone( $timezone );
-		}
-
 		$user->setUpdatedAt( new \DateTimeImmutable() );
 
 		$this->_userRepository->update( $user );
 
 		// Emit user updated event
-		$emitter = Registry::getInstance()->get( 'EventEmitter' );
-		if( $emitter )
+		if( $this->_eventEmitter )
 		{
-			$emitter->emit( new UserUpdatedEvent( $user ) );
+			$this->_eventEmitter->emit( new UserUpdatedEvent( $user ) );
 		}
 
 		return $user;

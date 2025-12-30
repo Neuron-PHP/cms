@@ -5,13 +5,11 @@ namespace App\Initializers;
 use Neuron\Cms\Services\Auth\EmailVerifier;
 use Neuron\Cms\Auth\Filters\MemberAuthenticationFilter;
 use Neuron\Cms\Services\Auth\Authentication;
-use Neuron\Cms\Auth\PasswordHasher;
-use Neuron\Cms\Repositories\DatabaseEmailVerificationTokenRepository;
-use Neuron\Cms\Repositories\DatabaseUserRepository;
 use Neuron\Cms\Services\Member\RegistrationService;
 use Neuron\Log\Log;
 use Neuron\Patterns\Registry;
 use Neuron\Patterns\IRunnable;
+use Psr\Container\ContainerInterface;
 
 /**
  * Initialize the member registration system
@@ -46,12 +44,12 @@ class RegistrationInitializer implements IRunnable
 			return null;
 		}
 
-		// Get Authentication from Registry (must be initialized first by AuthInitializer)
-		$authentication = Registry::getInstance()->get( 'Authentication' );
+		// Get Container from Registry
+		$container = Registry::getInstance()->get( 'Container' );
 
-		if( !$authentication )
+		if( !$container || !$container instanceof ContainerInterface )
 		{
-			Log::error( "Authentication not found in Registry, skipping registration initialization" );
+			Log::error( "Container not found in Registry, skipping registration initialization" );
 			return null;
 		}
 
@@ -62,43 +60,10 @@ class RegistrationInitializer implements IRunnable
 
 			if( !empty( $settingNames ) )
 			{
-				// Initialize registration components
-				$userRepository = new DatabaseUserRepository( $settings );
-				$tokenRepository = new DatabaseEmailVerificationTokenRepository( $settings );
-				$passwordHasher = new PasswordHasher();
-
-				// Get base path for email templates
-				$basePath = $settings->get( 'system', 'base_path' ) ?? getcwd();
-
-				// Get verification URL from settings
-				$siteUrl = $settings->get( 'site', 'url' ) ?? 'http://localhost:8000';
-				$verificationPath = $settings->get( 'member', 'verification_url' ) ?? '/verify-email';
-				$verificationUrl = rtrim( $siteUrl, '/' ) . '/' . ltrim( $verificationPath, '/' );
-
-				// Create EmailVerifier
-				$emailVerifier = new EmailVerifier(
-					$tokenRepository,
-					$userRepository,
-					$settings,
-					$basePath,
-					$verificationUrl
-				);
-
-				// Set token expiration from settings
-				$tokenExpiration = $settings->get( 'member', 'verification_token_expiration_minutes' ) ?? 60;
-				$emailVerifier->setTokenExpirationMinutes( $tokenExpiration );
-
-				// Get event emitter if available
-				$emitter = Registry::getInstance()->get( 'EventEmitter' );
-
-				// Create RegistrationService
-				$registrationService = new RegistrationService(
-					$userRepository,
-					$passwordHasher,
-					$emailVerifier,
-					$settings,
-					$emitter
-				);
+				// Get services from container
+				$authentication = $container->get( Authentication::class );
+				$emailVerifier = $container->get( EmailVerifier::class );
+				$registrationService = $container->get( RegistrationService::class );
 
 				// Create member authentication filter
 				$requireVerification = $settings->get( 'member', 'require_email_verification' ) ?? true;
@@ -111,7 +76,7 @@ class RegistrationInitializer implements IRunnable
 				// Register the member filter with the Router
 				$app->getRouter()->registerFilter( 'member', $memberFilter );
 
-				// Store services in Registry for easy access
+				// Store services in Registry for backward compatibility
 				Registry::getInstance()->set( 'EmailVerifier', $emailVerifier );
 				Registry::getInstance()->set( 'RegistrationService', $registrationService );
 			}

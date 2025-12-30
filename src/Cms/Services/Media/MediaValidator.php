@@ -2,6 +2,7 @@
 
 namespace Neuron\Cms\Services\Media;
 
+use Neuron\Cms\Config\UploadConfig;
 use Neuron\Data\Settings\SettingManager;
 
 /**
@@ -80,11 +81,11 @@ class MediaValidator
 	 */
 	private function validateFileSize( int $size ): bool
 	{
-		$maxSize = $this->_settings->get( 'cloudinary', 'max_file_size' ) ?? 5242880; // 5MB default
+		$maxSize = $this->_settings->get( 'cloudinary', 'max_file_size' ) ?? UploadConfig::MAX_FILE_SIZE_5MB;
 
 		if( $size > $maxSize )
 		{
-			$maxSizeMB = round( $maxSize / 1048576, 2 );
+			$maxSizeMB = round( $maxSize / UploadConfig::BYTES_PER_MB, 2 );
 			$this->_errors[] = "File size exceeds maximum allowed size of {$maxSizeMB}MB";
 			return false;
 		}

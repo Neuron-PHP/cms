@@ -5,44 +5,46 @@ namespace Neuron\Cms\Controllers\Admin;
 use Neuron\Cms\Enums\FlashMessageType;
 use Neuron\Cms\Controllers\Content;
 use Neuron\Cms\Models\Tag;
-use Neuron\Cms\Repositories\DatabaseTagRepository;
+use Neuron\Cms\Repositories\ITagRepository;
+use Neuron\Cms\Services\SlugGenerator;
 use Neuron\Mvc\Application;
 use Neuron\Mvc\Requests\Request;
 use Neuron\Mvc\Responses\HttpResponseStatus;
-use Neuron\Patterns\Registry;
+use Neuron\Routing\Attributes\Get;
+use Neuron\Routing\Attributes\Post;
+use Neuron\Routing\Attributes\Put;
+use Neuron\Routing\Attributes\Delete;
+use Neuron\Routing\Attributes\RouteGroup;
 
 /**
  * Admin tag management controller.
  *
  * @package Neuron\Cms\Controllers\Admin
  */
+#[RouteGroup(prefix: '/admin', filters: ['auth'])]
 class Tags extends Content
 {
-	private DatabaseTagRepository $_tagRepository;
+	private ITagRepository $_tagRepository;
+	private SlugGenerator $_slugGenerator;
 
 	/**
 	 * @param Application|null $app
-	 * @param DatabaseTagRepository|null $tagRepository
+	 * @param ITagRepository|null $tagRepository
+	 * @param SlugGenerator|null $slugGenerator
 	 * @throws \Exception
 	 */
 	public function __construct(
 		?Application $app = null,
-		?DatabaseTagRepository $tagRepository = null
+		?ITagRepository $tagRepository = null,
+		?SlugGenerator $slugGenerator = null
 	)
 	{
 		parent::__construct( $app );
 
-		// Use injected dependencies if provided (for testing), otherwise create them (for production)
-		if( $tagRepository === null )
-		{
-			// Get settings for repositories
-			$settings = Registry::getInstance()->get( 'Settings' );
-
-			// Initialize repository
-			$tagRepository = new DatabaseTagRepository( $settings );
-		}
-
-		$this->_tagRepository = $tagRepository;
+		// Use dependency injection when available (container provides dependencies)
+		// Otherwise resolve from container (fallback for compatibility)
+		$this->_tagRepository = $tagRepository ?? $app?->getContainer()?->get( ITagRepository::class );
+		$this->_slugGenerator = $slugGenerator ?? new SlugGenerator();
 	}
 
 	/**
@@ -51,6 +53,7 @@ class Tags extends Content
 	 * @return string
 	 * @throws \Exception
 	 */
+	#[Get('/tags', name: 'admin_tags')]
 	public function index( Request $request ): string
 	{
 		$this->initializeCsrfToken();
@@ -70,6 +73,7 @@ class Tags extends Content
 	 * @return string
 	 * @throws \Exception
 	 */
+	#[Get('/tags/create', name: 'admin_tags_create')]
 	public function create( Request $request ): string
 	{
 		$this->initializeCsrfToken();
@@ -88,13 +92,26 @@ class Tags extends Content
 	 * @return never
 	 * @throws \Exception
 	 */
+	#[Post('/tags', name: 'admin_tags_store', filters: ['csrf'])]
 	public function store( Request $request ): never
 	{
+		// Create DTO from YAML configuration
+		$dto = $this->createDto( 'tags/create-tag-request.yaml' );
+
+		// Map request data to DTO
+		$this->mapRequestToDto( $dto, $request );
+
+		// Validate DTO
+		if( !$dto->validate() )
+		{
+			$this->validationError( 'admin_tags_create', $dto->getErrors() );
+		}
+
 		try
 		{
-			// Get form data
-			$name = $request->post( 'name' );
-			$slug = $request->post( 'slug' );
+			// Extract values from DTO
+			$name = $dto->name;
+			$slug = $dto->slug ?? '';
 
 			// Create tag
 			$tag = new Tag();
@@ -119,6 +136,7 @@ class Tags extends Content
 	 * @return string
 	 * @throws \Exception
 	 */
+	#[Get('/tags/:id/edit', name: 'admin_tags_edit')]
 	public function edit( Request $request ): string
 	{
 		$tagId = (int)$request->getRouteParameter( 'id' );
@@ -147,9 +165,26 @@ class Tags extends Content
 	 * @return never
 	 * @throws \Exception
 	 */
+	#[Put('/tags/:id', name: 'admin_tags_update', filters: ['csrf'])]
 	public function update( Request $request ): never
 	{
 		$tagId = (int)$request->getRouteParameter( 'id' );
+
+		// Create DTO from YAML configuration
+		$dto = $this->createDto( 'tags/update-tag-request.yaml' );
+
+		// Map request data to DTO
+		$this->mapRequestToDto( $dto, $request );
+
+		// Set ID from route parameter
+		$dto->id = $tagId;
+
+		// Validate DTO
+		if( !$dto->validate() )
+		{
+			$this->validationError( 'admin_tags_edit', $dto->getErrors(), ['id' => $tagId] );
+		}
+
 		$tag = $this->_tagRepository->findById( $tagId );
 
 		if( !$tag )
@@ -159,9 +194,9 @@ class Tags extends Content
 
 		try
 		{
-			// Get form data
-			$name = $request->post( 'name' );
-			$slug = $request->post( 'slug' );
+			// Extract values from DTO
+			$name = $dto->name;
+			$slug = $dto->slug ?? '';
 
 			// Update tag
 			$tag->setName( $name );
@@ -185,6 +220,7 @@ class Tags extends Content
 	 * @return never
 	 * @throws \Exception
 	 */
+	#[Delete('/tags/:id', name: 'admin_tags_destroy', filters: ['csrf'])]
 	public function destroy( Request $request ): never
 	{
 		$tagId = (int)$request->getRouteParameter( 'id' );
@@ -212,17 +248,6 @@ class Tags extends Content
 	 */
 	private function generateSlug( string $name ): string
 	{
-		$slug = strtolower( trim( $name ) );
-		$slug = preg_replace( '/[^a-z0-9-]/', '-', $slug );
-		$slug = preg_replace( '/-+/', '-', $slug );
-		$slug = trim( $slug, '-' );
-
-		// Fallback for names with no ASCII characters
-		if( $slug === '' )
-		{
-			$slug = 'tag-' . uniqid();
-		}
-
-		return $slug;
+		return $this->_slugGenerator->generate( $name, 'tag' );
 	}
 }

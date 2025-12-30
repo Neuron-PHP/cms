@@ -14,6 +14,7 @@ use Neuron\Cms\Services\Content\ShortcodeParser;
  */
 class WidgetRegistry
 {
+	/** @var array<string, IWidget> */
 	private array $_widgets = [];
 	private ShortcodeParser $_parser;
 
@@ -56,7 +57,7 @@ class WidgetRegistry
 	/**
 	 * Get all registered widgets (for documentation)
 	 *
-	 * @return array Array of widgets
+	 * @return array<string, IWidget> Array of widgets
 	 */
 	public function getAll(): array
 	{

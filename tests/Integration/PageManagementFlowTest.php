@@ -398,14 +398,14 @@ class PageManagementFlowTest extends IntegrationTestCase
 	}
 
 	/**
-	 * Test user deletion cascades to pages
+	 * Test user deletion nullifies author_id on pages
 	 */
-	public function testUserDeletionCascadesToPages(): void
+	public function testUserDeletionNullifiesPagesAuthorId(): void
 	{
 		// Create user
 		$userId = $this->createTestUser([
-			'username' => 'cascadeuser',
-			'email' => 'cascade@example.com'
+			'username' => 'nullifyuser',
+			'email' => 'nullify@example.com'
 		]);
 
 		// Create pages for user
@@ -419,7 +419,7 @@ class PageManagementFlowTest extends IntegrationTestCase
 		{
 			$stmt->execute([
 				"Page {$i}",
-				"page-{$i}-cascade",
+				"page-{$i}-nullify",
 				'{"blocks":[]}',
 				$userId,
 				'draft',
@@ -428,7 +428,7 @@ class PageManagementFlowTest extends IntegrationTestCase
 			]);
 		}
 
-		// Verify pages exist
+		// Verify pages exist with author
 		$stmt = $this->pdo->prepare( "SELECT COUNT(*) FROM pages WHERE author_id = ?" );
 		$stmt->execute( [$userId] );
 		$count = (int)$stmt->fetchColumn();
@@ -438,11 +438,17 @@ class PageManagementFlowTest extends IntegrationTestCase
 		$stmt = $this->pdo->prepare( "DELETE FROM users WHERE id = ?" );
 		$stmt->execute( [$userId] );
 
-		// Verify pages were cascade deleted
-		$stmt = $this->pdo->prepare( "SELECT COUNT(*) FROM pages WHERE author_id = ?" );
-		$stmt->execute( [$userId] );
+		// Verify pages still exist but author_id is NULL
+		$stmt = $this->pdo->prepare( "SELECT COUNT(*) FROM pages WHERE author_id IS NULL" );
+		$stmt->execute();
 		$count = (int)$stmt->fetchColumn();
-		$this->assertEquals( 0, $count, 'Pages should be cascade deleted when author is deleted' );
+		$this->assertGreaterThanOrEqual( 3, $count, 'At least 3 pages should have NULL author_id after user deletion' );
+
+		// Verify original pages still exist by title
+		$stmt = $this->pdo->prepare( "SELECT COUNT(*) FROM pages WHERE title LIKE ?" );
+		$stmt->execute( ['Page %'] );
+		$count = (int)$stmt->fetchColumn();
+		$this->assertGreaterThanOrEqual( 3, $count, 'Pages should still exist after user deletion' );
 	}
 
 	/**

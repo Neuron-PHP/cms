@@ -4,68 +4,55 @@ namespace Neuron\Cms\Controllers\Admin;
 
 use Neuron\Cms\Enums\FlashMessageType;
 use Neuron\Cms\Controllers\Content;
-use Neuron\Cms\Models\User;
-use Neuron\Cms\Repositories\DatabaseUserRepository;
-use Neuron\Cms\Services\User\Creator;
-use Neuron\Cms\Services\User\Updater;
-use Neuron\Cms\Services\User\Deleter;
-use Neuron\Cms\Auth\PasswordHasher;
-use Neuron\Cms\Services\Auth\CsrfToken;
-use Neuron\Data\Settings\SettingManager;
+use Neuron\Cms\Repositories\IUserRepository;
+use Neuron\Cms\Services\User\IUserCreator;
+use Neuron\Cms\Services\User\IUserUpdater;
+use Neuron\Cms\Services\User\IUserDeleter;
 use Neuron\Mvc\Application;
 use Neuron\Mvc\Requests\Request;
-use Neuron\Mvc\Responses\HttpResponseStatus;
-use Neuron\Patterns\Registry;
 use Neuron\Cms\Enums\UserRole;
+use Neuron\Routing\Attributes\Get;
+use Neuron\Routing\Attributes\Post;
+use Neuron\Routing\Attributes\Put;
+use Neuron\Routing\Attributes\Delete;
+use Neuron\Routing\Attributes\RouteGroup;
 
 /**
  * User management controller.
  *
  * @package Neuron\Cms\Controllers\Admin
  */
+#[RouteGroup(prefix: '/admin', filters: ['auth'])]
 class Users extends Content
 {
-	private DatabaseUserRepository $_repository;
-	private Creator $_userCreator;
-	private Updater $_userUpdater;
-	private Deleter $_userDeleter;
+	private IUserRepository $_repository;
+	private IUserCreator $_userCreator;
+	private IUserUpdater $_userUpdater;
+	private IUserDeleter $_userDeleter;
 
 	/**
 	 * @param Application|null $app
-	 * @param DatabaseUserRepository|null $repository
-	 * @param Creator|null $userCreator
-	 * @param Updater|null $userUpdater
-	 * @param Deleter|null $userDeleter
-	 * @throws \Exception
+	 * @param IUserRepository|null $repository
+	 * @param IUserCreator|null $userCreator
+	 * @param IUserUpdater|null $userUpdater
+	 * @param IUserDeleter|null $userDeleter
 	 */
 	public function __construct(
 		?Application $app = null,
-		?DatabaseUserRepository $repository = null,
-		?Creator $userCreator = null,
-		?Updater $userUpdater = null,
-		?Deleter $userDeleter = null
+		?IUserRepository $repository = null,
+		?IUserCreator $userCreator = null,
+		?IUserUpdater $userUpdater = null,
+		?IUserDeleter $userDeleter = null
 	)
 	{
 		parent::__construct( $app );
 
-		// Use injected dependencies if provided (for testing), otherwise create them (for production)
-		if( $repository === null )
-		{
-			// Get settings and initialize repository
-			$settings = Registry::getInstance()->get( 'Settings' );
-			$repository = new DatabaseUserRepository( $settings );
-
-			// Initialize services
-			$hasher = new PasswordHasher();
-			$userCreator = new Creator( $repository, $hasher );
-			$userUpdater = new Updater( $repository, $hasher );
-			$userDeleter = new Deleter( $repository );
-		}
-
-		$this->_repository = $repository;
-		$this->_userCreator = $userCreator;
-		$this->_userUpdater = $userUpdater;
-		$this->_userDeleter = $userDeleter;
+		// Use dependency injection when available (container provides dependencies)
+		// Otherwise resolve from container (fallback for compatibility)
+		$this->_repository = $repository ?? $app?->getContainer()?->get( IUserRepository::class );
+		$this->_userCreator = $userCreator ?? $app?->getContainer()?->get( IUserCreator::class );
+		$this->_userUpdater = $userUpdater ?? $app?->getContainer()?->get( IUserUpdater::class );
+		$this->_userDeleter = $userDeleter ?? $app?->getContainer()?->get( IUserDeleter::class );
 	}
 
 	/**
@@ -74,6 +61,7 @@ class Users extends Content
 	 * @return string
 	 * @throws \Exception
 	 */
+	#[Get('/users', name: 'admin_users')]
 	public function index( Request $request ): string
 	{
 		$this->initializeCsrfToken();
@@ -99,6 +87,7 @@ class Users extends Content
 	 * @return string
 	 * @throws \Exception
 	 */
+	#[Get('/users/create', name: 'admin_users_create')]
 	public function create( Request $request ): string
 	{
 		$this->initializeCsrfToken();
@@ -118,22 +107,25 @@ class Users extends Content
 	 * @return never
 	 * @throws \Exception
 	 */
+	#[Post('/users', name: 'admin_users_store', filters: ['csrf'])]
 	public function store( Request $request ): never
 	{
-		$username = $request->post( 'username','' );
-		$email = $request->post( 'email', '' );
-		$password = $request->post( 'password', '' );
-		$role = $request->post( 'role', UserRole::SUBSCRIBER->value );
+		// Create DTO from YAML configuration
+		$dto = $this->createDto( 'users/create-user-request.yaml' );
 
-		// Basic validation
-		if( empty( $username ) || empty( $email ) || empty( $password ) )
+		// Map request data to DTO
+		$this->mapRequestToDto( $dto, $request );
+
+		// Validate DTO
+		if( !$dto->validate() )
 		{
-			$this->redirect( 'admin_users_create', [], [FlashMessageType::ERROR->value, 'All fields are required'] );
+			$this->validationError( 'admin_users_create', $dto->getErrors() );
 		}
 
 		try
 		{
-			$this->_userCreator->create( $username, $email, $password, $role );
+			// Pass DTO to service
+			$this->_userCreator->create( $dto );
 			$this->redirect( 'admin_users', [], [FlashMessageType::SUCCESS->value, 'User created successfully'] );
 		}
 		catch( \Exception $e )
@@ -149,6 +141,7 @@ class Users extends Content
 	 * @return string
 	 * @throws \Exception
 	 */
+	#[Get('/users/:id/edit', name: 'admin_users_edit')]
 	public function edit( Request $request ): string
 	{
 		$id = (int)$request->getRouteParameter( 'id' );
@@ -180,33 +173,30 @@ class Users extends Content
 	 * @return never
 	 * @throws \Exception
 	 */
+	#[Put('/users/:id', name: 'admin_users_update', filters: ['csrf'])]
 	public function update( Request $request ): never
 	{
 		$id = (int)$request->getRouteParameter( 'id' );
-		$user = $this->_repository->findById( $id );
 
-		if( !$user )
+		// Create DTO from YAML configuration
+		$dto = $this->createDto( 'users/update-user-request.yaml' );
+
+		// Map request data to DTO
+		$this->mapRequestToDto( $dto, $request );
+
+		// Set ID from route parameter
+		$dto->id = $id;
+
+		// Validate DTO
+		if( !$dto->validate() )
 		{
-			$this->redirect( 'admin_users', [], [FlashMessageType::ERROR->value, 'User not found'] );
+			$this->validationError( 'admin_users_edit', $dto->getErrors(), ['id' => $id] );
 		}
-
-		$usernameInput = $request->post( 'username', null );
-		$emailInput = $request->post( 'email', null );
-
-		$username = $usernameInput !== null ? trim( (string)$usernameInput ) : $user->getUsername();
-		$email = $emailInput !== null ? trim( (string)$emailInput ) : $user->getEmail();
-
-		if( $username === '' || $email === '' )
-		{
-			$this->redirect( 'admin_users_edit', ['id' => $id], [FlashMessageType::ERROR->value, 'Username and email are required'] );
-		}
-
-		$role = $request->post( 'role', $user->getRole() );
-		$password = $request->post( 'password', null );
 
 		try
 		{
-			$this->_userUpdater->update( $user, $username, $email, $role, $password );
+			// Pass DTO to service
+			$this->_userUpdater->update( $dto );
 			$this->redirect( 'admin_users', [], [FlashMessageType::SUCCESS->value, 'User updated successfully'] );
 		}
 		catch( \Exception $e )
@@ -222,6 +212,7 @@ class Users extends Content
 	 * @return never
 	 * @throws \Exception
 	 */
+	#[Delete('/users/:id', name: 'admin_users_destroy', filters: ['csrf'])]
 	public function destroy( Request $request ): never
 	{
 		$id = (int)$request->getRouteParameter( 'id' );

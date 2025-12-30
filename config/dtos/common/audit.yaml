@@ -1,0 +1,9 @@
+# Common audit DTO for tracking who created/updated records
+# Can be referenced in other DTOs using: type: dto, ref: 'common/audit.yaml'
+dto:
+  createdBy:
+    type: integer
+    required: true
+  updatedBy:
+    type: integer
+    required: false

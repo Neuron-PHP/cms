@@ -87,6 +87,8 @@ class PasswordHasher
 
 	/**
 	 * Get password validation error messages
+	 *
+	 * @return list<string>
 	 */
 	public function getValidationErrors( string $password ): array
 	{
@@ -167,6 +169,8 @@ class PasswordHasher
 
 	/**
 	 * Configure password requirements from settings
+	 *
+	 * @param array<string, mixed> $settings
 	 */
 	public function configure( array $settings ): self
 	{

@@ -19,6 +19,8 @@ use Neuron\Log\Log;
 class CsrfFilter extends Filter
 {
 	private CsrfToken $_csrfToken;
+
+	/** @var list<string> */
 	private array $_exemptMethods = ['GET', 'HEAD', 'OPTIONS'];
 
 	public function __construct( CsrfToken $csrfToken )

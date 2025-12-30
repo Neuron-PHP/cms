@@ -4,6 +4,7 @@ namespace Neuron\Cms\Services\Page;
 
 use Neuron\Cms\Models\Page;
 use Neuron\Cms\Repositories\IPageRepository;
+use Neuron\Dto\Dto;
 use DateTimeImmutable;
 use Neuron\Cms\Enums\ContentStatus;
 use Neuron\Cms\Enums\PageTemplate;
@@ -15,7 +16,7 @@ use Neuron\Cms\Enums\PageTemplate;
  *
  * @package Neuron\Cms\Services\Page
  */
-class Updater
+class Updater implements IPageUpdater
 {
 	private IPageRepository $_pageRepository;
 
@@ -25,31 +26,32 @@ class Updater
 	}
 
 	/**
-	 * Update an existing page
+	 * Update an existing page from DTO
 	 *
-	 * @param Page $page Page to update
-	 * @param string $title New title
-	 * @param string $content New Editor.js JSON content
-	 * @param string $status New status
-	 * @param string|null $slug New slug (optional)
-	 * @param string $template Template name
-	 * @param string|null $metaTitle SEO meta title
-	 * @param string|null $metaDescription SEO meta description
-	 * @param string|null $metaKeywords SEO meta keywords
-	 * @return bool True if updated successfully
+	 * @param Dto $request DTO containing id, title, content, status, slug, template, meta_title, meta_description, meta_keywords
+	 * @return Page Updated page
+	 * @throws \Exception If page not found
 	 */
-	public function update(
-		Page $page,
-		string $title,
-		string $content,
-		string $status,
-		?string $slug = null,
-		string $template = PageTemplate::DEFAULT->value,
-		?string $metaTitle = null,
-		?string $metaDescription = null,
-		?string $metaKeywords = null
-	): bool
+	public function update( Dto $request ): Page
 	{
+		// Extract values from DTO
+		$id = $request->id;
+		$title = $request->title;
+		$content = $request->content;
+		$status = $request->status;
+		$slug = $request->slug ?? null;
+		$template = $request->template ?? PageTemplate::DEFAULT->value;
+		$metaTitle = $request->meta_title ?? null;
+		$metaDescription = $request->meta_description ?? null;
+		$metaKeywords = $request->meta_keywords ?? null;
+
+		// Look up the page
+		$page = $this->_pageRepository->findById( $id );
+		if( !$page )
+		{
+			throw new \Exception( "Page with ID {$id} not found" );
+		}
+
 		$page->setTitle( $title );
 		$page->setContent( $content );
 		$page->setStatus( $status );
@@ -71,6 +73,8 @@ class Updater
 
 		$page->setUpdatedAt( new DateTimeImmutable() );
 
-		return $this->_pageRepository->update( $page );
+		$this->_pageRepository->update( $page );
+
+		return $page;
 	}
 }

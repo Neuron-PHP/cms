@@ -20,7 +20,7 @@ use Exception;
  *
  * @package Neuron\Cms\Services\Auth
  */
-class PasswordResetter
+class PasswordResetter implements IPasswordResetter
 {
 	private IPasswordResetTokenRepository $_tokenRepository;
 	private IUserRepository $_userRepository;

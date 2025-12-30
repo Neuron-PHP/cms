@@ -4,8 +4,7 @@ namespace Neuron\Cms\Services\Tag;
 
 use Neuron\Cms\Models\Tag;
 use Neuron\Cms\Repositories\ITagRepository;
-use Neuron\Core\System\IRandom;
-use Neuron\Core\System\RealRandom;
+use Neuron\Cms\Services\SlugGenerator;
 
 /**
  * Tag creation service.
@@ -14,15 +13,15 @@ use Neuron\Core\System\RealRandom;
  *
  * @package Neuron\Cms\Services\Tag
  */
-class Creator
+class Creator implements ITagCreator
 {
 	private ITagRepository $_tagRepository;
-	private IRandom $_random;
+	private SlugGenerator $_slugGenerator;
 
-	public function __construct( ITagRepository $tagRepository, ?IRandom $random = null )
+	public function __construct( ITagRepository $tagRepository, ?SlugGenerator $slugGenerator = null )
 	{
 		$this->_tagRepository = $tagRepository;
-		$this->_random = $random ?? new RealRandom();
+		$this->_slugGenerator = $slugGenerator ?? new SlugGenerator();
 	}
 
 	/**
@@ -52,17 +51,6 @@ class Creator
 	 */
 	private function generateSlug( string $name ): string
 	{
-		$slug = strtolower( trim( $name ) );
-		$slug = preg_replace( '/[^a-z0-9-]/', '-', $slug );
-		$slug = preg_replace( '/-+/', '-', $slug );
-		$slug = trim( $slug, '-' );
-
-		// Fallback for names with no ASCII characters
-		if( $slug === '' )
-		{
-			$slug = 'tag-' . $this->_random->uniqueId();
-		}
-
-		return $slug;
+		return $this->_slugGenerator->generate( $name, 'tag' );
 	}
 }
