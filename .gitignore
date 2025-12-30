@@ -34,3 +34,5 @@ coverage*
 .env.testing
 .env.local
 .env.*.local
+
+var/
