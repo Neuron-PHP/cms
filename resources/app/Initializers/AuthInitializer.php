@@ -6,12 +6,10 @@ use Neuron\Cms\Services\Auth\Authentication;
 use Neuron\Cms\Services\Auth\CsrfToken;
 use Neuron\Cms\Auth\Filters\AuthenticationFilter;
 use Neuron\Cms\Auth\Filters\CsrfFilter;
-use Neuron\Cms\Auth\PasswordHasher;
-use Neuron\Cms\Auth\SessionManager;
-use Neuron\Cms\Repositories\DatabaseUserRepository;
 use Neuron\Log\Log;
 use Neuron\Patterns\Registry;
 use Neuron\Patterns\IRunnable;
+use Psr\Container\ContainerInterface;
 
 /**
  * Initialize the authentication system
@@ -46,6 +44,15 @@ class AuthInitializer implements IRunnable
 			return null;
 		}
 
+		// Get Container from Registry
+		$container = Registry::getInstance()->get( 'Container' );
+
+		if( !$container || !$container instanceof ContainerInterface )
+		{
+			Log::error( "Container not found in Registry, skipping auth initialization" );
+			return null;
+		}
+
 		// Check if database is configured
 		try
 		{
@@ -53,12 +60,9 @@ class AuthInitializer implements IRunnable
 
 			if( !empty( $settingNames ) )
 			{
-				// Initialize authentication components
-				$userRepository = new DatabaseUserRepository( $settings );
-				$sessionManager = new SessionManager();
-				$passwordHasher = new PasswordHasher();
-				$authentication = new Authentication( $userRepository, $sessionManager, $passwordHasher );
-				$csrfToken = new CsrfToken( $sessionManager );
+				// Get services from container
+				$authentication = $container->get( Authentication::class );
+				$csrfToken = $container->get( CsrfToken::class );
 
 				// Create filters
 				$authFilter = new AuthenticationFilter( $authentication, '/login' );
@@ -69,7 +73,7 @@ class AuthInitializer implements IRunnable
 				$app->getRouter()->registerFilter( 'auth', $authFilter );
 				$app->getRouter()->registerFilter( 'csrf', $csrfFilter );
 
-				// Store services in Registry for easy access
+				// Store services in Registry for backward compatibility
 				Registry::getInstance()->set( 'Authentication', $authentication );
 				Registry::getInstance()->set( 'CsrfToken', $csrfToken );
 			}

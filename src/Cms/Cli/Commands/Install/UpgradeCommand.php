@@ -98,7 +98,7 @@ class UpgradeCommand extends Command
 
 		// Confirm upgrade
 		$this->output->writeln( "" );
-		if( !$this->input->confirm( "Proceed with upgrade?", true ) )
+		if( !$this->confirm( "Proceed with upgrade?", true ) )
 		{
 			$this->output->error( "Upgrade cancelled." );
 			return 1;
@@ -143,7 +143,7 @@ class UpgradeCommand extends Command
 
 		// Optionally run migrations
 		if( $this->input->getOption( 'run-migrations' ) ||
-		    $this->input->confirm( "\nRun database migrations now?", false ) )
+		    $this->confirm( "\nRun database migrations now?", false ) )
 		{
 			$this->output->writeln( "" );
 			$this->runMigrations();

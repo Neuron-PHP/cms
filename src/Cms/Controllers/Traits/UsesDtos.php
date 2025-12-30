@@ -7,7 +7,6 @@ use Neuron\Core\Exceptions\Validation;
 use Neuron\Dto\Dto;
 use Neuron\Dto\Mapper\Request as RequestMapper;
 use Neuron\Mvc\Requests\Request;
-use Neuron\Patterns\Registry;
 
 /**
  * Trait for using DTOs in controllers
@@ -20,23 +19,14 @@ use Neuron\Patterns\Registry;
 trait UsesDtos
 {
 	/**
-	 * Get the DtoFactoryService instance
-	 *
-	 * Retrieves from Registry if available, otherwise creates a new instance.
+	 * Get the DtoFactoryService instance from the container
 	 *
 	 * @return DtoFactoryService
 	 */
 	protected function getDtoFactory(): DtoFactoryService
 	{
-		$factory = Registry::getInstance()->get( 'DtoFactoryService' );
-
-		if( !$factory )
-		{
-			$factory = new DtoFactoryService();
-			Registry::getInstance()->set( 'DtoFactoryService', $factory );
-		}
-
-		return $factory;
+		// Get from container (assumes trait is used in a controller with getApplication())
+		return $this->getApplication()->getContainer()->get( DtoFactoryService::class );
 	}
 
 	/**
@@ -47,7 +37,7 @@ trait UsesDtos
 	 *
 	 * @param Dto $dto DTO to populate
 	 * @param Request $request Request containing form data (unused - kept for BC)
-	 * @param array $fields Array of field names to populate (defaults to all POST data)
+	 * @param array<int, string> $fields Array of field names to populate (defaults to all POST data)
 	 * @return Dto The populated DTO
 	 */
 	protected function populateDtoFromRequest( Dto $dto, Request $request, array $fields = [] ): Dto
@@ -68,7 +58,7 @@ trait UsesDtos
 	 * Validate a DTO and return errors
 	 *
 	 * @param Dto $dto DTO to validate
-	 * @return array Array of validation error messages (empty if valid)
+	 * @return array<string, array<int, string>> Array of validation error messages (empty if valid)
 	 */
 	protected function validateDto( Dto $dto ): array
 	{
@@ -97,7 +87,16 @@ trait UsesDtos
 
 		if( !empty( $errors ) )
 		{
-			$message = implode( ', ', $errors );
+			// Flatten multidimensional error array into single string
+			$messages = [];
+			foreach( $errors as $field => $fieldErrors )
+			{
+				foreach( $fieldErrors as $error )
+				{
+					$messages[] = $field . ': ' . $error;
+				}
+			}
+			$message = implode( ', ', $messages );
 			throw new \Exception( $message );
 		}
 	}
@@ -109,7 +108,7 @@ trait UsesDtos
 	 *
 	 * @param string $name DTO name (e.g., 'RegisterUser', 'CreatePost')
 	 * @param Request $request Request containing form data
-	 * @param array $fields Optional array of field names to populate
+	 * @param array<int, string> $fields Optional array of field names to populate
 	 * @return Dto
 	 * @throws \Exception if DTO cannot be created
 	 */

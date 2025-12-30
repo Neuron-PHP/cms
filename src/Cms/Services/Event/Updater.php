@@ -5,6 +5,7 @@ namespace Neuron\Cms\Services\Event;
 use Neuron\Cms\Models\Event;
 use Neuron\Cms\Repositories\IEventRepository;
 use Neuron\Cms\Repositories\IEventCategoryRepository;
+use Neuron\Dto\Dto;
 use DateTimeImmutable;
 
 /**
@@ -12,7 +13,7 @@ use DateTimeImmutable;
  *
  * @package Neuron\Cms\Services\Event
  */
-class Updater
+class Updater implements IEventUpdater
 {
 	private IEventRepository $_eventRepository;
 	private IEventCategoryRepository $_categoryRepository;
@@ -27,44 +28,38 @@ class Updater
 	}
 
 	/**
-	 * Update an event
+	 * Update an event from DTO
 	 *
-	 * @param Event $event
-	 * @param string $title
-	 * @param DateTimeImmutable $startDate
-	 * @param string $status
-	 * @param string|null $slug
-	 * @param string|null $description
-	 * @param string $contentRaw
-	 * @param string|null $location
-	 * @param DateTimeImmutable|null $endDate
-	 * @param bool $allDay
-	 * @param int|null $categoryId
-	 * @param string|null $featuredImage
-	 * @param string|null $organizer
-	 * @param string|null $contactEmail
-	 * @param string|null $contactPhone
+	 * @param Dto $request DTO containing id and event data
 	 * @return Event
-	 * @throws \RuntimeException if slug already exists for another event or category not found
+	 * @throws \RuntimeException if event not found, slug already exists, or category not found
 	 */
-	public function update(
-		Event $event,
-		string $title,
-		DateTimeImmutable $startDate,
-		string $status,
-		?string $slug = null,
-		?string $description = null,
-		string $contentRaw = '{"blocks":[]}',
-		?string $location = null,
-		?DateTimeImmutable $endDate = null,
-		bool $allDay = false,
-		?int $categoryId = null,
-		?string $featuredImage = null,
-		?string $organizer = null,
-		?string $contactEmail = null,
-		?string $contactPhone = null
-	): Event
+	public function update( Dto $request ): Event
 	{
+		// Extract values from DTO
+		$id = $request->id;
+		$title = $request->title;
+		$slug = $request->slug ?? '';
+		$description = $request->description ?? null;
+		$contentRaw = $request->content ?? '{"blocks":[]}';
+		$location = $request->location ?? null;
+		$startDate = new DateTimeImmutable( $request->start_date );
+		$endDate = $request->end_date ? new DateTimeImmutable( $request->end_date ) : null;
+		$allDay = $request->all_day ?? false;
+		$categoryId = $request->category_id ?? null;
+		$status = $request->status;
+		$featuredImage = $request->featured_image ?? null;
+		$organizer = $request->organizer ?? null;
+		$contactEmail = $request->contact_email ?? null;
+		$contactPhone = $request->contact_phone ?? null;
+
+		// Look up the event
+		$event = $this->_eventRepository->findById( $id );
+		if( !$event )
+		{
+			throw new \RuntimeException( "Event with ID {$id} not found" );
+		}
+
 		// Check for duplicate slug (excluding current event)
 		if( $slug && $this->_eventRepository->slugExists( $slug, $event->getId() ) )
 		{

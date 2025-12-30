@@ -7,7 +7,8 @@ use Neuron\Cms\Models\Event;
 use Neuron\Cms\Models\EventCategory;
 use Neuron\Cms\Repositories\IEventRepository;
 use Neuron\Cms\Repositories\IEventCategoryRepository;
-use Neuron\Core\System\IRandom;
+use Neuron\Dto\Factory;
+use Neuron\Dto\Dto;
 use PHPUnit\Framework\TestCase;
 use DateTimeImmutable;
 
@@ -16,19 +17,93 @@ class CreatorTest extends TestCase
 	private Creator $creator;
 	private $eventRepository;
 	private $categoryRepository;
-	private $random;
 
 	protected function setUp(): void
 	{
 		$this->eventRepository = $this->createMock( IEventRepository::class );
 		$this->categoryRepository = $this->createMock( IEventCategoryRepository::class );
-		$this->random = $this->createMock( IRandom::class );
 
 		$this->creator = new Creator(
 			$this->eventRepository,
-			$this->categoryRepository,
-			$this->random
+			$this->categoryRepository
 		);
+	}
+
+	/**
+	 * Helper method to create a DTO with test data
+	 */
+	private function createDto(
+		string $title,
+		string $startDate,
+		int $createdBy,
+		string $status,
+		?string $slug = null,
+		?string $description = null,
+		?string $content = null,
+		?string $location = null,
+		?string $endDate = null,
+		?bool $allDay = null,
+		?int $categoryId = null,
+		?string $featuredImage = null,
+		?string $organizer = null,
+		?string $contactEmail = null,
+		?string $contactPhone = null
+	): Dto
+	{
+		$factory = new Factory( __DIR__ . '/../../../../../config/dtos/events/create-event-request.yaml' );
+		$dto = $factory->create();
+
+		$dto->title = $title;
+		$dto->start_date = $startDate;
+		$dto->created_by = $createdBy;
+		$dto->status = $status;
+
+		if( $slug !== null )
+		{
+			$dto->slug = $slug;
+		}
+		if( $description !== null )
+		{
+			$dto->description = $description;
+		}
+		if( $content !== null )
+		{
+			$dto->content = $content;
+		}
+		if( $location !== null )
+		{
+			$dto->location = $location;
+		}
+		if( $endDate !== null )
+		{
+			$dto->end_date = $endDate;
+		}
+		if( $allDay !== null )
+		{
+			$dto->all_day = $allDay;
+		}
+		if( $categoryId !== null )
+		{
+			$dto->category_id = $categoryId;
+		}
+		if( $featuredImage !== null )
+		{
+			$dto->featured_image = $featuredImage;
+		}
+		if( $organizer !== null )
+		{
+			$dto->organizer = $organizer;
+		}
+		if( $contactEmail !== null )
+		{
+			$dto->contact_email = $contactEmail;
+		}
+		if( $contactPhone !== null )
+		{
+			$dto->contact_phone = $contactPhone;
+		}
+
+		return $dto;
 	}
 
 	public function test_create_basic_event(): void
@@ -52,12 +127,14 @@ class CreatorTest extends TestCase
 				return $event;
 			});
 
-		$result = $this->creator->create(
-			'Test Event',
-			$startDate,
-			5,
-			Event::STATUS_DRAFT
+		$dto = $this->createDto(
+			title: 'Test Event',
+			startDate: '2025-06-15 10:00:00',
+			createdBy: 5,
+			status: Event::STATUS_DRAFT
 		);
+
+		$result = $this->creator->create( $dto );
 
 		$this->assertInstanceOf( Event::class, $result );
 		$this->assertEquals( 'Test Event', $capturedEvent->getTitle() );
@@ -88,13 +165,15 @@ class CreatorTest extends TestCase
 				return $event;
 			});
 
-		$this->creator->create(
-			'Test Event',
-			$startDate,
-			5,
-			Event::STATUS_DRAFT,
-			'custom-slug'
+		$dto = $this->createDto(
+			title: 'Test Event',
+			startDate: '2025-06-15 10:00:00',
+			createdBy: 5,
+			status: Event::STATUS_DRAFT,
+			slug: 'custom-slug'
 		);
+
+		$this->creator->create( $dto );
 
 		$this->assertEquals( 'custom-slug', $capturedEvent->getSlug() );
 	}
@@ -128,23 +207,25 @@ class CreatorTest extends TestCase
 				return $event;
 			});
 
-		$this->creator->create(
-			'Tech Conference',
-			$startDate,
-			5,
-			Event::STATUS_PUBLISHED,
-			'tech-conf',
-			'A great tech event',
-			'{"blocks":[{"type":"paragraph","data":{"text":"Hello"}}]}',
-			'Convention Center',
-			$endDate,
-			false,
-			3,
-			'/images/tech.jpg',
-			'Tech Org',
-			'info@tech.com',
-			'555-1234'
+		$dto = $this->createDto(
+			title: 'Tech Conference',
+			startDate: '2025-06-15 10:00:00',
+			createdBy: 5,
+			status: Event::STATUS_PUBLISHED,
+			slug: 'tech-conf',
+			description: 'A great tech event',
+			content: '{"blocks":[{"type":"paragraph","data":{"text":"Hello"}}]}',
+			location: 'Convention Center',
+			endDate: '2025-06-15 17:00:00',
+			allDay: false,
+			categoryId: 3,
+			featuredImage: '/images/tech.jpg',
+			organizer: 'Tech Org',
+			contactEmail: 'info@tech.com',
+			contactPhone: '555-1234'
 		);
+
+		$this->creator->create( $dto );
 
 		$this->assertEquals( 'tech-conf', $capturedEvent->getSlug() );
 		$this->assertEquals( 'A great tech event', $capturedEvent->getDescription() );
@@ -179,12 +260,14 @@ class CreatorTest extends TestCase
 				return $event;
 			});
 
-		$this->creator->create(
-			'My Awesome Event!!!',
-			$startDate,
-			5,
-			Event::STATUS_DRAFT
+		$dto = $this->createDto(
+			title: 'My Awesome Event!!!',
+			startDate: '2025-06-15 10:00:00',
+			createdBy: 5,
+			status: Event::STATUS_DRAFT
 		);
+
+		$this->creator->create( $dto );
 
 		$this->assertEquals( 'my-awesome-event', $capturedEvent->getSlug() );
 	}
@@ -193,13 +276,8 @@ class CreatorTest extends TestCase
 	{
 		$startDate = new DateTimeImmutable( '2025-06-15 10:00:00' );
 
-		$this->random->expects( $this->once() )
-			->method( 'uniqueId' )
-			->willReturn( 'abc123' );
-
 		$this->eventRepository->expects( $this->once() )
 			->method( 'slugExists' )
-			->with( 'event-abc123' )
 			->willReturn( false );
 
 		$capturedEvent = null;
@@ -214,14 +292,17 @@ class CreatorTest extends TestCase
 				return $event;
 			});
 
-		$this->creator->create(
-			'日本語イベント',
-			$startDate,
-			5,
-			Event::STATUS_DRAFT
+		$dto = $this->createDto(
+			title: '日本語イベント',
+			startDate: '2025-06-15 10:00:00',
+			createdBy: 5,
+			status: Event::STATUS_DRAFT
 		);
 
-		$this->assertEquals( 'event-abc123', $capturedEvent->getSlug() );
+		$this->creator->create( $dto );
+
+		// Non-ASCII title should generate fallback slug with pattern event-{uniqueid}
+		$this->assertMatchesRegularExpression( '/^event-[a-z0-9]+$/', $capturedEvent->getSlug() );
 	}
 
 	public function test_create_throws_exception_when_category_not_found(): void
@@ -236,19 +317,15 @@ class CreatorTest extends TestCase
 		$this->expectException( \RuntimeException::class );
 		$this->expectExceptionMessage( 'Event category not found' );
 
-		$this->creator->create(
-			'Test Event',
-			$startDate,
-			5,
-			Event::STATUS_DRAFT,
-			null,
-			null,
-			'{"blocks":[]}',
-			null,
-			null,
-			false,
-			999  // Non-existent category
+		$dto = $this->createDto(
+			title: 'Test Event',
+			startDate: '2025-06-15 10:00:00',
+			createdBy: 5,
+			status: Event::STATUS_DRAFT,
+			categoryId: 999
 		);
+
+		$this->creator->create( $dto );
 	}
 
 	public function test_create_throws_exception_when_slug_exists(): void
@@ -263,13 +340,15 @@ class CreatorTest extends TestCase
 		$this->expectException( \RuntimeException::class );
 		$this->expectExceptionMessage( 'An event with this slug already exists' );
 
-		$this->creator->create(
-			'Test Event',
-			$startDate,
-			5,
-			Event::STATUS_DRAFT,
-			'duplicate-slug'
+		$dto = $this->createDto(
+			title: 'Test Event',
+			startDate: '2025-06-15 10:00:00',
+			createdBy: 5,
+			status: Event::STATUS_DRAFT,
+			slug: 'duplicate-slug'
 		);
+
+		$this->creator->create( $dto );
 	}
 
 	public function test_create_with_all_day_event(): void
@@ -292,18 +371,15 @@ class CreatorTest extends TestCase
 				return $event;
 			});
 
-		$this->creator->create(
-			'All Day Event',
-			$startDate,
-			5,
-			Event::STATUS_PUBLISHED,
-			null,
-			null,
-			'{"blocks":[]}',
-			null,
-			null,
-			true  // all day
+		$dto = $this->createDto(
+			title: 'All Day Event',
+			startDate: '2025-06-15 00:00:00',
+			createdBy: 5,
+			status: Event::STATUS_PUBLISHED,
+			allDay: true
 		);
+
+		$this->creator->create( $dto );
 
 		$this->assertTrue( $capturedEvent->isAllDay() );
 	}
@@ -331,19 +407,14 @@ class CreatorTest extends TestCase
 				return $event;
 			});
 
-		$this->creator->create(
-			'No Category Event',
-			$startDate,
-			5,
-			Event::STATUS_DRAFT,
-			null,
-			null,
-			'{"blocks":[]}',
-			null,
-			null,
-			false,
-			null  // No category
+		$dto = $this->createDto(
+			title: 'No Category Event',
+			startDate: '2025-06-15 10:00:00',
+			createdBy: 5,
+			status: Event::STATUS_DRAFT
 		);
+
+		$this->creator->create( $dto );
 
 		$this->assertNull( $capturedEvent->getCategoryId() );
 	}

@@ -4,7 +4,7 @@ namespace Neuron\Cms\Services\User;
 
 use Neuron\Cms\Repositories\IUserRepository;
 use Neuron\Cms\Events\UserDeletedEvent;
-use Neuron\Patterns\Registry;
+use Neuron\Events\Emitter;
 
 /**
  * User deletion service.
@@ -16,10 +16,15 @@ use Neuron\Patterns\Registry;
 class Deleter implements IUserDeleter
 {
 	private IUserRepository $_userRepository;
+	private ?Emitter $_eventEmitter;
 
-	public function __construct( IUserRepository $userRepository )
+	public function __construct(
+		IUserRepository $userRepository,
+		?Emitter $eventEmitter = null
+	)
 	{
 		$this->_userRepository = $userRepository;
+		$this->_eventEmitter = $eventEmitter;
 	}
 
 	/**
@@ -41,13 +46,9 @@ class Deleter implements IUserDeleter
 		$result = $this->_userRepository->delete( $userId );
 
 		// Emit user deleted event
-		if( $result )
+		if( $result && $this->_eventEmitter )
 		{
-			$emitter = Registry::getInstance()->get( 'EventEmitter' );
-			if( $emitter )
-			{
-				$emitter->emit( new UserDeletedEvent( $userId ) );
-			}
+			$this->_eventEmitter->emit( new UserDeletedEvent( $userId ) );
 		}
 
 		return $result;

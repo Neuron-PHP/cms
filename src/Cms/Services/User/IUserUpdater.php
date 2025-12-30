@@ -3,6 +3,7 @@
 namespace Neuron\Cms\Services\User;
 
 use Neuron\Cms\Models\User;
+use Neuron\Dto\Dto;
 
 /**
  * User update service interface
@@ -12,23 +13,11 @@ use Neuron\Cms\Models\User;
 interface IUserUpdater
 {
 	/**
-	 * Update an existing user
+	 * Update an existing user from DTO
 	 *
-	 * @param User $user
-	 * @param string $username
-	 * @param string $email
-	 * @param string $role
-	 * @param string|null $password
-	 * @param string|null $timezone
+	 * @param Dto $request DTO containing id, username, email, role, password (optional)
 	 * @return User
 	 * @throws \Exception
 	 */
-	public function update(
-		User $user,
-		string $username,
-		string $email,
-		string $role,
-		?string $password = null,
-		?string $timezone = null
-	): User;
+	public function update( Dto $request ): User;
 }

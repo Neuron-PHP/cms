@@ -1,0 +1,18 @@
+dto:
+  username:
+    type: string
+    required: true
+    minLength: 3
+    maxLength: 50
+  password:
+    type: string
+    required: true
+    minLength: 1
+  remember:
+    type: boolean
+    required: false
+    default: false
+  redirect_url:
+    type: string
+    required: false
+    maxLength: 500

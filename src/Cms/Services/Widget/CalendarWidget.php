@@ -37,7 +37,7 @@ class CalendarWidget implements IWidget
 	/**
 	 * Render the calendar widget
 	 *
-	 * @param array $attrs Shortcode attributes
+	 * @param array<string, mixed> $attrs Shortcode attributes
 	 * @return string Rendered HTML
 	 */
 	public function render( array $attrs ): string
@@ -87,6 +87,8 @@ class CalendarWidget implements IWidget
 
 	/**
 	 * Get supported attributes
+	 *
+	 * @return array<string, string>
 	 */
 	public function getAttributes(): array
 	{
@@ -100,8 +102,8 @@ class CalendarWidget implements IWidget
 	/**
 	 * Render widget template
 	 *
-	 * @param array $events
-	 * @param array $attrs
+	 * @param array<int, \Neuron\Cms\Models\Event> $events
+	 * @param array<string, mixed> $attrs
 	 * @return string
 	 */
 	private function renderTemplate( array $events, array $attrs ): string

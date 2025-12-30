@@ -7,10 +7,6 @@ use Neuron\Cms\Repositories\IPostRepository;
 use Neuron\Cms\Repositories\ICategoryRepository;
 use Neuron\Cms\Repositories\ITagRepository;
 use Neuron\Cms\Repositories\IUserRepository;
-use Neuron\Cms\Repositories\DatabasePostRepository;
-use Neuron\Cms\Repositories\DatabaseCategoryRepository;
-use Neuron\Cms\Repositories\DatabaseTagRepository;
-use Neuron\Cms\Repositories\DatabaseUserRepository;
 use Neuron\Cms\Services\Content\EditorJsRenderer;
 use Neuron\Cms\Services\Content\ShortcodeParser;
 use Neuron\Cms\Services\Widget\WidgetRenderer;
@@ -18,38 +14,46 @@ use Neuron\Core\Exceptions\NotFound;
 use Neuron\Mvc\Application;
 use Neuron\Mvc\Requests\Request;
 use Neuron\Mvc\Responses\HttpResponseStatus;
-use Neuron\Patterns\Registry;
 use Neuron\Cms\Enums\ContentStatus;
+use Neuron\Routing\Attributes\Get;
+use Neuron\Routing\Attributes\RouteGroup;
 
+#[RouteGroup(prefix: '/blog')]
 class Blog extends Content
 {
-	private IPostRepository $_postRepository;
-	private ICategoryRepository $_categoryRepository;
-	private ITagRepository $_tagRepository;
-	private IUserRepository $_userRepository;
-	private EditorJsRenderer $_renderer;
+	private ?IPostRepository $_postRepository = null;
+	private ?ICategoryRepository $_categoryRepository = null;
+	private ?ITagRepository $_tagRepository = null;
+	private ?IUserRepository $_userRepository = null;
+	private ?EditorJsRenderer $_renderer = null;
 
 	/**
 	 * @param Application|null $app
+	 * @param IPostRepository|null $postRepository
+	 * @param ICategoryRepository|null $categoryRepository
+	 * @param ITagRepository|null $tagRepository
+	 * @param IUserRepository|null $userRepository
+	 * @param EditorJsRenderer|null $renderer
 	 * @throws \Exception
 	 */
-	public function __construct( ?Application $app = null )
+	public function __construct(
+		?Application $app = null,
+		?IPostRepository $postRepository = null,
+		?ICategoryRepository $categoryRepository = null,
+		?ITagRepository $tagRepository = null,
+		?IUserRepository $userRepository = null,
+		?EditorJsRenderer $renderer = null
+	)
 	{
 		parent::__construct( $app );
 
-		// Get settings for repositories
-		$settings = Registry::getInstance()->get( 'Settings' );
-
-		// Initialize repositories
-		$this->_postRepository = new DatabasePostRepository( $settings );
-		$this->_categoryRepository = new DatabaseCategoryRepository( $settings );
-		$this->_tagRepository = new DatabaseTagRepository( $settings );
-		$this->_userRepository = new DatabaseUserRepository( $settings );
-
-		// Initialize renderer with shortcode support
-		$widgetRenderer = new WidgetRenderer( $this->_postRepository );
-		$shortcodeParser = new ShortcodeParser( $widgetRenderer );
-		$this->_renderer = new EditorJsRenderer( $shortcodeParser );
+		// Use dependency injection when available (container provides dependencies)
+		// Otherwise resolve from container (fallback for compatibility)
+		$this->_postRepository = $postRepository ?? $app?->getContainer()?->get( IPostRepository::class );
+		$this->_categoryRepository = $categoryRepository ?? $app?->getContainer()?->get( ICategoryRepository::class );
+		$this->_tagRepository = $tagRepository ?? $app?->getContainer()?->get( ITagRepository::class );
+		$this->_userRepository = $userRepository ?? $app?->getContainer()?->get( IUserRepository::class );
+		$this->_renderer = $renderer ?? $app?->getContainer()?->get( EditorJsRenderer::class );
 	}
 
 	/**
@@ -59,6 +63,7 @@ class Blog extends Content
 	 * @return string
 	 * @throws NotFound
 	 */
+	#[Get('/', name: 'blog')]
 	public function index( Request $request ): string
 	{
 		$posts = $this->_postRepository->getPublished();
@@ -87,6 +92,7 @@ class Blog extends Content
 	 * @return string
 	 * @throws NotFound
 	 */
+	#[Get('/post/:slug', name: 'blog_post')]
 	public function show( Request $request ): string
 	{
 		$slug = $request->getRouteParameter( 'slug', '' );
@@ -113,7 +119,7 @@ class Blog extends Content
 
 		// Render content from Editor.js JSON
 		$content = $post->getContent();
-		$renderedContent = $this->_renderer->render( $content );
+		$renderedContent = $this->_renderer?->render( $content ) ?? (is_array($content) ? json_encode($content) : $content);
 
 		return $this->renderHtml(
 			HttpResponseStatus::OK,
@@ -135,6 +141,7 @@ class Blog extends Content
 	 * @return string
 	 * @throws NotFound
 	 */
+	#[Get('/author/:username', name: 'blog_author')]
 	public function author( Request $request ): string
 	{
 		$authorName = $request->getRouteParameter( 'author', '' );
@@ -173,6 +180,7 @@ class Blog extends Content
 	 * @return string
 	 * @throws NotFound
 	 */
+	#[Get('/tag/:slug', name: 'blog_tag')]
 	public function tag( Request $request ): string
 	{
 		$tagSlug = $request->getRouteParameter( 'tag', '' );
@@ -213,6 +221,7 @@ class Blog extends Content
 	 * @return string
 	 * @throws NotFound
 	 */
+	#[Get('/category/:slug', name: 'blog_category')]
 	public function category( Request $request ): string
 	{
 		$categorySlug = $request->getRouteParameter( 'category', '' );
@@ -253,6 +262,7 @@ class Blog extends Content
 	 * @return string
 	 */
 	#[NoReturn]
+	#[Get('/rss', name: 'rss_feed')]
 	public function feed( Request $request ): string
 	{
 		$posts = $this->_postRepository->getPublished( 20 );

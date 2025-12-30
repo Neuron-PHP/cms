@@ -3,14 +3,15 @@
 namespace Neuron\Cms\Controllers\Auth;
 
 use Neuron\Cms\Controllers\Content;
+use Neuron\Cms\Controllers\Traits\UsesDtos;
 use Neuron\Cms\Enums\FlashMessageType;
-use Neuron\Cms\Services\Auth\Authentication;
-use Neuron\Cms\Services\Auth\CsrfToken;
+use Neuron\Cms\Services\Auth\IAuthenticationService;
 use Neuron\Core\Exceptions\NotFound;
 use Neuron\Mvc\Application;
 use Neuron\Mvc\Responses\HttpResponseStatus;
-use Neuron\Patterns\Registry;
 use Neuron\Mvc\Requests\Request;
+use Neuron\Routing\Attributes\Get;
+use Neuron\Routing\Attributes\Post;
 
 /**
  * Login controller.
@@ -21,27 +22,25 @@ use Neuron\Mvc\Requests\Request;
  */
 class Login extends Content
 {
-	private ?Authentication $_authentication;
-	private CsrfToken $_csrfToken;
+	use UsesDtos;
+
+	private IAuthenticationService $_authentication;
 
 	/**
 	 * @param Application|null $app
+	 * @param IAuthenticationService|null $authentication
 	 * @throws \Exception
 	 */
-	public function __construct( ?Application $app = null )
+	public function __construct(
+		?Application $app = null,
+		?IAuthenticationService $authentication = null
+	)
 	{
 		parent::__construct( $app );
 
-		// Get Authentication from Registry (set up by AuthInitializer)
-		$this->_authentication = Registry::getInstance()->get( 'Authentication' );
-
-		if( !$this->_authentication )
-		{
-			throw new \RuntimeException( 'Authentication not found in Registry.' );
-		}
-
-		// Initialize CSRF manager with parent's session manager
-		$this->_csrfToken = new CsrfToken( $this->getSessionManager() );
+		// Use dependency injection when available (container provides dependencies)
+		// Otherwise resolve from container (fallback for compatibility)
+		$this->_authentication = $authentication ?? $app?->getContainer()?->get( IAuthenticationService::class );
 	}
 
 	/**
@@ -51,6 +50,7 @@ class Login extends Content
 	 * @return string
 	 * @throws NotFound
 	 */
+	#[Get('/login', name: 'login')]
 	public function showLoginForm( Request $request ): string
 	{
 		// If already logged in, redirect to the dashboard
@@ -59,8 +59,7 @@ class Login extends Content
 			$this->redirect( 'admin_dashboard' );
 		}
 
-		// Set CSRF token in Registry so csrf_field() helper works
-		Registry::getInstance()->set( 'Auth.CsrfToken', $this->_csrfToken->getToken() );
+		$this->initializeCsrfToken();
 
 		// Get redirect parameter from URL or default to admin dashboard
 		$defaultRedirect = $this->urlFor( 'admin_dashboard', [], '/admin/dashboard' ) ?? '/admin/dashboard';
@@ -87,36 +86,35 @@ class Login extends Content
 	 * @param Request $request
 	 * @return never
 	 */
+	#[Post('/login', name: 'login_post', filters: ['csrf'])]
 	public function login( Request $request ): never
 	{
-		// Validate CSRF token
-		$token = $request->post( 'csrf_token' );
+		// Create and validate DTO
+		$dto = $this->createDto( 'auth/login-request.yaml' );
+		$this->mapRequestToDto( $dto, $request );
 
-		if( !$this->_csrfToken->validate( $token ) )
+		// Convert 'on' checkbox value to boolean
+		if( $request->post( 'remember' ) === 'on' )
 		{
-			$this->redirect( 'login', [], [FlashMessageType::ERROR->value, 'Invalid CSRF token. Please try again.'] );
+			$dto->remember = true;
 		}
 
-		// Get credentials
-		$username = $request->post( 'username', '' );
-		$password = $request->post( 'password', '' );
-		$remember = $request->post( 'remember' ) === 'on';
-
-		// Validate input
-		if( empty( $username ) || empty( $password ) )
+		// Validate DTO
+		if( !$dto->validate() )
 		{
-			$this->redirect( 'login', [], [FlashMessageType::ERROR->value, 'Please enter both username and password.'] );
+			$errors = implode( ', ', $dto->getErrors() );
+			$this->redirect( 'login', [], [FlashMessageType::ERROR->value, $errors] );
 		}
 
 		// Attempt authentication
-		if( !$this->_authentication->attempt( $username, $password, $remember ) )
+		if( !$this->_authentication->attempt( $dto->username, $dto->password, $dto->remember ) )
 		{
 			$this->redirect( 'login', [], [FlashMessageType::ERROR->value, 'Invalid username or password.'] );
 		}
 
 		// Successful login - redirect to intended URL or dashboard
 		$defaultRedirect = $this->urlFor( 'admin_dashboard', [], '/admin/dashboard' ) ?? '/admin/dashboard';
-		$requestedRedirect = $request->post( 'redirect_url', $defaultRedirect ) ?? $defaultRedirect;
+		$requestedRedirect = $dto->redirect_url ?? $defaultRedirect;
 
 		// Validate and use requested redirect, fallback to default if invalid
 		$redirectUrl = $this->isValidRedirectUrl( $requestedRedirect )
@@ -131,6 +129,7 @@ class Login extends Content
 	 * @param Request $request
 	 * @return never
 	 */
+	#[Post('/logout', name: 'logout', filters: ['auth', 'csrf'])]
 	public function logout( Request $request ): never
 	{
 		$this->_authentication->logout();

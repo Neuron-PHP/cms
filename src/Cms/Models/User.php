@@ -7,6 +7,7 @@ use Neuron\Cms\Enums\UserRole;
 use Neuron\Cms\Enums\UserStatus;
 use Neuron\Orm\Model;
 use Neuron\Orm\Attributes\{Table, HasMany};
+use Neuron\Orm\DependentStrategy;
 
 /**
  * User entity representing a CMS user.
@@ -34,8 +35,17 @@ class User extends Model
 	private string $_timezone = 'UTC';
 
 	// Relationships
-	#[HasMany(Post::class, foreignKey: 'author_id')]
+	// Nullify: When user is deleted, set author_id to NULL on posts (keep content, remove author)
+	#[HasMany(Post::class, foreignKey: 'author_id', dependent: DependentStrategy::Nullify)]
 	private array $_posts = [];
+
+	// Nullify: When user is deleted, set author_id to NULL on pages (keep pages, remove author)
+	#[HasMany(Page::class, foreignKey: 'author_id', dependent: DependentStrategy::Nullify)]
+	private array $_pages = [];
+
+	// Nullify: When user is deleted, set created_by to NULL on events (keep events, remove creator)
+	#[HasMany(Event::class, foreignKey: 'created_by', dependent: DependentStrategy::Nullify)]
+	private array $_events = [];
 
 	/**
 	 * User roles

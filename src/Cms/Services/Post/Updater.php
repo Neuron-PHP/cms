@@ -6,8 +6,8 @@ use Neuron\Cms\Models\Post;
 use Neuron\Cms\Repositories\IPostRepository;
 use Neuron\Cms\Repositories\ICategoryRepository;
 use Neuron\Cms\Services\Tag\Resolver as TagResolver;
-use Neuron\Core\System\IRandom;
-use Neuron\Core\System\RealRandom;
+use Neuron\Cms\Services\SlugGenerator;
+use Neuron\Dto\Dto;
 use Neuron\Cms\Enums\ContentStatus;
 
 /**
@@ -17,52 +17,53 @@ use Neuron\Cms\Enums\ContentStatus;
  *
  * @package Neuron\Cms\Services\Post
  */
-class Updater
+class Updater implements IPostUpdater
 {
 	private IPostRepository $_postRepository;
 	private ICategoryRepository $_categoryRepository;
 	private TagResolver $_tagResolver;
-	private IRandom $_random;
+	private SlugGenerator $_slugGenerator;
 
 	public function __construct(
 		IPostRepository $postRepository,
 		ICategoryRepository $categoryRepository,
 		TagResolver $tagResolver,
-		?IRandom $random = null
+		?SlugGenerator $slugGenerator = null
 	)
 	{
 		$this->_postRepository = $postRepository;
 		$this->_categoryRepository = $categoryRepository;
 		$this->_tagResolver = $tagResolver;
-		$this->_random = $random ?? new RealRandom();
+		$this->_slugGenerator = $slugGenerator ?? new SlugGenerator();
 	}
 
 	/**
-	 * Update an existing post
+	 * Update an existing post from DTO
 	 *
-	 * @param Post $post The post to update
-	 * @param string $title Post title
-	 * @param string $content Editor.js JSON content
-	 * @param string $status Post status
-	 * @param string|null $slug Custom slug
-	 * @param string|null $excerpt Excerpt
-	 * @param string|null $featuredImage Featured image URL
+	 * @param Dto $request DTO containing id, title, content, status, slug, excerpt, featured_image
 	 * @param array $categoryIds Array of category IDs
 	 * @param string $tagNames Comma-separated tag names
 	 * @return Post
+	 * @throws \Exception If post not found
 	 */
-	public function update(
-		Post $post,
-		string $title,
-		string $content,
-		string $status,
-		?string $slug = null,
-		?string $excerpt = null,
-		?string $featuredImage = null,
-		array $categoryIds = [],
-		string $tagNames = ''
-	): Post
+	public function update( Dto $request, array $categoryIds = [], string $tagNames = '' ): Post
 	{
+		// Extract values from DTO
+		$id = $request->id;
+		$title = $request->title;
+		$content = $request->content;
+		$status = $request->status;
+		$slug = $request->slug ?? null;
+		$excerpt = $request->excerpt ?? null;
+		$featuredImage = $request->featured_image ?? null;
+
+		// Look up the post
+		$post = $this->_postRepository->findById( $id );
+		if( !$post )
+		{
+			throw new \Exception( "Post with ID {$id} not found" );
+		}
+
 		$post->setTitle( $title );
 		$post->setSlug( $slug ?: $this->generateSlug( $title ) );
 		$post->setContent( $content );
@@ -99,17 +100,6 @@ class Updater
 	 */
 	private function generateSlug( string $title ): string
 	{
-		$slug = strtolower( trim( $title ) );
-		$slug = preg_replace( '/[^a-z0-9-]/', '-', $slug );
-		$slug = preg_replace( '/-+/', '-', $slug );
-		$slug = trim( $slug, '-' );
-
-		// Fallback for titles with no ASCII characters
-		if( $slug === '' )
-		{
-			$slug = 'post-' . $this->_random->uniqueId();
-		}
-
-		return $slug;
+		return $this->_slugGenerator->generate( $title, 'post' );
 	}
 }

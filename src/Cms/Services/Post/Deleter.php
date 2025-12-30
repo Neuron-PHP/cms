@@ -12,7 +12,7 @@ use Neuron\Cms\Repositories\IPostRepository;
  *
  * @package Neuron\Cms\Services\Post
  */
-class Deleter
+class Deleter implements IPostDeleter
 {
 	private IPostRepository $_postRepository;
 

@@ -4,25 +4,27 @@ namespace Neuron\Cms\Controllers\Admin;
 
 use Neuron\Cms\Enums\FlashMessageType;
 use Neuron\Cms\Controllers\Content;
+use Neuron\Cms\Controllers\Traits\UsesDtos;
 use Neuron\Cms\Repositories\IUserRepository;
-use Neuron\Cms\Repositories\DatabaseUserRepository;
 use Neuron\Cms\Services\User\IUserUpdater;
-use Neuron\Cms\Services\User\Updater;
 use Neuron\Cms\Auth\PasswordHasher;
-use Neuron\Cms\Services\Auth\CsrfToken;
-use Neuron\Data\Settings\SettingManager;
 use Neuron\Mvc\Application;
 use Neuron\Mvc\Requests\Request;
 use Neuron\Mvc\Responses\HttpResponseStatus;
-use Neuron\Patterns\Registry;
+use Neuron\Routing\Attributes\Get;
+use Neuron\Routing\Attributes\Put;
+use Neuron\Routing\Attributes\RouteGroup;
 
 /**
  * User profile management controller.
  *
  * @package Neuron\Cms\Controllers\Admin
  */
+#[RouteGroup(prefix: '/admin', filters: ['auth'])]
 class Profile extends Content
 {
+	use UsesDtos;
+
 	private IUserRepository $_repository;
 	private PasswordHasher $_hasher;
 	private IUserUpdater $_userUpdater;
@@ -43,28 +45,11 @@ class Profile extends Content
 	{
 		parent::__construct( $app );
 
-		// Get settings if we need to create repository
-		if( $repository === null )
-		{
-			$settings = Registry::getInstance()->get( 'Settings' );
-			$repository = new DatabaseUserRepository( $settings );
-		}
-
-		// Create hasher if not provided
-		if( $hasher === null )
-		{
-			$hasher = new PasswordHasher();
-		}
-
-		// Create updater if not provided
-		if( $userUpdater === null )
-		{
-			$userUpdater = new Updater( $repository, $hasher );
-		}
-
-		$this->_repository = $repository;
-		$this->_hasher = $hasher;
-		$this->_userUpdater = $userUpdater;
+		// Use dependency injection when available (container provides dependencies)
+		// Otherwise resolve from container (fallback for compatibility)
+		$this->_repository = $repository ?? $app?->getContainer()?->get( IUserRepository::class );
+		$this->_hasher = $hasher ?? $app?->getContainer()?->get( PasswordHasher::class );
+		$this->_userUpdater = $userUpdater ?? $app?->getContainer()?->get( IUserUpdater::class );
 	}
 
 	/**
@@ -73,6 +58,7 @@ class Profile extends Content
 	 * @return string
 	 * @throws \Exception
 	 */
+	#[Get('/profile', name: 'admin_profile')]
 	public function edit( Request $request ): string
 	{
 		$this->initializeCsrfToken();
@@ -107,6 +93,7 @@ class Profile extends Content
 	 * @return never
 	 * @throws \Exception
 	 */
+	#[Put('/profile', name: 'admin_profile_update', filters: ['csrf'])]
 	public function update( Request $request ): never
 	{
 		// Get authenticated user once and check for null
@@ -142,14 +129,27 @@ class Profile extends Content
 
 		try
 		{
-			$this->_userUpdater->update(
-				$user,
-				$user->getUsername(),
-				$email,
-				$user->getRole(),
-				!empty( $newPassword ) ? $newPassword : null,
-				!empty( $timezone ) ? $timezone : null
-			);
+			// Create and populate DTO for update request
+			$dto = $this->createDto( 'users/update-user-request.yaml' );
+			$dto->id = $user->getId();
+			$dto->username = $user->getUsername();
+			$dto->email = $email;
+			$dto->role = $user->getRole();
+
+			if( !empty( $newPassword ) )
+			{
+				$dto->password = $newPassword;
+			}
+
+			if( !empty( $timezone ) )
+			{
+				$dto->timezone = $timezone;
+			}
+
+			// Validate and update
+			$this->validateDtoOrFail( $dto );
+			$this->_userUpdater->update( $dto );
+
 			$this->redirect( 'admin_profile', [], [FlashMessageType::SUCCESS->value, 'Profile updated successfully'] );
 		}
 		catch( \Exception $e )

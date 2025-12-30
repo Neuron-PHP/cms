@@ -1,0 +1,12 @@
+# Common audit fields for tracking entity changes
+# Usage: Include via 'ref' parameter in other DTOs
+dto:
+  created_by:
+    type: integer
+    required: false
+    description: User ID who created this entity
+
+  updated_by:
+    type: integer
+    required: false
+    description: User ID who last updated this entity

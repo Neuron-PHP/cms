@@ -1,0 +1,56 @@
+# DTO for creating a new user
+# Validates all required fields for user creation
+dto:
+  username:
+    type: string
+    required: true
+    length:
+      min: 3
+      max: 50
+    pattern: /^[a-zA-Z0-9_-]+$/
+    description: Unique username (alphanumeric, underscore, hyphen only)
+
+  email:
+    type: email
+    required: true
+    description: Valid email address (must be unique)
+
+  password:
+    type: string
+    required: true
+    length:
+      min: 8
+      max: 255
+    description: Password (min 8 chars, will be validated for strength)
+
+  role:
+    type: string
+    required: true
+    enum: ['admin', 'editor', 'author', 'subscriber']
+    description: User role determining permissions
+
+  status:
+    type: string
+    required: false
+    enum: ['active', 'inactive', 'suspended']
+    default: active
+    description: User account status
+
+  timezone:
+    type: string
+    required: false
+    length:
+      max: 50
+    description: User's preferred timezone (e.g., America/New_York)
+
+  email_verified:
+    type: boolean
+    required: false
+    default: false
+    description: Whether email has been verified
+
+  two_factor_enabled:
+    type: boolean
+    required: false
+    default: false
+    description: Whether 2FA is enabled for this user

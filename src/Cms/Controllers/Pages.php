@@ -5,8 +5,6 @@ namespace Neuron\Cms\Controllers;
 use Neuron\Cms\Models\Page as PageModel;
 use Neuron\Cms\Repositories\IPageRepository;
 use Neuron\Cms\Repositories\IPostRepository;
-use Neuron\Cms\Repositories\DatabasePageRepository;
-use Neuron\Cms\Repositories\DatabasePostRepository;
 use Neuron\Cms\Services\Content\EditorJsRenderer;
 use Neuron\Cms\Services\Content\ShortcodeParser;
 use Neuron\Cms\Services\Widget\WidgetRenderer;
@@ -14,7 +12,8 @@ use Neuron\Core\Exceptions\NotFound;
 use Neuron\Mvc\Application;
 use Neuron\Mvc\Requests\Request;
 use Neuron\Mvc\Responses\HttpResponseStatus;
-use Neuron\Patterns\Registry;
+use Neuron\Routing\Attributes\Get;
+use Neuron\Routing\Attributes\RouteGroup;
 
 /**
  * Public pages controller.
@@ -23,6 +22,7 @@ use Neuron\Patterns\Registry;
  *
  * @package Neuron\Cms\Controllers
  */
+#[RouteGroup(prefix: '/pages')]
 class Pages extends Content
 {
 	private IPageRepository $_pageRepository;
@@ -30,23 +30,22 @@ class Pages extends Content
 
 	/**
 	 * @param Application|null $app
+	 * @param IPageRepository|null $pageRepository
+	 * @param EditorJsRenderer|null $renderer
 	 * @throws \Exception
 	 */
-	public function __construct( ?Application $app = null )
+	public function __construct(
+		?Application $app = null,
+		?IPageRepository $pageRepository = null,
+		?EditorJsRenderer $renderer = null
+	)
 	{
 		parent::__construct( $app );
 
-		// Get settings for repositories
-		$settings = Registry::getInstance()->get( 'Settings' );
-
-		// Initialize repository
-		$this->_pageRepository = new DatabasePageRepository( $settings );
-
-		// Initialize renderer with shortcode support
-		$postRepository = new DatabasePostRepository( $settings );
-		$widgetRenderer = new WidgetRenderer( $postRepository );
-		$shortcodeParser = new ShortcodeParser( $widgetRenderer );
-		$this->_renderer = new EditorJsRenderer( $shortcodeParser );
+		// Use dependency injection when available (container provides dependencies)
+		// Otherwise resolve from container (fallback for compatibility)
+		$this->_pageRepository = $pageRepository ?? $app?->getContainer()?->get( IPageRepository::class );
+		$this->_renderer = $renderer ?? $app?->getContainer()?->get( EditorJsRenderer::class );
 	}
 
 	/**
@@ -56,6 +55,7 @@ class Pages extends Content
 	 * @return string
 	 * @throws NotFound
 	 */
+	#[Get('/:slug', name: 'page')]
 	public function show( Request $request ): string
 	{
 		$slug = $request->getRouteParameter( 'slug', '' );

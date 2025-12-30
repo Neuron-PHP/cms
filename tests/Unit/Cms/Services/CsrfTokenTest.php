@@ -185,17 +185,15 @@ class CsrfTokenTest extends TestCase
 		$this->assertMatchesRegularExpression('/^[a-zA-Z0-9]+$/', $token);
 	}
 
-	public function testTokenPersistsAcrossMultipleValidations(): void
+	public function testTokenIsSingleUse(): void
 	{
 		$token = $this->_csrfToken->generate();
 
-		// Validate multiple times
-		$this->assertTrue($this->_csrfToken->validate($token));
-		$this->assertTrue($this->_csrfToken->validate($token));
+		// First validation should succeed
 		$this->assertTrue($this->_csrfToken->validate($token));
 
-		// Token should still be valid
-		$this->assertEquals($token, $this->_csrfToken->getToken());
+		// Second validation should fail (token consumed)
+		$this->assertFalse($this->_csrfToken->validate($token));
 	}
 
 	public function testTokenIsUrlSafe(): void

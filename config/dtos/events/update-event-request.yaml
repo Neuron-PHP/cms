@@ -1,0 +1,79 @@
+# DTO for updating an existing event
+# Maps to Event\Updater::update() method
+dto:
+  id:
+    type: integer
+    required: true
+
+  title:
+    type: string
+    required: true
+    length:
+      min: 1
+      max: 255
+
+  slug:
+    type: string
+    required: false
+    length:
+      max: 255
+    pattern: '/^[a-z0-9-]*$/'  # URL-friendly slug
+
+  description:
+    type: string
+    required: false
+
+  content:
+    type: string
+    required: true
+    default: '{"blocks":[]}'
+
+  location:
+    type: string
+    required: false
+    length:
+      max: 255
+
+  start_date:
+    type: string
+    required: true
+
+  end_date:
+    type: string
+    required: false
+
+  all_day:
+    type: boolean
+    required: false
+    default: false
+
+  category_id:
+    type: integer
+    required: false
+
+  status:
+    type: string
+    required: true
+    enum: ['draft', 'published']
+
+  featured_image:
+    type: string
+    required: false
+
+  organizer:
+    type: string
+    required: false
+    length:
+      max: 255
+
+  contact_email:
+    type: string
+    required: false
+    length:
+      max: 255
+
+  contact_phone:
+    type: string
+    required: false
+    length:
+      max: 50

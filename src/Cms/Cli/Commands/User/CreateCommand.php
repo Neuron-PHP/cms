@@ -165,8 +165,10 @@ class CreateCommand extends Command
 
 	/**
 	 * Get user repository
+	 *
+	 * Protected to allow mocking in tests
 	 */
-	private function getUserRepository(): ?DatabaseUserRepository
+	protected function getUserRepository(): ?DatabaseUserRepository
 	{
 		try
 		{
@@ -186,14 +188,5 @@ class CreateCommand extends Command
 			$this->output->error( "Database connection failed: " . $e->getMessage() );
 			return null;
 		}
-	}
-
-	/**
-	 * Prompt for user input
-	 */
-	private function prompt( string $message ): string
-	{
-		$this->output->write( $message, false );
-		return trim( fgets( STDIN ) );
 	}
 }

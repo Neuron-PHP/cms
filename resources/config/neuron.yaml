@@ -46,6 +46,21 @@ theme:
   # Guest theme (for public website and login/registration pages)
   guest: sandstone
 
+# Security Configuration
+security:
+  # Content Security Policy (CSP)
+  # Customize this based on your application's needs
+  # content_security_policy: "default-src 'self'; script-src 'self' 'unsafe-inline';"
+
+  # X-Frame-Options: Prevent clickjacking
+  # Options: DENY, SAMEORIGIN, ALLOW-FROM https://example.com
+  # frame_options: DENY
+
+  # Referrer-Policy: Control referrer information leakage
+  # Options: no-referrer, no-referrer-when-downgrade, origin, origin-when-cross-origin,
+  #          same-origin, strict-origin, strict-origin-when-cross-origin, unsafe-url
+  # referrer_policy: strict-origin-when-cross-origin
+
 # Member Registration and Management Configuration
 member:
   # Enable or disable user registration

@@ -11,12 +11,18 @@ use Neuron\Cms\Services\User\IUserDeleter;
 use Neuron\Mvc\Application;
 use Neuron\Mvc\Requests\Request;
 use Neuron\Cms\Enums\UserRole;
+use Neuron\Routing\Attributes\Get;
+use Neuron\Routing\Attributes\Post;
+use Neuron\Routing\Attributes\Put;
+use Neuron\Routing\Attributes\Delete;
+use Neuron\Routing\Attributes\RouteGroup;
 
 /**
  * User management controller.
  *
  * @package Neuron\Cms\Controllers\Admin
  */
+#[RouteGroup(prefix: '/admin', filters: ['auth'])]
 class Users extends Content
 {
 	private IUserRepository $_repository;
@@ -55,6 +61,7 @@ class Users extends Content
 	 * @return string
 	 * @throws \Exception
 	 */
+	#[Get('/users', name: 'admin_users')]
 	public function index( Request $request ): string
 	{
 		$this->initializeCsrfToken();
@@ -80,6 +87,7 @@ class Users extends Content
 	 * @return string
 	 * @throws \Exception
 	 */
+	#[Get('/users/create', name: 'admin_users_create')]
 	public function create( Request $request ): string
 	{
 		$this->initializeCsrfToken();
@@ -99,22 +107,25 @@ class Users extends Content
 	 * @return never
 	 * @throws \Exception
 	 */
+	#[Post('/users', name: 'admin_users_store', filters: ['csrf'])]
 	public function store( Request $request ): never
 	{
-		$username = $request->post( 'username','' );
-		$email = $request->post( 'email', '' );
-		$password = $request->post( 'password', '' );
-		$role = $request->post( 'role', UserRole::SUBSCRIBER->value );
+		// Create DTO from YAML configuration
+		$dto = $this->createDto( 'users/create-user-request.yaml' );
 
-		// Basic validation
-		if( empty( $username ) || empty( $email ) || empty( $password ) )
+		// Map request data to DTO
+		$this->mapRequestToDto( $dto, $request );
+
+		// Validate DTO
+		if( !$dto->validate() )
 		{
-			$this->redirect( 'admin_users_create', [], [FlashMessageType::ERROR->value, 'All fields are required'] );
+			$this->validationError( 'admin_users_create', $dto->getErrors() );
 		}
 
 		try
 		{
-			$this->_userCreator->create( $username, $email, $password, $role );
+			// Pass DTO to service
+			$this->_userCreator->create( $dto );
 			$this->redirect( 'admin_users', [], [FlashMessageType::SUCCESS->value, 'User created successfully'] );
 		}
 		catch( \Exception $e )
@@ -130,6 +141,7 @@ class Users extends Content
 	 * @return string
 	 * @throws \Exception
 	 */
+	#[Get('/users/:id/edit', name: 'admin_users_edit')]
 	public function edit( Request $request ): string
 	{
 		$id = (int)$request->getRouteParameter( 'id' );
@@ -161,33 +173,30 @@ class Users extends Content
 	 * @return never
 	 * @throws \Exception
 	 */
+	#[Put('/users/:id', name: 'admin_users_update', filters: ['csrf'])]
 	public function update( Request $request ): never
 	{
 		$id = (int)$request->getRouteParameter( 'id' );
-		$user = $this->_repository->findById( $id );
 
-		if( !$user )
+		// Create DTO from YAML configuration
+		$dto = $this->createDto( 'users/update-user-request.yaml' );
+
+		// Map request data to DTO
+		$this->mapRequestToDto( $dto, $request );
+
+		// Set ID from route parameter
+		$dto->id = $id;
+
+		// Validate DTO
+		if( !$dto->validate() )
 		{
-			$this->redirect( 'admin_users', [], [FlashMessageType::ERROR->value, 'User not found'] );
+			$this->validationError( 'admin_users_edit', $dto->getErrors(), ['id' => $id] );
 		}
-
-		$usernameInput = $request->post( 'username', null );
-		$emailInput = $request->post( 'email', null );
-
-		$username = $usernameInput !== null ? trim( (string)$usernameInput ) : $user->getUsername();
-		$email = $emailInput !== null ? trim( (string)$emailInput ) : $user->getEmail();
-
-		if( $username === '' || $email === '' )
-		{
-			$this->redirect( 'admin_users_edit', ['id' => $id], [FlashMessageType::ERROR->value, 'Username and email are required'] );
-		}
-
-		$role = $request->post( 'role', $user->getRole() );
-		$password = $request->post( 'password', null );
 
 		try
 		{
-			$this->_userUpdater->update( $user, $username, $email, $role, $password );
+			// Pass DTO to service
+			$this->_userUpdater->update( $dto );
 			$this->redirect( 'admin_users', [], [FlashMessageType::SUCCESS->value, 'User updated successfully'] );
 		}
 		catch( \Exception $e )
@@ -203,6 +212,7 @@ class Users extends Content
 	 * @return never
 	 * @throws \Exception
 	 */
+	#[Delete('/users/:id', name: 'admin_users_destroy', filters: ['csrf'])]
 	public function destroy( Request $request ): never
 	{
 		$id = (int)$request->getRouteParameter( 'id' );

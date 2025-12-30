@@ -4,6 +4,7 @@ namespace Tests\Cms;
 
 use Neuron\Cms\Controllers\Content;
 use Neuron\Data\Settings\Source\Memory;
+use Neuron\Data\Settings\SettingManager;
 use Neuron\Mvc\Requests\Request;
 use Neuron\Mvc\Responses\HttpResponseStatus;
 use Neuron\Patterns\Registry;
@@ -12,6 +13,8 @@ use PHPUnit\Framework\TestCase;
 
 class ContentControllerTest extends TestCase
 {
+	private SettingManager $_settingManager;
+
 	protected function setUp(): void
 	{
 		parent::setUp();
@@ -19,15 +22,18 @@ class ContentControllerTest extends TestCase
 		// Create virtual filesystem (local variable, not stored)
 		$root = vfsStream::setup( 'test' );
 
-		// Create mock settings (local variable, not stored as test property)
+		// Create mock settings
 		$settings = new Memory();
 		$settings->set( 'site', 'name', 'Test Site' );
 		$settings->set( 'site', 'title', 'Test Title' );
 		$settings->set( 'site', 'description', 'Test Description' );
 		$settings->set( 'site', 'url', 'http://test.com' );
 
-		// Store settings in registry
-		Registry::getInstance()->set( 'Settings', $settings );
+		// Wrap in SettingManager
+		$this->_settingManager = new SettingManager( $settings );
+
+		// Store settings in registry for backward compatibility
+		Registry::getInstance()->set( 'Settings', $this->_settingManager );
 
 		// Create version file
 		$versionContent = json_encode([
@@ -70,7 +76,7 @@ class ContentControllerTest extends TestCase
 	 */
 	public function testConstructor()
 	{
-		$controller = new Content();
+		$controller = new Content( null, $this->_settingManager );
 
 		// Check that properties were set from settings
 		$this->assertEquals( 'Test Site', $controller->getName() );

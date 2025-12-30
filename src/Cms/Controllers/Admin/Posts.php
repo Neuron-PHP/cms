@@ -8,116 +8,65 @@ use Neuron\Cms\Models\Post;
 use Neuron\Cms\Repositories\IPostRepository;
 use Neuron\Cms\Repositories\ICategoryRepository;
 use Neuron\Cms\Repositories\ITagRepository;
-use Neuron\Cms\Repositories\DatabasePostRepository;
-use Neuron\Cms\Repositories\DatabaseCategoryRepository;
-use Neuron\Cms\Repositories\DatabaseTagRepository;
-use Neuron\Cms\Services\Post\Creator;
-use Neuron\Cms\Services\Post\Updater;
-use Neuron\Cms\Services\Post\Deleter;
+use Neuron\Cms\Services\Post\IPostCreator;
+use Neuron\Cms\Services\Post\IPostUpdater;
+use Neuron\Cms\Services\Post\IPostDeleter;
 use Neuron\Cms\Services\Tag\Resolver as TagResolver;
 use Neuron\Cms\Services\Auth\CsrfToken;
 use Neuron\Mvc\Application;
 use Neuron\Mvc\Requests\Request;
 use Neuron\Mvc\Responses\HttpResponseStatus;
-use Neuron\Patterns\Registry;
 use Neuron\Cms\Enums\ContentStatus;
+use Neuron\Routing\Attributes\Get;
+use Neuron\Routing\Attributes\Post as PostRoute;
+use Neuron\Routing\Attributes\Put;
+use Neuron\Routing\Attributes\Delete;
+use Neuron\Routing\Attributes\RouteGroup;
 
 /**
  * Admin post management controller.
  *
  * @package Neuron\Cms\Controllers\Admin
  */
+#[RouteGroup(prefix: '/admin', filters: ['auth'])]
 class Posts extends Content
 {
 	private IPostRepository $_postRepository;
 	private ICategoryRepository $_categoryRepository;
 	private ITagRepository $_tagRepository;
-	private Creator $_postCreator;
-	private Updater $_postUpdater;
-	private Deleter $_postDeleter;
+	private IPostCreator $_postCreator;
+	private IPostUpdater $_postUpdater;
+	private IPostDeleter $_postDeleter;
 
 	/**
 	 * @param Application|null $app
 	 * @param IPostRepository|null $postRepository
 	 * @param ICategoryRepository|null $categoryRepository
 	 * @param ITagRepository|null $tagRepository
-	 * @param Creator|null $postCreator
-	 * @param Updater|null $postUpdater
-	 * @param Deleter|null $postDeleter
-	 * @throws \Exception
+	 * @param IPostCreator|null $postCreator
+	 * @param IPostUpdater|null $postUpdater
+	 * @param IPostDeleter|null $postDeleter
 	 */
 	public function __construct(
 		?Application $app = null,
 		?IPostRepository $postRepository = null,
 		?ICategoryRepository $categoryRepository = null,
 		?ITagRepository $tagRepository = null,
-		?Creator $postCreator = null,
-		?Updater $postUpdater = null,
-		?Deleter $postDeleter = null
+		?IPostCreator $postCreator = null,
+		?IPostUpdater $postUpdater = null,
+		?IPostDeleter $postDeleter = null
 	)
 	{
 		parent::__construct( $app );
 
-		// Get settings once if we need to create any repositories
-		$settings = null;
-		if( $postRepository === null || $categoryRepository === null || $tagRepository === null )
-		{
-			$settings = Registry::getInstance()->get( 'Settings' );
-		}
-
-		// Individually ensure each repository is initialized
-		if( $postRepository === null )
-		{
-			$postRepository = new DatabasePostRepository( $settings );
-		}
-
-		if( $categoryRepository === null )
-		{
-			$categoryRepository = new DatabaseCategoryRepository( $settings );
-		}
-
-		if( $tagRepository === null )
-		{
-			$tagRepository = new DatabaseTagRepository( $settings );
-		}
-
-		// Build downstream services using guaranteed non-null repositories
-		// Create TagResolver if needed for Creator/Updater services
-		$tagResolver = new TagResolver(
-			$tagRepository,
-			new \Neuron\Cms\Services\Tag\Creator( $tagRepository )
-		);
-
-		if( $postCreator === null )
-		{
-			$postCreator = new Creator(
-				$postRepository,
-				$categoryRepository,
-				$tagResolver
-			);
-		}
-
-		if( $postUpdater === null )
-		{
-			$postUpdater = new Updater(
-				$postRepository,
-				$categoryRepository,
-				$tagResolver
-			);
-		}
-
-		if( $postDeleter === null )
-		{
-			$postDeleter = new Deleter( $postRepository );
-		}
-
-		// Assign to properties with defensive checks
-		$this->_postRepository = $postRepository;
-		$this->_categoryRepository = $categoryRepository;
-		$this->_tagRepository = $tagRepository;
-		$this->_postCreator = $postCreator;
-		$this->_postUpdater = $postUpdater;
-		$this->_postDeleter = $postDeleter;
+		// Use dependency injection when available (container provides dependencies)
+		// Otherwise resolve from container (fallback for compatibility)
+		$this->_postRepository = $postRepository ?? $app?->getContainer()?->get( IPostRepository::class );
+		$this->_categoryRepository = $categoryRepository ?? $app?->getContainer()?->get( ICategoryRepository::class );
+		$this->_tagRepository = $tagRepository ?? $app?->getContainer()?->get( ITagRepository::class );
+		$this->_postCreator = $postCreator ?? $app?->getContainer()?->get( IPostCreator::class );
+		$this->_postUpdater = $postUpdater ?? $app?->getContainer()?->get( IPostUpdater::class );
+		$this->_postDeleter = $postDeleter ?? $app?->getContainer()?->get( IPostDeleter::class );
 	}
 
 	/**
@@ -126,6 +75,7 @@ class Posts extends Content
 	 * @return string
 	 * @throws \Exception
 	 */
+	#[Get('/posts', name: 'admin_posts')]
 	public function index( Request $request ): string
 	{
 		$this->initializeCsrfToken();
@@ -160,6 +110,7 @@ class Posts extends Content
 	 * @return string
 	 * @throws \Exception
 	 */
+	#[Get('/posts/create', name: 'admin_posts_create')]
 	public function create( Request $request ): string
 	{
 		$this->initializeCsrfToken();
@@ -179,38 +130,37 @@ class Posts extends Content
 	 * @return never
 	 * @throws \Exception
 	 */
+	#[PostRoute('/posts', name: 'admin_posts_store', filters: ['csrf'])]
 	public function store( Request $request ): never
 	{
+		// Create DTO from YAML configuration
+		$dto = $this->createDto( 'posts/create-post-request.yaml' );
+
+		// Map request data to DTO
+		$this->mapRequestToDto( $dto, $request );
+
+		// Set author from current user
+		$dto->author_id = user_id();
+
+		// Validate DTO
+		if( !$dto->validate() )
+		{
+			$this->validationError( 'admin_posts_create', $dto->getErrors() );
+		}
+
 		try
 		{
-			// Get form data
-			$title = $request->post('title', '' );
-			$slug = $request->post( 'slug', '' );
-			$content = $request->post('content', '' );
-			$excerpt = $request->post( 'excerpt', '' );
-			$featuredImage = $request->post('featured_image', '' );
-			$status = $request->post( 'status', ContentStatus::DRAFT->value );
+			// Get categories and tags from request (not in DTO due to array validation limitations)
 			$categoryIds = $request->post( 'categories', [] );
 			$tagNames = $request->post( 'tags', '' );
 
-			// Create post using service
-			$this->_postCreator->create(
-				$title,
-				$content,
-				user_id(),
-				$status,
-				$slug ?: null,
-				$excerpt ?: null,
-				$featuredImage ?: null,
-				$categoryIds,
-				$tagNames
-			);
-
+			// Pass DTO to service
+			$this->_postCreator->create( $dto, $categoryIds, $tagNames );
 			$this->redirect( 'admin_posts', [], [FlashMessageType::SUCCESS->value, 'Post created successfully'] );
 		}
 		catch( \Exception $e )
 		{
-			$this->redirect( 'admin_posts_create', [], [FlashMessageType::ERROR->value, 'Failed to create post: ' . $e->getMessage()] );
+			$this->redirect( 'admin_posts_create', [], [FlashMessageType::ERROR->value, $e->getMessage()] );
 		}
 	}
 
@@ -220,6 +170,7 @@ class Posts extends Content
 	 * @return string
 	 * @throws \Exception
 	 */
+	#[Get('/posts/:id/edit', name: 'admin_posts_edit')]
 	public function edit( Request $request ): string
 	{
 		$postId = (int)$request->getRouteParameter( 'id' );
@@ -256,9 +207,9 @@ class Posts extends Content
 	 * @return never
 	 * @throws \Exception
 	 */
+	#[Put('/posts/:id', name: 'admin_posts_update', filters: ['csrf'])]
 	public function update( Request $request ): never
 	{
-
 		$postId = (int)$request->getRouteParameter( 'id' );
 		$post = $this->_postRepository->findById( $postId );
 
@@ -273,36 +224,34 @@ class Posts extends Content
 			throw new \RuntimeException( 'Unauthorized to edit this post' );
 		}
 
+		// Create DTO from YAML configuration
+		$dto = $this->createDto( 'posts/update-post-request.yaml' );
+
+		// Map request data to DTO
+		$this->mapRequestToDto( $dto, $request );
+
+		// Set ID from route parameter
+		$dto->id = $postId;
+
+		// Validate DTO
+		if( !$dto->validate() )
+		{
+			$this->validationError( 'admin_posts_edit', $dto->getErrors(), ['id' => $postId] );
+		}
+
 		try
 		{
-			// Get form data
-			$title = $request->post( 'title', '' );
-			$slug = $request->post('slug', '' );
-			$content = $request->post( 'content', '' );
-			$excerpt = $request->post( 'excerpt' ,'' );
-			$featuredImage = $request->post( 'featured_image', '' );
-			$status = $request->post( 'status', ContentStatus::DRAFT->value );
+			// Get categories and tags from request (not in DTO due to array validation limitations)
 			$categoryIds = $request->post( 'categories', [] );
-			$tagNames = $request->post( 'tags','' );
+			$tagNames = $request->post( 'tags', '' );
 
-			// Update post using service
-			$this->_postUpdater->update(
-				$post,
-				$title,
-				$content,
-				$status,
-				$slug ?: null,
-				$excerpt ?: null,
-				$featuredImage ?: null,
-				$categoryIds,
-				$tagNames
-			);
-
+			// Pass DTO to service
+			$this->_postUpdater->update( $dto, $categoryIds, $tagNames );
 			$this->redirect( 'admin_posts', [], [FlashMessageType::SUCCESS->value, 'Post updated successfully'] );
 		}
 		catch( \Exception $e )
 		{
-			$this->redirect( 'admin_posts_edit', ['id' => $postId], [FlashMessageType::ERROR->value, 'Failed to update post: ' . $e->getMessage()] );
+			$this->redirect( 'admin_posts_edit', ['id' => $postId], [FlashMessageType::ERROR->value, $e->getMessage()] );
 		}
 	}
 
@@ -311,6 +260,7 @@ class Posts extends Content
 	 * @param Request $request
 	 * @return never
 	 */
+	#[Delete('/posts/:id', name: 'admin_posts_destroy', filters: ['csrf'])]
 	public function destroy( Request $request ): never
 	{
 

@@ -6,9 +6,58 @@ use PHPUnit\Framework\TestCase;
 use Neuron\Cms\Services\Page\Updater;
 use Neuron\Cms\Models\Page;
 use Neuron\Cms\Repositories\IPageRepository;
+use Neuron\Dto\Factory;
+use Neuron\Dto\Dto;
 
 class UpdaterTest extends TestCase
 {
+	/**
+	 * Helper method to create a DTO with test data
+	 */
+	private function createDto(
+		int $id,
+		string $title,
+		string $content,
+		string $status,
+		?string $slug = null,
+		?string $template = null,
+		?string $metaTitle = null,
+		?string $metaDescription = null,
+		?string $metaKeywords = null
+	): Dto
+	{
+		$factory = new Factory( __DIR__ . '/../../../../../config/dtos/pages/update-page-request.yaml' );
+		$dto = $factory->create();
+
+		$dto->id = $id;
+		$dto->title = $title;
+		$dto->content = $content;
+		$dto->status = $status;
+
+		if( $slug !== null )
+		{
+			$dto->slug = $slug;
+		}
+		if( $template !== null )
+		{
+			$dto->template = $template;
+		}
+		if( $metaTitle !== null )
+		{
+			$dto->meta_title = $metaTitle;
+		}
+		if( $metaDescription !== null )
+		{
+			$dto->meta_description = $metaDescription;
+		}
+		if( $metaKeywords !== null )
+		{
+			$dto->meta_keywords = $metaKeywords;
+		}
+
+		return $dto;
+	}
+
 	public function testUpdatePageWithAllParameters(): void
 	{
 		$repository = $this->createMock( IPageRepository::class );
@@ -21,12 +70,18 @@ class UpdaterTest extends TestCase
 
 		$repository
 			->expects( $this->once() )
+			->method( 'findById' )
+			->with( 1 )
+			->willReturn( $page );
+
+		$repository
+			->expects( $this->once() )
 			->method( 'update' )
 			->with( $page )
 			->willReturn( true );
 
-		$result = $updater->update(
-			page: $page,
+		$dto = $this->createDto(
+			id: 1,
 			title: 'Updated Title',
 			content: '{"blocks":[]}',
 			status: Page::STATUS_DRAFT,
@@ -37,7 +92,9 @@ class UpdaterTest extends TestCase
 			metaKeywords: 'updated, keywords'
 		);
 
-		$this->assertTrue( $result );
+		$result = $updater->update( $dto );
+
+		$this->assertInstanceOf( Page::class, $result );
 		$this->assertEquals( 'Updated Title', $page->getTitle() );
 		$this->assertEquals( 'new-slug', $page->getSlug() );
 		$this->assertEquals( '{"blocks":[]}', $page->getContentRaw() );
@@ -59,18 +116,26 @@ class UpdaterTest extends TestCase
 
 		$repository
 			->expects( $this->once() )
+			->method( 'findById' )
+			->with( 1 )
+			->willReturn( $page );
+
+		$repository
+			->expects( $this->once() )
 			->method( 'update' )
 			->willReturn( true );
 
-		$result = $updater->update(
-			page: $page,
+		$dto = $this->createDto(
+			id: 1,
 			title: 'Updated Title',
 			content: '{}',
 			status: Page::STATUS_DRAFT,
 			slug: null  // Not providing new slug
 		);
 
-		$this->assertTrue( $result );
+		$result = $updater->update( $dto );
+
+		$this->assertInstanceOf( Page::class, $result );
 		$this->assertEquals( 'original-slug', $page->getSlug() );
 	}
 
@@ -86,15 +151,22 @@ class UpdaterTest extends TestCase
 		$this->assertNull( $page->getPublishedAt() );
 
 		$repository
+			->method( 'findById' )
+			->with( 1 )
+			->willReturn( $page );
+
+		$repository
 			->method( 'update' )
 			->willReturn( true );
 
-		$updater->update(
-			page: $page,
+		$dto = $this->createDto(
+			id: 1,
 			title: 'Title',
 			content: '{}',
 			status: Page::STATUS_PUBLISHED
 		);
+
+		$updater->update( $dto );
 
 		$this->assertEquals( Page::STATUS_PUBLISHED, $page->getStatus() );
 		$this->assertNotNull( $page->getPublishedAt() );
@@ -112,15 +184,22 @@ class UpdaterTest extends TestCase
 		$page->setPublishedAt( $originalPublishedDate );
 
 		$repository
+			->method( 'findById' )
+			->with( 1 )
+			->willReturn( $page );
+
+		$repository
 			->method( 'update' )
 			->willReturn( true );
 
-		$updater->update(
-			page: $page,
+		$dto = $this->createDto(
+			id: 1,
 			title: 'Updated Title',
 			content: '{}',
 			status: Page::STATUS_PUBLISHED
 		);
+
+		$updater->update( $dto );
 
 		// Published date should remain the original
 		$this->assertEquals( $originalPublishedDate, $page->getPublishedAt() );
@@ -135,15 +214,22 @@ class UpdaterTest extends TestCase
 		$page->setId( 1 );
 
 		$repository
+			->method( 'findById' )
+			->with( 1 )
+			->willReturn( $page );
+
+		$repository
 			->method( 'update' )
 			->willReturn( true );
 
-		$updater->update(
-			page: $page,
+		$dto = $this->createDto(
+			id: 1,
 			title: 'Title',
 			content: '{}',
 			status: Page::STATUS_DRAFT
 		);
+
+		$updater->update( $dto );
 
 		$this->assertNotNull( $page->getUpdatedAt() );
 		$this->assertInstanceOf( \DateTimeImmutable::class, $page->getUpdatedAt() );
@@ -158,17 +244,24 @@ class UpdaterTest extends TestCase
 		$page->setId( 1 );
 
 		$repository
+			->method( 'findById' )
+			->with( 1 )
+			->willReturn( $page );
+
+		$repository
 			->expects( $this->once() )
 			->method( 'update' )
 			->willReturn( false );
 
-		$result = $updater->update(
-			page: $page,
+		$dto = $this->createDto(
+			id: 1,
 			title: 'Title',
 			content: '{}',
 			status: Page::STATUS_DRAFT
 		);
 
-		$this->assertFalse( $result );
+		$result = $updater->update( $dto );
+
+		$this->assertInstanceOf( Page::class, $result );
 	}
 }

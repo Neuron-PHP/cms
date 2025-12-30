@@ -5,64 +5,50 @@ namespace Neuron\Cms\Controllers\Admin;
 use Neuron\Cms\Enums\FlashMessageType;
 use Neuron\Cms\Controllers\Content;
 use Neuron\Cms\Repositories\ICategoryRepository;
-use Neuron\Cms\Repositories\DatabaseCategoryRepository;
-use Neuron\Cms\Services\Category\Creator;
-use Neuron\Cms\Services\Category\Updater;
-use Neuron\Cms\Services\Category\Deleter;
+use Neuron\Cms\Services\Category\ICategoryCreator;
+use Neuron\Cms\Services\Category\ICategoryUpdater;
 use Neuron\Core\Exceptions\NotFound;
-use Neuron\Data\Settings\SettingManager;
 use Neuron\Mvc\Application;
 use Neuron\Mvc\Requests\Request;
 use Neuron\Mvc\Responses\HttpResponseStatus;
-use Neuron\Patterns\Registry;
+use Neuron\Routing\Attributes\Get;
+use Neuron\Routing\Attributes\Post;
+use Neuron\Routing\Attributes\Put;
+use Neuron\Routing\Attributes\Delete;
+use Neuron\Routing\Attributes\RouteGroup;
 
 /**
  * Admin category management controller.
  *
  * @package Neuron\Cms\Controllers\Admin
  */
+#[RouteGroup(prefix: '/admin', filters: ['auth'])]
 class Categories extends Content
 {
 	private ICategoryRepository $_categoryRepository;
-	private Creator $_categoryCreator;
-	private Updater $_categoryUpdater;
-	private Deleter $_categoryDeleter;
+	private ICategoryCreator $_categoryCreator;
+	private ICategoryUpdater $_categoryUpdater;
 
 	/**
 	 * @param Application|null $app
 	 * @param ICategoryRepository|null $categoryRepository
-	 * @param Creator|null $categoryCreator
-	 * @param Updater|null $categoryUpdater
-	 * @param Deleter|null $categoryDeleter
-	 * @throws \Exception
+	 * @param ICategoryCreator|null $categoryCreator
+	 * @param ICategoryUpdater|null $categoryUpdater
 	 */
 	public function __construct(
 		?Application $app = null,
 		?ICategoryRepository $categoryRepository = null,
-		?Creator $categoryCreator = null,
-		?Updater $categoryUpdater = null,
-		?Deleter $categoryDeleter = null
+		?ICategoryCreator $categoryCreator = null,
+		?ICategoryUpdater $categoryUpdater = null
 	)
 	{
 		parent::__construct( $app );
 
-		// Use injected dependencies if provided (for testing), otherwise create them (for production)
-		if( $categoryRepository === null )
-		{
-			// Get settings and initialize repository
-			$settings = Registry::getInstance()->get( 'Settings' );
-			$categoryRepository = new DatabaseCategoryRepository( $settings );
-
-			// Initialize services
-			$categoryCreator = new Creator( $categoryRepository );
-			$categoryUpdater = new Updater( $categoryRepository );
-			$categoryDeleter = new Deleter( $categoryRepository );
-		}
-
-		$this->_categoryRepository = $categoryRepository;
-		$this->_categoryCreator = $categoryCreator;
-		$this->_categoryUpdater = $categoryUpdater;
-		$this->_categoryDeleter = $categoryDeleter;
+		// Use dependency injection when available (container provides dependencies)
+		// Otherwise resolve from container (fallback for compatibility)
+		$this->_categoryRepository = $categoryRepository ?? $app?->getContainer()?->get( ICategoryRepository::class );
+		$this->_categoryCreator = $categoryCreator ?? $app?->getContainer()?->get( ICategoryCreator::class );
+		$this->_categoryUpdater = $categoryUpdater ?? $app?->getContainer()?->get( ICategoryUpdater::class );
 	}
 
 	/**
@@ -71,6 +57,7 @@ class Categories extends Content
 	 * @return string
 	 * @throws \Exception
 	 */
+	#[Get('/categories', name: 'admin_categories')]
 	public function index( Request $request ): string
 	{
 		$this->initializeCsrfToken();
@@ -90,6 +77,7 @@ class Categories extends Content
 	 * @return string
 	 * @throws \Exception
 	 */
+	#[Get('/categories/create', name: 'admin_categories_create')]
 	public function create( Request $request ): string
 	{
 		$this->initializeCsrfToken();
@@ -108,15 +96,24 @@ class Categories extends Content
 	 * @return never
 	 * @throws \Exception
 	 */
+	#[Post('/categories', name: 'admin_categories_store', filters: ['csrf'])]
 	public function store( Request $request ): never
 	{
+		// Create DTO from YAML configuration
+		$dto = $this->createDto( 'categories/create-category-request.yaml' );
+
+		// Map request data to DTO
+		$this->mapRequestToDto( $dto, $request );
+
+		// Validate DTO
+		if( !$dto->validate() )
+		{
+			$this->validationError( 'admin_categories_create', $dto->getErrors() );
+		}
+
 		try
 		{
-			$name = $request->post( 'name' );
-			$slug = $request->post( 'slug' );
-			$description = $request->post( 'description' );
-
-			$this->_categoryCreator->create( $name, $slug, $description );
+			$this->_categoryCreator->create( $dto );
 			$this->redirect( 'admin_categories', [], [FlashMessageType::SUCCESS->value, 'Category created successfully'] );
 		}
 		catch( \Exception $e )
@@ -131,6 +128,7 @@ class Categories extends Content
 	 * @return string
 	 * @throws \Exception
 	 */
+	#[Get('/categories/:id/edit', name: 'admin_categories_edit')]
 	public function edit( Request $request ): string
 	{
 		$categoryId = (int)$request->getRouteParameter( 'id' );
@@ -158,23 +156,29 @@ class Categories extends Content
 	 * @return never
 	 * @throws \Exception
 	 */
+	#[Put('/categories/:id', name: 'admin_categories_update', filters: ['csrf'])]
 	public function update( Request $request ): never
 	{
 		$categoryId = (int)$request->getRouteParameter( 'id' );
-		$category = $this->_categoryRepository->findById( $categoryId );
 
-		if( !$category )
+		// Create DTO from YAML configuration
+		$dto = $this->createDto( 'categories/update-category-request.yaml' );
+
+		// Map request data to DTO
+		$this->mapRequestToDto( $dto, $request );
+
+		// Set ID from route parameter
+		$dto->id = $categoryId;
+
+		// Validate DTO
+		if( !$dto->validate() )
 		{
-			$this->redirect( 'admin_categories', [], [FlashMessageType::ERROR->value, 'Category not found'] );
+			$this->validationError( 'admin_categories_edit', $dto->getErrors(), ['id' => $categoryId] );
 		}
 
 		try
 		{
-			$name = $request->post( 'name' );
-			$slug = $request->post( 'slug' );
-			$description = $request->post( 'description' );
-
-			$this->_categoryUpdater->update( $category, $name, $slug, $description );
+			$this->_categoryUpdater->update( $dto );
 			$this->redirect( 'admin_categories', [], [FlashMessageType::SUCCESS->value, 'Category updated successfully'] );
 		}
 		catch( \Exception $e )
@@ -189,13 +193,14 @@ class Categories extends Content
 	 * @return never
 	 * @throws \Exception
 	 */
+	#[Delete('/categories/:id', name: 'admin_categories_destroy', filters: ['csrf'])]
 	public function destroy( Request $request ): never
 	{
 		$categoryId = (int)$request->getRouteParameter( 'id' );
 
 		try
 		{
-			$this->_categoryDeleter->delete( $categoryId );
+			$this->_categoryRepository->delete( $categoryId );
 			$this->redirect( 'admin_categories', [], [FlashMessageType::SUCCESS->value, 'Category deleted successfully'] );
 		}
 		catch( \Exception $e )

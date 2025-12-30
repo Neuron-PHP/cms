@@ -1,0 +1,54 @@
+dto:
+  id:
+    type: integer
+    required: true
+    validators:
+      - type: required
+        message: "Category ID is required"
+      - type: min
+        params: [ 1 ]
+        message: "Category ID must be a positive integer"
+
+  name:
+    type: string
+    required: true
+    validators:
+      - type: required
+        message: "Category name is required"
+      - type: minLength
+        params: [ 1 ]
+        message: "Category name must be at least 1 character"
+      - type: maxLength
+        params: [ 100 ]
+        message: "Category name must not exceed 100 characters"
+
+  slug:
+    type: string
+    required: true
+    validators:
+      - type: required
+        message: "Slug is required"
+      - type: maxLength
+        params: [ 100 ]
+        message: "Slug must not exceed 100 characters"
+      - type: pattern
+        params: [ '/^[a-z0-9-]+$/' ]
+        message: "Slug must contain only lowercase letters, numbers, and hyphens"
+
+  color:
+    type: string
+    required: true
+    validators:
+      - type: required
+        message: "Color is required"
+      - type: pattern
+        params: [ '/^#[0-9a-fA-F]{6}$/' ]
+        message: "Color must be a valid hex color code"
+
+  description:
+    type: string
+    required: false
+    validators:
+      - type: maxLength
+        params: [ 500 ]
+        message: "Description must not exceed 500 characters"

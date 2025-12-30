@@ -6,74 +6,62 @@ use Neuron\Cms\Enums\FlashMessageType;
 use Neuron\Cms\Controllers\Content;
 use Neuron\Cms\Repositories\IEventRepository;
 use Neuron\Cms\Repositories\IEventCategoryRepository;
-use Neuron\Cms\Repositories\DatabaseEventRepository;
-use Neuron\Cms\Repositories\DatabaseEventCategoryRepository;
-use Neuron\Cms\Services\Event\Creator;
-use Neuron\Cms\Services\Event\Updater;
-use Neuron\Cms\Services\Event\Deleter;
+use Neuron\Cms\Services\Event\IEventCreator;
+use Neuron\Cms\Services\Event\IEventUpdater;
 use Neuron\Cms\Services\Auth\CsrfToken;
 use Neuron\Log\Log;
 use Neuron\Mvc\Application;
 use Neuron\Mvc\Requests\Request;
 use Neuron\Mvc\Responses\HttpResponseStatus;
-use Neuron\Patterns\Registry;
 use DateTimeImmutable;
+use Neuron\Routing\Attributes\Get;
+use Neuron\Routing\Attributes\Post;
+use Neuron\Routing\Attributes\Put;
+use Neuron\Routing\Attributes\Delete;
+use Neuron\Routing\Attributes\RouteGroup;
 
 /**
  * Admin event management controller.
  *
  * @package Neuron\Cms\Controllers\Admin
  */
+#[RouteGroup(prefix: '/admin', filters: ['auth'])]
 class Events extends Content
 {
 	private IEventRepository $_eventRepository;
 	private IEventCategoryRepository $_categoryRepository;
-	private Creator $_creator;
-	private Updater $_updater;
-	private Deleter $_deleter;
+	private IEventCreator $_creator;
+	private IEventUpdater $_updater;
 
 	/**
 	 * @param Application|null $app
 	 * @param IEventRepository|null $eventRepository
 	 * @param IEventCategoryRepository|null $categoryRepository
-	 * @param Creator|null $creator
-	 * @param Updater|null $updater
-	 * @param Deleter|null $deleter
-	 * @throws \Exception
+	 * @param IEventCreator|null $creator
+	 * @param IEventUpdater|null $updater
 	 */
 	public function __construct(
 		?Application $app = null,
 		?IEventRepository $eventRepository = null,
 		?IEventCategoryRepository $categoryRepository = null,
-		?Creator $creator = null,
-		?Updater $updater = null,
-		?Deleter $deleter = null
+		?IEventCreator $creator = null,
+		?IEventUpdater $updater = null
 	)
 	{
 		parent::__construct( $app );
 
-		// Use injected dependencies if provided (for testing), otherwise create them (for production)
-		if( $eventRepository === null )
-		{
-			$settings = Registry::getInstance()->get( 'Settings' );
-
-			$eventRepository = new DatabaseEventRepository( $settings );
-			$categoryRepository = new DatabaseEventCategoryRepository( $settings );
-			$creator = new Creator( $eventRepository, $categoryRepository );
-			$updater = new Updater( $eventRepository, $categoryRepository );
-			$deleter = new Deleter( $eventRepository );
-		}
-
-		$this->_eventRepository = $eventRepository;
-		$this->_categoryRepository = $categoryRepository;
-		$this->_creator = $creator;
-		$this->_updater = $updater;
-		$this->_deleter = $deleter;
+		// Use dependency injection when available (container provides dependencies)
+		// Otherwise resolve from container (fallback for compatibility)
+		$this->_eventRepository = $eventRepository ?? $app?->getContainer()?->get( IEventRepository::class );
+		$this->_categoryRepository = $categoryRepository ?? $app?->getContainer()?->get( IEventCategoryRepository::class );
+		$this->_creator = $creator ?? $app?->getContainer()?->get( IEventCreator::class );
+		$this->_updater = $updater ?? $app?->getContainer()?->get( IEventUpdater::class );
 	}
 
 	/**
 	 * List all events
 	 */
+	#[Get('/events', name: 'admin_events')]
 	public function index( Request $request ): string
 	{
 		$this->initializeCsrfToken();
@@ -105,6 +93,7 @@ class Events extends Content
 	/**
 	 * Show create event form
 	 */
+	#[Get('/events/create', name: 'admin_events_create')]
 	public function create( Request $request ): string
 	{
 		$this->initializeCsrfToken();
@@ -121,43 +110,27 @@ class Events extends Content
 	/**
 	 * Store new event
 	 */
+	#[Post('/events', name: 'admin_events_store', filters: ['csrf'])]
 	public function store( Request $request ): never
 	{
+		// Create DTO from YAML configuration
+		$dto = $this->createDto( 'events/create-event-request.yaml' );
+
+		// Map request data to DTO
+		$this->mapRequestToDto( $dto, $request );
+
+		// Set created_by from current user
+		$dto->created_by = user_id();
+
+		// Validate DTO
+		if( !$dto->validate() )
+		{
+			$this->validationError( 'admin_events_create', $dto->getErrors() );
+		}
+
 		try
 		{
-			$title = $request->post( 'title', '' );
-			$slug = $request->post( 'slug', '' );
-			$description = $request->post( 'description', '' );
-			$content = $request->post( 'content', '{"blocks":[]}' );
-			$location = $request->post( 'location', '' );
-			$startDate = $request->post( 'start_date', '' );
-			$endDate = $request->post( 'end_date', '' );
-			$allDay = (bool)$request->post( 'all_day', false );
-			$categoryId = $request->post( 'category_id', '' );
-			$status = $request->post( 'status', 'draft' );
-			$featuredImage = $request->post( 'featured_image', '' );
-			$organizer = $request->post( 'organizer', '' );
-			$contactEmail = $request->post( 'contact_email', '' );
-			$contactPhone = $request->post( 'contact_phone', '' );
-
-			$this->_creator->create(
-				$title,
-				new DateTimeImmutable( $startDate ),
-				user_id(),
-				$status,
-				$slug ?: null,
-				$description ?: null,
-				$content,
-				$location ?: null,
-				$endDate ? new DateTimeImmutable( $endDate ) : null,
-				$allDay,
-				$categoryId ? (int)$categoryId : null,
-				$featuredImage ?: null,
-				$organizer ?: null,
-				$contactEmail ?: null,
-				$contactPhone ?: null
-			);
-
+			$this->_creator->create( $dto );
 			$this->redirect( 'admin_events', [], [FlashMessageType::SUCCESS->value, 'Event created successfully'] );
 		}
 		catch( \Exception $e )
@@ -169,6 +142,7 @@ class Events extends Content
 	/**
 	 * Show edit event form
 	 */
+	#[Get('/events/:id/edit', name: 'admin_events_edit')]
 	public function edit( Request $request ): string
 	{
 		$eventId = (int)$request->getRouteParameter( 'id' );
@@ -202,6 +176,7 @@ class Events extends Content
 	/**
 	 * Update event
 	 */
+	#[Put('/events/:id', name: 'admin_events_update', filters: ['csrf'])]
 	public function update( Request $request ): never
 	{
 		$eventId = (int)$request->getRouteParameter( 'id' );
@@ -218,41 +193,24 @@ class Events extends Content
 			throw new \RuntimeException( 'Unauthorized to edit this event' );
 		}
 
+		// Create DTO from YAML configuration
+		$dto = $this->createDto( 'events/update-event-request.yaml' );
+
+		// Map request data to DTO
+		$this->mapRequestToDto( $dto, $request );
+
+		// Set ID from route parameter
+		$dto->id = $eventId;
+
+		// Validate DTO
+		if( !$dto->validate() )
+		{
+			$this->validationError( 'admin_events_edit', $dto->getErrors(), ['id' => $eventId] );
+		}
+
 		try
 		{
-			$title = $request->post( 'title', '' );
-			$slug = $request->post( 'slug', '' );
-			$description = $request->post( 'description', '' );
-			$content = $request->post( 'content', '{"blocks":[]}' );
-			$location = $request->post( 'location', '' );
-			$startDate = $request->post( 'start_date', '' );
-			$endDate = $request->post( 'end_date', '' );
-			$allDay = (bool)$request->post( 'all_day', false );
-			$categoryId = $request->post( 'category_id', '' );
-			$status = $request->post( 'status', 'draft' );
-			$featuredImage = $request->post( 'featured_image', '' );
-			$organizer = $request->post( 'organizer', '' );
-			$contactEmail = $request->post( 'contact_email', '' );
-			$contactPhone = $request->post( 'contact_phone', '' );
-
-			$this->_updater->update(
-				$event,
-				$title,
-				new DateTimeImmutable( $startDate ),
-				$status,
-				$slug ?: null,
-				$description ?: null,
-				$content,
-				$location ?: null,
-				$endDate ? new DateTimeImmutable( $endDate ) : null,
-				$allDay,
-				$categoryId ? (int)$categoryId : null,
-				$featuredImage ?: null,
-				$organizer ?: null,
-				$contactEmail ?: null,
-				$contactPhone ?: null
-			);
-
+			$this->_updater->update( $dto );
 			$this->redirect( 'admin_events', [], [FlashMessageType::SUCCESS->value, 'Event updated successfully'] );
 		}
 		catch( \Exception $e )
@@ -264,6 +222,7 @@ class Events extends Content
 	/**
 	 * Delete event
 	 */
+	#[Delete('/events/:id', name: 'admin_events_destroy', filters: ['csrf'])]
 	public function destroy( Request $request ): never
 	{
 		$eventId = (int)$request->getRouteParameter( 'id' );
@@ -282,7 +241,7 @@ class Events extends Content
 
 		try
 		{
-			$this->_deleter->delete( $event );
+			$this->_eventRepository->delete( $eventId );
 			$this->redirect( 'admin_events', [], [FlashMessageType::SUCCESS->value, 'Event deleted successfully'] );
 		}
 		catch( \Exception $e )

@@ -1,0 +1,20 @@
+# DTO for updating an existing tag
+# Maps to Tags controller update() method
+dto:
+  id:
+    type: integer
+    required: true
+
+  name:
+    type: string
+    required: true
+    length:
+      min: 1
+      max: 255
+
+  slug:
+    type: string
+    required: false
+    length:
+      max: 255
+    pattern: '/^[a-z0-9-]*$/'  # URL-friendly slug

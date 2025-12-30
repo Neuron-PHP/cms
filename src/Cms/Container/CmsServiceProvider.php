@@ -26,7 +26,16 @@ use Neuron\Cms\Services\User\Updater;
 use Neuron\Cms\Services\User\Deleter;
 use Neuron\Cms\Auth\PasswordHasher;
 use Neuron\Cms\Auth\SessionManager;
+use Neuron\Cms\Auth\ResendVerificationThrottle;
+use Neuron\Cms\Services\Content\EditorJsRenderer;
+use Neuron\Cms\Services\Content\ShortcodeParser;
+use Neuron\Cms\Services\Widget\WidgetRenderer;
+use Neuron\Cms\Services\Dto\DtoFactoryService;
 use Neuron\Data\Settings\SettingManager;
+use Neuron\Events\Emitter;
+use Neuron\Routing\IIpResolver;
+use Neuron\Routing\DefaultIpResolver;
+use Neuron\Patterns\Registry;
 
 /**
  * CMS service provider
@@ -48,6 +57,7 @@ class CmsServiceProvider implements IServiceProvider
 		$this->registerRepositories( $container );
 		$this->registerUserServices( $container );
 		$this->registerAuthServices( $container );
+		$this->registerContentServices( $container );
 		$this->registerSharedServices( $container );
 	}
 
@@ -100,6 +110,49 @@ class CmsServiceProvider implements IServiceProvider
 		$container->singleton( SessionManager::class, function( $c ) {
 			return new SessionManager();
 		});
+
+		// Resend verification throttle
+		$container->singleton( ResendVerificationThrottle::class, function( $c ) {
+			return new ResendVerificationThrottle();
+		});
+
+		// IP resolver
+		$container->bind( IIpResolver::class, DefaultIpResolver::class );
+	}
+
+	/**
+	 * Register content rendering services
+	 *
+	 * @param IContainer $container
+	 * @return void
+	 */
+	private function registerContentServices( IContainer $container ): void
+	{
+		// Widget renderer (singleton - stateless service)
+		$container->singleton( WidgetRenderer::class, function( $c ) {
+			return new WidgetRenderer(
+				$c->get( IPostRepository::class )
+			);
+		});
+
+		// Shortcode parser (singleton - stateless service)
+		$container->singleton( ShortcodeParser::class, function( $c ) {
+			return new ShortcodeParser(
+				$c->get( WidgetRenderer::class )
+			);
+		});
+
+		// EditorJS renderer (singleton - stateless service)
+		$container->singleton( EditorJsRenderer::class, function( $c ) {
+			return new EditorJsRenderer(
+				$c->get( ShortcodeParser::class )
+			);
+		});
+
+		// DTO factory service
+		$container->singleton( DtoFactoryService::class, function( $c ) {
+			return new DtoFactoryService();
+		});
 	}
 
 	/**
@@ -117,7 +170,19 @@ class CmsServiceProvider implements IServiceProvider
 		$container->singleton( SettingManager::class, function( $c ) {
 			// During transition, still get from Registry
 			// Later: create directly
-			return \Neuron\Patterns\Registry::getInstance()->get( 'Settings' );
+			return Registry::getInstance()->get( 'Settings' );
+		});
+
+		// Event emitter - transition from Registry
+		$container->singleton( Emitter::class, function( $c ) {
+			// During transition, get from Registry if available
+			$emitter = Registry::getInstance()->get( 'EventEmitter' );
+			if( !$emitter )
+			{
+				$emitter = new Emitter();
+				Registry::getInstance()->set( 'EventEmitter', $emitter );
+			}
+			return $emitter;
 		});
 	}
 }

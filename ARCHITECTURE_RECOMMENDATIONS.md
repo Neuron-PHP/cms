@@ -440,22 +440,107 @@ $users = $repository->findBy(
 
 ## Implementation Priority
 
-### Phase 1: Foundation (High Impact, Low Risk)
-1. ✅ **Create configuration classes** (DONE - CacheConfig, UploadConfig)
-2. ✅ **Create service interfaces** (STARTED - IAuthenticationService)
-3. Replace concrete repository types with interfaces in controllers
-4. Replace magic numbers with config constants
+### Phase 1: Foundation (High Impact, Low Risk) ✅ **COMPLETED**
+1. ✅ **Create configuration classes** (CacheConfig, UploadConfig)
+2. ✅ **Create service interfaces** (IUserCreator, IUserUpdater, IUserDeleter)
+3. ✅ **Replace concrete repository types with interfaces** in all admin controllers
+4. ✅ **Replace magic numbers** with config constants
 
-### Phase 2: Dependency Management (High Impact, Medium Risk)
-1. Implement PSR-11 container interface
-2. Remove Registry usage from controllers
-3. Update controller constructors to use interfaces
+### Phase 2: Dependency Management (High Impact, Medium Risk) ✅ **COMPLETED**
+1. ✅ **Implement PSR-11 container interface** (patterns/Container)
+2. ✅ **Create CmsServiceProvider** to register all CMS services
+3. ✅ **Integrate container with MVC Application** (setContainer, getContainer, hasContainer)
+4. ✅ **Update router** to use container for controller instantiation
+5. ✅ **Remove Registry usage** from Users controller (proof of concept)
+6. ✅ **Update controller constructors** to use interfaces with container fallback
 
-### Phase 3: Advanced Patterns (Medium Impact, Higher Risk)
-1. Introduce DTOs/Value Objects for complex operations
-2. Implement CQRS pattern for services
+### Phase 2.5: YAML-Defined DTOs (High Impact, Low Risk) 🔄 **IN PROGRESS**
+**Using Built-In `neuron-php/dto` Component**
+
+The framework already includes a powerful DTO component with YAML-based configuration. Instead of creating custom PHP DTO classes, we leverage the existing system:
+
+**Key Features:**
+- YAML-based DTO definitions (declarative, no code)
+- 20+ built-in validators (email, uuid, currency, phone, date, URL, etc.)
+- DTO composition via `ref` parameter (reusable structures)
+- Nested objects and collections with validation
+- Data mapping from HTTP requests
+- JSON export/import
+
+**Implementation Steps:**
+1. Create YAML DTO configurations in `/cms/config/dtos/`
+2. Organize DTOs: `common/` (timestamps, audit), `users/`, `posts/`, `events/`
+3. Add DTO helper methods to base Content controller
+4. Update service interfaces to accept `Dto` objects
+5. Refactor controllers to map requests → DTOs → services
+6. Validate DTOs before processing
+
+**Example DTO Configuration:**
+```yaml
+# config/dtos/users/create-user-request.yaml
+dto:
+  username:
+    type: string
+    required: true
+    length:
+      min: 3
+      max: 50
+  email:
+    type: email
+    required: true
+  password:
+    type: string
+    required: true
+    length:
+      min: 8
+  role:
+    type: string
+    required: true
+    enum: ['admin', 'editor', 'author', 'subscriber']
+  timezone:
+    type: string
+    required: false
+```
+
+**Example Service Method:**
+```php
+// Before: Primitive obsession
+public function create(
+    string $username,
+    string $email,
+    string $password,
+    string $role,
+    ?string $timezone = null
+): User
+
+// After: Type-safe DTO
+public function create(Dto $request): User
+{
+    $user = new User();
+    $user->setUsername($request->username);
+    $user->setEmail($request->email);
+    $user->setPasswordHash($this->hasher->hash($request->password));
+    $user->setRole($request->role);
+    if ($request->timezone) {
+        $user->setTimezone($request->timezone);
+    }
+    return $this->repository->save($user);
+}
+```
+
+**Benefits:**
+- ✅ **Self-Documenting** - YAML files define API contracts
+- ✅ **Type Safety** - Runtime validation of structure and types
+- ✅ **Reusability** - Common DTOs via composition
+- ✅ **Less Boilerplate** - No parameter validation in services
+- ✅ **Easier Testing** - Create DTOs directly in tests
+- ✅ **Consistency** - Same validation rules everywhere
+
+### Phase 3: CQRS & Query Objects (Medium Impact, Higher Risk)
+1. Implement CQRS pattern (separate Commands and Queries)
+2. Create repository query objects for flexible filtering
 3. Add factory pattern for complex object creation
-4. Implement repository query objects
+4. Implement read-optimized query services
 
 ### Phase 4: Event Sourcing (Optional, Long-term)
 1. Implement event store

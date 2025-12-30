@@ -28,7 +28,7 @@ class ResendVerificationThrottle
 
 	/**
 	 * @param IRateLimitStorage|null $storage Storage backend (defaults to file-based)
-	 * @param array $config Optional configuration overrides
+	 * @param array<string, int> $config Optional configuration overrides
 	 */
 	public function __construct( ?IRateLimitStorage $storage = null, array $config = [] )
 	{

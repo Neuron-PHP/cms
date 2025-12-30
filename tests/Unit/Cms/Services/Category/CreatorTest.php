@@ -5,6 +5,8 @@ namespace Tests\Cms\Services\Category;
 use Neuron\Cms\Models\Category;
 use Neuron\Cms\Repositories\ICategoryRepository;
 use Neuron\Cms\Services\Category\Creator;
+use Neuron\Dto\Factory;
+use Neuron\Dto\Dto;
 use PHPUnit\Framework\TestCase;
 
 class CreatorTest extends TestCase
@@ -19,6 +21,32 @@ class CreatorTest extends TestCase
 		$this->_creator = new Creator( $this->_mockCategoryRepository );
 	}
 
+	/**
+	 * Helper method to create a DTO with test data
+	 */
+	private function createDto(
+		string $name,
+		?string $slug = null,
+		?string $description = null
+	): Dto
+	{
+		$factory = new Factory( __DIR__ . '/../../../../../config/dtos/categories/create-category-request.yaml' );
+		$dto = $factory->create();
+
+		$dto->name = $name;
+
+		if( $slug !== null )
+		{
+			$dto->slug = $slug;
+		}
+		if( $description !== null )
+		{
+			$dto->description = $description;
+		}
+
+		return $dto;
+	}
+
 	public function testCreatesCategory(): void
 	{
 		$this->_mockCategoryRepository
@@ -31,11 +59,13 @@ class CreatorTest extends TestCase
 			} ) )
 			->willReturnArgument( 0 );
 
-		$result = $this->_creator->create(
-			'Technology',
-			'technology',
-			'Tech articles'
+		$dto = $this->createDto(
+			name: 'Technology',
+			slug: 'technology',
+			description: 'Tech articles'
 		);
+
+		$result = $this->_creator->create( $dto );
 
 		$this->assertEquals( 'Technology', $result->getName() );
 		$this->assertEquals( 'technology', $result->getSlug() );
@@ -52,11 +82,13 @@ class CreatorTest extends TestCase
 			} ) )
 			->willReturnArgument( 0 );
 
-		$result = $this->_creator->create(
-			'Programming Tutorials',
-			'',
-			'Learn programming'
+		$dto = $this->createDto(
+			name: 'Programming Tutorials',
+			slug: '',
+			description: 'Learn programming'
 		);
+
+		$result = $this->_creator->create( $dto );
 
 		$this->assertEquals( 'programming-tutorials', $result->getSlug() );
 	}
@@ -71,11 +103,13 @@ class CreatorTest extends TestCase
 			} ) )
 			->willReturnArgument( 0 );
 
-		$result = $this->_creator->create(
-			'Web & Development!',
-			'',
-			''
+		$dto = $this->createDto(
+			name: 'Web & Development!',
+			slug: '',
+			description: ''
 		);
+
+		$result = $this->_creator->create( $dto );
 
 		$this->assertEquals( 'web-development', $result->getSlug() );
 	}
@@ -90,11 +124,13 @@ class CreatorTest extends TestCase
 			} ) )
 			->willReturnArgument( 0 );
 
-		$result = $this->_creator->create(
-			'Category Name',
-			'custom-slug',
-			''
+		$dto = $this->createDto(
+			name: 'Category Name',
+			slug: 'custom-slug',
+			description: ''
 		);
+
+		$result = $this->_creator->create( $dto );
 
 		$this->assertEquals( 'custom-slug', $result->getSlug() );
 	}
@@ -109,11 +145,13 @@ class CreatorTest extends TestCase
 			} ) )
 			->willReturnArgument( 0 );
 
-		$result = $this->_creator->create(
-			'Category',
-			'category',
-			''
+		$dto = $this->createDto(
+			name: 'Category',
+			slug: 'category',
+			description: ''
 		);
+
+		$result = $this->_creator->create( $dto );
 
 		$this->assertEquals( '', $result->getDescription() );
 	}
