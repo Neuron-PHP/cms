@@ -1,3 +1,5 @@
+## 0.8.25
+
 ## 0.8.24 2025-12-30
 * Architectural improvements.
 
