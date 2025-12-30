@@ -17,7 +17,7 @@ routes:
     method: POST
     route: /logout
     controller: Neuron\Cms\Controllers\Auth\Login@logout
-    filter: auth-csrf
+    filters: [auth, csrf]
 
   # Password Reset routes
   forgot_password:
@@ -70,7 +70,7 @@ routes:
     method: POST
     route: /admin/users
     controller: Neuron\Cms\Controllers\Admin\Users@store
-    filter: auth-csrf
+    filters: [auth, csrf]
 
   admin_users_edit:
     method: GET
@@ -82,13 +82,13 @@ routes:
     method: PUT
     route: /admin/users/:id
     controller: Neuron\Cms\Controllers\Admin\Users@update
-    filter: auth-csrf
+    filters: [auth, csrf]
 
   admin_users_destroy:
     method: DELETE
     route: /admin/users/:id
     controller: Neuron\Cms\Controllers\Admin\Users@destroy
-    filter: auth-csrf
+    filters: [auth, csrf]
 
   # Profile Management
   admin_profile:
@@ -101,7 +101,7 @@ routes:
     method: PUT
     route: /admin/profile
     controller: Neuron\Cms\Controllers\Admin\Profile@update
-    filter: auth-csrf
+    filters: [auth, csrf]
 
   # Blog Post Management
   admin_posts:
@@ -120,7 +120,7 @@ routes:
     method: POST
     route: /admin/posts
     controller: Neuron\Cms\Controllers\Admin\Posts@store
-    filter: auth-csrf
+    filters: [auth, csrf]
 
   admin_posts_edit:
     method: GET
@@ -132,13 +132,13 @@ routes:
     method: PUT
     route: /admin/posts/:id
     controller: Neuron\Cms\Controllers\Admin\Posts@update
-    filter: auth-csrf
+    filters: [auth, csrf]
 
   admin_posts_destroy:
     method: DELETE
     route: /admin/posts/:id
     controller: Neuron\Cms\Controllers\Admin\Posts@destroy
-    filter: auth-csrf
+    filters: [auth, csrf]
 
   # Blog Category Management
   admin_categories:
@@ -157,7 +157,7 @@ routes:
     method: POST
     route: /admin/categories
     controller: Neuron\Cms\Controllers\Admin\Categories@store
-    filter: auth-csrf
+    filters: [auth, csrf]
 
   admin_categories_edit:
     method: GET
@@ -169,13 +169,13 @@ routes:
     method: PUT
     route: /admin/categories/:id
     controller: Neuron\Cms\Controllers\Admin\Categories@update
-    filter: auth-csrf
+    filters: [auth, csrf]
 
   admin_categories_destroy:
     method: DELETE
     route: /admin/categories/:id
     controller: Neuron\Cms\Controllers\Admin\Categories@destroy
-    filter: auth-csrf
+    filters: [auth, csrf]
 
   # Blog Tag Management
   admin_tags:
@@ -194,7 +194,7 @@ routes:
     method: POST
     route: /admin/tags
     controller: Neuron\Cms\Controllers\Admin\Tags@store
-    filter: auth-csrf
+    filters: [auth, csrf]
 
   admin_tags_edit:
     method: GET
@@ -206,13 +206,13 @@ routes:
     method: PUT
     route: /admin/tags/:id
     controller: Neuron\Cms\Controllers\Admin\Tags@update
-    filter: auth-csrf
+    filters: [auth, csrf]
 
   admin_tags_destroy:
     method: DELETE
     route: /admin/tags/:id
     controller: Neuron\Cms\Controllers\Admin\Tags@destroy
-    filter: auth-csrf
+    filters: [auth, csrf]
 
   # Page Management
   admin_pages:
@@ -231,7 +231,7 @@ routes:
     method: POST
     route: /admin/pages
     controller: Neuron\Cms\Controllers\Admin\Pages@store
-    filter: auth-csrf
+    filters: [auth, csrf]
 
   admin_pages_edit:
     method: GET
@@ -243,13 +243,13 @@ routes:
     method: PUT
     route: /admin/pages/:id
     controller: Neuron\Cms\Controllers\Admin\Pages@update
-    filter: auth-csrf
+    filters: [auth, csrf]
 
   admin_pages_destroy:
     method: DELETE
     route: /admin/pages/:id
     controller: Neuron\Cms\Controllers\Admin\Pages@destroy
-    filter: auth-csrf
+    filters: [auth, csrf]
 
   # Media Management Routes
   admin_media:
@@ -262,13 +262,13 @@ routes:
     method: POST
     route: /admin/upload/image
     controller: Neuron\Cms\Controllers\Admin\Media@uploadImage
-    filter: auth-csrf
+    filters: [auth, csrf]
 
   admin_media_featured_upload:
     method: POST
     route: /admin/upload/featured-image
     controller: Neuron\Cms\Controllers\Admin\Media@uploadFeaturedImage
-    filter: auth-csrf
+    filters: [auth, csrf]
 
   # Homepage
   home:
@@ -364,7 +364,7 @@ routes:
     method: PUT
     route: /member/profile
     controller: Neuron\Cms\Controllers\Member\Profile@update
-    filter: member-csrf
+    filters: [member, csrf]
 
   # Event Category Management
   admin_event_categories:
@@ -383,7 +383,7 @@ routes:
     method: POST
     route: /admin/event-categories
     controller: Neuron\Cms\Controllers\Admin\EventCategories@store
-    filter: auth-csrf
+    filters: [auth, csrf]
 
   admin_event_categories_edit:
     method: GET
@@ -395,13 +395,13 @@ routes:
     method: PUT
     route: /admin/event-categories/:id
     controller: Neuron\Cms\Controllers\Admin\EventCategories@update
-    filter: auth-csrf
+    filters: [auth, csrf]
 
   admin_event_categories_destroy:
     method: DELETE
     route: /admin/event-categories/:id
     controller: Neuron\Cms\Controllers\Admin\EventCategories@destroy
-    filter: auth-csrf
+    filters: [auth, csrf]
 
   # Event Management
   admin_events:
@@ -420,7 +420,7 @@ routes:
     method: POST
     route: /admin/events
     controller: Neuron\Cms\Controllers\Admin\Events@store
-    filter: auth-csrf
+    filters: [auth, csrf]
 
   admin_events_edit:
     method: GET
@@ -432,13 +432,13 @@ routes:
     method: PUT
     route: /admin/events/:id
     controller: Neuron\Cms\Controllers\Admin\Events@update
-    filter: auth-csrf
+    filters: [auth, csrf]
 
   admin_events_destroy:
     method: DELETE
     route: /admin/events/:id
     controller: Neuron\Cms\Controllers\Admin\Events@destroy
-    filter: auth-csrf
+    filters: [auth, csrf]
 
   # Public Calendar Routes
   calendar:

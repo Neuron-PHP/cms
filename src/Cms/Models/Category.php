@@ -6,6 +6,7 @@ use DateTimeImmutable;
 use Exception;
 use Neuron\Orm\Model;
 use Neuron\Orm\Attributes\{Table, BelongsToMany};
+use Neuron\Orm\DependentStrategy;
 
 /**
  * Category entity representing a blog post category.
@@ -23,7 +24,8 @@ class Category extends Model
 	private ?DateTimeImmutable $_updatedAt = null;
 
 	// Relationships
-	#[BelongsToMany(Post::class, pivotTable: 'post_categories')]
+	// DeleteAll: When category is deleted, remove pivot entries (keep posts)
+	#[BelongsToMany(Post::class, pivotTable: 'post_categories', dependent: DependentStrategy::DeleteAll)]
 	private array $_posts = [];
 
 	public function __construct()

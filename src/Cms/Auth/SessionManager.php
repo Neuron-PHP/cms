@@ -13,8 +13,13 @@ namespace Neuron\Cms\Auth;
 class SessionManager
 {
 	private bool $_started = false;
+
+	/** @var array<string, mixed> */
 	private array $_config = [];
 
+	/**
+	 * @param array<string, mixed> $config
+	 */
 	public function __construct( array $config = [] )
 	{
 		// Auto-detect if connection is secure
@@ -36,6 +41,13 @@ class SessionManager
 	{
 		if( $this->_started || session_status() === PHP_SESSION_ACTIVE )
 		{
+			return;
+		}
+
+		// Skip actual session start in test mode
+		if( isset( $this->_config['test_mode'] ) && $this->_config['test_mode'] )
+		{
+			$this->_started = true;
 			return;
 		}
 
@@ -63,6 +75,13 @@ class SessionManager
 	public function regenerate( bool $deleteOldSession = true ): bool
 	{
 		$this->start();
+
+		// Skip actual session regeneration in test mode
+		if( isset( $this->_config['test_mode'] ) && $this->_config['test_mode'] )
+		{
+			return true;
+		}
+
 		return session_regenerate_id( $deleteOldSession );
 	}
 
@@ -74,6 +93,13 @@ class SessionManager
 		$this->start();
 
 		$_SESSION = [];
+
+		// Skip actual session destruction in test mode
+		if( isset( $this->_config['test_mode'] ) && $this->_config['test_mode'] )
+		{
+			$this->_started = false;
+			return true;
+		}
 
 		// Delete session cookie
 		if( isset( $_COOKIE[session_name()] ) )
@@ -160,6 +186,8 @@ class SessionManager
 
 	/**
 	 * Get all flash messages and clear them
+	 *
+	 * @return array<string, mixed>
 	 */
 	public function getAllFlash(): array
 	{

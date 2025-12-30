@@ -5,8 +5,8 @@ namespace Neuron\Cms\Services\Event;
 use Neuron\Cms\Models\Event;
 use Neuron\Cms\Repositories\IEventRepository;
 use Neuron\Cms\Repositories\IEventCategoryRepository;
-use Neuron\Core\System\IRandom;
-use Neuron\Core\System\RealRandom;
+use Neuron\Cms\Services\SlugGenerator;
+use Neuron\Dto\Dto;
 use DateTimeImmutable;
 
 /**
@@ -14,62 +14,49 @@ use DateTimeImmutable;
  *
  * @package Neuron\Cms\Services\Event
  */
-class Creator
+class Creator implements IEventCreator
 {
 	private IEventRepository $_eventRepository;
 	private IEventCategoryRepository $_categoryRepository;
-	private IRandom $_random;
+	private SlugGenerator $_slugGenerator;
 
 	public function __construct(
 		IEventRepository $eventRepository,
 		IEventCategoryRepository $categoryRepository,
-		?IRandom $random = null
+		?SlugGenerator $slugGenerator = null
 	)
 	{
 		$this->_eventRepository = $eventRepository;
 		$this->_categoryRepository = $categoryRepository;
-		$this->_random = $random ?? new RealRandom();
+		$this->_slugGenerator = $slugGenerator ?? new SlugGenerator();
 	}
 
 	/**
-	 * Create a new event
+	 * Create a new event from DTO
 	 *
-	 * @param string $title Event title
-	 * @param DateTimeImmutable $startDate Event start date/time
-	 * @param int $createdBy User ID of creator
-	 * @param string $status Event status (draft, published)
-	 * @param string|null $slug Optional custom slug (auto-generated if not provided)
-	 * @param string|null $description Optional short description
-	 * @param string $contentRaw Editor.js JSON content (default empty)
-	 * @param string|null $location Optional location
-	 * @param DateTimeImmutable|null $endDate Optional end date/time
-	 * @param bool $allDay Whether event is all-day
-	 * @param int|null $categoryId Optional category ID
-	 * @param string|null $featuredImage Optional featured image URL
-	 * @param string|null $organizer Optional organizer name
-	 * @param string|null $contactEmail Optional contact email
-	 * @param string|null $contactPhone Optional contact phone
+	 * @param Dto $request DTO containing event data
 	 * @return Event
 	 * @throws \RuntimeException if slug already exists or category not found
 	 */
-	public function create(
-		string $title,
-		DateTimeImmutable $startDate,
-		int $createdBy,
-		string $status,
-		?string $slug = null,
-		?string $description = null,
-		string $contentRaw = '{"blocks":[]}',
-		?string $location = null,
-		?DateTimeImmutable $endDate = null,
-		bool $allDay = false,
-		?int $categoryId = null,
-		?string $featuredImage = null,
-		?string $organizer = null,
-		?string $contactEmail = null,
-		?string $contactPhone = null
-	): Event
+	public function create( Dto $request ): Event
 	{
+		// Extract values from DTO
+		$title = $request->title;
+		$slug = $request->slug ?? '';
+		$description = $request->description ?? null;
+		$contentRaw = $request->content ?? '{"blocks":[]}';
+		$location = $request->location ?? null;
+		$startDate = new DateTimeImmutable( $request->start_date );
+		$endDate = $request->end_date ? new DateTimeImmutable( $request->end_date ) : null;
+		$allDay = $request->all_day ?? false;
+		$categoryId = $request->category_id ?? null;
+		$status = $request->status;
+		$featuredImage = $request->featured_image ?? null;
+		$organizer = $request->organizer ?? null;
+		$contactEmail = $request->contact_email ?? null;
+		$contactPhone = $request->contact_phone ?? null;
+		$createdBy = $request->created_by;
+
 		$event = new Event();
 		$event->setTitle( $title );
 		$event->setSlug( $slug ?: $this->generateSlug( $title ) );
@@ -114,17 +101,6 @@ class Creator
 	 */
 	private function generateSlug( string $title ): string
 	{
-		$slug = strtolower( trim( $title ) );
-		$slug = preg_replace( '/[^a-z0-9-]/', '-', $slug );
-		$slug = preg_replace( '/-+/', '-', $slug );
-		$slug = trim( $slug, '-' );
-
-		// Fallback for titles with no ASCII characters
-		if( $slug === '' )
-		{
-			$slug = 'event-' . $this->_random->uniqueId();
-		}
-
-		return $slug;
+		return $this->_slugGenerator->generate( $title, 'event' );
 	}
 }

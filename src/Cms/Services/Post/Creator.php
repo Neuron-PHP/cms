@@ -6,8 +6,8 @@ use Neuron\Cms\Models\Post;
 use Neuron\Cms\Repositories\IPostRepository;
 use Neuron\Cms\Repositories\ICategoryRepository;
 use Neuron\Cms\Services\Tag\Resolver as TagResolver;
-use Neuron\Core\System\IRandom;
-use Neuron\Core\System\RealRandom;
+use Neuron\Cms\Services\SlugGenerator;
+use Neuron\Dto\Dto;
 use DateTimeImmutable;
 use Neuron\Cms\Enums\ContentStatus;
 
@@ -18,52 +18,45 @@ use Neuron\Cms\Enums\ContentStatus;
  *
  * @package Neuron\Cms\Services\Post
  */
-class Creator
+class Creator implements IPostCreator
 {
 	private IPostRepository $_postRepository;
 	private ICategoryRepository $_categoryRepository;
 	private TagResolver $_tagResolver;
-	private IRandom $_random;
+	private SlugGenerator $_slugGenerator;
 
 	public function __construct(
 		IPostRepository $postRepository,
 		ICategoryRepository $categoryRepository,
 		TagResolver $tagResolver,
-		?IRandom $random = null
+		?SlugGenerator $slugGenerator = null
 	)
 	{
 		$this->_postRepository = $postRepository;
 		$this->_categoryRepository = $categoryRepository;
 		$this->_tagResolver = $tagResolver;
-		$this->_random = $random ?? new RealRandom();
+		$this->_slugGenerator = $slugGenerator ?? new SlugGenerator();
 	}
 
 	/**
-	 * Create a new post
+	 * Create a new post from DTO
 	 *
-	 * @param string $title Post title
-	 * @param string $content Editor.js JSON content
-	 * @param int $authorId Author user ID
-	 * @param string $status Post status (draft, published, scheduled)
-	 * @param string|null $slug Optional custom slug (auto-generated if not provided)
-	 * @param string|null $excerpt Optional excerpt
-	 * @param string|null $featuredImage Optional featured image URL
+	 * @param Dto $request DTO containing title, content, author_id, status, slug, excerpt, featured_image
 	 * @param array $categoryIds Array of category IDs
 	 * @param string $tagNames Comma-separated tag names
 	 * @return Post
 	 */
-	public function create(
-		string $title,
-		string $content,
-		int $authorId,
-		string $status,
-		?string $slug = null,
-		?string $excerpt = null,
-		?string $featuredImage = null,
-		array $categoryIds = [],
-		string $tagNames = ''
-	): Post
+	public function create( Dto $request, array $categoryIds = [], string $tagNames = '' ): Post
 	{
+		// Extract values from DTO
+		$title = $request->title;
+		$content = $request->content;
+		$authorId = $request->author_id;
+		$status = $request->status;
+		$slug = $request->slug ?? null;
+		$excerpt = $request->excerpt ?? null;
+		$featuredImage = $request->featured_image ?? null;
+
 		$post = new Post();
 		$post->setTitle( $title );
 		$post->setSlug( $slug ?: $this->generateSlug( $title ) );
@@ -102,17 +95,6 @@ class Creator
 	 */
 	private function generateSlug( string $title ): string
 	{
-		$slug = strtolower( trim( $title ) );
-		$slug = preg_replace( '/[^a-z0-9-]/', '-', $slug );
-		$slug = preg_replace( '/-+/', '-', $slug );
-		$slug = trim( $slug, '-' );
-
-		// Fallback for titles with no ASCII characters
-		if( $slug === '' )
-		{
-			$slug = 'post-' . $this->_random->uniqueId();
-		}
-
-		return $slug;
+		return $this->_slugGenerator->generate( $title, 'post' );
 	}
 }

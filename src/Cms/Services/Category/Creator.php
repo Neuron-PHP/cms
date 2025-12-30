@@ -5,9 +5,9 @@ namespace Neuron\Cms\Services\Category;
 use Neuron\Cms\Models\Category;
 use Neuron\Cms\Repositories\ICategoryRepository;
 use Neuron\Cms\Events\CategoryCreatedEvent;
-use Neuron\Core\System\IRandom;
-use Neuron\Core\System\RealRandom;
-use Neuron\Patterns\Registry;
+use Neuron\Cms\Services\SlugGenerator;
+use Neuron\Events\Emitter;
+use Neuron\Dto\Dto;
 use DateTimeImmutable;
 
 /**
@@ -17,32 +17,37 @@ use DateTimeImmutable;
  *
  * @package Neuron\Cms\Services\Category
  */
-class Creator
+class Creator implements ICategoryCreator
 {
 	private ICategoryRepository $_categoryRepository;
-	private IRandom $_random;
+	private SlugGenerator $_slugGenerator;
+	private ?Emitter $_eventEmitter;
 
-	public function __construct( ICategoryRepository $categoryRepository, ?IRandom $random = null )
+	public function __construct(
+		ICategoryRepository $categoryRepository,
+		?SlugGenerator $slugGenerator = null,
+		?Emitter $eventEmitter = null
+	)
 	{
 		$this->_categoryRepository = $categoryRepository;
-		$this->_random = $random ?? new RealRandom();
+		$this->_slugGenerator = $slugGenerator ?? new SlugGenerator();
+		$this->_eventEmitter = $eventEmitter;
 	}
 
 	/**
-	 * Create a new category
+	 * Create a new category from DTO
 	 *
-	 * @param string $name Category name
-	 * @param string $slug URL-friendly slug
-	 * @param string|null $description Optional description
+	 * @param Dto $request DTO containing name, slug, description
 	 * @return Category
 	 * @throws \Exception If category creation fails
 	 */
-	public function create(
-		string $name,
-		string $slug,
-		?string $description = null
-	): Category
+	public function create( Dto $request ): Category
 	{
+		// Extract values from DTO
+		$name = $request->name;
+		$slug = $request->slug ?? '';
+		$description = $request->description ?? null;
+
 		// Auto-generate slug from name if empty
 		if( empty( $slug ) )
 		{
@@ -58,10 +63,9 @@ class Creator
 		$category = $this->_categoryRepository->create( $category );
 
 		// Emit category created event
-		$emitter = Registry::getInstance()->get( 'EventEmitter' );
-		if( $emitter )
+		if( $this->_eventEmitter )
 		{
-			$emitter->emit( new CategoryCreatedEvent( $category ) );
+			$this->_eventEmitter->emit( new CategoryCreatedEvent( $category ) );
 		}
 
 		return $category;
@@ -78,17 +82,6 @@ class Creator
 	 */
 	private function generateSlug( string $name ): string
 	{
-		$slug = strtolower( trim( $name ) );
-		$slug = preg_replace( '/[^a-z0-9-]/', '-', $slug );
-		$slug = preg_replace( '/-+/', '-', $slug );
-		$slug = trim( $slug, '-' );
-
-		// Fallback for names with no ASCII characters
-		if( $slug === '' )
-		{
-			$slug = 'category-' . $this->_random->uniqueId();
-		}
-
-		return $slug;
+		return $this->_slugGenerator->generate( $name, 'category' );
 	}
 }

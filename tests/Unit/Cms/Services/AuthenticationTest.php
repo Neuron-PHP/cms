@@ -367,4 +367,245 @@ class AuthenticationTest extends TestCase
 		$user = $this->_userRepository->findByUsername('lastlogin');
 		$this->assertInstanceOf(DateTimeImmutable::class, $user->getLastLoginAt());
 	}
+
+	/**
+	 * Test id() method returns user ID when authenticated
+	 */
+	public function testIdReturnsUserIdWhenAuthenticated(): void
+	{
+		$user = $this->createTestUser('idtest', 'TestPass123');
+		$this->_authentication->attempt('idtest', 'TestPass123');
+
+		$userId = $this->_authentication->id();
+
+		$this->assertNotNull($userId);
+		$this->assertEquals($user->getId(), $userId);
+	}
+
+	/**
+	 * Test id() method returns null when not authenticated
+	 */
+	public function testIdReturnsNullWhenNotAuthenticated(): void
+	{
+		$userId = $this->_authentication->id();
+
+		$this->assertNull($userId);
+	}
+
+	/**
+	 * Test setMaxLoginAttempts() configures lockout threshold
+	 */
+	public function testSetMaxLoginAttempts(): void
+	{
+		$user = $this->createTestUser('maxattempts', 'TestPass123');
+
+		// Set max attempts to 3 instead of default 5
+		$this->_authentication->setMaxLoginAttempts(3);
+
+		// Make 3 failed attempts
+		for ($i = 0; $i < 3; $i++) {
+			$this->_authentication->attempt('maxattempts', 'WrongPassword');
+		}
+
+		$user = $this->_userRepository->findByUsername('maxattempts');
+		$this->assertTrue($user->isLockedOut(), 'Account should be locked after 3 attempts');
+	}
+
+	/**
+	 * Test setMaxLoginAttempts() returns self for fluent interface
+	 */
+	public function testSetMaxLoginAttemptsReturnsSelf(): void
+	{
+		$result = $this->_authentication->setMaxLoginAttempts(10);
+
+		$this->assertSame($this->_authentication, $result);
+	}
+
+	/**
+	 * Test setLockoutDuration() configures lockout duration
+	 */
+	public function testSetLockoutDuration(): void
+	{
+		$user = $this->createTestUser('lockduration', 'TestPass123');
+
+		// Set lockout duration to 30 minutes instead of default 15
+		$this->_authentication->setLockoutDuration(30);
+
+		// Make 5 failed attempts to trigger lockout
+		for ($i = 0; $i < 5; $i++) {
+			$this->_authentication->attempt('lockduration', 'WrongPassword');
+		}
+
+		$user = $this->_userRepository->findByUsername('lockduration');
+		$lockedUntil = $user->getLockedUntil();
+
+		$this->assertNotNull($lockedUntil);
+
+		// Check that lockout is approximately 30 minutes from now (within 1 minute tolerance)
+		$expectedLockoutTime = (new DateTimeImmutable())->modify('+30 minutes');
+		$timeDiff = abs($lockedUntil->getTimestamp() - $expectedLockoutTime->getTimestamp());
+		$this->assertLessThan(60, $timeDiff, 'Lockout duration should be approximately 30 minutes');
+	}
+
+	/**
+	 * Test setLockoutDuration() returns self for fluent interface
+	 */
+	public function testSetLockoutDurationReturnsSelf(): void
+	{
+		$result = $this->_authentication->setLockoutDuration(20);
+
+		$this->assertSame($this->_authentication, $result);
+	}
+
+	/**
+	 * Test isEditorOrHigher() returns true for admin
+	 */
+	public function testIsEditorOrHigherReturnsTrueForAdmin(): void
+	{
+		$user = $this->createTestUser('admineditor', 'TestPass123');
+		$user->setRole(\Neuron\Cms\Models\User::ROLE_ADMIN);
+		$this->_userRepository->update($user);
+
+		$this->_authentication->attempt('admineditor', 'TestPass123');
+
+		$this->assertTrue($this->_authentication->isEditorOrHigher());
+	}
+
+	/**
+	 * Test isEditorOrHigher() returns true for editor
+	 */
+	public function testIsEditorOrHigherReturnsTrueForEditor(): void
+	{
+		$user = $this->createTestUser('editortest', 'TestPass123');
+		$user->setRole(\Neuron\Cms\Models\User::ROLE_EDITOR);
+		$this->_userRepository->update($user);
+
+		$this->_authentication->attempt('editortest', 'TestPass123');
+
+		$this->assertTrue($this->_authentication->isEditorOrHigher());
+	}
+
+	/**
+	 * Test isEditorOrHigher() returns false for author
+	 */
+	public function testIsEditorOrHigherReturnsFalseForAuthor(): void
+	{
+		$user = $this->createTestUser('authoreditor', 'TestPass123');
+		$user->setRole(\Neuron\Cms\Models\User::ROLE_AUTHOR);
+		$this->_userRepository->update($user);
+
+		$this->_authentication->attempt('authoreditor', 'TestPass123');
+
+		$this->assertFalse($this->_authentication->isEditorOrHigher());
+	}
+
+	/**
+	 * Test isEditorOrHigher() returns false for subscriber
+	 */
+	public function testIsEditorOrHigherReturnsFalseForSubscriber(): void
+	{
+		$user = $this->createTestUser('subeditor', 'TestPass123');
+		$user->setRole(\Neuron\Cms\Models\User::ROLE_SUBSCRIBER);
+		$this->_userRepository->update($user);
+
+		$this->_authentication->attempt('subeditor', 'TestPass123');
+
+		$this->assertFalse($this->_authentication->isEditorOrHigher());
+	}
+
+	/**
+	 * Test isEditorOrHigher() returns false when not authenticated
+	 */
+	public function testIsEditorOrHigherReturnsFalseWhenNotAuthenticated(): void
+	{
+		$this->assertFalse($this->_authentication->isEditorOrHigher());
+	}
+
+	/**
+	 * Test isAuthorOrHigher() returns true for admin
+	 */
+	public function testIsAuthorOrHigherReturnsTrueForAdmin(): void
+	{
+		$user = $this->createTestUser('adminauthor', 'TestPass123');
+		$user->setRole(\Neuron\Cms\Models\User::ROLE_ADMIN);
+		$this->_userRepository->update($user);
+
+		$this->_authentication->attempt('adminauthor', 'TestPass123');
+
+		$this->assertTrue($this->_authentication->isAuthorOrHigher());
+	}
+
+	/**
+	 * Test isAuthorOrHigher() returns true for editor
+	 */
+	public function testIsAuthorOrHigherReturnsTrueForEditor(): void
+	{
+		$user = $this->createTestUser('editorauthor', 'TestPass123');
+		$user->setRole(\Neuron\Cms\Models\User::ROLE_EDITOR);
+		$this->_userRepository->update($user);
+
+		$this->_authentication->attempt('editorauthor', 'TestPass123');
+
+		$this->assertTrue($this->_authentication->isAuthorOrHigher());
+	}
+
+	/**
+	 * Test isAuthorOrHigher() returns true for author
+	 */
+	public function testIsAuthorOrHigherReturnsTrueForAuthor(): void
+	{
+		$user = $this->createTestUser('authortest', 'TestPass123');
+		$user->setRole(\Neuron\Cms\Models\User::ROLE_AUTHOR);
+		$this->_userRepository->update($user);
+
+		$this->_authentication->attempt('authortest', 'TestPass123');
+
+		$this->assertTrue($this->_authentication->isAuthorOrHigher());
+	}
+
+	/**
+	 * Test isAuthorOrHigher() returns false for subscriber
+	 */
+	public function testIsAuthorOrHigherReturnsFalseForSubscriber(): void
+	{
+		$user = $this->createTestUser('subauthor', 'TestPass123');
+		$user->setRole(\Neuron\Cms\Models\User::ROLE_SUBSCRIBER);
+		$this->_userRepository->update($user);
+
+		$this->_authentication->attempt('subauthor', 'TestPass123');
+
+		$this->assertFalse($this->_authentication->isAuthorOrHigher());
+	}
+
+	/**
+	 * Test isAuthorOrHigher() returns false when not authenticated
+	 */
+	public function testIsAuthorOrHigherReturnsFalseWhenNotAuthenticated(): void
+	{
+		$this->assertFalse($this->_authentication->isAuthorOrHigher());
+	}
+
+	/**
+	 * Test validateCredentials() with valid password
+	 */
+	public function testValidateCredentialsWithValidPassword(): void
+	{
+		$user = $this->createTestUser('validatetest', 'TestPass123');
+
+		$result = $this->_authentication->validateCredentials($user, 'TestPass123');
+
+		$this->assertTrue($result);
+	}
+
+	/**
+	 * Test validateCredentials() with invalid password
+	 */
+	public function testValidateCredentialsWithInvalidPassword(): void
+	{
+		$user = $this->createTestUser('validatefail', 'TestPass123');
+
+		$result = $this->_authentication->validateCredentials($user, 'WrongPassword');
+
+		$this->assertFalse($result);
+	}
 }

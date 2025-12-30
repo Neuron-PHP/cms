@@ -6,13 +6,13 @@ use Neuron\Cms\Enums\FlashMessageType;
 use Neuron\Cms\Controllers\Content;
 use Neuron\Cms\Services\Media\CloudinaryUploader;
 use Neuron\Cms\Services\Media\MediaValidator;
-use Neuron\Cms\Services\Auth\CsrfToken;
-use Neuron\Data\Settings\SettingManager;
 use Neuron\Log\Log;
 use Neuron\Mvc\Application;
 use Neuron\Mvc\Requests\Request;
 use Neuron\Mvc\Responses\HttpResponseStatus;
-use Neuron\Patterns\Registry;
+use Neuron\Routing\Attributes\Get;
+use Neuron\Routing\Attributes\Post;
+use Neuron\Routing\Attributes\RouteGroup;
 
 /**
  * Media upload controller.
@@ -21,10 +21,11 @@ use Neuron\Patterns\Registry;
  *
  * @package Neuron\Cms\Controllers\Admin
  */
+#[RouteGroup(prefix: '/admin', filters: ['auth'])]
 class Media extends Content
 {
-	private CloudinaryUploader $_uploader;
-	private MediaValidator $_validator;
+	private ?CloudinaryUploader $_uploader = null;
+	private ?MediaValidator $_validator = null;
 
 	/**
 	 * Constructor
@@ -42,32 +43,10 @@ class Media extends Content
 	{
 		parent::__construct( $app );
 
-		// Get settings once if we need to create any dependencies
-		$settings = null;
-		if( $uploader === null || $validator === null )
-		{
-			$settings = Registry::getInstance()->get( 'Settings' );
-
-			if( !$settings instanceof SettingManager )
-			{
-				throw new \Exception( 'Settings not found in Registry' );
-			}
-		}
-
-		// Create uploader if not provided
-		if( $uploader === null )
-		{
-			$uploader = new CloudinaryUploader( $settings );
-		}
-
-		// Create validator if not provided
-		if( $validator === null )
-		{
-			$validator = new MediaValidator( $settings );
-		}
-
-		$this->_uploader = $uploader;
-		$this->_validator = $validator;
+		// Use dependency injection when available (container provides dependencies)
+		// Otherwise resolve from container (fallback for compatibility)
+		$this->_uploader = $uploader ?? $app?->getContainer()?->get( CloudinaryUploader::class );
+		$this->_validator = $validator ?? $app?->getContainer()?->get( MediaValidator::class );
 	}
 
 	/**
@@ -80,13 +59,12 @@ class Media extends Content
 	 * @return string Rendered view
 	 * @throws \Exception
 	 */
+	#[Get('/media', name: 'admin_media')]
 	public function index( Request $request ): string
 	{
-		// Generate CSRF token
-		$sessionManager = $this->getSessionManager();
-		$csrfToken = new CsrfToken( $sessionManager );
-		Registry::getInstance()->set( 'Auth.CsrfToken', $csrfToken->getToken() );
+		$this->initializeCsrfToken();
 
+		$sessionManager = $this->getSessionManager();
 		try
 		{
 			// Get pagination cursor from query string
@@ -169,6 +147,7 @@ class Media extends Content
 	 * @param Request $request
 	 * @return string JSON response
 	 */
+	#[Post('/upload/image', name: 'admin_upload_image', filters: ['csrf'])]
 	public function uploadImage( Request $request ): string
 	{
 		try
@@ -259,6 +238,7 @@ class Media extends Content
 	 * @param Request $request
 	 * @return string JSON response
 	 */
+	#[Post('/upload/featured-image', name: 'admin_upload_featured_image', filters: ['csrf'])]
 	public function uploadFeaturedImage( Request $request ): string
 	{
 		try

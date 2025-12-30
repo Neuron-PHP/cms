@@ -8,7 +8,6 @@ use Neuron\Cms\Events\PostDeletedEvent;
 use Neuron\Cms\Events\CategoryUpdatedEvent;
 use Neuron\Log\Log;
 use Neuron\Mvc\Cache\ViewCache;
-use Neuron\Patterns\Registry;
 
 /**
  * Clears view cache when content changes.
@@ -20,6 +19,18 @@ use Neuron\Patterns\Registry;
  */
 class ClearCacheListener implements IListener
 {
+	private ?ViewCache $viewCache;
+
+	/**
+	 * Constructor
+	 *
+	 * @param ViewCache|null $viewCache Optional view cache instance
+	 */
+	public function __construct( ?ViewCache $viewCache = null )
+	{
+		$this->viewCache = $viewCache;
+	}
+
 	/**
 	 * Handle content change events
 	 *
@@ -50,18 +61,15 @@ class ClearCacheListener implements IListener
 	 */
 	private function clearCache( string $reason ): void
 	{
-		// Try to get ViewCache from Registry
-		$viewCache = Registry::getInstance()->get( 'ViewCache' );
-
-		if( !$viewCache instanceof ViewCache )
+		if( !$this->viewCache )
 		{
-			Log::debug( "ViewCache not available in Registry - cache clearing skipped: {$reason}" );
+			Log::debug( "ViewCache not available - cache clearing skipped: {$reason}" );
 			return;
 		}
 
 		try
 		{
-			if( $viewCache->clear() )
+			if( $this->viewCache->clear() )
 			{
 				Log::info( "Cache cleared successfully: {$reason}" );
 			}

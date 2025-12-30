@@ -6,6 +6,7 @@ use Neuron\Data\Settings\Source\Yaml;
 use Neuron\Mvc\Application;
 use Neuron\Orm\Model;
 use Neuron\Cms\Database\ConnectionFactory;
+use Neuron\Cms\Container\Container;
 use Neuron\Patterns\Registry;
 
 // Load authentication helper functions
@@ -48,6 +49,20 @@ function boot( string $configPath ) : Application
 		'Neuron\\Cms\\Exceptions\\EmailVerificationRequiredException',
 		'Neuron\\Cms\\Exceptions\\CsrfValidationException'
 	] );
+
+	// Build and register the DI container
+	// This must happen before initializers run so they can resolve services
+	try
+	{
+		$container = Container::build( $app->getSettingManager() );
+
+		// Set container on Application so MVC router can use it for controller instantiation
+		$app->setContainer( $container );
+	}
+	catch( \Exception $e )
+	{
+		error_log( 'Container initialization failed: ' . $e->getMessage() );
+	}
 
 	// Initialize ORM with PDO connection from settings
 	try

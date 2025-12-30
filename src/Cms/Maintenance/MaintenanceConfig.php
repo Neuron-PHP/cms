@@ -2,6 +2,7 @@
 
 namespace Neuron\Cms\Maintenance;
 
+use Neuron\Cms\Config\CacheConfig;
 use Neuron\Data\Settings\Source\ISettingSource;
 
 /**
@@ -59,7 +60,7 @@ class MaintenanceConfig
 			'enabled' => false,
 			'default_message' => 'Site is currently under maintenance. Please check back soon.',
 			'allowed_ips' => ['127.0.0.1', '::1'],
-			'retry_after' => 3600,
+			'retry_after' => CacheConfig::DEFAULT_TTL,
 			'custom_view' => null,
 			'show_countdown' => false,
 		];
@@ -110,7 +111,7 @@ class MaintenanceConfig
 	 */
 	public function getRetryAfter(): int
 	{
-		return (int)($this->_config['retry_after'] ?? 3600);
+		return (int)($this->_config['retry_after'] ?? CacheConfig::DEFAULT_TTL);
 	}
 
 	/**

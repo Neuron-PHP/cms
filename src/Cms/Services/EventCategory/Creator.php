@@ -4,38 +4,40 @@ namespace Neuron\Cms\Services\EventCategory;
 
 use Neuron\Cms\Models\EventCategory;
 use Neuron\Cms\Repositories\IEventCategoryRepository;
+use Neuron\Cms\Services\SlugGenerator;
+use Neuron\Dto\Dto;
 
 /**
  * Event category creation service.
  *
  * @package Neuron\Cms\Services\EventCategory
  */
-class Creator
+class Creator implements IEventCategoryCreator
 {
 	private IEventCategoryRepository $_repository;
+	private SlugGenerator $_slugGenerator;
 
-	public function __construct( IEventCategoryRepository $repository )
+	public function __construct( IEventCategoryRepository $repository, ?SlugGenerator $slugGenerator = null )
 	{
 		$this->_repository = $repository;
+		$this->_slugGenerator = $slugGenerator ?? new SlugGenerator();
 	}
 
 	/**
-	 * Create a new event category
+	 * Create a new event category from DTO
 	 *
-	 * @param string $name Category name
-	 * @param string|null $slug Optional custom slug (auto-generated if not provided)
-	 * @param string $color Hex color code
-	 * @param string|null $description Optional description
+	 * @param Dto $request DTO containing category data
 	 * @return EventCategory
 	 * @throws \RuntimeException if slug already exists
 	 */
-	public function create(
-		string $name,
-		?string $slug = null,
-		string $color = '#3b82f6',
-		?string $description = null
-	): EventCategory
+	public function create( Dto $request ): EventCategory
 	{
+		// Extract values from DTO
+		$name = $request->name;
+		$slug = $request->slug ?? '';
+		$color = $request->color ?? '#3b82f6';
+		$description = $request->description ?? null;
+
 		$category = new EventCategory();
 		$category->setName( $name );
 		$category->setSlug( $slug ?: $this->generateSlug( $name ) );
@@ -59,17 +61,6 @@ class Creator
 	 */
 	private function generateSlug( string $name ): string
 	{
-		$slug = strtolower( trim( $name ) );
-		$slug = preg_replace( '/[^a-z0-9-]/', '-', $slug );
-		$slug = preg_replace( '/-+/', '-', $slug );
-		$slug = trim( $slug, '-' );
-
-		// Fallback for names with no ASCII characters
-		if( $slug === '' )
-		{
-			$slug = 'category-' . uniqid();
-		}
-
-		return $slug;
+		return $this->_slugGenerator->generate( $name, 'category' );
 	}
 }

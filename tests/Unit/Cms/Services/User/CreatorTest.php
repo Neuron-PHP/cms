@@ -7,6 +7,8 @@ use Neuron\Cms\Auth\PasswordHasher;
 use Neuron\Cms\Models\User;
 use Neuron\Cms\Repositories\IUserRepository;
 use Neuron\Cms\Services\User\Creator;
+use Neuron\Dto\Factory;
+use Neuron\Dto\Dto;
 use PHPUnit\Framework\TestCase;
 
 class CreatorTest extends TestCase
@@ -24,6 +26,26 @@ class CreatorTest extends TestCase
 			$this->_mockUserRepository,
 			$this->_mockPasswordHasher
 		);
+	}
+
+	/**
+	 * Helper method to create a DTO with test data
+	 */
+	private function createDto( string $username, string $email, string $password, string $role, ?string $timezone = null ): Dto
+	{
+		$factory = new Factory( __DIR__ . '/../../../../../config/dtos/users/create-user-request.yaml' );
+		$dto = $factory->create();
+
+		$dto->username = $username;
+		$dto->email = $email;
+		$dto->password = $password;
+		$dto->role = $role;
+		if( $timezone !== null )
+		{
+			$dto->timezone = $timezone;
+		}
+
+		return $dto;
 	}
 
 	public function testCreatesUserWithRequiredFields(): void
@@ -52,12 +74,14 @@ class CreatorTest extends TestCase
 			} ) )
 			->willReturnArgument( 0 );
 
-		$result = $this->_creator->create(
+		$dto = $this->createDto(
 			'testuser',
 			'test@example.com',
 			'ValidPassword123!',
 			User::ROLE_SUBSCRIBER
 		);
+
+		$result = $this->_creator->create( $dto );
 
 		$this->assertEquals( 'testuser', $result->getUsername() );
 		$this->assertEquals( 'test@example.com', $result->getEmail() );
@@ -65,25 +89,30 @@ class CreatorTest extends TestCase
 
 	public function testThrowsExceptionForInvalidPassword(): void
 	{
+		// Use a password that passes DTO validation (length) but fails password hasher validation (complexity)
+		$weakPassword = 'weakpass';  // 8 chars, passes DTO min length but no uppercase/special chars
+
 		$this->_mockPasswordHasher
 			->method( 'meetsRequirements' )
-			->with( 'weak' )
+			->with( $weakPassword )
 			->willReturn( false );
 
 		$this->_mockPasswordHasher
 			->method( 'getValidationErrors' )
-			->with( 'weak' )
-			->willReturn( [ 'Password too short', 'Missing uppercase letter' ] );
+			->with( $weakPassword )
+			->willReturn( [ 'Missing uppercase letter', 'Missing special character' ] );
 
 		$this->expectException( \Exception::class );
 		$this->expectExceptionMessageMatches( '/^Password does not meet requirements/' );
 
-		$this->_creator->create(
+		$dto = $this->createDto(
 			'testuser',
 			'test@example.com',
-			'weak',
+			$weakPassword,
 			User::ROLE_SUBSCRIBER
 		);
+
+		$this->_creator->create( $dto );
 	}
 
 	public function testCreatesAdminUser(): void
@@ -104,12 +133,14 @@ class CreatorTest extends TestCase
 			} ) )
 			->willReturnArgument( 0 );
 
-		$result = $this->_creator->create(
+		$dto = $this->createDto(
 			'admin',
 			'admin@example.com',
 			'AdminPassword123!',
 			User::ROLE_ADMIN
 		);
+
+		$result = $this->_creator->create( $dto );
 
 		$this->assertEquals( User::ROLE_ADMIN, $result->getRole() );
 	}
@@ -132,12 +163,14 @@ class CreatorTest extends TestCase
 			} ) )
 			->willReturnArgument( 0 );
 
-		$result = $this->_creator->create(
+		$dto = $this->createDto(
 			'editor',
 			'editor@example.com',
 			'EditorPassword123!',
 			User::ROLE_EDITOR
 		);
+
+		$result = $this->_creator->create( $dto );
 
 		$this->assertEquals( User::ROLE_EDITOR, $result->getRole() );
 	}
@@ -160,12 +193,14 @@ class CreatorTest extends TestCase
 			} ) )
 			->willReturnArgument( 0 );
 
-		$result = $this->_creator->create(
+		$dto = $this->createDto(
 			'testuser',
 			'test@example.com',
 			'Password123!',
 			User::ROLE_SUBSCRIBER
 		);
+
+		$result = $this->_creator->create( $dto );
 
 		$this->assertEquals( User::STATUS_ACTIVE, $result->getStatus() );
 	}
@@ -188,12 +223,14 @@ class CreatorTest extends TestCase
 			} ) )
 			->willReturnArgument( 0 );
 
-		$result = $this->_creator->create(
+		$dto = $this->createDto(
 			'testuser',
 			'test@example.com',
 			'Password123!',
 			User::ROLE_SUBSCRIBER
 		);
+
+		$result = $this->_creator->create( $dto );
 
 		$this->assertTrue( $result->isEmailVerified() );
 	}

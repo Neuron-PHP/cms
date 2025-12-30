@@ -7,6 +7,8 @@ use Neuron\Cms\Models\Event;
 use Neuron\Cms\Models\EventCategory;
 use Neuron\Cms\Repositories\IEventRepository;
 use Neuron\Cms\Repositories\IEventCategoryRepository;
+use Neuron\Dto\Factory;
+use Neuron\Dto\Dto;
 use PHPUnit\Framework\TestCase;
 use DateTimeImmutable;
 
@@ -27,6 +29,83 @@ class UpdaterTest extends TestCase
 		);
 	}
 
+	/**
+	 * Helper method to create a DTO with test data
+	 */
+	private function createDto(
+		int $id,
+		string $title,
+		string $startDate,
+		string $status,
+		?string $slug = null,
+		?string $description = null,
+		?string $content = null,
+		?string $location = null,
+		?string $endDate = null,
+		?bool $allDay = null,
+		?int $categoryId = null,
+		?string $featuredImage = null,
+		?string $organizer = null,
+		?string $contactEmail = null,
+		?string $contactPhone = null
+	): Dto
+	{
+		$factory = new Factory( __DIR__ . '/../../../../../config/dtos/events/update-event-request.yaml' );
+		$dto = $factory->create();
+
+		$dto->id = $id;
+		$dto->title = $title;
+		$dto->start_date = $startDate;
+		$dto->status = $status;
+
+		if( $slug !== null )
+		{
+			$dto->slug = $slug;
+		}
+		if( $description !== null )
+		{
+			$dto->description = $description;
+		}
+		if( $content !== null )
+		{
+			$dto->content = $content;
+		}
+		if( $location !== null )
+		{
+			$dto->location = $location;
+		}
+		if( $endDate !== null )
+		{
+			$dto->end_date = $endDate;
+		}
+		if( $allDay !== null )
+		{
+			$dto->all_day = $allDay;
+		}
+		if( $categoryId !== null )
+		{
+			$dto->category_id = $categoryId;
+		}
+		if( $featuredImage !== null )
+		{
+			$dto->featured_image = $featuredImage;
+		}
+		if( $organizer !== null )
+		{
+			$dto->organizer = $organizer;
+		}
+		if( $contactEmail !== null )
+		{
+			$dto->contact_email = $contactEmail;
+		}
+		if( $contactPhone !== null )
+		{
+			$dto->contact_phone = $contactPhone;
+		}
+
+		return $dto;
+	}
+
 	public function test_update_basic_event(): void
 	{
 		$event = new Event();
@@ -36,6 +115,11 @@ class UpdaterTest extends TestCase
 
 		$newStartDate = new DateTimeImmutable( '2025-07-01 14:00:00' );
 
+		$this->eventRepository->expects( $this->once() )
+			->method( 'findById' )
+			->with( 1 )
+			->willReturn( $event );
+
 		$this->eventRepository->expects( $this->never() )
 			->method( 'slugExists' );
 
@@ -44,12 +128,14 @@ class UpdaterTest extends TestCase
 			->with( $event )
 			->willReturn( $event );
 
-		$result = $this->updater->update(
-			$event,
-			'New Title',
-			$newStartDate,
-			Event::STATUS_PUBLISHED
+		$dto = $this->createDto(
+			id: 1,
+			title: 'New Title',
+			startDate: '2025-07-01 14:00:00',
+			status: Event::STATUS_PUBLISHED
 		);
+
+		$result = $this->updater->update( $dto );
 
 		$this->assertInstanceOf( Event::class, $result );
 		$this->assertEquals( 'New Title', $event->getTitle() );
@@ -68,6 +154,11 @@ class UpdaterTest extends TestCase
 		$newStartDate = new DateTimeImmutable( '2025-07-01 14:00:00' );
 
 		$this->eventRepository->expects( $this->once() )
+			->method( 'findById' )
+			->with( 1 )
+			->willReturn( $event );
+
+		$this->eventRepository->expects( $this->once() )
 			->method( 'slugExists' )
 			->with( 'new-slug', 1 )
 			->willReturn( false );
@@ -77,13 +168,15 @@ class UpdaterTest extends TestCase
 			->with( $event )
 			->willReturn( $event );
 
-		$this->updater->update(
-			$event,
-			'New Title',
-			$newStartDate,
-			Event::STATUS_PUBLISHED,
-			'new-slug'
+		$dto = $this->createDto(
+			id: 1,
+			title: 'New Title',
+			startDate: '2025-07-01 14:00:00',
+			status: Event::STATUS_PUBLISHED,
+			slug: 'new-slug'
 		);
+
+		$this->updater->update( $dto );
 
 		$this->assertEquals( 'new-slug', $event->getSlug() );
 	}
@@ -98,6 +191,11 @@ class UpdaterTest extends TestCase
 
 		$category = new EventCategory();
 		$category->setId( 2 );
+
+		$this->eventRepository->expects( $this->once() )
+			->method( 'findById' )
+			->with( 5 )
+			->willReturn( $event );
 
 		$this->categoryRepository->expects( $this->once() )
 			->method( 'findById' )
@@ -114,23 +212,25 @@ class UpdaterTest extends TestCase
 			->with( $event )
 			->willReturn( $event );
 
-		$this->updater->update(
-			$event,
-			'Updated Conference',
-			$newStartDate,
-			Event::STATUS_PUBLISHED,
-			'updated-slug',
-			'Updated description',
-			'{"blocks":[{"type":"paragraph","data":{"text":"Updated content"}}]}',
-			'New Location',
-			$newEndDate,
-			true,
-			2,
-			'/images/updated.jpg',
-			'Updated Organizer',
-			'updated@example.com',
-			'555-9999'
+		$dto = $this->createDto(
+			id: 5,
+			title: 'Updated Conference',
+			startDate: '2025-08-01 09:00:00',
+			status: Event::STATUS_PUBLISHED,
+			slug: 'updated-slug',
+			description: 'Updated description',
+			content: '{"blocks":[{"type":"paragraph","data":{"text":"Updated content"}}]}',
+			location: 'New Location',
+			endDate: '2025-08-01 17:00:00',
+			allDay: true,
+			categoryId: 2,
+			featuredImage: '/images/updated.jpg',
+			organizer: 'Updated Organizer',
+			contactEmail: 'updated@example.com',
+			contactPhone: '555-9999'
 		);
+
+		$this->updater->update( $dto );
 
 		$this->assertEquals( 'Updated Conference', $event->getTitle() );
 		$this->assertEquals( 'updated-slug', $event->getSlug() );
@@ -153,6 +253,11 @@ class UpdaterTest extends TestCase
 		$newStartDate = new DateTimeImmutable( '2025-07-01 14:00:00' );
 
 		$this->eventRepository->expects( $this->once() )
+			->method( 'findById' )
+			->with( 1 )
+			->willReturn( $event );
+
+		$this->eventRepository->expects( $this->once() )
 			->method( 'slugExists' )
 			->with( 'duplicate-slug', 1 )
 			->willReturn( true );
@@ -163,13 +268,15 @@ class UpdaterTest extends TestCase
 		$this->expectException( \RuntimeException::class );
 		$this->expectExceptionMessage( 'An event with this slug already exists' );
 
-		$this->updater->update(
-			$event,
-			'New Title',
-			$newStartDate,
-			Event::STATUS_PUBLISHED,
-			'duplicate-slug'
+		$dto = $this->createDto(
+			id: 1,
+			title: 'New Title',
+			startDate: '2025-07-01 14:00:00',
+			status: Event::STATUS_PUBLISHED,
+			slug: 'duplicate-slug'
 		);
+
+		$this->updater->update( $dto );
 	}
 
 	public function test_update_throws_exception_when_category_not_found(): void
@@ -178,6 +285,11 @@ class UpdaterTest extends TestCase
 		$event->setId( 1 );
 
 		$newStartDate = new DateTimeImmutable( '2025-07-01 14:00:00' );
+
+		$this->eventRepository->expects( $this->once() )
+			->method( 'findById' )
+			->with( 1 )
+			->willReturn( $event );
 
 		$this->categoryRepository->expects( $this->once() )
 			->method( 'findById' )
@@ -190,19 +302,15 @@ class UpdaterTest extends TestCase
 		$this->expectException( \RuntimeException::class );
 		$this->expectExceptionMessage( 'Event category not found' );
 
-		$this->updater->update(
-			$event,
-			'New Title',
-			$newStartDate,
-			Event::STATUS_PUBLISHED,
-			null,
-			null,
-			'{"blocks":[]}',
-			null,
-			null,
-			false,
-			999  // Non-existent category
+		$dto = $this->createDto(
+			id: 1,
+			title: 'New Title',
+			startDate: '2025-07-01 14:00:00',
+			status: Event::STATUS_PUBLISHED,
+			categoryId: 999
 		);
+
+		$this->updater->update( $dto );
 	}
 
 	public function test_update_allows_same_slug_for_same_event(): void
@@ -214,6 +322,11 @@ class UpdaterTest extends TestCase
 		$newStartDate = new DateTimeImmutable( '2025-07-01 14:00:00' );
 
 		$this->eventRepository->expects( $this->once() )
+			->method( 'findById' )
+			->with( 5 )
+			->willReturn( $event );
+
+		$this->eventRepository->expects( $this->once() )
 			->method( 'slugExists' )
 			->with( 'my-event', 5 )  // Should exclude event ID 5
 			->willReturn( false );
@@ -223,13 +336,15 @@ class UpdaterTest extends TestCase
 			->with( $event )
 			->willReturn( $event );
 
-		$this->updater->update(
-			$event,
-			'Updated Title',
-			$newStartDate,
-			Event::STATUS_PUBLISHED,
-			'my-event'  // Same slug
+		$dto = $this->createDto(
+			id: 5,
+			title: 'Updated Title',
+			startDate: '2025-07-01 14:00:00',
+			status: Event::STATUS_PUBLISHED,
+			slug: 'my-event'
 		);
+
+		$this->updater->update( $dto );
 
 		$this->assertEquals( 'my-event', $event->getSlug() );
 	}
@@ -242,6 +357,11 @@ class UpdaterTest extends TestCase
 
 		$newStartDate = new DateTimeImmutable( '2025-07-01 14:00:00' );
 
+		$this->eventRepository->expects( $this->once() )
+			->method( 'findById' )
+			->with( 1 )
+			->willReturn( $event );
+
 		$this->categoryRepository->expects( $this->never() )
 			->method( 'findById' );
 
@@ -250,19 +370,15 @@ class UpdaterTest extends TestCase
 			->with( $event )
 			->willReturn( $event );
 
-		$this->updater->update(
-			$event,
-			'New Title',
-			$newStartDate,
-			Event::STATUS_PUBLISHED,
-			null,
-			null,
-			'{"blocks":[]}',
-			null,
-			null,
-			false,
-			null  // Remove category
+		$dto = $this->createDto(
+			id: 1,
+			title: 'New Title',
+			startDate: '2025-07-01 14:00:00',
+			status: Event::STATUS_PUBLISHED,
+			categoryId: null
 		);
+
+		$this->updater->update( $dto );
 
 		$this->assertNull( $event->getCategoryId() );
 	}
@@ -276,16 +392,23 @@ class UpdaterTest extends TestCase
 		$newStartDate = new DateTimeImmutable( '2025-07-01 14:00:00' );
 
 		$this->eventRepository->expects( $this->once() )
+			->method( 'findById' )
+			->with( 1 )
+			->willReturn( $event );
+
+		$this->eventRepository->expects( $this->once() )
 			->method( 'update' )
 			->with( $event )
 			->willReturn( $event );
 
-		$this->updater->update(
-			$event,
-			'New Title',
-			$newStartDate,
-			Event::STATUS_PUBLISHED
+		$dto = $this->createDto(
+			id: 1,
+			title: 'New Title',
+			startDate: '2025-07-01 14:00:00',
+			status: Event::STATUS_PUBLISHED
 		);
+
+		$this->updater->update( $dto );
 
 		$this->assertEquals( Event::STATUS_PUBLISHED, $event->getStatus() );
 	}

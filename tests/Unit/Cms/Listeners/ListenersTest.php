@@ -10,6 +10,7 @@ use Neuron\Cms\Listeners\LogUserActivityListener;
 use Neuron\Cms\Listeners\ClearCacheListener;
 use Neuron\Cms\Models\User;
 use Neuron\Cms\Models\Post;
+use Neuron\Data\Settings\SettingManager;
 use PHPUnit\Framework\TestCase;
 
 class ListenersTest extends TestCase
@@ -22,7 +23,12 @@ class ListenersTest extends TestCase
 		$user->setEmail( 'newuser@example.com' );
 
 		$event = new UserCreatedEvent( $user );
-		$listener = new SendWelcomeEmailListener();
+
+		// Create mock settings
+		$mockSettings = $this->createMock( SettingManager::class );
+		$mockSettings->method( 'get' )->willReturn( 'Test Site' );
+
+		$listener = new SendWelcomeEmailListener( $mockSettings, '/tmp' );
 
 		// Should not throw exception
 		$listener->event( $event );
@@ -36,7 +42,10 @@ class ListenersTest extends TestCase
 		$user->setId( 1 );
 
 		$event = new UserUpdatedEvent( $user );
-		$listener = new SendWelcomeEmailListener();
+
+		// Create mock settings
+		$mockSettings = $this->createMock( SettingManager::class );
+		$listener = new SendWelcomeEmailListener( $mockSettings, '/tmp' );
 
 		// Should handle gracefully without errors
 		$listener->event( $event );
@@ -96,7 +105,8 @@ class ListenersTest extends TestCase
 		$post->setStatus( Post::STATUS_PUBLISHED );
 
 		$event = new PostPublishedEvent( $post );
-		$listener = new ClearCacheListener();
+		// ViewCache is optional, so can be null
+		$listener = new ClearCacheListener( null );
 
 		// Should not throw exception
 		$listener->event( $event );
@@ -110,7 +120,8 @@ class ListenersTest extends TestCase
 		$user->setId( 1 );
 
 		$event = new UserCreatedEvent( $user );
-		$listener = new ClearCacheListener();
+		// ViewCache is optional, so can be null
+		$listener = new ClearCacheListener( null );
 
 		// Should handle gracefully
 		$listener->event( $event );

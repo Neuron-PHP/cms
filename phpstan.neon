@@ -1,0 +1,35 @@
+includes:
+    - phpstan-baseline.neon
+
+parameters:
+    level: 6
+    paths:
+        - src
+    excludePaths:
+        - tests
+    tmpDir: var/phpstan
+    bootstrapFiles:
+        - vendor/autoload.php
+    scanFiles:
+        - vendor/neuron-php/mvc/src/Mvc/Controllers/Base.php
+        - vendor/neuron-php/core/src/Core/Exceptions/Validation.php
+
+    # Ignore framework-specific patterns that are by design
+    ignoreErrors:
+        # Dynamic DTO property access (by design - DTOs use magic methods)
+        - '#Access to an undefined property Neuron\\Dto\\Dto::\$#'
+
+        # Registry singleton pattern - ISingleton interface doesn't expose get/set (by design)
+        - '#Call to an undefined method Neuron\\Patterns\\Singleton\\ISingleton::(get|set)\(\)#'
+
+        # Controller methods inherited from Content base class (MVC framework pattern)
+        - '#Call to an undefined method Neuron\\Cms\\Controllers\\.*::(view|renderJson|redirect)\(\)#'
+
+
+        # DTO validation pattern - validate() returns void but throws on failure (framework design)
+        - '#Negated boolean expression is always true#'
+        - '#Result of method Neuron\\Dto\\Dto::validate\(\) \(void\) is used#'
+        - '#Unreachable statement - code above always terminates#'
+
+        # Properties intentionally written but not read (service classes stored for lifecycle)
+        - '#Property .* is never read, only written#'

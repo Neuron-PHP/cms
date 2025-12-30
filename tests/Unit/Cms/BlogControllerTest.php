@@ -260,10 +260,13 @@ class BlogControllerTest extends TestCase
 
 	private function createBlogWithInjectedRepositories(): Blog
 	{
-		// Create Blog controller (constructor will create repositories with ConnectionFactory)
-		$blog = new Blog();
+		// Get SettingManager from Registry for the test
+		$settingManager = Registry::getInstance()->get( 'Settings' );
 
-		// Inject our test repositories using reflection
+		// Create Blog controller with SettingManager
+		$blog = new Blog( null, null, null, null, null );
+
+		// Inject our test repositories and settings using reflection
 		$reflection = new \ReflectionClass( $blog );
 
 		$postRepoProp = $reflection->getProperty( '_postRepository' );
@@ -281,6 +284,34 @@ class BlogControllerTest extends TestCase
 		$userRepoProp = $reflection->getProperty( '_userRepository' );
 		$userRepoProp->setAccessible( true );
 		$userRepoProp->setValue( $blog, $this->_userRepository );
+
+		// Inject SettingManager into parent Content class
+		$parentReflection = $reflection->getParentClass();
+		$settingsProp = $parentReflection->getProperty( '_settings' );
+		$settingsProp->setAccessible( true );
+		$settingsProp->setValue( $blog, $settingManager );
+
+		// Re-initialize the Content properties with the injected SettingManager
+		// Use reflection to call setName, setTitle, etc. or just set them directly
+		$nameProp = $parentReflection->getProperty( '_name' );
+		$nameProp->setAccessible( true );
+		$nameProp->setValue( $blog, $settingManager->get( 'site', 'name' ) );
+
+		$titleProp = $parentReflection->getProperty( '_title' );
+		$titleProp->setAccessible( true );
+		$titleProp->setValue( $blog, $settingManager->get( 'site', 'title' ) );
+
+		$descProp = $parentReflection->getProperty( '_description' );
+		$descProp->setAccessible( true );
+		$descProp->setValue( $blog, $settingManager->get( 'site', 'description' ) );
+
+		$urlProp = $parentReflection->getProperty( '_url' );
+		$urlProp->setAccessible( true );
+		$urlProp->setValue( $blog, $settingManager->get( 'site', 'url' ) );
+
+		$rssUrlProp = $parentReflection->getProperty( '_rssUrl' );
+		$rssUrlProp->setAccessible( true );
+		$rssUrlProp->setValue( $blog, $settingManager->get( 'site', 'url' ) . '/blog/rss' );
 
 		// CRITICAL: Restore the test PDO on Model class
 		// Blog constructor created repositories which called Model::setPdo() with ConnectionFactory PDO,

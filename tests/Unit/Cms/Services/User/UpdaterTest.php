@@ -6,6 +6,8 @@ use Neuron\Cms\Auth\PasswordHasher;
 use Neuron\Cms\Models\User;
 use Neuron\Cms\Repositories\IUserRepository;
 use Neuron\Cms\Services\User\Updater;
+use Neuron\Dto\Factory;
+use Neuron\Dto\Dto;
 use PHPUnit\Framework\TestCase;
 
 class UpdaterTest extends TestCase
@@ -25,6 +27,27 @@ class UpdaterTest extends TestCase
 		);
 	}
 
+	/**
+	 * Helper method to create a DTO with test data
+	 */
+	private function createDto( int $id, string $username, string $email, string $role, ?string $password = null ): Dto
+	{
+		$factory = new Factory( __DIR__ . '/../../../../../config/dtos/users/update-user-request.yaml' );
+		$dto = $factory->create();
+
+		$dto->id = $id;
+		$dto->username = $username;
+		$dto->email = $email;
+		$dto->role = $role;
+		// Only set password if it's not null and not empty (password is optional in DTO)
+		if( $password !== null && $password !== '' )
+		{
+			$dto->password = $password;
+		}
+
+		return $dto;
+	}
+
 	public function testUpdatesUserWithoutPassword(): void
 	{
 		$user = new User();
@@ -33,6 +56,13 @@ class UpdaterTest extends TestCase
 		$user->setEmail( 'old@example.com' );
 		$user->setRole( User::ROLE_SUBSCRIBER );
 		$user->setPasswordHash( 'existing_hash' );
+
+		// Mock findById to return the user
+		$this->_mockUserRepository
+			->expects( $this->once() )
+			->method( 'findById' )
+			->with( 1 )
+			->willReturn( $user );
 
 		$this->_mockUserRepository
 			->expects( $this->once() )
@@ -44,13 +74,14 @@ class UpdaterTest extends TestCase
 					&& $u->getPasswordHash() === 'existing_hash';
 			} ) );
 
-		$result = $this->_updater->update(
-			$user,
+		$dto = $this->createDto(
+			1,
 			'newusername',
 			'new@example.com',
-			User::ROLE_EDITOR,
-			null
+			User::ROLE_EDITOR
 		);
+
+		$result = $this->_updater->update( $dto );
 
 		$this->assertEquals( 'newusername', $result->getUsername() );
 		$this->assertEquals( 'new@example.com', $result->getEmail() );
@@ -66,6 +97,13 @@ class UpdaterTest extends TestCase
 		$user->setEmail( 'test@example.com' );
 		$user->setRole( User::ROLE_SUBSCRIBER );
 		$user->setPasswordHash( 'old_hash' );
+
+		// Mock findById to return the user
+		$this->_mockUserRepository
+			->expects( $this->once() )
+			->method( 'findById' )
+			->with( 1 )
+			->willReturn( $user );
 
 		$this->_mockPasswordHasher
 			->method( 'meetsRequirements' )
@@ -84,13 +122,15 @@ class UpdaterTest extends TestCase
 				return $u->getPasswordHash() === 'new_hash';
 			} ) );
 
-		$result = $this->_updater->update(
-			$user,
+		$dto = $this->createDto(
+			1,
 			'testuser',
 			'test@example.com',
 			User::ROLE_SUBSCRIBER,
 			'NewPassword123!'
 		);
+
+		$result = $this->_updater->update( $dto );
 
 		$this->assertEquals( 'new_hash', $result->getPasswordHash() );
 	}
@@ -102,26 +142,38 @@ class UpdaterTest extends TestCase
 		$user->setUsername( 'testuser' );
 		$user->setPasswordHash( 'old_hash' );
 
+		// Use a password that passes DTO validation (length) but fails password hasher validation (complexity)
+		$weakPassword = 'weakpass';  // 8 chars, passes DTO min length but no uppercase/special chars
+
+		// Mock findById to return the user
+		$this->_mockUserRepository
+			->expects( $this->once() )
+			->method( 'findById' )
+			->with( 1 )
+			->willReturn( $user );
+
 		$this->_mockPasswordHasher
 			->method( 'meetsRequirements' )
-			->with( 'weak' )
+			->with( $weakPassword )
 			->willReturn( false );
 
 		$this->_mockPasswordHasher
 			->method( 'getValidationErrors' )
-			->with( 'weak' )
-			->willReturn( [ 'Password too short' ] );
+			->with( $weakPassword )
+			->willReturn( [ 'Missing uppercase letter', 'Missing special character' ] );
 
 		$this->expectException( \Exception::class );
 		$this->expectExceptionMessageMatches( '/^Password does not meet requirements/' );
 
-		$this->_updater->update(
-			$user,
+		$dto = $this->createDto(
+			1,
 			'testuser',
 			'test@example.com',
 			User::ROLE_SUBSCRIBER,
-			'weak'
+			$weakPassword
 		);
+
+		$this->_updater->update( $dto );
 	}
 
 	public function testIgnoresEmptyPassword(): void
@@ -130,6 +182,13 @@ class UpdaterTest extends TestCase
 		$user->setId( 1 );
 		$user->setUsername( 'testuser' );
 		$user->setPasswordHash( 'existing_hash' );
+
+		// Mock findById to return the user
+		$this->_mockUserRepository
+			->expects( $this->once() )
+			->method( 'findById' )
+			->with( 1 )
+			->willReturn( $user );
 
 		$this->_mockPasswordHasher
 			->expects( $this->never() )
@@ -146,13 +205,15 @@ class UpdaterTest extends TestCase
 				return $u->getPasswordHash() === 'existing_hash';
 			} ) );
 
-		$result = $this->_updater->update(
-			$user,
+		$dto = $this->createDto(
+			1,
 			'testuser',
 			'test@example.com',
 			User::ROLE_SUBSCRIBER,
 			''
 		);
+
+		$result = $this->_updater->update( $dto );
 
 		$this->assertEquals( 'existing_hash', $result->getPasswordHash() );
 	}
@@ -165,6 +226,13 @@ class UpdaterTest extends TestCase
 		$user->setRole( User::ROLE_SUBSCRIBER );
 		$user->setPasswordHash( 'hash' );
 
+		// Mock findById to return the user
+		$this->_mockUserRepository
+			->expects( $this->once() )
+			->method( 'findById' )
+			->with( 1 )
+			->willReturn( $user );
+
 		$this->_mockUserRepository
 			->expects( $this->once() )
 			->method( 'update' )
@@ -172,13 +240,14 @@ class UpdaterTest extends TestCase
 				return $u->getRole() === User::ROLE_ADMIN;
 			} ) );
 
-		$result = $this->_updater->update(
-			$user,
+		$dto = $this->createDto(
+			1,
 			'testuser',
 			'test@example.com',
-			User::ROLE_ADMIN,
-			null
+			User::ROLE_ADMIN
 		);
+
+		$result = $this->_updater->update( $dto );
 
 		$this->assertEquals( User::ROLE_ADMIN, $result->getRole() );
 	}

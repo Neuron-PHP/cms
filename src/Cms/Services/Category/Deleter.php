@@ -4,7 +4,7 @@ namespace Neuron\Cms\Services\Category;
 
 use Neuron\Cms\Repositories\ICategoryRepository;
 use Neuron\Cms\Events\CategoryDeletedEvent;
-use Neuron\Patterns\Registry;
+use Neuron\Events\Emitter;
 
 /**
  * Category deletion service.
@@ -16,10 +16,15 @@ use Neuron\Patterns\Registry;
 class Deleter
 {
 	private ICategoryRepository $_categoryRepository;
+	private ?Emitter $_eventEmitter;
 
-	public function __construct( ICategoryRepository $categoryRepository )
+	public function __construct(
+		ICategoryRepository $categoryRepository,
+		?Emitter $eventEmitter = null
+	)
 	{
 		$this->_categoryRepository = $categoryRepository;
+		$this->_eventEmitter = $eventEmitter;
 	}
 
 	/**
@@ -41,13 +46,9 @@ class Deleter
 		$result = $this->_categoryRepository->delete( $categoryId );
 
 		// Emit category deleted event
-		if( $result )
+		if( $result && $this->_eventEmitter )
 		{
-			$emitter = Registry::getInstance()->get( 'EventEmitter' );
-			if( $emitter )
-			{
-				$emitter->emit( new CategoryDeletedEvent( $categoryId ) );
-			}
+			$this->_eventEmitter->emit( new CategoryDeletedEvent( $categoryId ) );
 		}
 
 		return $result;

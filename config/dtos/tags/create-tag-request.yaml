@@ -1,0 +1,16 @@
+# DTO for creating a new tag
+# Maps to Tags controller store() method
+dto:
+  name:
+    type: string
+    required: true
+    length:
+      min: 1
+      max: 255
+
+  slug:
+    type: string
+    required: false
+    length:
+      max: 255
+    pattern: '/^[a-z0-9-]*$/'  # URL-friendly slug

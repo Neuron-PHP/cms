@@ -5,12 +5,13 @@ namespace Tests\Cms\Controllers;
 use PHPUnit\Framework\TestCase;
 use Neuron\Cms\Controllers\Admin\Users;
 use Neuron\Cms\Models\User;
-use Neuron\Cms\Repositories\DatabaseUserRepository;
-use Neuron\Cms\Services\User\Creator;
-use Neuron\Cms\Services\User\Updater;
-use Neuron\Cms\Services\User\Deleter;
+use Neuron\Cms\Repositories\IUserRepository;
+use Neuron\Cms\Services\User\IUserCreator;
+use Neuron\Cms\Services\User\IUserUpdater;
+use Neuron\Cms\Services\User\IUserDeleter;
 use Neuron\Cms\Auth\SessionManager;
 use Neuron\Data\Settings\SettingManager;
+use Neuron\Mvc\Application;
 use Neuron\Mvc\Requests\Request;
 use Neuron\Mvc\Views\ViewContext;
 use Neuron\Patterns\Registry;
@@ -68,8 +69,11 @@ class UsersControllerTest extends TestCase
 		$user->method( 'getId' )->willReturn( 1 );
 		Registry::getInstance()->set( 'Auth.User', $user );
 
+		// Mock Application
+		$app = $this->createMock( Application::class );
+
 		// Mock repository to return users
-		$repository = $this->createMock( DatabaseUserRepository::class );
+		$repository = $this->createMock( IUserRepository::class );
 		$users = [
 			$this->createMock( User::class ),
 			$this->createMock( User::class )
@@ -78,14 +82,14 @@ class UsersControllerTest extends TestCase
 			->method( 'all' )
 			->willReturn( $users );
 
-		$creator = $this->createMock( Creator::class );
-		$updater = $this->createMock( Updater::class );
-		$deleter = $this->createMock( Deleter::class );
+		$creator = $this->createMock( IUserCreator::class );
+		$updater = $this->createMock( IUserUpdater::class );
+		$deleter = $this->createMock( IUserDeleter::class );
 
 		// Create controller with mocked dependencies
 		$controller = $this->getMockBuilder( Users::class )
 			->setConstructorArgs([
-				null,
+				$app,
 				$repository,
 				$creator,
 				$updater,
@@ -129,14 +133,17 @@ class UsersControllerTest extends TestCase
 		$user->method( 'getId' )->willReturn( 1 );
 		Registry::getInstance()->set( 'Auth.User', $user );
 
-		$repository = $this->createMock( DatabaseUserRepository::class );
-		$creator = $this->createMock( Creator::class );
-		$updater = $this->createMock( Updater::class );
-		$deleter = $this->createMock( Deleter::class );
+		// Mock Application
+		$app = $this->createMock( Application::class );
+
+		$repository = $this->createMock( IUserRepository::class );
+		$creator = $this->createMock( IUserCreator::class );
+		$updater = $this->createMock( IUserUpdater::class );
+		$deleter = $this->createMock( IUserDeleter::class );
 
 		$controller = $this->getMockBuilder( Users::class )
 			->setConstructorArgs([
-				null,
+				$app,
 				$repository,
 				$creator,
 				$updater,
@@ -179,20 +186,23 @@ class UsersControllerTest extends TestCase
 		$user->method( 'getId' )->willReturn( 1 );
 		Registry::getInstance()->set( 'Auth.User', $user );
 
+		// Mock Application
+		$app = $this->createMock( Application::class );
+
 		// Mock user to edit
 		$userToEdit = $this->createMock( User::class );
 		$userToEdit->method( 'getId' )->willReturn( 2 );
 
-		$repository = $this->createMock( DatabaseUserRepository::class );
+		$repository = $this->createMock( IUserRepository::class );
 		$repository->method( 'findById' )->with( 2 )->willReturn( $userToEdit );
 
-		$creator = $this->createMock( Creator::class );
-		$updater = $this->createMock( Updater::class );
-		$deleter = $this->createMock( Deleter::class );
+		$creator = $this->createMock( IUserCreator::class );
+		$updater = $this->createMock( IUserUpdater::class );
+		$deleter = $this->createMock( IUserDeleter::class );
 
 		$controller = $this->getMockBuilder( Users::class )
 			->setConstructorArgs([
-				null,
+				$app,
 				$repository,
 				$creator,
 				$updater,

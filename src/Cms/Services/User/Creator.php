@@ -6,7 +6,8 @@ use Neuron\Cms\Models\User;
 use Neuron\Cms\Repositories\IUserRepository;
 use Neuron\Cms\Auth\PasswordHasher;
 use Neuron\Cms\Events\UserCreatedEvent;
-use Neuron\Patterns\Registry;
+use Neuron\Events\Emitter;
+use Neuron\Dto\Dto;
 use DateTimeImmutable;
 use Neuron\Cms\Enums\UserStatus;
 
@@ -17,37 +18,39 @@ use Neuron\Cms\Enums\UserStatus;
  *
  * @package Neuron\Cms\Services\User
  */
-class Creator
+class Creator implements IUserCreator
 {
 	private IUserRepository $_userRepository;
 	private PasswordHasher $_passwordHasher;
+	private ?Emitter $_eventEmitter;
 
 	public function __construct(
 		IUserRepository $userRepository,
-		PasswordHasher $passwordHasher
+		PasswordHasher $passwordHasher,
+		?Emitter $eventEmitter = null
 	)
 	{
 		$this->_userRepository = $userRepository;
 		$this->_passwordHasher = $passwordHasher;
+		$this->_eventEmitter = $eventEmitter;
 	}
 
 	/**
-	 * Create a new user
+	 * Create a new user from DTO
 	 *
-	 * @param string $username Username
-	 * @param string $email Email address
-	 * @param string $password Plain text password
-	 * @param string $role User role (admin, editor, author, subscriber)
+	 * @param Dto $request DTO containing username, email, password, role, timezone
 	 * @return User
 	 * @throws \Exception If password doesn't meet requirements or user creation fails
 	 */
-	public function create(
-		string $username,
-		string $email,
-		string $password,
-		string $role
-	): User
+	public function create( Dto $request ): User
 	{
+		// Extract values from DTO
+		$username = $request->username;
+		$email = $request->email;
+		$password = $request->password;
+		$role = $request->role;
+		$timezone = $request->timezone ?? null;
+
 		// Validate password meets requirements
 		if( !$this->_passwordHasher->meetsRequirements( $password ) )
 		{
@@ -64,13 +67,18 @@ class Creator
 		$user->setEmailVerified( true );
 		$user->setCreatedAt( new DateTimeImmutable() );
 
+		// Set timezone if provided
+		if( $timezone !== null && $timezone !== '' )
+		{
+			$user->setTimezone( $timezone );
+		}
+
 		$user = $this->_userRepository->create( $user );
 
 		// Emit user created event
-		$emitter = Registry::getInstance()->get( 'EventEmitter' );
-		if( $emitter )
+		if( $this->_eventEmitter )
 		{
-			$emitter->emit( new UserCreatedEvent( $user ) );
+			$this->_eventEmitter->emit( new UserCreatedEvent( $user ) );
 		}
 
 		return $user;

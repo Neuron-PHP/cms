@@ -7,6 +7,7 @@ use Exception;
 use Neuron\Cms\Enums\ContentStatus;
 use Neuron\Orm\Model;
 use Neuron\Orm\Attributes\{Table, BelongsTo, BelongsToMany};
+use Neuron\Orm\DependentStrategy;
 
 /**
  * Post entity representing a blog post.
@@ -34,10 +35,12 @@ class Post extends Model
 	#[BelongsTo(User::class, foreignKey: 'author_id')]
 	private ?User $_author = null;
 
-	#[BelongsToMany(Category::class, pivotTable: 'post_categories')]
+	// DeleteAll: When post is deleted, remove pivot entries (keep categories)
+	#[BelongsToMany(Category::class, pivotTable: 'post_categories', dependent: DependentStrategy::DeleteAll)]
 	private array $_categories = [];
 
-	#[BelongsToMany(Tag::class, pivotTable: 'post_tags')]
+	// DeleteAll: When post is deleted, remove pivot entries (keep tags)
+	#[BelongsToMany(Tag::class, pivotTable: 'post_tags', dependent: DependentStrategy::DeleteAll)]
 	private array $_tags = [];
 
 	/**

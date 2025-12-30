@@ -3,41 +3,49 @@
 namespace Neuron\Cms\Controllers\Member;
 
 use Neuron\Cms\Controllers\Content;
-use Neuron\Cms\Repositories\DatabaseUserRepository;
-use Neuron\Cms\Services\User\Updater;
+use Neuron\Cms\Repositories\IUserRepository;
+use Neuron\Cms\Services\User\IUserUpdater;
 use Neuron\Cms\Auth\PasswordHasher;
-use Neuron\Cms\Services\Auth\CsrfToken;
 use Neuron\Mvc\Application;
 use Neuron\Mvc\Requests\Request;
 use Neuron\Mvc\Responses\HttpResponseStatus;
-use Neuron\Patterns\Registry;
+use Neuron\Routing\Attributes\Get;
+use Neuron\Routing\Attributes\Put;
+use Neuron\Routing\Attributes\RouteGroup;
 
 /**
  * Member profile management controller.
  *
  * @package Neuron\Cms\Controllers\Member
  */
+#[RouteGroup(prefix: '/member', filters: ['member'])]
 class Profile extends Content
 {
-	private DatabaseUserRepository $_repository;
+	private IUserRepository $_repository;
 	private PasswordHasher $_hasher;
-	private Updater $_userUpdater;
+	private IUserUpdater $_userUpdater;
 
 	/**
 	 * @param Application|null $app
+	 * @param IUserRepository|null $repository
+	 * @param PasswordHasher|null $hasher
+	 * @param IUserUpdater|null $userUpdater
 	 * @throws \Exception
 	 */
-	public function __construct( ?Application $app = null )
+	public function __construct(
+		?Application $app = null,
+		?IUserRepository $repository = null,
+		?PasswordHasher $hasher = null,
+		?IUserUpdater $userUpdater = null
+	)
 	{
 		parent::__construct( $app );
 
-		// Get settings and initialize repository
-		$settings = Registry::getInstance()->get( 'Settings' );
-		$this->_repository = new DatabaseUserRepository( $settings );
-		$this->_hasher = new PasswordHasher();
-
-		// Initialize service
-		$this->_userUpdater = new Updater( $this->_repository, $this->_hasher );
+		// Use dependency injection when available (container provides dependencies)
+		// Otherwise resolve from container (fallback for compatibility)
+		$this->_repository = $repository ?? $app?->getContainer()?->get( IUserRepository::class );
+		$this->_hasher = $hasher ?? $app?->getContainer()?->get( PasswordHasher::class );
+		$this->_userUpdater = $userUpdater ?? $app?->getContainer()?->get( IUserUpdater::class );
 	}
 
 	/**
@@ -47,6 +55,7 @@ class Profile extends Content
 	 * @return string
 	 * @throws \Exception
 	 */
+	#[Get('/profile', name: 'member_profile')]
 	public function edit( Request $request ): string
 	{
 		$this->initializeCsrfToken();
@@ -80,6 +89,7 @@ class Profile extends Content
 	 * @return never
 	 * @throws \Exception
 	 */
+	#[Put('/profile', name: 'member_profile_update', filters: ['csrf'])]
 	public function update( Request $request ): never
 	{
 		// Get authenticated user once and check for null
@@ -89,25 +99,46 @@ class Profile extends Content
 			$this->redirect( 'member_profile', [], ['error', 'Authenticated user not found'] );
 		}
 
+		// Create DTO from YAML configuration
+		$dto = $this->createDto( 'members/update-profile-request.yaml' );
+
+		// Map request data to DTO
+		$this->mapRequestToDto( $dto, $request );
+
+		// Set ID from authenticated user (security: prevent users from changing other profiles)
+		$dto->id = $user->getId();
+
 		// Security: Only use email from POST if provided by Account Information form
 		// Password change form doesn't include email field, preventing email hijacking attacks
-		$email = $request->post( 'email', $user->getEmail() );
-		$timezone = $request->post( 'timezone', '' );
-		$currentPassword = $request->post( 'current_password', '' );
-		$newPassword = $request->post( 'new_password', '' );
-		$confirmPassword = $request->post( 'confirm_password', '' );
+		if( !$dto->email )
+		{
+			$dto->email = $user->getEmail();
+		}
+
+		// Validate DTO
+		if( !$dto->validate() )
+		{
+			$errors = implode( ', ', $dto->getErrors() );
+			$this->redirect( 'member_profile', [], ['error', $errors] );
+		}
 
 		// Validate password change if requested
-		if( !empty( $newPassword ) )
+		if( $dto->new_password )
 		{
+			// Verify current password is provided
+			if( !$dto->current_password )
+			{
+				$this->redirect( 'member_profile', [], ['error', 'Current password is required to change password'] );
+			}
+
 			// Verify current password
-			if( empty( $currentPassword ) || !$this->_hasher->verify( $currentPassword, $user->getPasswordHash() ) )
+			if( !$this->_hasher->verify( $dto->current_password, $user->getPasswordHash() ) )
 			{
 				$this->redirect( 'member_profile', [], ['error', 'Current password is incorrect'] );
 			}
 
 			// Validate new password matches confirmation
-			if( $newPassword !== $confirmPassword )
+			if( !$dto->confirm_password || $dto->new_password !== $dto->confirm_password )
 			{
 				$this->redirect( 'member_profile', [], ['error', 'New passwords do not match'] );
 			}
@@ -115,14 +146,29 @@ class Profile extends Content
 
 		try
 		{
-			$this->_userUpdater->update(
-				$user,
-				$user->getUsername(),
-				$email,
-				$user->getRole(),
-				!empty( $newPassword ) ? $newPassword : null,
-				!empty( $timezone ) ? $timezone : null
-			);
+			// Create admin update DTO for the updater service
+			$updateDto = $this->createDto( 'users/update-user-request.yaml' );
+			$updateDto->id = $user->getId();
+			$updateDto->username = $user->getUsername();  // Can't change own username
+			$updateDto->email = $dto->email;
+			$updateDto->role = $user->getRole();  // Preserve current role (security)
+
+			// Only set password if provided
+			if( $dto->new_password )
+			{
+				$updateDto->password = $dto->new_password;
+			}
+
+			// Call updater with DTO
+			$this->_userUpdater->update( $updateDto );
+
+			// Update timezone separately if provided (not in user updater)
+			if( $dto->timezone )
+			{
+				$user->setTimezone( $dto->timezone );
+				$this->_repository->update( $user );
+			}
+
 			$this->redirect( 'member_profile', [], ['success', 'Profile updated successfully'] );
 		}
 		catch( \Exception $e )

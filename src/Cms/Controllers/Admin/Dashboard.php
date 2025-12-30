@@ -7,12 +7,15 @@ use Neuron\Core\Exceptions\NotFound;
 use Neuron\Mvc\Application;
 use Neuron\Mvc\Requests\Request;
 use Neuron\Mvc\Responses\HttpResponseStatus;
+use Neuron\Routing\Attributes\Get;
+use Neuron\Routing\Attributes\RouteGroup;
 
 /**
  * Admin dashboard controller.
  *
  * @package Neuron\Cms\Controllers\Admin
  */
+#[RouteGroup(prefix: '/admin', filters: ['auth'])]
 class Dashboard extends Content
 {
 	/**
@@ -32,6 +35,8 @@ class Dashboard extends Content
 	 * @return string
 	 * @throws NotFound
 	 */
+	#[Get('/dashboard', name: 'admin_dashboard')]
+	#[Get('/', name: 'admin')]
 	public function index( Request $request ): string
 	{
 		$this->initializeCsrfToken();

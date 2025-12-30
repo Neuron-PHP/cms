@@ -9,6 +9,8 @@ use Neuron\Cms\Repositories\ICategoryRepository;
 use Neuron\Cms\Repositories\IPostRepository;
 use Neuron\Cms\Services\Post\Updater;
 use Neuron\Cms\Services\Tag\Resolver as TagResolver;
+use Neuron\Dto\Factory;
+use Neuron\Dto\Dto;
 use PHPUnit\Framework\TestCase;
 
 class UpdaterTest extends TestCase
@@ -31,6 +33,43 @@ class UpdaterTest extends TestCase
 		);
 	}
 
+	/**
+	 * Helper method to create a DTO with test data
+	 */
+	private function createDto(
+		int $id,
+		string $title,
+		string $content,
+		string $status,
+		?string $slug = null,
+		?string $excerpt = null,
+		?string $featuredImage = null
+	): Dto
+	{
+		$factory = new Factory( __DIR__ . '/../../../../../config/dtos/posts/update-post-request.yaml' );
+		$dto = $factory->create();
+
+		$dto->id = $id;
+		$dto->title = $title;
+		$dto->content = $content;
+		$dto->status = $status;
+
+		if( $slug !== null )
+		{
+			$dto->slug = $slug;
+		}
+		if( $excerpt !== null )
+		{
+			$dto->excerpt = $excerpt;
+		}
+		if( $featuredImage !== null )
+		{
+			$dto->featured_image = $featuredImage;
+		}
+
+		return $dto;
+	}
+
 	public function testUpdatesPostWithRequiredFields(): void
 	{
 		$post = new Post();
@@ -39,6 +78,13 @@ class UpdaterTest extends TestCase
 		$post->setContent( '{"blocks":[{"type":"paragraph","data":{"text":"Original Body"}}]}' );
 
 		$updatedContent = '{"blocks":[{"type":"paragraph","data":{"text":"Updated Body"}}]}';
+
+		// Mock findById to return the post
+		$this->_mockPostRepository
+			->expects( $this->once() )
+			->method( 'findById' )
+			->with( 1 )
+			->willReturn( $post );
 
 		$this->_mockCategoryRepository
 			->method( 'findByIds' )
@@ -58,12 +104,14 @@ class UpdaterTest extends TestCase
 					&& $p->getStatus() === Post::STATUS_PUBLISHED;
 			} ) );
 
-		$result = $this->_updater->update(
-			$post,
+		$dto = $this->createDto(
+			1,
 			'Updated Title',
 			$updatedContent,
 			Post::STATUS_PUBLISHED
 		);
+
+		$result = $this->_updater->update( $dto );
 
 		$this->assertEquals( 'Updated Title', $result->getTitle() );
 		$this->assertEquals( $updatedContent, $result->getContentRaw() );
@@ -75,6 +123,12 @@ class UpdaterTest extends TestCase
 	{
 		$post = new Post();
 		$post->setId( 1 );
+
+		$this->_mockPostRepository
+			->expects( $this->once() )
+			->method( 'findById' )
+			->with( 1 )
+			->willReturn( $post );
 
 		$this->_mockCategoryRepository
 			->method( 'findByIds' )
@@ -91,12 +145,14 @@ class UpdaterTest extends TestCase
 				return $p->getSlug() === 'new-post-title';
 			} ) );
 
-		$result = $this->_updater->update(
-			$post,
+		$dto = $this->createDto(
+			1,
 			'New Post Title',
 			'{"blocks":[{"type":"paragraph","data":{"text":"Body"}}]}',
 			Post::STATUS_DRAFT
 		);
+
+		$result = $this->_updater->update( $dto );
 
 		$this->assertEquals( 'new-post-title', $result->getSlug() );
 	}
@@ -105,6 +161,12 @@ class UpdaterTest extends TestCase
 	{
 		$post = new Post();
 		$post->setId( 1 );
+
+		$this->_mockPostRepository
+			->expects( $this->once() )
+			->method( 'findById' )
+			->with( 1 )
+			->willReturn( $post );
 
 		$this->_mockCategoryRepository
 			->method( 'findByIds' )
@@ -121,13 +183,15 @@ class UpdaterTest extends TestCase
 				return $p->getSlug() === 'custom-slug';
 			} ) );
 
-		$result = $this->_updater->update(
-			$post,
+		$dto = $this->createDto(
+			1,
 			'Title',
 			'{"blocks":[{"type":"paragraph","data":{"text":"Body"}}]}',
 			Post::STATUS_DRAFT,
 			'custom-slug'
 		);
+
+		$result = $this->_updater->update( $dto );
 
 		$this->assertEquals( 'custom-slug', $result->getSlug() );
 	}
@@ -144,6 +208,12 @@ class UpdaterTest extends TestCase
 		$category2 = new Category();
 		$category2->setId( 2 );
 		$category2->setName( 'News' );
+
+		$this->_mockPostRepository
+			->expects( $this->once() )
+			->method( 'findById' )
+			->with( 1 )
+			->willReturn( $post );
 
 		$this->_mockCategoryRepository
 			->expects( $this->once() )
@@ -165,16 +235,14 @@ class UpdaterTest extends TestCase
 					&& $categories[1]->getName() === 'News';
 			} ) );
 
-		$result = $this->_updater->update(
-			$post,
+		$dto = $this->createDto(
+			1,
 			'Title',
 			'{"blocks":[{"type":"paragraph","data":{"text":"Body"}}]}',
-			Post::STATUS_DRAFT,
-			null,
-			null,
-			null,
-			[ 1, 2 ]
+			Post::STATUS_DRAFT
 		);
+
+		$result = $this->_updater->update( $dto, [ 1, 2 ] );
 
 		$this->assertCount( 2, $result->getCategories() );
 	}
@@ -191,6 +259,12 @@ class UpdaterTest extends TestCase
 		$tag2 = new Tag();
 		$tag2->setId( 2 );
 		$tag2->setName( 'Testing' );
+
+		$this->_mockPostRepository
+			->expects( $this->once() )
+			->method( 'findById' )
+			->with( 1 )
+			->willReturn( $post );
 
 		$this->_mockCategoryRepository
 			->method( 'findByIds' )
@@ -212,17 +286,14 @@ class UpdaterTest extends TestCase
 					&& $tags[1]->getName() === 'Testing';
 			} ) );
 
-		$result = $this->_updater->update(
-			$post,
+		$dto = $this->createDto(
+			1,
 			'Title',
 			'{"blocks":[{"type":"paragraph","data":{"text":"Body"}}]}',
-			Post::STATUS_DRAFT,
-			null,
-			null,
-			null,
-			[],
-			'PHP, Testing'
+			Post::STATUS_DRAFT
 		);
+
+		$result = $this->_updater->update( $dto, [], 'PHP, Testing' );
 
 		$this->assertCount( 2, $result->getTags() );
 	}
@@ -231,6 +302,12 @@ class UpdaterTest extends TestCase
 	{
 		$post = new Post();
 		$post->setId( 1 );
+
+		$this->_mockPostRepository
+			->expects( $this->once() )
+			->method( 'findById' )
+			->with( 1 )
+			->willReturn( $post );
 
 		$this->_mockCategoryRepository
 			->method( 'findByIds' )
@@ -248,8 +325,8 @@ class UpdaterTest extends TestCase
 					&& $p->getFeaturedImage() === 'new-image.jpg';
 			} ) );
 
-		$result = $this->_updater->update(
-			$post,
+		$dto = $this->createDto(
+			1,
 			'Title',
 			'{"blocks":[{"type":"paragraph","data":{"text":"Body"}}]}',
 			Post::STATUS_DRAFT,
@@ -257,6 +334,8 @@ class UpdaterTest extends TestCase
 			'New excerpt',
 			'new-image.jpg'
 		);
+
+		$result = $this->_updater->update( $dto );
 
 		$this->assertEquals( 'New excerpt', $result->getExcerpt() );
 		$this->assertEquals( 'new-image.jpg', $result->getFeaturedImage() );
@@ -267,6 +346,12 @@ class UpdaterTest extends TestCase
 		$post = new Post();
 		$post->setId( 1 );
 		$post->setTitle( 'Original' );
+
+		$this->_mockPostRepository
+			->expects( $this->once() )
+			->method( 'findById' )
+			->with( 1 )
+			->willReturn( $post );
 
 		$this->_mockCategoryRepository
 			->method( 'findByIds' )
@@ -279,12 +364,14 @@ class UpdaterTest extends TestCase
 		$this->_mockPostRepository
 			->method( 'update' );
 
-		$result = $this->_updater->update(
-			$post,
+		$dto = $this->createDto(
+			1,
 			'Updated',
 			'{"blocks":[{"type":"paragraph","data":{"text":"Body"}}]}',
 			Post::STATUS_DRAFT
 		);
+
+		$result = $this->_updater->update( $dto );
 
 		$this->assertSame( $post, $result );
 		$this->assertEquals( 'Updated', $result->getTitle() );
@@ -298,6 +385,12 @@ class UpdaterTest extends TestCase
 		$post->setStatus( Post::STATUS_DRAFT );
 		// Ensure publishedAt is not set
 		$this->assertNull( $post->getPublishedAt() );
+
+		$this->_mockPostRepository
+			->expects( $this->once() )
+			->method( 'findById' )
+			->with( 1 )
+			->willReturn( $post );
 
 		$this->_mockCategoryRepository
 			->method( 'findByIds' )
@@ -315,12 +408,14 @@ class UpdaterTest extends TestCase
 					&& $p->getPublishedAt() instanceof \DateTimeImmutable;
 			} ) );
 
-		$result = $this->_updater->update(
-			$post,
+		$dto = $this->createDto(
+			1,
 			'Published Post',
 			'{"blocks":[{"type":"paragraph","data":{"text":"Body"}}]}',
 			Post::STATUS_PUBLISHED
 		);
+
+		$result = $this->_updater->update( $dto );
 
 		$this->assertEquals( Post::STATUS_PUBLISHED, $result->getStatus() );
 		$this->assertInstanceOf( \DateTimeImmutable::class, $result->getPublishedAt() );
@@ -334,6 +429,12 @@ class UpdaterTest extends TestCase
 		$post->setStatus( Post::STATUS_PUBLISHED );
 		$existingPublishedAt = new \DateTimeImmutable( '2024-01-01 12:00:00' );
 		$post->setPublishedAt( $existingPublishedAt );
+
+		$this->_mockPostRepository
+			->expects( $this->once() )
+			->method( 'findById' )
+			->with( 1 )
+			->willReturn( $post );
 
 		$this->_mockCategoryRepository
 			->method( 'findByIds' )
@@ -351,14 +452,37 @@ class UpdaterTest extends TestCase
 					&& $p->getPublishedAt() === $existingPublishedAt;
 			} ) );
 
-		$result = $this->_updater->update(
-			$post,
+		$dto = $this->createDto(
+			1,
 			'Updated Published Post',
 			'{"blocks":[{"type":"paragraph","data":{"text":"Body"}}]}',
 			Post::STATUS_PUBLISHED
 		);
 
+		$result = $this->_updater->update( $dto );
+
 		$this->assertEquals( Post::STATUS_PUBLISHED, $result->getStatus() );
 		$this->assertSame( $existingPublishedAt, $result->getPublishedAt() );
+	}
+
+	public function testThrowsExceptionWhenPostNotFound(): void
+	{
+		$this->_mockPostRepository
+			->expects( $this->once() )
+			->method( 'findById' )
+			->with( 999 )
+			->willReturn( null );
+
+		$this->expectException( \Exception::class );
+		$this->expectExceptionMessage( 'Post with ID 999 not found' );
+
+		$dto = $this->createDto(
+			999,
+			'Title',
+			'{"blocks":[{"type":"paragraph","data":{"text":"Body"}}]}',
+			Post::STATUS_DRAFT
+		);
+
+		$this->_updater->update( $dto );
 	}
 }

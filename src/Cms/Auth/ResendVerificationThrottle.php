@@ -2,6 +2,7 @@
 
 namespace Neuron\Cms\Auth;
 
+use Neuron\Cms\Config\CacheConfig;
 use Neuron\Routing\RateLimit\RateLimitConfig;
 use Neuron\Routing\RateLimit\Storage\IRateLimitStorage;
 use Neuron\Routing\RateLimit\Storage\RateLimitStorageFactory;
@@ -21,13 +22,13 @@ class ResendVerificationThrottle
 
 	// Default limits
 	private int $_ipLimit = 5;
-	private int $_ipWindow = 300; // 5 minutes
+	private int $_ipWindow = CacheConfig::SHORT_TTL; // 5 minutes
 	private int $_emailLimit = 1;
-	private int $_emailWindow = 300; // 5 minutes
+	private int $_emailWindow = CacheConfig::SHORT_TTL; // 5 minutes
 
 	/**
 	 * @param IRateLimitStorage|null $storage Storage backend (defaults to file-based)
-	 * @param array $config Optional configuration overrides
+	 * @param array<string, int> $config Optional configuration overrides
 	 */
 	public function __construct( ?IRateLimitStorage $storage = null, array $config = [] )
 	{

@@ -140,7 +140,7 @@ class ListCommand extends Command
 	/**
 	 * Get user repository
 	 */
-	private function getUserRepository(): ?DatabaseUserRepository
+	protected function getUserRepository(): ?DatabaseUserRepository
 	{
 		try
 		{

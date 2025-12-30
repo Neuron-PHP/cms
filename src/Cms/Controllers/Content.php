@@ -52,6 +52,7 @@ use League\CommonMark\Exception\CommonMarkException;
 use Neuron\Cms\Auth\SessionManager;
 use Neuron\Core\Exceptions\NotFound;
 use Neuron\Data\Objects\Version;
+use Neuron\Data\Settings\SettingManager;
 use Neuron\Mvc\Application;
 use Neuron\Mvc\Controllers\Base;
 use Neuron\Mvc\Requests\Request;
@@ -66,26 +67,38 @@ class Content extends Base
 	private string $_url = 'example.com/bog';
 	private string $_rssUrl = 'example.com/blog/rss';
 	protected ?SessionManager $_sessionManager = null;
+	protected ?SettingManager $_settings = null;
 
 	/**
 	 * @param Application|null $app
+	 * @param SettingManager|null $settings
+	 * @param SessionManager|null $sessionManager
 	 */
-	public function __construct( ?Application $app = null )
+	public function __construct(
+		?Application $app = null,
+		?SettingManager $settings = null,
+		?SessionManager $sessionManager = null
+	)
 	{
 		parent::__construct( $app );
 
-		$settings = Registry::getInstance()->get( 'Settings' );
+		// Use dependency injection when available (container provides dependencies)
+		// Otherwise resolve from container (fallback for compatibility)
+		$this->_settings = $settings ?? $app?->getContainer()?->get( SettingManager::class );
+		$this->_sessionManager = $sessionManager ?? $app?->getContainer()?->get( SessionManager::class );
 
-		$this->setName( $settings->get( 'site', 'name' ) ?? 'Neuron CMS' )
-			  ->setTitle( $settings->get( 'site', 'title' ) ?? 'Neuron CMS' )
-			  ->setDescription( $settings->get( 'site', 'description' ) ?? '' )
-			  ->setUrl( $settings->get( 'site', 'url' ) ?? '' )
+		$this->setName( $this->_settings?->get( 'site', 'name' ) ?? 'Neuron CMS' )
+			  ->setTitle( $this->_settings?->get( 'site', 'title' ) ?? 'Neuron CMS' )
+			  ->setDescription( $this->_settings?->get( 'site', 'description' ) ?? '' )
+			  ->setUrl( $this->_settings?->get( 'site', 'url' ) ?? '' )
 			  ->setRssUrl($this->getUrl() . "/blog/rss" );
 
+		// Note: Registry is intentionally used here as a view data bag for global template variables.
+		// These values are accessed by templates throughout the application.
+		// Future improvement: Consider using a dedicated ViewContext service instead.
 		try
 		{
 			$version = Factories\Version::fromFile( "../.version.json" );
-
 			Registry::getInstance()->set( 'version', 'v'.$version->getAsString() );
 		}
 		catch( \Exception $e )
@@ -214,18 +227,23 @@ class Content extends Base
 	}
 
 	/**
-	 * Get or initialize the session manager.
-	 * Lazy-loads the session manager only when needed.
+	 * Get the session manager and ensure session is started.
 	 *
 	 * @return SessionManager
 	 */
 	protected function getSessionManager(): SessionManager
 	{
+		// Lazy-load if not injected (for backward compatibility)
 		if( !$this->_sessionManager )
 		{
 			$this->_sessionManager = new SessionManager();
+		}
+
+		if( !$this->_sessionManager->isStarted() )
+		{
 			$this->_sessionManager->start();
 		}
+
 		return $this->_sessionManager;
 	}
 
@@ -233,8 +251,8 @@ class Content extends Base
 	 * Redirect to a named route with optional flash message.
 	 *
 	 * @param string $routeName The name of the route to redirect to
-	 * @param array $parameters Route parameters
-	 * @param array|null $flash Optional flash message as [$type, $message]
+	 * @param array<string, mixed> $parameters Route parameters
+	 * @param array{0: string, 1: string}|null $flash Optional flash message as [$type, $message]
 	 * @return never
 	 */
 	protected function redirect( string $routeName, array $parameters = [], ?array $flash = null ): never
@@ -254,7 +272,7 @@ class Content extends Base
 	 * Redirect to a URL path with optional flash message.
 	 *
 	 * @param string $url The URL path to redirect to
-	 * @param array|null $flash Optional flash message as [$type, $message]
+	 * @param array{0: string, 1: string}|null $flash Optional flash message as [$type, $message]
 	 * @return never
 	 */
 	protected function redirectToUrl( string $url, ?array $flash = null ): never
@@ -273,7 +291,7 @@ class Content extends Base
 	 * Redirect back to the previous page or a fallback URL.
 	 *
 	 * @param string $fallback Fallback URL if referer is not available
-	 * @param array|null $flash Optional flash message as [$type, $message]
+	 * @param array{0: string, 1: string}|null $flash Optional flash message as [$type, $message]
 	 * @return never
 	 */
 	protected function redirectBack( string $fallback = '/', ?array $flash = null ): never
@@ -301,8 +319,10 @@ class Content extends Base
 	}
 
 	/**
-	 * Initialize CSRF token and store in Registry.
+	 * Initialize CSRF token and store in Registry for template access.
 	 * Should be called by controllers that render forms requiring CSRF protection.
+	 *
+	 * Note: Registry is used here as a view data bag to make CSRF tokens available to templates.
 	 *
 	 * @return void
 	 */
@@ -310,5 +330,64 @@ class Content extends Base
 	{
 		$csrfToken = new \Neuron\Cms\Services\Auth\CsrfToken( $this->getSessionManager() );
 		Registry::getInstance()->set( 'Auth.CsrfToken', $csrfToken->getToken() );
+	}
+
+	/**
+	 * Create a DTO from a YAML configuration file.
+	 *
+	 * @param string $config Path to YAML config file relative to config/dtos/
+	 * @return \Neuron\Dto\Dto
+	 * @throws \Exception If DTO factory fails
+	 */
+	protected function createDto( string $config ): \Neuron\Dto\Dto
+	{
+		$configPath = __DIR__ . '/../../config/dtos/' . $config;
+
+		if( !file_exists( $configPath ) )
+		{
+			throw new \Exception( "DTO configuration file not found: {$configPath}" );
+		}
+
+		$factory = new \Neuron\Dto\Factory( $configPath );
+		return $factory->create();
+	}
+
+	/**
+	 * Map HTTP request data to a DTO.
+	 *
+	 * @param \Neuron\Dto\Dto $dto The DTO to populate
+	 * @param Request $request The HTTP request containing form data
+	 * @return void
+	 */
+	protected function mapRequestToDto( \Neuron\Dto\Dto $dto, Request $request ): void
+	{
+		foreach( $dto->getProperties() as $name => $property )
+		{
+			$value = $request->post( $name, null );
+
+			if( $value !== null )
+			{
+				$dto->$name = $value;
+			}
+		}
+	}
+
+	/**
+	 * Handle validation errors by redirecting with flash message.
+	 *
+	 * @param string $route Route name to redirect to
+	 * @param array<string, array<int, string>> $errors Validation errors from DTO
+	 * @param array<string, mixed> $routeParams Optional route parameters
+	 * @return never
+	 */
+	protected function validationError( string $route, array $errors, array $routeParams = [] ): never
+	{
+		$errorMessage = 'Validation failed: ' . implode( ', ', array_map(
+			fn( $field, $fieldErrors ) => $field . ': ' . implode( ', ', $fieldErrors ),
+			array_keys( $errors ),
+			array_values( $errors )
+		));
+
+		$this->redirect( $route, $routeParams, [\Neuron\Cms\Enums\FlashMessageType::ERROR->value, $errorMessage] );
 	}
 }

@@ -5,8 +5,8 @@ namespace Neuron\Cms\Listeners;
 use Neuron\Events\IListener;
 use Neuron\Cms\Events\UserCreatedEvent;
 use Neuron\Cms\Services\Email\Sender;
+use Neuron\Data\Settings\SettingManager;
 use Neuron\Log\Log;
-use Neuron\Patterns\Registry;
 
 /**
  * Sends a welcome email to newly created users.
@@ -18,6 +18,21 @@ use Neuron\Patterns\Registry;
  */
 class SendWelcomeEmailListener implements IListener
 {
+	private SettingManager $settings;
+	private string $basePath;
+
+	/**
+	 * Constructor
+	 *
+	 * @param SettingManager $settings Application settings
+	 * @param string $basePath Base application path for templates
+	 */
+	public function __construct( SettingManager $settings, string $basePath )
+	{
+		$this->settings = $settings;
+		$this->basePath = $basePath;
+	}
+
 	/**
 	 * Handle the user.created event
 	 *
@@ -33,18 +48,8 @@ class SendWelcomeEmailListener implements IListener
 
 		$user = $event->user;
 
-		// Get site settings from Registry
-		$settings = Registry::getInstance()->get( 'Settings' );
-
-		if( !$settings )
-		{
-			Log::debug( "Settings not available - welcome email skipped for: {$user->getEmail()}" );
-			return;
-		}
-
-		$siteName = $settings->get( 'site', 'name' ) ?? 'Neuron CMS';
-		$siteUrl = $settings->get( 'site', 'url' ) ?? 'http://localhost';
-		$basePath = Registry::getInstance()->get( 'Base.Path' ) ?? getcwd();
+		$siteName = $this->settings->get( 'site', 'name' ) ?? 'Neuron CMS';
+		$siteUrl = $this->settings->get( 'site', 'url' ) ?? 'http://localhost';
 
 		// Prepare template data
 		$templateData = [
@@ -56,7 +61,7 @@ class SendWelcomeEmailListener implements IListener
 		// Send email using Sender service with template
 		try
 		{
-			$sender = new Sender( $settings, $basePath );
+			$sender = new Sender( $this->settings, $this->basePath );
 			$result = $sender
 				->to( $user->getEmail(), $user->getUsername() )
 				->subject( "Welcome to {$siteName}!" )

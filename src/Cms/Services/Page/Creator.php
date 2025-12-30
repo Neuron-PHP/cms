@@ -4,8 +4,8 @@ namespace Neuron\Cms\Services\Page;
 
 use Neuron\Cms\Models\Page;
 use Neuron\Cms\Repositories\IPageRepository;
-use Neuron\Core\System\IRandom;
-use Neuron\Core\System\RealRandom;
+use Neuron\Cms\Services\SlugGenerator;
+use Neuron\Dto\Dto;
 use DateTimeImmutable;
 use Neuron\Cms\Enums\ContentStatus;
 use Neuron\Cms\Enums\PageTemplate;
@@ -17,43 +17,36 @@ use Neuron\Cms\Enums\PageTemplate;
  *
  * @package Neuron\Cms\Services\Page
  */
-class Creator
+class Creator implements IPageCreator
 {
 	private IPageRepository $_pageRepository;
-	private IRandom $_random;
+	private SlugGenerator $_slugGenerator;
 
-	public function __construct( IPageRepository $pageRepository, ?IRandom $random = null )
+	public function __construct( IPageRepository $pageRepository, ?SlugGenerator $slugGenerator = null )
 	{
 		$this->_pageRepository = $pageRepository;
-		$this->_random = $random ?? new RealRandom();
+		$this->_slugGenerator = $slugGenerator ?? new SlugGenerator();
 	}
 
 	/**
-	 * Create a new page
+	 * Create a new page from DTO
 	 *
-	 * @param string $title Page title
-	 * @param string $content Editor.js JSON content
-	 * @param int $authorId Author user ID
-	 * @param string $status Page status (draft, published)
-	 * @param string|null $slug Optional custom slug (auto-generated if not provided)
-	 * @param string $template Template name
-	 * @param string|null $metaTitle SEO meta title
-	 * @param string|null $metaDescription SEO meta description
-	 * @param string|null $metaKeywords SEO meta keywords
+	 * @param Dto $request DTO containing title, content, author_id, status, slug, template, meta_title, meta_description, meta_keywords
 	 * @return Page
 	 */
-	public function create(
-		string $title,
-		string $content,
-		int $authorId,
-		string $status,
-		?string $slug = null,
-		string $template = PageTemplate::DEFAULT->value,
-		?string $metaTitle = null,
-		?string $metaDescription = null,
-		?string $metaKeywords = null
-	): Page
+	public function create( Dto $request ): Page
 	{
+		// Extract values from DTO
+		$title = $request->title;
+		$content = $request->content;
+		$authorId = $request->author_id;
+		$status = $request->status;
+		$slug = $request->slug ?? null;
+		$template = $request->template ?? PageTemplate::DEFAULT->value;
+		$metaTitle = $request->meta_title ?? null;
+		$metaDescription = $request->meta_description ?? null;
+		$metaKeywords = $request->meta_keywords ?? null;
+
 		$page = new Page();
 		$page->setTitle( $title );
 		$page->setSlug( $slug ?: $this->generateSlug( $title ) );
@@ -86,17 +79,6 @@ class Creator
 	 */
 	private function generateSlug( string $title ): string
 	{
-		$slug = strtolower( trim( $title ) );
-		$slug = preg_replace( '/[^a-z0-9-]/', '-', $slug );
-		$slug = preg_replace( '/-+/', '-', $slug );
-		$slug = trim( $slug, '-' );
-
-		// Fallback for titles with no ASCII characters
-		if( $slug === '' )
-		{
-			$slug = 'page-' . $this->_random->uniqueId();
-		}
-
-		return $slug;
+		return $this->_slugGenerator->generate( $title, 'page' );
 	}
 }

@@ -115,7 +115,7 @@ class DeleteCommand extends Command
 	/**
 	 * Get user repository
 	 */
-	private function getUserRepository(): ?DatabaseUserRepository
+	protected function getUserRepository(): ?DatabaseUserRepository
 	{
 		try
 		{
@@ -135,14 +135,5 @@ class DeleteCommand extends Command
 			$this->output->error( "Database connection failed: " . $e->getMessage() );
 			return null;
 		}
-	}
-
-	/**
-	 * Prompt for user input
-	 */
-	private function prompt( string $message ): string
-	{
-		$this->output->write( $message, false );
-		return trim( fgets( STDIN ) );
 	}
 }

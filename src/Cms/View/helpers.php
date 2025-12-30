@@ -60,7 +60,7 @@ if (!function_exists('route_path')) {
 	 * Generate a relative URL path for a named route
 	 *
 	 * @param string $routeName The name of the route
-	 * @param array $parameters Route parameters
+	 * @param array<string, mixed> $parameters Route parameters
 	 * @return string Relative URL path
 	 *
 	 * @example
@@ -84,7 +84,7 @@ if (!function_exists('route_url')) {
 	 * Generate an absolute URL for a named route
 	 *
 	 * @param string $routeName The name of the route
-	 * @param array $parameters Route parameters
+	 * @param array<string, mixed> $parameters Route parameters
 	 * @return string Absolute URL
 	 *
 	 * @example
@@ -211,7 +211,7 @@ if (!function_exists('group_timezones_for_select')) {
 	 * Groups timezones by region and returns a structured array ready for rendering
 	 * in a select dropdown. Each timezone includes value, label, and selected state.
 	 *
-	 * @param array $timezones List of timezone identifiers
+	 * @param array<int, string> $timezones List of timezone identifiers
 	 * @param string|null $currentTimezone Currently selected timezone
 	 * @return array<string, array<array{value: string, label: string, selected: bool}>> Grouped timezones
 	 *

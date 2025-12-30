@@ -89,10 +89,10 @@ class DatabaseCompatibilityTest extends IntegrationTestCase
 	}
 
 	/**
-	 * Test: SQLite foreign keys are enforced
+	 * Test: SQLite foreign keys are enforced with SET NULL
 	 *
-	 * Critical for data integrity - without foreign key enforcement,
-	 * orphaned records can exist (posts without valid authors, etc.)
+	 * Critical for data integrity - when users are deleted, posts should remain
+	 * but have their author_id set to NULL (content preservation).
 	 */
 	public function testForeignKeyConstraintsAreEnforced(): void
 	{
@@ -116,12 +116,15 @@ class DatabaseCompatibilityTest extends IntegrationTestCase
 		$post->setPublishedAt( new \DateTimeImmutable() );
 		$post = $this->_postRepo->create( $post );
 
-		// Delete the user - post should cascade delete
+		$postId = $post->getId();
+
+		// Delete the user - post should have author_id set to NULL
 		$this->_userRepo->delete( $user->getId() );
 
-		// Verify post was cascade deleted
-		$foundPost = $this->_postRepo->findById( $post->getId() );
-		$this->assertNull( $foundPost, 'Post should be cascade deleted when user is deleted' );
+		// Verify post still exists but author_id is NULL
+		$foundPost = $this->_postRepo->findById( $postId );
+		$this->assertNotNull( $foundPost, 'Post should still exist after user deletion' );
+		$this->assertEquals( 0, $foundPost->getAuthorId(), 'Author ID should be 0 (NULL) after user deletion' );
 	}
 
 	/**

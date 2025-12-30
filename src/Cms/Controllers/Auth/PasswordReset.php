@@ -3,17 +3,17 @@
 namespace Neuron\Cms\Controllers\Auth;
 
 use Neuron\Cms\Controllers\Content;
+use Neuron\Cms\Controllers\Traits\UsesDtos;
 use Neuron\Cms\Enums\FlashMessageType;
-use Neuron\Cms\Services\Auth\PasswordResetter;
-use Neuron\Cms\Auth\SessionManager;
-use Neuron\Cms\Services\Auth\CsrfToken;
+use Neuron\Cms\Services\Auth\IPasswordResetter;
 use Neuron\Core\Exceptions\NotFound;
 use Neuron\Log\Log;
 use Neuron\Mvc\Application;
 use Neuron\Mvc\Requests\Request;
 use Neuron\Mvc\Responses\HttpResponseStatus;
 use Neuron\Mvc\Views\Html;
-use Neuron\Patterns\Registry;
+use Neuron\Routing\Attributes\Get;
+use Neuron\Routing\Attributes\Post;
 use Exception;
 
 /**
@@ -25,27 +25,25 @@ use Exception;
  */
 class PasswordReset extends Content
 {
-	private ?PasswordResetter $_passwordResetter;
-	private CsrfToken $_csrfToken;
+	use UsesDtos;
+
+	private IPasswordResetter $_passwordResetter;
 
 	/**
 	 * @param Application|null $app
+	 * @param IPasswordResetter|null $passwordResetter
 	 * @throws \Exception
 	 */
-	public function __construct( ?Application $app = null )
+	public function __construct(
+		?Application $app = null,
+		?IPasswordResetter $passwordResetter = null
+	)
 	{
 		parent::__construct( $app );
 
-		// Get PasswordResetter from Registry
-		$this->_passwordResetter = Registry::getInstance()->get( 'PasswordResetter' );
-
-		if( !$this->_passwordResetter )
-		{
-			throw new \RuntimeException( 'PasswordResetter not found in Registry. Ensure password reset is properly configured.' );
-		}
-
-		// Initialize CSRF manager with parent's session manager
-		$this->_csrfToken = new CsrfToken( $this->getSessionManager() );
+		// Use dependency injection when available (container provides dependencies)
+		// Otherwise resolve from container (fallback for compatibility)
+		$this->_passwordResetter = $passwordResetter ?? $app?->getContainer()?->get( IPasswordResetter::class );
 	}
 
 	/**
@@ -54,10 +52,10 @@ class PasswordReset extends Content
 	 * @param Request $request
 	 * @return string
 	 */
+	#[Get('/forgot-password', name: 'forgot_password')]
 	public function showForgotPasswordForm( Request $request ): string
 	{
-		// Set CSRF token in Registry so csrf_field() helper works
-		Registry::getInstance()->set( 'Auth.CsrfToken', $this->_csrfToken->getToken() );
+		$this->initializeCsrfToken();
 
 		return $this->view()
 			->title( 'Forgot Password' )
@@ -75,30 +73,24 @@ class PasswordReset extends Content
 	 * @param Request $request
 	 * @return string
 	 */
+	#[Post('/forgot-password', name: 'forgot_password_post', filters: ['csrf'])]
 	public function requestReset( Request $request ): string
 	{
-		// Validate CSRF token
-		$token = $request->post( 'csrf_token', '' );
-		if( !$this->_csrfToken->validate( $token ) )
-		{
-			$this->_sessionManager->flash( FlashMessageType::ERROR->value,'Invalid CSRF token. Please try again.' );
-			header( 'Location: /forgot-password' );
-			exit;
-		}
+		// Create and validate DTO
+		$dto = $this->createDto( 'auth/forgot-password-request.yaml' );
+		$this->mapRequestToDto( $dto, $request );
 
-		// Get email
-		$email = $request->post( 'email', '' );
-
-		// Validate input
-		if( empty( $email ) || !filter_var( $email, FILTER_VALIDATE_EMAIL ) )
+		// Validate DTO
+		if( !$dto->validate() )
 		{
-			$this->redirect( 'forgot_password', [], [FlashMessageType::ERROR->value, 'Please enter a valid email address.'] );
+			$errors = implode( ', ', $dto->getErrors() );
+			$this->redirect( 'forgot_password', [], [FlashMessageType::ERROR->value, $errors] );
 		}
 
 		try
 		{
 			// Request password reset
-			$this->_passwordResetter->requestReset( $email );
+			$this->_passwordResetter->requestReset( $dto->email );
 
 			// Always show success message (don't reveal if email exists)
 			$this->_sessionManager->flash(
@@ -127,6 +119,7 @@ class PasswordReset extends Content
 	 * @return string
 	 * @throws NotFound
 	 */
+	#[Get('/reset-password', name: 'reset_password')]
 	public function showResetForm( Request $request ): string
 	{
 		// Get token from query string
@@ -149,8 +142,7 @@ class PasswordReset extends Content
 			exit;
 		}
 
-		// Set CSRF token in Registry so csrf_field() helper works
-		Registry::getInstance()->set( 'Auth.CsrfToken', $this->_csrfToken->getToken() );
+		$this->initializeCsrfToken();
 
 		return $this->view()
 			->title( 'Reset Password' )
@@ -169,36 +161,30 @@ class PasswordReset extends Content
 	 * @param Request $request
 	 * @return string
 	 */
+	#[Post('/reset-password', name: 'reset_password_post', filters: ['csrf'])]
 	public function resetPassword( Request $request ): string
 	{
-		// Validate CSRF token
-		$csrfToken = $request->post( 'csrf_token', '' );
-		if( !$this->_csrfToken->validate( $csrfToken ) )
-		{
-			$this->redirect( 'forgot_password', [], [FlashMessageType::ERROR->value, 'Invalid CSRF token.'] );
-		}
+		// Create and validate DTO
+		$dto = $this->createDto( 'auth/reset-password-request.yaml' );
+		$this->mapRequestToDto( $dto, $request );
 
-		// Get form data
-		$token = $request->post( 'token', '' );
-		$password = $request->post( 'password', '' );
-		$passwordConfirmation = $request->post( 'password_confirmation', '' );
-
-		// Validate input
-		if( empty( $token ) || empty( $password ) || empty( $passwordConfirmation ) )
+		// Validate DTO
+		if( !$dto->validate() )
 		{
-			$this->redirectToUrl( '/reset-password?token=' . urlencode( $token ), [FlashMessageType::ERROR->value, 'All fields are required.'] );
+			$errors = implode( ', ', $dto->getErrors() );
+			$this->redirectToUrl( '/reset-password?token=' . urlencode( $dto->token ?? '' ), [FlashMessageType::ERROR->value, $errors] );
 		}
 
 		// Validate passwords match
-		if( $password !== $passwordConfirmation )
+		if( $dto->password !== $dto->password_confirmation )
 		{
-			$this->redirectToUrl( '/reset-password?token=' . urlencode( $token ), [FlashMessageType::ERROR->value, 'Passwords do not match.'] );
+			$this->redirectToUrl( '/reset-password?token=' . urlencode( $dto->token ), [FlashMessageType::ERROR->value, 'Passwords do not match.'] );
 		}
 
 		try
 		{
 			// Attempt password reset
-			$success = $this->_passwordResetter->resetPassword( $token, $password );
+			$success = $this->_passwordResetter->resetPassword( $dto->token, $dto->password );
 
 			if( !$success )
 			{
@@ -210,7 +196,7 @@ class PasswordReset extends Content
 		}
 		catch( Exception $e )
 		{
-			$this->redirectToUrl( '/reset-password?token=' . urlencode( $token ), [FlashMessageType::ERROR->value, $e->getMessage() ] );
+			$this->redirectToUrl( '/reset-password?token=' . urlencode( $dto->token ), [FlashMessageType::ERROR->value, $e->getMessage() ] );
 		}
 	}
 }
