@@ -65,10 +65,9 @@ class HomeTest extends TestCase
 	public function testConstructorWithRegistrationService(): void
 	{
 		$mockRegistrationService = $this->createMock( IRegistrationService::class );
-		$mockSettingManager = Registry::getInstance()->get( 'Settings' );
 		$mockSessionManager = $this->createMock( \Neuron\Cms\Auth\SessionManager::class );
 
-		$controller = new Home( null, $mockRegistrationService, $mockSettingManager, $mockSessionManager );
+		$controller = new Home( null, $mockRegistrationService, $this->_settingManager, $mockSessionManager );
 
 		$this->assertInstanceOf( Home::class, $controller );
 	}
@@ -87,12 +86,11 @@ class HomeTest extends TestCase
 		$mockRegistrationService = $this->createMock( IRegistrationService::class );
 		$mockRegistrationService->method( 'isRegistrationEnabled' )->willReturn( true );
 
-		$mockSettingManager = Registry::getInstance()->get( 'Settings' );
 		$mockSessionManager = $this->createMock( \Neuron\Cms\Auth\SessionManager::class );
 
 		// Mock the controller to test renderHtml is called with correct params
 		$controller = $this->getMockBuilder( Home::class )
-			->setConstructorArgs( [ null, $mockRegistrationService, $mockSettingManager, $mockSessionManager ] )
+			->setConstructorArgs( [ null, $mockRegistrationService, $this->_settingManager, $mockSessionManager ] )
 			->onlyMethods( [ 'renderHtml' ] )
 			->getMock();
 
@@ -122,11 +120,10 @@ class HomeTest extends TestCase
 		$mockRegistrationService = $this->createMock( IRegistrationService::class );
 		$mockRegistrationService->method( 'isRegistrationEnabled' )->willReturn( false );
 
-		$mockSettingManager = Registry::getInstance()->get( 'Settings' );
 		$mockSessionManager = $this->createMock( \Neuron\Cms\Auth\SessionManager::class );
 
 		$controller = $this->getMockBuilder( Home::class )
-			->setConstructorArgs( [ null, $mockRegistrationService, $mockSettingManager, $mockSessionManager ] )
+			->setConstructorArgs( [ null, $mockRegistrationService, $this->_settingManager, $mockSessionManager ] )
 			->onlyMethods( [ 'renderHtml' ] )
 			->getMock();
 
@@ -154,11 +151,10 @@ class HomeTest extends TestCase
 		$mockRegistrationService = $this->createMock( IRegistrationService::class );
 		$mockRegistrationService->method( 'isRegistrationEnabled' )->willReturn( true );
 
-		$mockSettingManager = Registry::getInstance()->get( 'Settings' );
 		$mockSessionManager = $this->createMock( \Neuron\Cms\Auth\SessionManager::class );
 
 		$controller = $this->getMockBuilder( Home::class )
-			->setConstructorArgs( [ null, $mockRegistrationService, $mockSettingManager, $mockSessionManager ] )
+			->setConstructorArgs( [ null, $mockRegistrationService, $this->_settingManager, $mockSessionManager ] )
 			->onlyMethods( [ 'renderHtml' ] )
 			->getMock();
 
