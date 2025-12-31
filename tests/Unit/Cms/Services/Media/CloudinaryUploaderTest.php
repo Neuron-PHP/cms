@@ -396,4 +396,485 @@ class CloudinaryUploaderTest extends TestCase
 			$this->assertNull( $firstPage['next_cursor'] );
 		}
 	}
+
+	/**
+	 * Unit tests using mocked Cloudinary SDK to test logic without real API calls
+	 */
+
+	public function testUploadCallsCloudinaryApiCorrectly(): void
+	{
+		// Create a temporary test file
+		$testFile = tempnam( sys_get_temp_dir(), 'test_image_' );
+		file_put_contents( $testFile, 'test image content' );
+
+		try
+		{
+			$uploader = new CloudinaryUploader( $this->_settings );
+
+			// Mock the Cloudinary instance
+			$mockCloudinary = $this->createMock( \Cloudinary\Cloudinary::class );
+			$mockUploadApi = $this->createMock( \Cloudinary\Api\Upload\UploadApi::class );
+
+			// Set up the mock expectations
+			$mockCloudinary
+				->expects( $this->once() )
+				->method( 'uploadApi' )
+				->willReturn( $mockUploadApi );
+
+			$mockUploadApi
+				->expects( $this->once() )
+				->method( 'upload' )
+				->with(
+					$this->equalTo( $testFile ),
+					$this->callback( function( $options ) {
+						return isset( $options['folder'] ) &&
+						       $options['folder'] === 'test-folder' &&
+						       isset( $options['resource_type'] ) &&
+						       $options['resource_type'] === 'image';
+					} )
+				)
+				->willReturn( [
+					'secure_url' => 'https://res.cloudinary.com/test/image.jpg',
+					'public_id' => 'test-folder/image',
+					'width' => 800,
+					'height' => 600,
+					'format' => 'jpg',
+					'bytes' => 12345,
+					'resource_type' => 'image',
+					'created_at' => '2024-01-01T00:00:00Z'
+				] );
+
+			// Use reflection to inject the mock
+			$reflection = new \ReflectionClass( $uploader );
+			$property = $reflection->getProperty( '_cloudinary' );
+			$property->setAccessible( true );
+			$property->setValue( $uploader, $mockCloudinary );
+
+			// Test the upload
+			$result = $uploader->upload( $testFile );
+
+			// Verify the result format
+			$this->assertIsArray( $result );
+			$this->assertEquals( 'https://res.cloudinary.com/test/image.jpg', $result['url'] );
+			$this->assertEquals( 'test-folder/image', $result['public_id'] );
+			$this->assertEquals( 800, $result['width'] );
+			$this->assertEquals( 600, $result['height'] );
+			$this->assertEquals( 'jpg', $result['format'] );
+			$this->assertEquals( 12345, $result['bytes'] );
+		}
+		finally
+		{
+			// Clean up
+			if( file_exists( $testFile ) )
+			{
+				unlink( $testFile );
+			}
+		}
+	}
+
+	public function testUploadWithCustomOptions(): void
+	{
+		// Create a temporary test file
+		$testFile = tempnam( sys_get_temp_dir(), 'test_image_' );
+		file_put_contents( $testFile, 'test image content' );
+
+		try
+		{
+			$uploader = new CloudinaryUploader( $this->_settings );
+
+			// Mock the Cloudinary instance
+			$mockCloudinary = $this->createMock( \Cloudinary\Cloudinary::class );
+			$mockUploadApi = $this->createMock( \Cloudinary\Api\Upload\UploadApi::class );
+
+			$mockCloudinary
+				->method( 'uploadApi' )
+				->willReturn( $mockUploadApi );
+
+			$mockUploadApi
+				->expects( $this->once() )
+				->method( 'upload' )
+				->with(
+					$this->equalTo( $testFile ),
+					$this->callback( function( $options ) {
+						return $options['folder'] === 'custom-folder' &&
+						       $options['public_id'] === 'my-image' &&
+						       isset( $options['tags'] ) &&
+						       in_array( 'test-tag', $options['tags'] );
+					} )
+				)
+				->willReturn( [
+					'secure_url' => 'https://res.cloudinary.com/test/custom-folder/my-image.jpg',
+					'public_id' => 'custom-folder/my-image',
+					'width' => 1024,
+					'height' => 768,
+					'format' => 'jpg'
+				] );
+
+			// Use reflection to inject the mock
+			$reflection = new \ReflectionClass( $uploader );
+			$property = $reflection->getProperty( '_cloudinary' );
+			$property->setAccessible( true );
+			$property->setValue( $uploader, $mockCloudinary );
+
+			// Test upload with custom options
+			$result = $uploader->upload( $testFile, [
+				'folder' => 'custom-folder',
+				'public_id' => 'my-image',
+				'tags' => [ 'test-tag', 'another-tag' ]
+			] );
+
+			$this->assertEquals( 'custom-folder/my-image', $result['public_id'] );
+		}
+		finally
+		{
+			if( file_exists( $testFile ) )
+			{
+				unlink( $testFile );
+			}
+		}
+	}
+
+	public function testUploadFromUrlCallsCloudinaryApiCorrectly(): void
+	{
+		$uploader = new CloudinaryUploader( $this->_settings );
+
+		// Mock the Cloudinary instance
+		$mockCloudinary = $this->createMock( \Cloudinary\Cloudinary::class );
+		$mockUploadApi = $this->createMock( \Cloudinary\Api\Upload\UploadApi::class );
+
+		$mockCloudinary
+			->expects( $this->once() )
+			->method( 'uploadApi' )
+			->willReturn( $mockUploadApi );
+
+		$mockUploadApi
+			->expects( $this->once() )
+			->method( 'upload' )
+			->with(
+				$this->equalTo( 'https://example.com/image.jpg' ),
+				$this->callback( function( $options ) {
+					return isset( $options['folder'] ) &&
+					       $options['folder'] === 'test-folder';
+				} )
+			)
+			->willReturn( [
+				'secure_url' => 'https://res.cloudinary.com/test/image.jpg',
+				'public_id' => 'test-folder/image',
+				'width' => 800,
+				'height' => 600,
+				'format' => 'jpg'
+			] );
+
+		// Use reflection to inject the mock
+		$reflection = new \ReflectionClass( $uploader );
+		$property = $reflection->getProperty( '_cloudinary' );
+		$property->setAccessible( true );
+		$property->setValue( $uploader, $mockCloudinary );
+
+		// Test uploadFromUrl
+		$result = $uploader->uploadFromUrl( 'https://example.com/image.jpg' );
+
+		$this->assertIsArray( $result );
+		$this->assertEquals( 'https://res.cloudinary.com/test/image.jpg', $result['url'] );
+		$this->assertEquals( 'test-folder/image', $result['public_id'] );
+	}
+
+	public function testDeleteCallsCloudinaryApiCorrectly(): void
+	{
+		$uploader = new CloudinaryUploader( $this->_settings );
+
+		// Mock the Cloudinary instance
+		$mockCloudinary = $this->createMock( \Cloudinary\Cloudinary::class );
+		$mockUploadApi = $this->createMock( \Cloudinary\Api\Upload\UploadApi::class );
+
+		$mockCloudinary
+			->expects( $this->once() )
+			->method( 'uploadApi' )
+			->willReturn( $mockUploadApi );
+
+		$mockUploadApi
+			->expects( $this->once() )
+			->method( 'destroy' )
+			->with( $this->equalTo( 'test-folder/image-to-delete' ) )
+			->willReturn( [ 'result' => 'ok' ] );
+
+		// Use reflection to inject the mock
+		$reflection = new \ReflectionClass( $uploader );
+		$property = $reflection->getProperty( '_cloudinary' );
+		$property->setAccessible( true );
+		$property->setValue( $uploader, $mockCloudinary );
+
+		// Test delete
+		$result = $uploader->delete( 'test-folder/image-to-delete' );
+
+		$this->assertTrue( $result );
+	}
+
+	public function testDeleteReturnsFalseWhenResultIsNotOk(): void
+	{
+		$uploader = new CloudinaryUploader( $this->_settings );
+
+		// Mock the Cloudinary instance
+		$mockCloudinary = $this->createMock( \Cloudinary\Cloudinary::class );
+		$mockUploadApi = $this->createMock( \Cloudinary\Api\Upload\UploadApi::class );
+
+		$mockCloudinary
+			->method( 'uploadApi' )
+			->willReturn( $mockUploadApi );
+
+		$mockUploadApi
+			->method( 'destroy' )
+			->willReturn( [ 'result' => 'not found' ] );
+
+		// Use reflection to inject the mock
+		$reflection = new \ReflectionClass( $uploader );
+		$property = $reflection->getProperty( '_cloudinary' );
+		$property->setAccessible( true );
+		$property->setValue( $uploader, $mockCloudinary );
+
+		// Test delete with non-ok result
+		$result = $uploader->delete( 'nonexistent-image' );
+
+		$this->assertFalse( $result );
+	}
+
+	public function testListResourcesCallsCloudinaryApiCorrectly(): void
+	{
+		$uploader = new CloudinaryUploader( $this->_settings );
+
+		// Mock the Cloudinary instance
+		$mockCloudinary = $this->createMock( \Cloudinary\Cloudinary::class );
+		$mockAdminApi = $this->createMock( \Cloudinary\Api\Admin\AdminApi::class );
+
+		$mockCloudinary
+			->expects( $this->once() )
+			->method( 'adminApi' )
+			->willReturn( $mockAdminApi );
+
+		$mockAdminApi
+			->expects( $this->once() )
+			->method( 'assets' )
+			->with(
+				$this->callback( function( $options ) {
+					return $options['type'] === 'upload' &&
+					       $options['prefix'] === 'test-folder' &&
+					       $options['max_results'] === 30 &&
+					       $options['resource_type'] === 'image';
+				} )
+			)
+			->willReturn( [
+				'resources' => [
+					[
+						'secure_url' => 'https://res.cloudinary.com/test/image1.jpg',
+						'public_id' => 'test-folder/image1',
+						'width' => 800,
+						'height' => 600,
+						'format' => 'jpg',
+						'bytes' => 12345,
+						'resource_type' => 'image',
+						'created_at' => '2024-01-01T00:00:00Z'
+					],
+					[
+						'secure_url' => 'https://res.cloudinary.com/test/image2.jpg',
+						'public_id' => 'test-folder/image2',
+						'width' => 1024,
+						'height' => 768,
+						'format' => 'jpg',
+						'bytes' => 23456,
+						'resource_type' => 'image',
+						'created_at' => '2024-01-02T00:00:00Z'
+					]
+				],
+				'next_cursor' => 'abc123',
+				'total_count' => 100
+			] );
+
+		// Use reflection to inject the mock
+		$reflection = new \ReflectionClass( $uploader );
+		$property = $reflection->getProperty( '_cloudinary' );
+		$property->setAccessible( true );
+		$property->setValue( $uploader, $mockCloudinary );
+
+		// Test listResources
+		$result = $uploader->listResources();
+
+		$this->assertIsArray( $result );
+		$this->assertArrayHasKey( 'resources', $result );
+		$this->assertArrayHasKey( 'next_cursor', $result );
+		$this->assertArrayHasKey( 'total_count', $result );
+		$this->assertCount( 2, $result['resources'] );
+		$this->assertEquals( 'abc123', $result['next_cursor'] );
+		$this->assertEquals( 100, $result['total_count'] );
+		$this->assertEquals( 'test-folder/image1', $result['resources'][0]['public_id'] );
+	}
+
+	public function testListResourcesWithCustomOptionsAndPagination(): void
+	{
+		$uploader = new CloudinaryUploader( $this->_settings );
+
+		// Mock the Cloudinary instance
+		$mockCloudinary = $this->createMock( \Cloudinary\Cloudinary::class );
+		$mockAdminApi = $this->createMock( \Cloudinary\Api\Admin\AdminApi::class );
+
+		$mockCloudinary
+			->method( 'adminApi' )
+			->willReturn( $mockAdminApi );
+
+		$mockAdminApi
+			->expects( $this->once() )
+			->method( 'assets' )
+			->with(
+				$this->callback( function( $options ) {
+					return $options['max_results'] === 10 &&
+					       $options['next_cursor'] === 'cursor123' &&
+					       $options['prefix'] === 'custom-folder';
+				} )
+			)
+			->willReturn( [
+				'resources' => [],
+				'next_cursor' => null,
+				'total_count' => 0
+			] );
+
+		// Use reflection to inject the mock
+		$reflection = new \ReflectionClass( $uploader );
+		$property = $reflection->getProperty( '_cloudinary' );
+		$property->setAccessible( true );
+		$property->setValue( $uploader, $mockCloudinary );
+
+		// Test listResources with custom options
+		$result = $uploader->listResources( [
+			'max_results' => 10,
+			'next_cursor' => 'cursor123',
+			'folder' => 'custom-folder'
+		] );
+
+		$this->assertIsArray( $result );
+		$this->assertNull( $result['next_cursor'] );
+	}
+
+	public function testUploadThrowsExceptionOnCloudinaryError(): void
+	{
+		$testFile = tempnam( sys_get_temp_dir(), 'test_image_' );
+		file_put_contents( $testFile, 'test content' );
+
+		try
+		{
+			$uploader = new CloudinaryUploader( $this->_settings );
+
+			// Mock the Cloudinary instance
+			$mockCloudinary = $this->createMock( \Cloudinary\Cloudinary::class );
+			$mockUploadApi = $this->createMock( \Cloudinary\Api\Upload\UploadApi::class );
+
+			$mockCloudinary
+				->method( 'uploadApi' )
+				->willReturn( $mockUploadApi );
+
+			$mockUploadApi
+				->method( 'upload' )
+				->willThrowException( new \Exception( 'Cloudinary API error' ) );
+
+			// Use reflection to inject the mock
+			$reflection = new \ReflectionClass( $uploader );
+			$property = $reflection->getProperty( '_cloudinary' );
+			$property->setAccessible( true );
+			$property->setValue( $uploader, $mockCloudinary );
+
+			$this->expectException( \Exception::class );
+			$this->expectExceptionMessage( 'Cloudinary upload failed' );
+
+			$uploader->upload( $testFile );
+		}
+		finally
+		{
+			if( file_exists( $testFile ) )
+			{
+				unlink( $testFile );
+			}
+		}
+	}
+
+	public function testUploadFromUrlThrowsExceptionOnCloudinaryError(): void
+	{
+		$uploader = new CloudinaryUploader( $this->_settings );
+
+		// Mock the Cloudinary instance
+		$mockCloudinary = $this->createMock( \Cloudinary\Cloudinary::class );
+		$mockUploadApi = $this->createMock( \Cloudinary\Api\Upload\UploadApi::class );
+
+		$mockCloudinary
+			->method( 'uploadApi' )
+			->willReturn( $mockUploadApi );
+
+		$mockUploadApi
+			->method( 'upload' )
+			->willThrowException( new \Exception( 'Invalid image format' ) );
+
+		// Use reflection to inject the mock
+		$reflection = new \ReflectionClass( $uploader );
+		$property = $reflection->getProperty( '_cloudinary' );
+		$property->setAccessible( true );
+		$property->setValue( $uploader, $mockCloudinary );
+
+		$this->expectException( \Exception::class );
+		$this->expectExceptionMessage( 'Cloudinary upload from URL failed' );
+
+		$uploader->uploadFromUrl( 'https://example.com/image.jpg' );
+	}
+
+	public function testDeleteThrowsExceptionOnCloudinaryError(): void
+	{
+		$uploader = new CloudinaryUploader( $this->_settings );
+
+		// Mock the Cloudinary instance
+		$mockCloudinary = $this->createMock( \Cloudinary\Cloudinary::class );
+		$mockUploadApi = $this->createMock( \Cloudinary\Api\Upload\UploadApi::class );
+
+		$mockCloudinary
+			->method( 'uploadApi' )
+			->willReturn( $mockUploadApi );
+
+		$mockUploadApi
+			->method( 'destroy' )
+			->willThrowException( new \Exception( 'API error' ) );
+
+		// Use reflection to inject the mock
+		$reflection = new \ReflectionClass( $uploader );
+		$property = $reflection->getProperty( '_cloudinary' );
+		$property->setAccessible( true );
+		$property->setValue( $uploader, $mockCloudinary );
+
+		$this->expectException( \Exception::class );
+		$this->expectExceptionMessage( 'Cloudinary deletion failed' );
+
+		$uploader->delete( 'test-image' );
+	}
+
+	public function testListResourcesThrowsExceptionOnCloudinaryError(): void
+	{
+		$uploader = new CloudinaryUploader( $this->_settings );
+
+		// Mock the Cloudinary instance
+		$mockCloudinary = $this->createMock( \Cloudinary\Cloudinary::class );
+		$mockAdminApi = $this->createMock( \Cloudinary\Api\Admin\AdminApi::class );
+
+		$mockCloudinary
+			->method( 'adminApi' )
+			->willReturn( $mockAdminApi );
+
+		$mockAdminApi
+			->method( 'assets' )
+			->willThrowException( new \Exception( 'Authentication failed' ) );
+
+		// Use reflection to inject the mock
+		$reflection = new \ReflectionClass( $uploader );
+		$property = $reflection->getProperty( '_cloudinary' );
+		$property->setAccessible( true );
+		$property->setValue( $uploader, $mockCloudinary );
+
+		$this->expectException( \Exception::class );
+		$this->expectExceptionMessage( 'Cloudinary list resources failed' );
+
+		$uploader->listResources();
+	}
 }

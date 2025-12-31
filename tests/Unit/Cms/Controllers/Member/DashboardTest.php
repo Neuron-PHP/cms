@@ -1,8 +1,8 @@
 <?php
 
-namespace Tests\Cms\Controllers\Admin;
+namespace Tests\Cms\Controllers\Member;
 
-use Neuron\Cms\Controllers\Admin\Dashboard;
+use Neuron\Cms\Controllers\Member\Dashboard;
 use Neuron\Data\Settings\Source\Memory;
 use Neuron\Data\Settings\SettingManager;
 use Neuron\Mvc\Application;
@@ -87,13 +87,13 @@ class DashboardTest extends TestCase
 		$mockViewContext->method( 'description' )->willReturn( $mockViewContext );
 		$mockViewContext->method( 'withCurrentUser' )->willReturn( $mockViewContext );
 		$mockViewContext->method( 'withCsrfToken' )->willReturn( $mockViewContext );
-		$mockViewContext->method( 'render' )->willReturn( '<html>Dashboard</html>' );
+		$mockViewContext->method( 'render' )->willReturn( '<html>Member Dashboard</html>' );
 
 		$controller->method( 'view' )->willReturn( $mockViewContext );
 
 		$request = new Request();
 		$result = $controller->index( $request );
 
-		$this->assertEquals( '<html>Dashboard</html>', $result );
+		$this->assertEquals( '<html>Member Dashboard</html>', $result );
 	}
 }

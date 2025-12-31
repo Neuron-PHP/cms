@@ -176,4 +176,33 @@ class WidgetRendererTest extends TestCase
 		$this->assertStringContainsString( "<h4 class='h5'>", $result );
 		$this->assertStringContainsString( "<a href='/blog/article/test'", $result );
 	}
+
+	public function testRenderCalendarWithoutRepositoriesReturnsComment(): void
+	{
+		$renderer = new WidgetRenderer(); // No repositories injected
+		$result = $renderer->render( 'calendar', [] );
+
+		$this->assertStringContainsString( '<!-- Calendar widget requires EventRepository and EventCategoryRepository -->', $result );
+	}
+
+	public function testRenderCalendarWithOnlyEventRepositoryReturnsComment(): void
+	{
+		$eventRepository = $this->createMock( \Neuron\Cms\Repositories\IEventRepository::class );
+		$renderer = new WidgetRenderer( null, $eventRepository );
+		$result = $renderer->render( 'calendar', [] );
+
+		$this->assertStringContainsString( '<!-- Calendar widget requires EventRepository and EventCategoryRepository -->', $result );
+	}
+
+	public function testRenderCalendarWithInterfaceRepositoriesReturnsComment(): void
+	{
+		// Mock interface repositories (not concrete Database* classes)
+		$eventRepository = $this->createMock( \Neuron\Cms\Repositories\IEventRepository::class );
+		$categoryRepository = $this->createMock( \Neuron\Cms\Repositories\IEventCategoryRepository::class );
+
+		$renderer = new WidgetRenderer( null, $eventRepository, $categoryRepository );
+		$result = $renderer->render( 'calendar', [] );
+
+		$this->assertStringContainsString( '<!-- Calendar widget requires DatabaseEventRepository and DatabaseEventCategoryRepository -->', $result );
+	}
 }
