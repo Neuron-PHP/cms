@@ -204,4 +204,66 @@ class UpdaterTest extends TestCase
 
 		$this->assertEquals( '', $result->getDescription() );
 	}
+
+	public function testConstructorSetsPropertiesCorrectly(): void
+	{
+		$categoryRepository = $this->createMock( ICategoryRepository::class );
+
+		$updater = new Updater( $categoryRepository );
+
+		$this->assertInstanceOf( Updater::class, $updater );
+	}
+
+	public function testConstructorWithEventEmitter(): void
+	{
+		$categoryRepository = $this->createMock( ICategoryRepository::class );
+		$eventEmitter = $this->createMock( \Neuron\Events\Emitter::class );
+
+		$category = new Category();
+		$category->setId( 1 );
+		$category->setName( 'Test' );
+
+		$categoryRepository
+			->method( 'findById' )
+			->willReturn( $category );
+
+		$categoryRepository
+			->method( 'update' );
+
+		// Event emitter should emit CategoryUpdatedEvent
+		$eventEmitter
+			->expects( $this->once() )
+			->method( 'emit' )
+			->with( $this->isInstanceOf( \Neuron\Cms\Events\CategoryUpdatedEvent::class ) );
+
+		$updater = new Updater( $categoryRepository, null, $eventEmitter );
+
+		$dto = $this->createDto(
+			id: 1,
+			name: 'Updated Name',
+			slug: 'updated-slug'
+		);
+
+		$updater->update( $dto );
+	}
+
+	public function testThrowsExceptionWhenCategoryNotFound(): void
+	{
+		$this->_mockCategoryRepository
+			->expects( $this->once() )
+			->method( 'findById' )
+			->with( 999 )
+			->willReturn( null );
+
+		$this->expectException( \Exception::class );
+		$this->expectExceptionMessage( 'Category with ID 999 not found' );
+
+		$dto = $this->createDto(
+			id: 999,
+			name: 'Test',
+			slug: 'test'
+		);
+
+		$this->_updater->update( $dto );
+	}
 }

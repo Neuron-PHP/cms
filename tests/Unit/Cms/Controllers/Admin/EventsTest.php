@@ -50,20 +50,27 @@ class EventsTest extends TestCase
 
 	public function testConstructorWithAllDependencies(): void
 	{
+		$mockSettingManager = Registry::getInstance()->get( 'Settings' );
+		$mockSessionManager = $this->createMock( SessionManager::class );
+
 		$controller = new Events(
 			$this->mockApp,
 			$this->createMock( IEventRepository::class ),
 			$this->createMock( IEventCategoryRepository::class ),
 			$this->createMock( IEventCreator::class ),
-			$this->createMock( IEventUpdater::class )
+			$this->createMock( IEventUpdater::class ),
+			$mockSettingManager,
+			$mockSessionManager
 		);
 
 		$this->assertInstanceOf( Events::class, $controller );
 	}
 
-	public function testConstructorResolvesFromContainer(): void
+	public function testConstructorThrowsExceptionWithoutSettingManager(): void
 	{
-		$controller = new Events( $this->mockApp );
-		$this->assertInstanceOf( Events::class, $controller );
+		$this->expectException( \InvalidArgumentException::class );
+		$this->expectExceptionMessage( 'SettingManager must be injected' );
+
+		new Events( null );
 	}
 }

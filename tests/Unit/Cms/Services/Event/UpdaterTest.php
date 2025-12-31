@@ -412,4 +412,34 @@ class UpdaterTest extends TestCase
 
 		$this->assertEquals( Event::STATUS_PUBLISHED, $event->getStatus() );
 	}
+
+	public function test_constructor_sets_properties_correctly(): void
+	{
+		$eventRepository = $this->createMock( IEventRepository::class );
+		$categoryRepository = $this->createMock( IEventCategoryRepository::class );
+
+		$updater = new Updater( $eventRepository, $categoryRepository );
+
+		$this->assertInstanceOf( Updater::class, $updater );
+	}
+
+	public function test_update_throws_exception_when_event_not_found(): void
+	{
+		$this->eventRepository->expects( $this->once() )
+			->method( 'findById' )
+			->with( 999 )
+			->willReturn( null );
+
+		$this->expectException( \RuntimeException::class );
+		$this->expectExceptionMessage( 'Event with ID 999 not found' );
+
+		$dto = $this->createDto(
+			id: 999,
+			title: 'New Title',
+			startDate: '2025-07-01 14:00:00',
+			status: Event::STATUS_PUBLISHED
+		);
+
+		$this->updater->update( $dto );
+	}
 }

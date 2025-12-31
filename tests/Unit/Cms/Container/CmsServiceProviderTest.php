@@ -3,7 +3,7 @@
 namespace Tests\Cms\Container;
 
 use Neuron\Cms\Auth\PasswordHasher;
-use Neuron\Cms\Auth\ResendVerificationThrottle;
+use Neuron\Cms\Services\Security\ResendVerificationThrottle;
 use Neuron\Cms\Auth\SessionManager;
 use Neuron\Cms\Container\CmsServiceProvider;
 use Neuron\Cms\Repositories\DatabaseCategoryRepository;

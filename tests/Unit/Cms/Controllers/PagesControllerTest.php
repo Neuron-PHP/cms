@@ -84,16 +84,19 @@ class PagesControllerTest extends TestCase
 
 		$creator = $this->createMock( Creator::class );
 		$updater = $this->createMock( Updater::class );
-		$deleter = $this->createMock( Deleter::class );
 
 		// Create controller with mocked dependencies and mocked view method
+		$mockSettingManager = Registry::getInstance()->get( 'Settings' );
+		$mockSessionManager = $this->createMock( SessionManager::class );
+
 		$controller = $this->getMockBuilder( Pages::class )
 			->setConstructorArgs([
 				null,
 				$pageRepository,
 				$creator,
 				$updater,
-				$deleter
+				$mockSettingManager,
+				$mockSessionManager
 			])
 			->onlyMethods( ['view'] )
 			->getMock();
@@ -148,16 +151,19 @@ class PagesControllerTest extends TestCase
 
 		$creator = $this->createMock( Creator::class );
 		$updater = $this->createMock( Updater::class );
-		$deleter = $this->createMock( Deleter::class );
 
 		// Create controller with mocked dependencies
+		$mockSettingManager = Registry::getInstance()->get( 'Settings' );
+		$mockSessionManager = $this->createMock( SessionManager::class );
+
 		$controller = $this->getMockBuilder( Pages::class )
 			->setConstructorArgs([
 				null,
 				$pageRepository,
 				$creator,
 				$updater,
-				$deleter
+				$mockSettingManager,
+				$mockSessionManager
 			])
 			->onlyMethods( ['view'] )
 			->getMock();
@@ -199,7 +205,9 @@ class PagesControllerTest extends TestCase
 		$pageRepository = $this->createMock( DatabasePageRepository::class );
 		$creator = $this->createMock( Creator::class );
 		$updater = $this->createMock( Updater::class );
-		$deleter = $this->createMock( Deleter::class );
+
+		$mockSettingManager = Registry::getInstance()->get( 'Settings' );
+		$mockSessionManager = $this->createMock( SessionManager::class );
 
 		$controller = $this->getMockBuilder( Pages::class )
 			->setConstructorArgs([
@@ -207,7 +215,8 @@ class PagesControllerTest extends TestCase
 				$pageRepository,
 				$creator,
 				$updater,
-				$deleter
+				$mockSettingManager,
+				$mockSessionManager
 			])
 			->onlyMethods( ['view'] )
 			->getMock();
@@ -221,14 +230,6 @@ class PagesControllerTest extends TestCase
 		$viewBuilder->method( 'render' )->willReturn( '<html>Create Page Form</html>' );
 
 		$controller->method( 'view' )->willReturn( $viewBuilder );
-
-		// Mock session manager
-		$reflection = new \ReflectionClass( get_parent_class( Pages::class ) );
-		$sessionProperty = $reflection->getProperty( '_sessionManager' );
-		$sessionProperty->setAccessible( true );
-
-		$sessionManager = $this->createMock( SessionManager::class );
-		$sessionProperty->setValue( $controller, $sessionManager );
 
 		$request = $this->createMock( Request::class );
 

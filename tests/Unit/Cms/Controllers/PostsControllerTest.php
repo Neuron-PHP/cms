@@ -92,6 +92,9 @@ class PostsControllerTest extends TestCase
 		$deleter = $this->createMock( Deleter::class );
 
 		// Create controller with mocked dependencies and mocked view method
+		$mockSettingManager = Registry::getInstance()->get( 'Settings' );
+		$mockSessionManager = $this->createMock( SessionManager::class );
+
 		$controller = $this->getMockBuilder( Posts::class )
 			->setConstructorArgs([
 				null,
@@ -100,7 +103,9 @@ class PostsControllerTest extends TestCase
 				$tagRepository,
 				$creator,
 				$updater,
-				$deleter
+				$deleter,
+				$mockSettingManager,
+				$mockSessionManager
 			])
 			->onlyMethods( ['view'] )
 			->getMock();
@@ -160,6 +165,9 @@ class PostsControllerTest extends TestCase
 		$deleter = $this->createMock( Deleter::class );
 
 		// Create controller with mocked dependencies
+		$mockSettingManager = Registry::getInstance()->get( 'Settings' );
+		$mockSessionManager = $this->createMock( SessionManager::class );
+
 		$controller = $this->getMockBuilder( Posts::class )
 			->setConstructorArgs([
 				null,
@@ -168,7 +176,9 @@ class PostsControllerTest extends TestCase
 				$tagRepository,
 				$creator,
 				$updater,
-				$deleter
+				$deleter,
+				$mockSettingManager,
+				$mockSessionManager
 			])
 			->onlyMethods( ['view'] )
 			->getMock();
@@ -218,6 +228,9 @@ class PostsControllerTest extends TestCase
 		$updater = $this->createMock( Updater::class );
 		$deleter = $this->createMock( Deleter::class );
 
+		$mockSettingManager = Registry::getInstance()->get( 'Settings' );
+		$mockSessionManager = $this->createMock( SessionManager::class );
+
 		$controller = $this->getMockBuilder( Posts::class )
 			->setConstructorArgs([
 				null,
@@ -226,7 +239,9 @@ class PostsControllerTest extends TestCase
 				$tagRepository,
 				$creator,
 				$updater,
-				$deleter
+				$deleter,
+				$mockSettingManager,
+				$mockSessionManager
 			])
 			->onlyMethods( ['view'] )
 			->getMock();
@@ -241,14 +256,6 @@ class PostsControllerTest extends TestCase
 		$viewBuilder->method( 'render' )->willReturn( '<html>Create Post Form</html>' );
 
 		$controller->method( 'view' )->willReturn( $viewBuilder );
-
-		// Mock session manager
-		$reflection = new \ReflectionClass( get_parent_class( Posts::class ) );
-		$sessionProperty = $reflection->getProperty( '_sessionManager' );
-		$sessionProperty->setAccessible( true );
-
-		$sessionManager = $this->createMock( SessionManager::class );
-		$sessionProperty->setValue( $controller, $sessionManager );
 
 		$request = $this->createMock( Request::class );
 
@@ -278,6 +285,9 @@ class PostsControllerTest extends TestCase
 		$updater = $this->createMock( Updater::class );
 		$deleter = $this->createMock( Deleter::class );
 
+		$mockSettingManager = Registry::getInstance()->get( 'Settings' );
+		$mockSessionManager = $this->createMock( SessionManager::class );
+
 		$controller = new Posts(
 			null,
 			$postRepository,
@@ -285,7 +295,9 @@ class PostsControllerTest extends TestCase
 			$tagRepository,
 			$creator,
 			$updater,
-			$deleter
+			$deleter,
+			$mockSettingManager,
+			$mockSessionManager
 		);
 
 		$request = $this->createMock( Request::class );

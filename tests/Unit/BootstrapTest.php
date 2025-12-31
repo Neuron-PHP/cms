@@ -14,17 +14,17 @@ class BootstrapTest extends TestCase
 {
 	private $root;
 	private $originalEnv;
-	
+
 	protected function setUp(): void
 	{
 		parent::setUp();
-		
+
 		// Create virtual filesystem
 		$this->root = vfsStream::setup( 'test' );
 
 		// Store original environment
 		$this->originalEnv = $_ENV ?? [];
-		
+
 		// Clear environment variable
 		putenv( 'SYSTEM_BASE_PATH' );
 	}

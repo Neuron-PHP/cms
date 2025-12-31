@@ -2,6 +2,7 @@
 
 namespace Neuron\Cms\Controllers\Admin;
 
+use Neuron\Cms\Auth\SessionManager;
 use Neuron\Cms\Enums\FlashMessageType;
 use Neuron\Cms\Controllers\Content;
 use Neuron\Cms\Repositories\IEventRepository;
@@ -9,6 +10,7 @@ use Neuron\Cms\Repositories\IEventCategoryRepository;
 use Neuron\Cms\Services\Event\IEventCreator;
 use Neuron\Cms\Services\Event\IEventUpdater;
 use Neuron\Cms\Services\Auth\CsrfToken;
+use Neuron\Data\Settings\SettingManager;
 use Neuron\Log\Log;
 use Neuron\Mvc\Application;
 use Neuron\Mvc\Requests\Request;
@@ -39,23 +41,44 @@ class Events extends Content
 	 * @param IEventCategoryRepository|null $categoryRepository
 	 * @param IEventCreator|null $creator
 	 * @param IEventUpdater|null $updater
+	 * @param SettingManager|null $settings
+	 * @param SessionManager|null $sessionManager
 	 */
 	public function __construct(
 		?Application $app = null,
 		?IEventRepository $eventRepository = null,
 		?IEventCategoryRepository $categoryRepository = null,
 		?IEventCreator $creator = null,
-		?IEventUpdater $updater = null
+		?IEventUpdater $updater = null,
+		?SettingManager $settings = null,
+		?SessionManager $sessionManager = null
 	)
 	{
-		parent::__construct( $app );
+		parent::__construct( $app, $settings, $sessionManager );
 
-		// Use dependency injection when available (container provides dependencies)
-		// Otherwise resolve from container (fallback for compatibility)
-		$this->_eventRepository = $eventRepository ?? $app?->getContainer()?->get( IEventRepository::class );
-		$this->_categoryRepository = $categoryRepository ?? $app?->getContainer()?->get( IEventCategoryRepository::class );
-		$this->_creator = $creator ?? $app?->getContainer()?->get( IEventCreator::class );
-		$this->_updater = $updater ?? $app?->getContainer()?->get( IEventUpdater::class );
+		if( $eventRepository === null )
+		{
+			throw new \InvalidArgumentException( 'IEventRepository must be injected' );
+		}
+		$this->_eventRepository = $eventRepository;
+
+		if( $categoryRepository === null )
+		{
+			throw new \InvalidArgumentException( 'IEventCategoryRepository must be injected' );
+		}
+		$this->_categoryRepository = $categoryRepository;
+
+		if( $creator === null )
+		{
+			throw new \InvalidArgumentException( 'IEventCreator must be injected' );
+		}
+		$this->_creator = $creator;
+
+		if( $updater === null )
+		{
+			throw new \InvalidArgumentException( 'IEventUpdater must be injected' );
+		}
+		$this->_updater = $updater;
 	}
 
 	/**

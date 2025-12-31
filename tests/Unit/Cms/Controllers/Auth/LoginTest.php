@@ -56,19 +56,27 @@ class LoginTest extends TestCase
 			->willReturn( $this->mockContainer );
 
 		// Create controller with dependency injection
-		$this->controller = new Login( $this->mockApp, $this->mockAuth );
+		$this->controller = new Login( $this->mockApp, $this->mockAuth, $mockSettings, $this->mockSession );
 	}
 
 	public function testConstructorWithDependencies(): void
 	{
-		$controller = new Login( $this->mockApp, $this->mockAuth );
+		$mockSettingManager = Registry::getInstance()->get( 'Settings' );
+		$mockSessionManager = $this->createMock( \Neuron\Cms\Auth\SessionManager::class );
+
+		$controller = new Login( $this->mockApp, $this->mockAuth, $mockSettingManager, $mockSessionManager );
 		$this->assertInstanceOf( Login::class, $controller );
 	}
 
-	public function testConstructorResolvesFromContainer(): void
+	public function testConstructorThrowsExceptionWithoutAuthenticationService(): void
 	{
-		$controller = new Login( $this->mockApp );
-		$this->assertInstanceOf( Login::class, $controller );
+		$this->expectException( \InvalidArgumentException::class );
+		$this->expectExceptionMessage( 'IAuthenticationService must be injected' );
+
+		$mockSettingManager = Registry::getInstance()->get( 'Settings' );
+		$mockSessionManager = $this->createMock( \Neuron\Cms\Auth\SessionManager::class );
+
+		new Login( $this->mockApp, null, $mockSettingManager, $mockSessionManager );
 	}
 
 	public function testIsValidRedirectUrlAcceptsValidRelativeUrls(): void

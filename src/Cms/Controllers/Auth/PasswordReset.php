@@ -2,11 +2,13 @@
 
 namespace Neuron\Cms\Controllers\Auth;
 
+use Neuron\Cms\Auth\SessionManager;
 use Neuron\Cms\Controllers\Content;
 use Neuron\Cms\Controllers\Traits\UsesDtos;
 use Neuron\Cms\Enums\FlashMessageType;
 use Neuron\Cms\Services\Auth\IPasswordResetter;
 use Neuron\Core\Exceptions\NotFound;
+use Neuron\Data\Settings\SettingManager;
 use Neuron\Log\Log;
 use Neuron\Mvc\Application;
 use Neuron\Mvc\Requests\Request;
@@ -32,18 +34,24 @@ class PasswordReset extends Content
 	/**
 	 * @param Application|null $app
 	 * @param IPasswordResetter|null $passwordResetter
+	 * @param SettingManager|null $settings
+	 * @param SessionManager|null $sessionManager
 	 * @throws \Exception
 	 */
 	public function __construct(
 		?Application $app = null,
-		?IPasswordResetter $passwordResetter = null
+		?IPasswordResetter $passwordResetter = null,
+		?SettingManager $settings = null,
+		?SessionManager $sessionManager = null
 	)
 	{
-		parent::__construct( $app );
+		parent::__construct( $app, $settings, $sessionManager );
 
-		// Use dependency injection when available (container provides dependencies)
-		// Otherwise resolve from container (fallback for compatibility)
-		$this->_passwordResetter = $passwordResetter ?? $app?->getContainer()?->get( IPasswordResetter::class );
+		if( $passwordResetter === null )
+		{
+			throw new \InvalidArgumentException( 'IPasswordResetter must be injected' );
+		}
+		$this->_passwordResetter = $passwordResetter;
 	}
 
 	/**

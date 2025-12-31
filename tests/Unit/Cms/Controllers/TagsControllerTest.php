@@ -76,10 +76,17 @@ class TagsControllerTest extends TestCase
 			->method( 'allWithPostCount' )
 			->willReturn( $tags );
 
+		$mockSettingManager = Registry::getInstance()->get( 'Settings' );
+		$mockSessionManager = $this->createMock( SessionManager::class );
+		$mockSlugGenerator = $this->createMock( \Neuron\Cms\Services\SlugGenerator::class );
+
 		$controller = $this->getMockBuilder( Tags::class )
 			->setConstructorArgs([
 				null,
-				$repository
+				$repository,
+				$mockSlugGenerator,
+				$mockSettingManager,
+				$mockSessionManager
 			])
 			->onlyMethods( ['view'] )
 			->getMock();
@@ -94,14 +101,6 @@ class TagsControllerTest extends TestCase
 		$viewBuilder->method( 'render' )->willReturn( '<html>Tags Index</html>' );
 
 		$controller->method( 'view' )->willReturn( $viewBuilder );
-
-		// Mock session manager
-		$reflection = new \ReflectionClass( get_parent_class( Tags::class ) );
-		$sessionProperty = $reflection->getProperty( '_sessionManager' );
-		$sessionProperty->setAccessible( true );
-
-		$sessionManager = $this->createMock( SessionManager::class );
-		$sessionProperty->setValue( $controller, $sessionManager );
 
 		$request = $this->createMock( Request::class );
 
@@ -120,10 +119,17 @@ class TagsControllerTest extends TestCase
 
 		$repository = $this->createMock( DatabaseTagRepository::class );
 
+		$mockSettingManager = Registry::getInstance()->get( 'Settings' );
+		$mockSessionManager = $this->createMock( SessionManager::class );
+		$mockSlugGenerator = $this->createMock( \Neuron\Cms\Services\SlugGenerator::class );
+
 		$controller = $this->getMockBuilder( Tags::class )
 			->setConstructorArgs([
 				null,
-				$repository
+				$repository,
+				$mockSlugGenerator,
+				$mockSettingManager,
+				$mockSessionManager
 			])
 			->onlyMethods( ['view'] )
 			->getMock();
@@ -137,14 +143,6 @@ class TagsControllerTest extends TestCase
 		$viewBuilder->method( 'render' )->willReturn( '<html>Create Tag Form</html>' );
 
 		$controller->method( 'view' )->willReturn( $viewBuilder );
-
-		// Mock session manager
-		$reflection = new \ReflectionClass( get_parent_class( Tags::class ) );
-		$sessionProperty = $reflection->getProperty( '_sessionManager' );
-		$sessionProperty->setAccessible( true );
-
-		$sessionManager = $this->createMock( SessionManager::class );
-		$sessionProperty->setValue( $controller, $sessionManager );
 
 		$request = $this->createMock( Request::class );
 
@@ -164,9 +162,16 @@ class TagsControllerTest extends TestCase
 		$repository = $this->createMock( DatabaseTagRepository::class );
 		$repository->method( 'findById' )->with( 999 )->willReturn( null );
 
+		$mockSettingManager = Registry::getInstance()->get( 'Settings' );
+		$mockSessionManager = $this->createMock( SessionManager::class );
+		$mockSlugGenerator = $this->createMock( \Neuron\Cms\Services\SlugGenerator::class );
+
 		$controller = new Tags(
 			null,
-			$repository
+			$repository,
+			$mockSlugGenerator,
+			$mockSettingManager,
+			$mockSessionManager
 		);
 
 		$request = $this->createMock( Request::class );

@@ -90,7 +90,7 @@ class PasswordResetTest extends TestCase
 			->willReturn( $this->mockContainer );
 
 		// Create controller with dependency injection
-		$this->controller = new PasswordReset( $this->mockApp, $this->mockPasswordResetter );
+		$this->controller = new PasswordReset( $this->mockApp, $this->mockPasswordResetter, $mockSettings, $this->mockSession );
 	}
 
 	protected function tearDown(): void
@@ -102,14 +102,22 @@ class PasswordResetTest extends TestCase
 
 	public function testConstructorWithDependencies(): void
 	{
-		$controller = new PasswordReset( $this->mockApp, $this->mockPasswordResetter );
+		$mockSettingManager = Registry::getInstance()->get( 'Settings' );
+		$mockSessionManager = $this->createMock( \Neuron\Cms\Auth\SessionManager::class );
+
+		$controller = new PasswordReset( $this->mockApp, $this->mockPasswordResetter, $mockSettingManager, $mockSessionManager );
 		$this->assertInstanceOf( PasswordReset::class, $controller );
 	}
 
-	public function testConstructorResolvesFromContainer(): void
+	public function testConstructorThrowsExceptionWithoutPasswordResetter(): void
 	{
-		$controller = new PasswordReset( $this->mockApp );
-		$this->assertInstanceOf( PasswordReset::class, $controller );
+		$this->expectException( \InvalidArgumentException::class );
+		$this->expectExceptionMessage( 'IPasswordResetter must be injected' );
+
+		$mockSettingManager = Registry::getInstance()->get( 'Settings' );
+		$mockSessionManager = $this->createMock( \Neuron\Cms\Auth\SessionManager::class );
+
+		new PasswordReset( $this->mockApp, null, $mockSettingManager, $mockSessionManager );
 	}
 
 	public function testShowForgotPasswordFormReturnsView(): void

@@ -2,11 +2,13 @@
 
 namespace Neuron\Cms\Controllers\Auth;
 
+use Neuron\Cms\Auth\SessionManager;
 use Neuron\Cms\Controllers\Content;
 use Neuron\Cms\Controllers\Traits\UsesDtos;
 use Neuron\Cms\Enums\FlashMessageType;
 use Neuron\Cms\Services\Auth\IAuthenticationService;
 use Neuron\Core\Exceptions\NotFound;
+use Neuron\Data\Settings\SettingManager;
 use Neuron\Mvc\Application;
 use Neuron\Mvc\Responses\HttpResponseStatus;
 use Neuron\Mvc\Requests\Request;
@@ -29,18 +31,24 @@ class Login extends Content
 	/**
 	 * @param Application|null $app
 	 * @param IAuthenticationService|null $authentication
+	 * @param SettingManager|null $settings
+	 * @param SessionManager|null $sessionManager
 	 * @throws \Exception
 	 */
 	public function __construct(
 		?Application $app = null,
-		?IAuthenticationService $authentication = null
+		?IAuthenticationService $authentication = null,
+		?SettingManager $settings = null,
+		?SessionManager $sessionManager = null
 	)
 	{
-		parent::__construct( $app );
+		parent::__construct( $app, $settings, $sessionManager );
 
-		// Use dependency injection when available (container provides dependencies)
-		// Otherwise resolve from container (fallback for compatibility)
-		$this->_authentication = $authentication ?? $app?->getContainer()?->get( IAuthenticationService::class );
+		if( $authentication === null )
+		{
+			throw new \InvalidArgumentException( 'IAuthenticationService must be injected' );
+		}
+		$this->_authentication = $authentication;
 	}
 
 	/**

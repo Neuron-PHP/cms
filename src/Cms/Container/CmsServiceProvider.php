@@ -26,7 +26,7 @@ use Neuron\Cms\Services\User\Updater;
 use Neuron\Cms\Services\User\Deleter;
 use Neuron\Cms\Auth\PasswordHasher;
 use Neuron\Cms\Auth\SessionManager;
-use Neuron\Cms\Auth\ResendVerificationThrottle;
+use Neuron\Cms\Services\Security\ResendVerificationThrottle;
 use Neuron\Cms\Services\Content\EditorJsRenderer;
 use Neuron\Cms\Services\Content\ShortcodeParser;
 use Neuron\Cms\Services\Widget\WidgetRenderer;

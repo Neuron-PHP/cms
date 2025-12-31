@@ -2,11 +2,13 @@
 
 namespace Neuron\Cms\Controllers\Admin;
 
+use Neuron\Cms\Auth\SessionManager;
 use Neuron\Cms\Enums\FlashMessageType;
 use Neuron\Cms\Controllers\Content;
 use Neuron\Cms\Repositories\IEventCategoryRepository;
 use Neuron\Cms\Services\EventCategory\IEventCategoryCreator;
 use Neuron\Cms\Services\EventCategory\IEventCategoryUpdater;
+use Neuron\Data\Settings\SettingManager;
 use Neuron\Log\Log;
 use Neuron\Mvc\Application;
 use Neuron\Mvc\Requests\Request;
@@ -34,22 +36,38 @@ class EventCategories extends Content
 	 * @param IEventCategoryRepository|null $repository
 	 * @param IEventCategoryCreator|null $creator
 	 * @param IEventCategoryUpdater|null $updater
+	 * @param SettingManager|null $settings
+	 * @param SessionManager|null $sessionManager
 	 * @throws \Exception
 	 */
 	public function __construct(
 		?Application $app = null,
 		?IEventCategoryRepository $repository = null,
 		?IEventCategoryCreator $creator = null,
-		?IEventCategoryUpdater $updater = null
+		?IEventCategoryUpdater $updater = null,
+		?SettingManager $settings = null,
+		?SessionManager $sessionManager = null
 	)
 	{
-		parent::__construct( $app );
+		parent::__construct( $app, $settings, $sessionManager );
 
-		// Use dependency injection when available (container provides dependencies)
-		// Otherwise resolve from container (fallback for compatibility)
-		$this->_repository = $repository ?? $app?->getContainer()?->get( IEventCategoryRepository::class );
-		$this->_creator = $creator ?? $app?->getContainer()?->get( IEventCategoryCreator::class );
-		$this->_updater = $updater ?? $app?->getContainer()?->get( IEventCategoryUpdater::class );
+		if( $repository === null )
+		{
+			throw new \InvalidArgumentException( 'IEventCategoryRepository must be injected' );
+		}
+		$this->_repository = $repository;
+
+		if( $creator === null )
+		{
+			throw new \InvalidArgumentException( 'IEventCategoryCreator must be injected' );
+		}
+		$this->_creator = $creator;
+
+		if( $updater === null )
+		{
+			throw new \InvalidArgumentException( 'IEventCategoryUpdater must be injected' );
+		}
+		$this->_updater = $updater;
 	}
 
 	/**

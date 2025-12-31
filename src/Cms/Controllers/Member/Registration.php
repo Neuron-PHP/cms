@@ -4,7 +4,7 @@ namespace Neuron\Cms\Controllers\Member;
 
 use Neuron\Cms\Controllers\Content;
 use Neuron\Cms\Controllers\Traits\UsesDtos;
-use Neuron\Cms\Auth\ResendVerificationThrottle;
+use Neuron\Cms\Services\Security\ResendVerificationThrottle;
 use Neuron\Cms\Auth\SessionManager;
 use Neuron\Cms\Services\Member\IRegistrationService;
 use Neuron\Cms\Services\Auth\IEmailVerifier;
@@ -56,12 +56,29 @@ class Registration extends Content
 	{
 		parent::__construct( $app, $settings, $sessionManager );
 
-		// Use dependency injection when available (container provides dependencies)
-		// Otherwise resolve from container (fallback for compatibility)
-		$this->_registrationService = $registrationService ?? $app?->getContainer()?->get( IRegistrationService::class );
-		$this->_emailVerifier = $emailVerifier ?? $app?->getContainer()?->get( IEmailVerifier::class );
-		$this->_resendThrottle = $resendThrottle ?? $app?->getContainer()?->get( ResendVerificationThrottle::class );
-		$this->_ipResolver = $ipResolver ?? $app?->getContainer()?->get( IIpResolver::class );
+		if( $registrationService === null )
+		{
+			throw new \InvalidArgumentException( 'IRegistrationService must be injected' );
+		}
+		$this->_registrationService = $registrationService;
+
+		if( $emailVerifier === null )
+		{
+			throw new \InvalidArgumentException( 'IEmailVerifier must be injected' );
+		}
+		$this->_emailVerifier = $emailVerifier;
+
+		if( $resendThrottle === null )
+		{
+			throw new \InvalidArgumentException( 'ResendVerificationThrottle must be injected' );
+		}
+		$this->_resendThrottle = $resendThrottle;
+
+		if( $ipResolver === null )
+		{
+			throw new \InvalidArgumentException( 'IIpResolver must be injected' );
+		}
+		$this->_ipResolver = $ipResolver;
 	}
 
 	/**

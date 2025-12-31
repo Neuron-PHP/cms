@@ -66,8 +66,8 @@ class Content extends Base
 	private string $_description = '';
 	private string $_url = 'example.com/bog';
 	private string $_rssUrl = 'example.com/blog/rss';
-	protected ?SessionManager $_sessionManager = null;
-	protected ?SettingManager $_settings = null;
+	protected SessionManager $_sessionManager;
+	protected SettingManager $_settings;
 
 	/**
 	 * @param Application|null $app
@@ -82,15 +82,23 @@ class Content extends Base
 	{
 		parent::__construct( $app );
 
-		// Use dependency injection when available (container provides dependencies)
-		// Otherwise resolve from container (fallback for compatibility)
-		$this->_settings = $settings ?? $app?->getContainer()?->get( SettingManager::class );
-		$this->_sessionManager = $sessionManager ?? $app?->getContainer()?->get( SessionManager::class );
+		// Pure dependency injection - no service locator fallback
+		if( $settings === null )
+		{
+			throw new \InvalidArgumentException( 'SettingManager must be injected' );
+		}
+		if( $sessionManager === null )
+		{
+			throw new \InvalidArgumentException( 'SessionManager must be injected' );
+		}
 
-		$this->setName( $this->_settings?->get( 'site', 'name' ) ?? 'Neuron CMS' )
-			  ->setTitle( $this->_settings?->get( 'site', 'title' ) ?? 'Neuron CMS' )
-			  ->setDescription( $this->_settings?->get( 'site', 'description' ) ?? '' )
-			  ->setUrl( $this->_settings?->get( 'site', 'url' ) ?? '' )
+		$this->_settings = $settings;
+		$this->_sessionManager = $sessionManager;
+
+		$this->setName( $this->_settings->get( 'site', 'name' ) ?? 'Neuron CMS' )
+			  ->setTitle( $this->_settings->get( 'site', 'title' ) ?? 'Neuron CMS' )
+			  ->setDescription( $this->_settings->get( 'site', 'description' ) ?? '' )
+			  ->setUrl( $this->_settings->get( 'site', 'url' ) ?? '' )
 			  ->setRssUrl($this->getUrl() . "/blog/rss" );
 
 		// Note: Registry is intentionally used here as a view data bag for global template variables.
@@ -98,7 +106,8 @@ class Content extends Base
 		// Future improvement: Consider using a dedicated ViewContext service instead.
 		try
 		{
-			$version = Factories\Version::fromFile( "../.version.json" );
+			$versionFilePath = $this->_settings->get( 'paths', 'version_file' ) ?? "../.version.json";
+			$version = Factories\Version::fromFile( $versionFilePath );
 			Registry::getInstance()->set( 'version', 'v'.$version->getAsString() );
 		}
 		catch( \Exception $e )

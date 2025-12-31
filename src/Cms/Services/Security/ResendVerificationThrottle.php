@@ -1,6 +1,6 @@
 <?php
 
-namespace Neuron\Cms\Auth;
+namespace Neuron\Cms\Services\Security;
 
 use Neuron\Cms\Config\CacheConfig;
 use Neuron\Routing\RateLimit\RateLimitConfig;
@@ -14,7 +14,7 @@ use Neuron\Routing\RateLimit\Storage\RateLimitStorageFactory;
  * - Per-IP limit: 5 requests per 5 minutes
  * - Per-email limit: 1 request per 5 minutes
  *
- * @package Neuron\Cms\Auth
+ * @package Neuron\Cms\Services\Security
  */
 class ResendVerificationThrottle
 {

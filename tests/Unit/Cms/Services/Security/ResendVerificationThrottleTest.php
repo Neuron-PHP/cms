@@ -1,15 +1,15 @@
 <?php
 
-namespace Neuron\Cms\Tests\Auth;
+namespace Tests\Cms\Services\Security;
 
-use Neuron\Cms\Auth\ResendVerificationThrottle;
+use Neuron\Cms\Services\Security\ResendVerificationThrottle;
 use Neuron\Routing\RateLimit\Storage\MemoryRateLimitStorage;
 use PHPUnit\Framework\TestCase;
 
 /**
  * Tests for ResendVerificationThrottle.
  *
- * @package Neuron\Cms\Tests\Auth
+ * @package Tests\Cms\Services\Security
  */
 class ResendVerificationThrottleTest extends TestCase
 {

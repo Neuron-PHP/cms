@@ -2,12 +2,14 @@
 
 namespace Neuron\Cms\Controllers\Admin;
 
+use Neuron\Cms\Auth\SessionManager;
 use Neuron\Cms\Enums\FlashMessageType;
 use Neuron\Cms\Controllers\Content;
 use Neuron\Cms\Repositories\ICategoryRepository;
 use Neuron\Cms\Services\Category\ICategoryCreator;
 use Neuron\Cms\Services\Category\ICategoryUpdater;
 use Neuron\Core\Exceptions\NotFound;
+use Neuron\Data\Settings\SettingManager;
 use Neuron\Mvc\Application;
 use Neuron\Mvc\Requests\Request;
 use Neuron\Mvc\Responses\HttpResponseStatus;
@@ -34,21 +36,37 @@ class Categories extends Content
 	 * @param ICategoryRepository|null $categoryRepository
 	 * @param ICategoryCreator|null $categoryCreator
 	 * @param ICategoryUpdater|null $categoryUpdater
+	 * @param SettingManager|null $settings
+	 * @param SessionManager|null $sessionManager
 	 */
 	public function __construct(
 		?Application $app = null,
 		?ICategoryRepository $categoryRepository = null,
 		?ICategoryCreator $categoryCreator = null,
-		?ICategoryUpdater $categoryUpdater = null
+		?ICategoryUpdater $categoryUpdater = null,
+		?SettingManager $settings = null,
+		?SessionManager $sessionManager = null
 	)
 	{
-		parent::__construct( $app );
+		parent::__construct( $app, $settings, $sessionManager );
 
-		// Use dependency injection when available (container provides dependencies)
-		// Otherwise resolve from container (fallback for compatibility)
-		$this->_categoryRepository = $categoryRepository ?? $app?->getContainer()?->get( ICategoryRepository::class );
-		$this->_categoryCreator = $categoryCreator ?? $app?->getContainer()?->get( ICategoryCreator::class );
-		$this->_categoryUpdater = $categoryUpdater ?? $app?->getContainer()?->get( ICategoryUpdater::class );
+		if( $categoryRepository === null )
+		{
+			throw new \InvalidArgumentException( 'ICategoryRepository must be injected' );
+		}
+		$this->_categoryRepository = $categoryRepository;
+
+		if( $categoryCreator === null )
+		{
+			throw new \InvalidArgumentException( 'ICategoryCreator must be injected' );
+		}
+		$this->_categoryCreator = $categoryCreator;
+
+		if( $categoryUpdater === null )
+		{
+			throw new \InvalidArgumentException( 'ICategoryUpdater must be injected' );
+		}
+		$this->_categoryUpdater = $categoryUpdater;
 	}
 
 	/**

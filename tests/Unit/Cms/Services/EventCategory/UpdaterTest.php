@@ -280,4 +280,33 @@ class UpdaterTest extends TestCase
 
 		$this->updater->update( $dto );
 	}
+
+	public function test_constructor_sets_properties_correctly(): void
+	{
+		$categoryRepository = $this->createMock( IEventCategoryRepository::class );
+
+		$updater = new Updater( $categoryRepository );
+
+		$this->assertInstanceOf( Updater::class, $updater );
+	}
+
+	public function test_update_throws_exception_when_category_not_found(): void
+	{
+		$this->categoryRepository->expects( $this->once() )
+			->method( 'findById' )
+			->with( 999 )
+			->willReturn( null );
+
+		$this->expectException( \RuntimeException::class );
+		$this->expectExceptionMessage( 'Category with ID 999 not found' );
+
+		$dto = $this->createDto(
+			id: 999,
+			name: 'Test',
+			slug: 'test',
+			color: '#000000'
+		);
+
+		$this->updater->update( $dto );
+	}
 }
