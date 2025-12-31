@@ -106,7 +106,8 @@ class Content extends Base
 		// Future improvement: Consider using a dedicated ViewContext service instead.
 		try
 		{
-			$version = Factories\Version::fromFile( "../.version.json" );
+			$versionFilePath = $this->_settings->get( 'paths', 'version_file' ) ?? "../.version.json";
+			$version = Factories\Version::fromFile( $versionFilePath );
 			Registry::getInstance()->set( 'version', 'v'.$version->getAsString() );
 		}
 		catch( \Exception $e )

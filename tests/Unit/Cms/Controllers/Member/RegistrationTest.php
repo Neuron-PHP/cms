@@ -5,7 +5,7 @@ namespace Tests\Cms\Controllers\Member;
 use Neuron\Cms\Controllers\Member\Registration;
 use Neuron\Cms\Services\Member\IRegistrationService;
 use Neuron\Cms\Services\Auth\IEmailVerifier;
-use Neuron\Cms\Auth\ResendVerificationThrottle;
+use Neuron\Cms\Services\Security\ResendVerificationThrottle;
 use Neuron\Cms\Auth\SessionManager;
 use Neuron\Cms\Services\Dto\DtoFactoryService;
 use Neuron\Data\Settings\SettingManager;

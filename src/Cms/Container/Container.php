@@ -8,8 +8,8 @@ use Neuron\Cms\Services\Content\EditorJsRenderer;
 use Neuron\Cms\Services\Media\CloudinaryUploader;
 use Neuron\Cms\Services\Media\MediaValidator;
 use Neuron\Cms\Services\Security\ResendVerificationThrottle;
-use Neuron\Cms\Services\Security\IIpResolver;
-use Neuron\Cms\Services\Security\IpResolver;
+use Neuron\Routing\IIpResolver;
+use Neuron\Routing\DefaultIpResolver;
 use Neuron\Cms\Auth\SessionManager;
 use Neuron\Cms\Auth\PasswordHasher;
 use Neuron\Cms\Services\Auth\CsrfToken;
@@ -246,7 +246,7 @@ class Container
 
 			// Security Services
 			ResendVerificationThrottle::class => \DI\autowire( ResendVerificationThrottle::class ),
-			IIpResolver::class => \DI\autowire( IpResolver::class ),
+			IIpResolver::class => \DI\autowire( DefaultIpResolver::class ),
 		]);
 
 		$psr11Container = $builder->build();

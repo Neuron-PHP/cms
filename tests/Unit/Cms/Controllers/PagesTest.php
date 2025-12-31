@@ -17,10 +17,20 @@ use PHPUnit\Framework\TestCase;
 class PagesTest extends TestCase
 {
 	private SettingManager $_settingManager;
+	private string $_versionFilePath;
 
 	protected function setUp(): void
 	{
 		parent::setUp();
+
+		// Create version file in temp directory
+		$this->_versionFilePath = sys_get_temp_dir() . '/neuron-test-version-' . uniqid() . '.json';
+		$versionContent = json_encode([
+			'major' => 1,
+			'minor' => 0,
+			'patch' => 0
+		]);
+		file_put_contents( $this->_versionFilePath, $versionContent );
 
 		// Create mock settings
 		$settings = new Memory();
@@ -28,25 +38,13 @@ class PagesTest extends TestCase
 		$settings->set( 'site', 'title', 'Test Title' );
 		$settings->set( 'site', 'description', 'Test Description' );
 		$settings->set( 'site', 'url', 'http://test.com' );
+		$settings->set( 'paths', 'version_file', $this->_versionFilePath );
 
 		// Wrap in SettingManager
 		$this->_settingManager = new SettingManager( $settings );
 
 		// Store settings in registry
 		Registry::getInstance()->set( 'Settings', $this->_settingManager );
-
-		// Create version file
-		$versionContent = json_encode([
-			'major' => 1,
-			'minor' => 0,
-			'patch' => 0
-		]);
-
-		$parentDir = dirname( getcwd() );
-		if( !file_exists( $parentDir . '/.version.json' ) )
-		{
-			file_put_contents( $parentDir . '/.version.json', $versionContent );
-		}
 	}
 
 	protected function tearDown(): void
@@ -59,8 +57,10 @@ class PagesTest extends TestCase
 		Registry::getInstance()->set( 'DtoFactoryService', null );
 
 		// Clean up temp version file
-		$parentDir = dirname( getcwd() );
-		@unlink( $parentDir . '/.version.json' );
+		if( isset( $this->_versionFilePath ) && file_exists( $this->_versionFilePath ) )
+		{
+			unlink( $this->_versionFilePath );
+		}
 
 		parent::tearDown();
 	}

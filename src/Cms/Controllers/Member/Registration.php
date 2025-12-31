@@ -4,7 +4,7 @@ namespace Neuron\Cms\Controllers\Member;
 
 use Neuron\Cms\Controllers\Content;
 use Neuron\Cms\Controllers\Traits\UsesDtos;
-use Neuron\Cms\Auth\ResendVerificationThrottle;
+use Neuron\Cms\Services\Security\ResendVerificationThrottle;
 use Neuron\Cms\Auth\SessionManager;
 use Neuron\Cms\Services\Member\IRegistrationService;
 use Neuron\Cms\Services\Auth\IEmailVerifier;
