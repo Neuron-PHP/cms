@@ -2,6 +2,7 @@
 
 namespace Neuron\Cms\Controllers\Admin;
 
+use Neuron\Cms\Auth\SessionManager;
 use Neuron\Cms\Enums\FlashMessageType;
 use Neuron\Cms\Controllers\Content;
 use Neuron\Cms\Models\Post;
@@ -13,6 +14,7 @@ use Neuron\Cms\Services\Post\IPostUpdater;
 use Neuron\Cms\Services\Post\IPostDeleter;
 use Neuron\Cms\Services\Tag\Resolver as TagResolver;
 use Neuron\Cms\Services\Auth\CsrfToken;
+use Neuron\Data\Settings\SettingManager;
 use Neuron\Mvc\Application;
 use Neuron\Mvc\Requests\Request;
 use Neuron\Mvc\Responses\HttpResponseStatus;
@@ -46,6 +48,8 @@ class Posts extends Content
 	 * @param IPostCreator|null $postCreator
 	 * @param IPostUpdater|null $postUpdater
 	 * @param IPostDeleter|null $postDeleter
+	 * @param SettingManager|null $settings
+	 * @param SessionManager|null $sessionManager
 	 */
 	public function __construct(
 		?Application $app = null,
@@ -54,19 +58,48 @@ class Posts extends Content
 		?ITagRepository $tagRepository = null,
 		?IPostCreator $postCreator = null,
 		?IPostUpdater $postUpdater = null,
-		?IPostDeleter $postDeleter = null
+		?IPostDeleter $postDeleter = null,
+		?SettingManager $settings = null,
+		?SessionManager $sessionManager = null
 	)
 	{
-		parent::__construct( $app );
+		parent::__construct( $app, $settings, $sessionManager );
 
-		// Use dependency injection when available (container provides dependencies)
-		// Otherwise resolve from container (fallback for compatibility)
-		$this->_postRepository = $postRepository ?? $app?->getContainer()?->get( IPostRepository::class );
-		$this->_categoryRepository = $categoryRepository ?? $app?->getContainer()?->get( ICategoryRepository::class );
-		$this->_tagRepository = $tagRepository ?? $app?->getContainer()?->get( ITagRepository::class );
-		$this->_postCreator = $postCreator ?? $app?->getContainer()?->get( IPostCreator::class );
-		$this->_postUpdater = $postUpdater ?? $app?->getContainer()?->get( IPostUpdater::class );
-		$this->_postDeleter = $postDeleter ?? $app?->getContainer()?->get( IPostDeleter::class );
+		if( $postRepository === null )
+		{
+			throw new \InvalidArgumentException( 'IPostRepository must be injected' );
+		}
+		$this->_postRepository = $postRepository;
+
+		if( $categoryRepository === null )
+		{
+			throw new \InvalidArgumentException( 'ICategoryRepository must be injected' );
+		}
+		$this->_categoryRepository = $categoryRepository;
+
+		if( $tagRepository === null )
+		{
+			throw new \InvalidArgumentException( 'ITagRepository must be injected' );
+		}
+		$this->_tagRepository = $tagRepository;
+
+		if( $postCreator === null )
+		{
+			throw new \InvalidArgumentException( 'IPostCreator must be injected' );
+		}
+		$this->_postCreator = $postCreator;
+
+		if( $postUpdater === null )
+		{
+			throw new \InvalidArgumentException( 'IPostUpdater must be injected' );
+		}
+		$this->_postUpdater = $postUpdater;
+
+		if( $postDeleter === null )
+		{
+			throw new \InvalidArgumentException( 'IPostDeleter must be injected' );
+		}
+		$this->_postDeleter = $postDeleter;
 	}
 
 	/**

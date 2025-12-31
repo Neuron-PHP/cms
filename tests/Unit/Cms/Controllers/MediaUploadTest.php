@@ -65,7 +65,12 @@ class MediaUploadTest extends TestCase
 		// Ensure $_FILES is empty
 		$_FILES = [];
 
-		$media = new Media();
+		$mockSettingManager = Registry::getInstance()->get( 'Settings' );
+		$mockSessionManager = $this->createMock( \Neuron\Cms\Auth\SessionManager::class );
+		$mockCloudinaryUploader = $this->createMock( CloudinaryUploader::class );
+		$mockMediaValidator = $this->createMock( MediaValidator::class );
+
+		$media = new Media( null, $mockCloudinaryUploader, $mockMediaValidator, $mockSettingManager, $mockSessionManager );
 		$request = $this->createMock( Request::class );
 		$result = $media->uploadImage( $request );
 
@@ -94,8 +99,13 @@ class MediaUploadTest extends TestCase
 			'size' => 1000
 		];
 
+		$mockSettingManager = Registry::getInstance()->get( 'Settings' );
+		$mockSessionManager = $this->createMock( \Neuron\Cms\Auth\SessionManager::class );
+		$mockCloudinaryUploader = $this->createMock( CloudinaryUploader::class );
+		$mockMediaValidator = $this->createMock( MediaValidator::class );
+
 		// Create Media controller
-		$media = new Media();
+		$media = new Media( null, $mockCloudinaryUploader, $mockMediaValidator, $mockSettingManager, $mockSessionManager );
 
 		// Create a mock validator that fails
 		$validatorMock = $this->createMock( MediaValidator::class );
@@ -127,7 +137,12 @@ class MediaUploadTest extends TestCase
 		// Ensure $_FILES is empty
 		$_FILES = [];
 
-		$media = new Media();
+		$mockSettingManager = Registry::getInstance()->get( 'Settings' );
+		$mockSessionManager = $this->createMock( \Neuron\Cms\Auth\SessionManager::class );
+		$mockCloudinaryUploader = $this->createMock( CloudinaryUploader::class );
+		$mockMediaValidator = $this->createMock( MediaValidator::class );
+
+		$media = new Media( null, $mockCloudinaryUploader, $mockMediaValidator, $mockSettingManager, $mockSessionManager );
 		$request = $this->createMock( Request::class );
 		$result = $media->uploadFeaturedImage( $request );
 
@@ -156,8 +171,13 @@ class MediaUploadTest extends TestCase
 			'size' => 1000
 		];
 
+		$mockSettingManager = Registry::getInstance()->get( 'Settings' );
+		$mockSessionManager = $this->createMock( \Neuron\Cms\Auth\SessionManager::class );
+		$mockCloudinaryUploader = $this->createMock( CloudinaryUploader::class );
+		$mockMediaValidator = $this->createMock( MediaValidator::class );
+
 		// Create Media controller
-		$media = new Media();
+		$media = new Media( null, $mockCloudinaryUploader, $mockMediaValidator, $mockSettingManager, $mockSessionManager );
 
 		// Create a mock validator that fails
 		$validatorMock = $this->createMock( MediaValidator::class );
@@ -196,8 +216,13 @@ class MediaUploadTest extends TestCase
 			'size' => 1000
 		];
 
+		$mockSettingManager = Registry::getInstance()->get( 'Settings' );
+		$mockSessionManager = $this->createMock( \Neuron\Cms\Auth\SessionManager::class );
+		$mockCloudinaryUploader = $this->createMock( CloudinaryUploader::class );
+		$mockMediaValidator = $this->createMock( MediaValidator::class );
+
 		// Create Media controller
-		$media = new Media();
+		$media = new Media( null, $mockCloudinaryUploader, $mockMediaValidator, $mockSettingManager, $mockSessionManager );
 
 		// Create a mock validator that passes
 		$validatorMock = $this->createMock( MediaValidator::class );
@@ -254,8 +279,13 @@ class MediaUploadTest extends TestCase
 			'size' => 2000
 		];
 
+		$mockSettingManager = Registry::getInstance()->get( 'Settings' );
+		$mockSessionManager = $this->createMock( \Neuron\Cms\Auth\SessionManager::class );
+		$mockCloudinaryUploader = $this->createMock( CloudinaryUploader::class );
+		$mockMediaValidator = $this->createMock( MediaValidator::class );
+
 		// Create Media controller
-		$media = new Media();
+		$media = new Media( null, $mockCloudinaryUploader, $mockMediaValidator, $mockSettingManager, $mockSessionManager );
 
 		// Create a mock validator that passes
 		$validatorMock = $this->createMock( MediaValidator::class );
@@ -312,8 +342,13 @@ class MediaUploadTest extends TestCase
 			'size' => 1000
 		];
 
+		$mockSettingManager = Registry::getInstance()->get( 'Settings' );
+		$mockSessionManager = $this->createMock( \Neuron\Cms\Auth\SessionManager::class );
+		$mockCloudinaryUploader = $this->createMock( CloudinaryUploader::class );
+		$mockMediaValidator = $this->createMock( MediaValidator::class );
+
 		// Create Media controller
-		$media = new Media();
+		$media = new Media( null, $mockCloudinaryUploader, $mockMediaValidator, $mockSettingManager, $mockSessionManager );
 
 		// Create a mock validator that passes
 		$validatorMock = $this->createMock( MediaValidator::class );
@@ -360,8 +395,13 @@ class MediaUploadTest extends TestCase
 			'size' => 1000
 		];
 
+		$mockSettingManager = Registry::getInstance()->get( 'Settings' );
+		$mockSessionManager = $this->createMock( \Neuron\Cms\Auth\SessionManager::class );
+		$mockCloudinaryUploader = $this->createMock( CloudinaryUploader::class );
+		$mockMediaValidator = $this->createMock( MediaValidator::class );
+
 		// Create Media controller
-		$media = new Media();
+		$media = new Media( null, $mockCloudinaryUploader, $mockMediaValidator, $mockSettingManager, $mockSessionManager );
 
 		// Create a mock validator that passes
 		$validatorMock = $this->createMock( MediaValidator::class );

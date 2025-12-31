@@ -234,4 +234,50 @@ class CreatorTest extends TestCase
 
 		$this->assertTrue( $result->isEmailVerified() );
 	}
+
+	public function testConstructorSetsPropertiesCorrectly(): void
+	{
+		$userRepository = $this->createMock( IUserRepository::class );
+		$passwordHasher = $this->createMock( PasswordHasher::class );
+
+		$creator = new Creator( $userRepository, $passwordHasher );
+
+		$this->assertInstanceOf( Creator::class, $creator );
+	}
+
+	public function testConstructorWithEventEmitter(): void
+	{
+		$userRepository = $this->createMock( IUserRepository::class );
+		$passwordHasher = $this->createMock( PasswordHasher::class );
+		$eventEmitter = $this->createMock( \Neuron\Events\Emitter::class );
+
+		$passwordHasher
+			->method( 'meetsRequirements' )
+			->willReturn( true );
+
+		$passwordHasher
+			->method( 'hash' )
+			->willReturn( 'hashed_password' );
+
+		$userRepository
+			->method( 'create' )
+			->willReturnArgument( 0 );
+
+		// Event emitter should emit UserCreatedEvent
+		$eventEmitter
+			->expects( $this->once() )
+			->method( 'emit' )
+			->with( $this->isInstanceOf( \Neuron\Cms\Events\UserCreatedEvent::class ) );
+
+		$creator = new Creator( $userRepository, $passwordHasher, $eventEmitter );
+
+		$dto = $this->createDto(
+			'testuser',
+			'test@example.com',
+			'Password123!',
+			User::ROLE_SUBSCRIBER
+		);
+
+		$creator->create( $dto );
+	}
 }

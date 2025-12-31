@@ -48,19 +48,26 @@ class PagesTest extends TestCase
 
 	public function testConstructorWithAllDependencies(): void
 	{
+		$mockSettingManager = Registry::getInstance()->get( 'Settings' );
+		$mockSessionManager = $this->createMock( SessionManager::class );
+
 		$controller = new Pages(
 			$this->mockApp,
 			$this->createMock( IPageRepository::class ),
 			$this->createMock( IPageCreator::class ),
-			$this->createMock( IPageUpdater::class )
+			$this->createMock( IPageUpdater::class ),
+			$mockSettingManager,
+			$mockSessionManager
 		);
 
 		$this->assertInstanceOf( Pages::class, $controller );
 	}
 
-	public function testConstructorResolvesFromContainer(): void
+	public function testConstructorThrowsExceptionWithoutSettingManager(): void
 	{
-		$controller = new Pages( $this->mockApp );
-		$this->assertInstanceOf( Pages::class, $controller );
+		$this->expectException( \InvalidArgumentException::class );
+		$this->expectExceptionMessage( 'SettingManager must be injected' );
+
+		new Pages( null );
 	}
 }

@@ -4,6 +4,12 @@ namespace Neuron\Cms\Container;
 
 use DI\ContainerBuilder;
 use Neuron\Cms\Services\SlugGenerator;
+use Neuron\Cms\Services\Content\EditorJsRenderer;
+use Neuron\Cms\Services\Media\CloudinaryUploader;
+use Neuron\Cms\Services\Media\MediaValidator;
+use Neuron\Cms\Services\Security\ResendVerificationThrottle;
+use Neuron\Routing\IIpResolver;
+use Neuron\Routing\DefaultIpResolver;
 use Neuron\Cms\Auth\SessionManager;
 use Neuron\Cms\Auth\PasswordHasher;
 use Neuron\Cms\Services\Auth\CsrfToken;
@@ -230,6 +236,17 @@ class Container
 			// Interface Bindings - EventCategory Services
 			IEventCategoryCreator::class => \DI\autowire( EventCategoryCreator::class ),
 			IEventCategoryUpdater::class => \DI\autowire( EventCategoryUpdater::class ),
+
+			// Content Services
+			EditorJsRenderer::class => \DI\autowire( EditorJsRenderer::class ),
+
+			// Media Services
+			CloudinaryUploader::class => \DI\autowire( CloudinaryUploader::class ),
+			MediaValidator::class => \DI\autowire( MediaValidator::class ),
+
+			// Security Services
+			ResendVerificationThrottle::class => \DI\autowire( ResendVerificationThrottle::class ),
+			IIpResolver::class => \DI\autowire( DefaultIpResolver::class ),
 		]);
 
 		$psr11Container = $builder->build();

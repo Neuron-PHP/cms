@@ -2,8 +2,10 @@
 
 namespace Neuron\Cms\Controllers;
 
+use Neuron\Cms\Auth\SessionManager;
 use Neuron\Cms\Repositories\IEventRepository;
 use Neuron\Cms\Repositories\IEventCategoryRepository;
+use Neuron\Data\Settings\SettingManager;
 use Neuron\Mvc\Application;
 use Neuron\Mvc\Requests\Request;
 use Neuron\Mvc\Responses\HttpResponseStatus;
@@ -28,20 +30,31 @@ class Calendar extends Content
 	 * @param Application|null $app
 	 * @param IEventRepository|null $eventRepository
 	 * @param IEventCategoryRepository|null $categoryRepository
+	 * @param SettingManager|null $settings
+	 * @param SessionManager|null $sessionManager
 	 * @throws \Exception
 	 */
 	public function __construct(
 		?Application $app = null,
 		?IEventRepository $eventRepository = null,
-		?IEventCategoryRepository $categoryRepository = null
+		?IEventCategoryRepository $categoryRepository = null,
+		?SettingManager $settings = null,
+		?SessionManager $sessionManager = null
 	)
 	{
-		parent::__construct( $app );
+		parent::__construct( $app, $settings, $sessionManager );
 
-		// Use dependency injection when available (container provides dependencies)
-		// Otherwise resolve from container (fallback for compatibility)
-		$this->_eventRepository = $eventRepository ?? $app?->getContainer()?->get( IEventRepository::class );
-		$this->_categoryRepository = $categoryRepository ?? $app?->getContainer()?->get( IEventCategoryRepository::class );
+		if( $eventRepository === null )
+		{
+			throw new \InvalidArgumentException( 'IEventRepository must be injected' );
+		}
+		$this->_eventRepository = $eventRepository;
+
+		if( $categoryRepository === null )
+		{
+			throw new \InvalidArgumentException( 'IEventCategoryRepository must be injected' );
+		}
+		$this->_categoryRepository = $categoryRepository;
 	}
 
 	/**

@@ -2,6 +2,7 @@
 namespace Neuron\Cms\Controllers;
 
 use JetBrains\PhpStorm\NoReturn;
+use Neuron\Cms\Auth\SessionManager;
 use Neuron\Cms\Models\Post;
 use Neuron\Cms\Repositories\IPostRepository;
 use Neuron\Cms\Repositories\ICategoryRepository;
@@ -11,6 +12,7 @@ use Neuron\Cms\Services\Content\EditorJsRenderer;
 use Neuron\Cms\Services\Content\ShortcodeParser;
 use Neuron\Cms\Services\Widget\WidgetRenderer;
 use Neuron\Core\Exceptions\NotFound;
+use Neuron\Data\Settings\SettingManager;
 use Neuron\Mvc\Application;
 use Neuron\Mvc\Requests\Request;
 use Neuron\Mvc\Responses\HttpResponseStatus;
@@ -21,11 +23,11 @@ use Neuron\Routing\Attributes\RouteGroup;
 #[RouteGroup(prefix: '/blog')]
 class Blog extends Content
 {
-	private ?IPostRepository $_postRepository = null;
-	private ?ICategoryRepository $_categoryRepository = null;
-	private ?ITagRepository $_tagRepository = null;
-	private ?IUserRepository $_userRepository = null;
-	private ?EditorJsRenderer $_renderer = null;
+	private IPostRepository $_postRepository;
+	private ICategoryRepository $_categoryRepository;
+	private ITagRepository $_tagRepository;
+	private IUserRepository $_userRepository;
+	private EditorJsRenderer $_renderer;
 
 	/**
 	 * @param Application|null $app
@@ -34,6 +36,8 @@ class Blog extends Content
 	 * @param ITagRepository|null $tagRepository
 	 * @param IUserRepository|null $userRepository
 	 * @param EditorJsRenderer|null $renderer
+	 * @param SettingManager|null $settings
+	 * @param SessionManager|null $sessionManager
 	 * @throws \Exception
 	 */
 	public function __construct(
@@ -42,18 +46,35 @@ class Blog extends Content
 		?ICategoryRepository $categoryRepository = null,
 		?ITagRepository $tagRepository = null,
 		?IUserRepository $userRepository = null,
-		?EditorJsRenderer $renderer = null
+		?EditorJsRenderer $renderer = null,
+		?SettingManager $settings = null,
+		?SessionManager $sessionManager = null
 	)
 	{
-		parent::__construct( $app );
+		parent::__construct( $app, $settings, $sessionManager );
 
-		// Use dependency injection when available (container provides dependencies)
-		// Otherwise resolve from container (fallback for compatibility)
-		$this->_postRepository = $postRepository ?? $app?->getContainer()?->get( IPostRepository::class );
-		$this->_categoryRepository = $categoryRepository ?? $app?->getContainer()?->get( ICategoryRepository::class );
-		$this->_tagRepository = $tagRepository ?? $app?->getContainer()?->get( ITagRepository::class );
-		$this->_userRepository = $userRepository ?? $app?->getContainer()?->get( IUserRepository::class );
-		$this->_renderer = $renderer ?? $app?->getContainer()?->get( EditorJsRenderer::class );
+		// Pure dependency injection - no service locator fallback
+		if( $postRepository === null ) {
+			throw new \InvalidArgumentException( 'IPostRepository must be injected' );
+		}
+		if( $categoryRepository === null ) {
+			throw new \InvalidArgumentException( 'ICategoryRepository must be injected' );
+		}
+		if( $tagRepository === null ) {
+			throw new \InvalidArgumentException( 'ITagRepository must be injected' );
+		}
+		if( $userRepository === null ) {
+			throw new \InvalidArgumentException( 'IUserRepository must be injected' );
+		}
+		if( $renderer === null ) {
+			throw new \InvalidArgumentException( 'EditorJsRenderer must be injected' );
+		}
+
+		$this->_postRepository = $postRepository;
+		$this->_categoryRepository = $categoryRepository;
+		$this->_tagRepository = $tagRepository;
+		$this->_userRepository = $userRepository;
+		$this->_renderer = $renderer;
 	}
 
 	/**

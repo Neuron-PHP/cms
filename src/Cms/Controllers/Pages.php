@@ -2,6 +2,7 @@
 
 namespace Neuron\Cms\Controllers;
 
+use Neuron\Cms\Auth\SessionManager;
 use Neuron\Cms\Models\Page as PageModel;
 use Neuron\Cms\Repositories\IPageRepository;
 use Neuron\Cms\Repositories\IPostRepository;
@@ -9,6 +10,7 @@ use Neuron\Cms\Services\Content\EditorJsRenderer;
 use Neuron\Cms\Services\Content\ShortcodeParser;
 use Neuron\Cms\Services\Widget\WidgetRenderer;
 use Neuron\Core\Exceptions\NotFound;
+use Neuron\Data\Settings\SettingManager;
 use Neuron\Mvc\Application;
 use Neuron\Mvc\Requests\Request;
 use Neuron\Mvc\Responses\HttpResponseStatus;
@@ -32,20 +34,33 @@ class Pages extends Content
 	 * @param Application|null $app
 	 * @param IPageRepository|null $pageRepository
 	 * @param EditorJsRenderer|null $renderer
+	 * @param SettingManager|null $settings
+	 * @param SessionManager|null $sessionManager
 	 * @throws \Exception
 	 */
 	public function __construct(
 		?Application $app = null,
 		?IPageRepository $pageRepository = null,
-		?EditorJsRenderer $renderer = null
+		?EditorJsRenderer $renderer = null,
+		?SettingManager $settings = null,
+		?SessionManager $sessionManager = null
 	)
 	{
-		parent::__construct( $app );
+		parent::__construct( $app, $settings, $sessionManager );
 
-		// Use dependency injection when available (container provides dependencies)
-		// Otherwise resolve from container (fallback for compatibility)
-		$this->_pageRepository = $pageRepository ?? $app?->getContainer()?->get( IPageRepository::class );
-		$this->_renderer = $renderer ?? $app?->getContainer()?->get( EditorJsRenderer::class );
+		// Pure dependency injection - no service locator fallback
+		if( $pageRepository === null )
+		{
+			throw new \InvalidArgumentException( 'IPageRepository must be injected' );
+		}
+
+		if( $renderer === null )
+		{
+			throw new \InvalidArgumentException( 'EditorJsRenderer must be injected' );
+		}
+
+		$this->_pageRepository = $pageRepository;
+		$this->_renderer = $renderer;
 	}
 
 	/**

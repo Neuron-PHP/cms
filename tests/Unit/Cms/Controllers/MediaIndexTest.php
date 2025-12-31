@@ -63,26 +63,24 @@ class MediaIndexTest extends TestCase
 		$user->method( 'getId' )->willReturn( 1 );
 		Registry::getInstance()->set( 'Auth.User', $user );
 
+		// Create mocks for required dependencies
+		$mockSettingManager = Registry::getInstance()->get( 'Settings' );
+		$mockSessionManager = $this->createMock( SessionManager::class );
+		$mockCloudinaryUploader = $this->createMock( CloudinaryUploader::class );
+		$mockMediaValidator = $this->createMock( MediaValidator::class );
+
 		// Create a partial mock that mocks renderHtml but allows view() to work
 		$media = $this->getMockBuilder( Media::class )
+			->setConstructorArgs( [ null, $mockCloudinaryUploader, $mockMediaValidator, $mockSettingManager, $mockSessionManager ] )
 			->onlyMethods( ['renderHtml'] )
 			->getMock();
 
 		$media->method( 'renderHtml' )->willReturn( '<html>test</html>' );
 
-		// Create a mock session manager
-		$sessionManagerMock = $this->createMock( SessionManager::class );
-		$sessionManagerMock->method( 'getFlash' )->willReturn( null );
+		$mockSessionManager->method( 'getFlash' )->willReturn( null );
 
-		// Inject mock session manager via reflection
-		$reflection = new \ReflectionClass( get_parent_class( Media::class ) );
-		$sessionProperty = $reflection->getProperty( '_sessionManager' );
-		$sessionProperty->setAccessible( true );
-		$sessionProperty->setValue( $media, $sessionManagerMock );
-
-		// Create a mock uploader that returns resources
-		$uploaderMock = $this->createMock( CloudinaryUploader::class );
-		$uploaderMock->method( 'listResources' )->willReturn( [
+		// Configure the uploader mock to return resources
+		$mockCloudinaryUploader->method( 'listResources' )->willReturn( [
 			'resources' => [
 				[
 					'public_id' => 'test-folder/image1',
@@ -101,12 +99,6 @@ class MediaIndexTest extends TestCase
 			'total_count' => 50
 		] );
 
-		// Inject mock uploader via reflection
-		$reflection = new \ReflectionClass( Media::class );
-		$uploaderProperty = $reflection->getProperty( '_uploader' );
-		$uploaderProperty->setAccessible( true );
-		$uploaderProperty->setValue( $media, $uploaderMock );
-
 		$request = $this->createMock( Request::class );
 		$request->method( 'get' )->with( 'cursor' )->willReturn( null );
 
@@ -123,26 +115,24 @@ class MediaIndexTest extends TestCase
 		$user->method( 'getId' )->willReturn( 1 );
 		Registry::getInstance()->set( 'Auth.User', $user );
 
+		// Create mocks for required dependencies
+		$mockSettingManager = Registry::getInstance()->get( 'Settings' );
+		$mockSessionManager = $this->createMock( SessionManager::class );
+		$mockCloudinaryUploader = $this->createMock( CloudinaryUploader::class );
+		$mockMediaValidator = $this->createMock( MediaValidator::class );
+
 		// Create a partial mock that mocks renderHtml but allows view() to work
 		$media = $this->getMockBuilder( Media::class )
+			->setConstructorArgs( [ null, $mockCloudinaryUploader, $mockMediaValidator, $mockSettingManager, $mockSessionManager ] )
 			->onlyMethods( ['renderHtml'] )
 			->getMock();
 
 		$media->method( 'renderHtml' )->willReturn( '<html>test</html>' );
 
-		// Create a mock session manager
-		$sessionManagerMock = $this->createMock( SessionManager::class );
-		$sessionManagerMock->method( 'getFlash' )->willReturn( null );
+		$mockSessionManager->method( 'getFlash' )->willReturn( null );
 
-		// Inject mock session manager via reflection
-		$reflection = new \ReflectionClass( get_parent_class( Media::class ) );
-		$sessionProperty = $reflection->getProperty( '_sessionManager' );
-		$sessionProperty->setAccessible( true );
-		$sessionProperty->setValue( $media, $sessionManagerMock );
-
-		// Create a mock uploader that expects cursor parameter
-		$uploaderMock = $this->createMock( CloudinaryUploader::class );
-		$uploaderMock->expects( $this->once() )
+		// Configure the uploader mock to expect cursor parameter
+		$mockCloudinaryUploader->expects( $this->once() )
 			->method( 'listResources' )
 			->with( $this->callback( function( $options ) {
 				return $options['next_cursor'] === 'xyz789'
@@ -153,12 +143,6 @@ class MediaIndexTest extends TestCase
 				'next_cursor' => null,
 				'total_count' => 0
 			] );
-
-		// Inject mock uploader via reflection
-		$reflection = new \ReflectionClass( Media::class );
-		$uploaderProperty = $reflection->getProperty( '_uploader' );
-		$uploaderProperty->setAccessible( true );
-		$uploaderProperty->setValue( $media, $uploaderMock );
 
 		$request = $this->createMock( Request::class );
 		$request->method( 'get' )->with( 'cursor' )->willReturn( 'xyz789' );
@@ -175,33 +159,25 @@ class MediaIndexTest extends TestCase
 		$user->method( 'getId' )->willReturn( 1 );
 		Registry::getInstance()->set( 'Auth.User', $user );
 
+		// Create mocks for required dependencies
+		$mockSettingManager = Registry::getInstance()->get( 'Settings' );
+		$mockSessionManager = $this->createMock( SessionManager::class );
+		$mockCloudinaryUploader = $this->createMock( CloudinaryUploader::class );
+		$mockMediaValidator = $this->createMock( MediaValidator::class );
+
 		// Create a partial mock that mocks renderHtml but allows view() to work
 		$media = $this->getMockBuilder( Media::class )
+			->setConstructorArgs( [ null, $mockCloudinaryUploader, $mockMediaValidator, $mockSettingManager, $mockSessionManager ] )
 			->onlyMethods( ['renderHtml'] )
 			->getMock();
 
 		$media->method( 'renderHtml' )->willReturn( '<html>test</html>' );
 
-		// Create a mock session manager
-		$sessionManagerMock = $this->createMock( SessionManager::class );
-		$sessionManagerMock->method( 'getFlash' )->willReturn( null );
+		$mockSessionManager->method( 'getFlash' )->willReturn( null );
 
-		// Inject mock session manager via reflection
-		$reflection = new \ReflectionClass( get_parent_class( Media::class ) );
-		$sessionProperty = $reflection->getProperty( '_sessionManager' );
-		$sessionProperty->setAccessible( true );
-		$sessionProperty->setValue( $media, $sessionManagerMock );
-
-		// Create a mock uploader that throws exception
-		$uploaderMock = $this->createMock( CloudinaryUploader::class );
-		$uploaderMock->method( 'listResources' )
+		// Configure the uploader mock to throw exception
+		$mockCloudinaryUploader->method( 'listResources' )
 			->willThrowException( new \Exception( 'Cloudinary API error' ) );
-
-		// Inject mock uploader via reflection
-		$reflection = new \ReflectionClass( Media::class );
-		$uploaderProperty = $reflection->getProperty( '_uploader' );
-		$uploaderProperty->setAccessible( true );
-		$uploaderProperty->setValue( $media, $uploaderMock );
 
 		$request = $this->createMock( Request::class );
 		$request->method( 'get' )->with( 'cursor' )->willReturn( null );

@@ -155,4 +155,38 @@ class CreatorTest extends TestCase
 
 		$this->assertEquals( '', $result->getDescription() );
 	}
+
+	public function testConstructorSetsPropertiesCorrectly(): void
+	{
+		$categoryRepository = $this->createMock( ICategoryRepository::class );
+
+		$creator = new Creator( $categoryRepository );
+
+		$this->assertInstanceOf( Creator::class, $creator );
+	}
+
+	public function testConstructorWithEventEmitter(): void
+	{
+		$categoryRepository = $this->createMock( ICategoryRepository::class );
+		$eventEmitter = $this->createMock( \Neuron\Events\Emitter::class );
+
+		$categoryRepository
+			->method( 'create' )
+			->willReturnArgument( 0 );
+
+		// Event emitter should emit CategoryCreatedEvent
+		$eventEmitter
+			->expects( $this->once() )
+			->method( 'emit' )
+			->with( $this->isInstanceOf( \Neuron\Cms\Events\CategoryCreatedEvent::class ) );
+
+		$creator = new Creator( $categoryRepository, null, $eventEmitter );
+
+		$dto = $this->createDto(
+			name: 'Technology',
+			slug: 'technology'
+		);
+
+		$creator->create( $dto );
+	}
 }

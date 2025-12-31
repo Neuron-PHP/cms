@@ -87,13 +87,19 @@ class UsersControllerTest extends TestCase
 		$deleter = $this->createMock( IUserDeleter::class );
 
 		// Create controller with mocked dependencies
+		$mockSettingManager = Registry::getInstance()->get( 'Settings' );
+		$mockSessionManager = $this->createMock( SessionManager::class );
+		$mockSessionManager->method( 'getFlash' )->willReturn( null );
+
 		$controller = $this->getMockBuilder( Users::class )
 			->setConstructorArgs([
 				$app,
 				$repository,
 				$creator,
 				$updater,
-				$deleter
+				$deleter,
+				$mockSettingManager,
+				$mockSessionManager
 			])
 			->onlyMethods( ['view'] )
 			->getMock();
@@ -108,15 +114,6 @@ class UsersControllerTest extends TestCase
 		$viewBuilder->method( 'render' )->willReturn( '<html>Users Index</html>' );
 
 		$controller->method( 'view' )->willReturn( $viewBuilder );
-
-		// Mock session manager
-		$reflection = new \ReflectionClass( get_parent_class( Users::class ) );
-		$sessionProperty = $reflection->getProperty( '_sessionManager' );
-		$sessionProperty->setAccessible( true );
-
-		$sessionManager = $this->createMock( SessionManager::class );
-		$sessionManager->method( 'getFlash' )->willReturn( null );
-		$sessionProperty->setValue( $controller, $sessionManager );
 
 		$request = $this->createMock( Request::class );
 
@@ -141,13 +138,18 @@ class UsersControllerTest extends TestCase
 		$updater = $this->createMock( IUserUpdater::class );
 		$deleter = $this->createMock( IUserDeleter::class );
 
+		$mockSettingManager = Registry::getInstance()->get( 'Settings' );
+		$mockSessionManager = $this->createMock( SessionManager::class );
+
 		$controller = $this->getMockBuilder( Users::class )
 			->setConstructorArgs([
 				$app,
 				$repository,
 				$creator,
 				$updater,
-				$deleter
+				$deleter,
+				$mockSettingManager,
+				$mockSessionManager
 			])
 			->onlyMethods( ['view'] )
 			->getMock();
@@ -162,14 +164,6 @@ class UsersControllerTest extends TestCase
 		$viewBuilder->method( 'render' )->willReturn( '<html>Create User Form</html>' );
 
 		$controller->method( 'view' )->willReturn( $viewBuilder );
-
-		// Mock session manager
-		$reflection = new \ReflectionClass( get_parent_class( Users::class ) );
-		$sessionProperty = $reflection->getProperty( '_sessionManager' );
-		$sessionProperty->setAccessible( true );
-
-		$sessionManager = $this->createMock( SessionManager::class );
-		$sessionProperty->setValue( $controller, $sessionManager );
 
 		$request = $this->createMock( Request::class );
 
@@ -200,13 +194,18 @@ class UsersControllerTest extends TestCase
 		$updater = $this->createMock( IUserUpdater::class );
 		$deleter = $this->createMock( IUserDeleter::class );
 
+		$mockSettingManager = Registry::getInstance()->get( 'Settings' );
+		$mockSessionManager = $this->createMock( SessionManager::class );
+
 		$controller = $this->getMockBuilder( Users::class )
 			->setConstructorArgs([
 				$app,
 				$repository,
 				$creator,
 				$updater,
-				$deleter
+				$deleter,
+				$mockSettingManager,
+				$mockSessionManager
 			])
 			->onlyMethods( ['view'] )
 			->getMock();
@@ -221,14 +220,6 @@ class UsersControllerTest extends TestCase
 		$viewBuilder->method( 'render' )->willReturn( '<html>Edit User Form</html>' );
 
 		$controller->method( 'view' )->willReturn( $viewBuilder );
-
-		// Mock session manager
-		$reflection = new \ReflectionClass( get_parent_class( Users::class ) );
-		$sessionProperty = $reflection->getProperty( '_sessionManager' );
-		$sessionProperty->setAccessible( true );
-
-		$sessionManager = $this->createMock( SessionManager::class );
-		$sessionProperty->setValue( $controller, $sessionManager );
 
 		$request = $this->createMock( Request::class );
 		$request->method( 'getRouteParameter' )->with( 'id' )->willReturn( '2' );

@@ -50,30 +50,46 @@ class UsersTest extends TestCase
 
 	public function testConstructorWithAllDependencies(): void
 	{
+		$mockSettings = Registry::getInstance()->get( 'Settings' );
+		$mockSessionManager = $this->createMock( SessionManager::class );
+
 		$controller = new Users(
 			$this->mockApp,
 			$this->createMock( IUserRepository::class ),
 			$this->createMock( IUserCreator::class ),
 			$this->createMock( IUserUpdater::class ),
-			$this->createMock( IUserDeleter::class )
+			$this->createMock( IUserDeleter::class ),
+			$mockSettings,
+			$mockSessionManager
 		);
 
 		$this->assertInstanceOf( Users::class, $controller );
 	}
 
-	public function testConstructorResolvesFromContainer(): void
+	public function testConstructorThrowsExceptionWithoutSettingManager(): void
 	{
-		$controller = new Users( $this->mockApp );
-		$this->assertInstanceOf( Users::class, $controller );
+		$this->expectException( \InvalidArgumentException::class );
+		$this->expectExceptionMessage( 'SettingManager must be injected' );
+
+		new Users( null );
 	}
 
-	public function testConstructorWithPartialDependencies(): void
+	public function testConstructorThrowsExceptionWithoutUserRepository(): void
 	{
-		$controller = new Users(
+		$this->expectException( \InvalidArgumentException::class );
+		$this->expectExceptionMessage( 'IUserRepository must be injected' );
+
+		$mockSettings = Registry::getInstance()->get( 'Settings' );
+		$mockSessionManager = $this->createMock( SessionManager::class );
+
+		new Users(
 			$this->mockApp,
-			$this->createMock( IUserRepository::class )
+			null,
+			null,
+			null,
+			null,
+			$mockSettings,
+			$mockSessionManager
 		);
-
-		$this->assertInstanceOf( Users::class, $controller );
 	}
 }

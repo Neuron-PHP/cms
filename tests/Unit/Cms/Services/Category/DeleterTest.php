@@ -80,4 +80,40 @@ class DeleterTest extends TestCase
 
 		$this->_deleter->delete( 99 );
 	}
+
+	public function testConstructorSetsPropertiesCorrectly(): void
+	{
+		$categoryRepository = $this->createMock( ICategoryRepository::class );
+
+		$deleter = new Deleter( $categoryRepository );
+
+		$this->assertInstanceOf( Deleter::class, $deleter );
+	}
+
+	public function testConstructorWithEventEmitter(): void
+	{
+		$categoryRepository = $this->createMock( ICategoryRepository::class );
+		$eventEmitter = $this->createMock( \Neuron\Events\Emitter::class );
+
+		$category = new Category();
+		$category->setId( 1 );
+
+		$categoryRepository
+			->method( 'findById' )
+			->willReturn( $category );
+
+		$categoryRepository
+			->method( 'delete' )
+			->willReturn( true );
+
+		// Event emitter should emit CategoryDeletedEvent
+		$eventEmitter
+			->expects( $this->once() )
+			->method( 'emit' )
+			->with( $this->isInstanceOf( \Neuron\Cms\Events\CategoryDeletedEvent::class ) );
+
+		$deleter = new Deleter( $categoryRepository, $eventEmitter );
+
+		$deleter->delete( 1 );
+	}
 }

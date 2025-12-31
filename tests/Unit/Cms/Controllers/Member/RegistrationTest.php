@@ -5,7 +5,7 @@ namespace Tests\Cms\Controllers\Member;
 use Neuron\Cms\Controllers\Member\Registration;
 use Neuron\Cms\Services\Member\IRegistrationService;
 use Neuron\Cms\Services\Auth\IEmailVerifier;
-use Neuron\Cms\Auth\ResendVerificationThrottle;
+use Neuron\Cms\Services\Security\ResendVerificationThrottle;
 use Neuron\Cms\Auth\SessionManager;
 use Neuron\Cms\Services\Dto\DtoFactoryService;
 use Neuron\Data\Settings\SettingManager;
@@ -124,20 +124,68 @@ class RegistrationTest extends TestCase
 		$this->assertInstanceOf( Registration::class, $controller );
 	}
 
-	public function testConstructorResolvesFromContainer(): void
+	public function testConstructorThrowsExceptionWithoutRegistrationService(): void
 	{
-		$controller = new Registration( $this->mockApp );
-		$this->assertInstanceOf( Registration::class, $controller );
+		$this->expectException( \InvalidArgumentException::class );
+		$this->expectExceptionMessage( 'IRegistrationService must be injected' );
+
+		new Registration(
+			$this->mockApp,
+			null,
+			$this->mockEmailVerifier,
+			$this->mockSettings,
+			$this->mockSession,
+			$this->mockResendThrottle,
+			$this->mockIpResolver
+		);
 	}
 
-	public function testConstructorWithPartialDependencies(): void
+	public function testConstructorThrowsExceptionWithoutEmailVerifier(): void
 	{
-		$controller = new Registration(
-			$this->mockApp,
-			$this->mockRegistrationService
-		);
+		$this->expectException( \InvalidArgumentException::class );
+		$this->expectExceptionMessage( 'IEmailVerifier must be injected' );
 
-		$this->assertInstanceOf( Registration::class, $controller );
+		new Registration(
+			$this->mockApp,
+			$this->mockRegistrationService,
+			null,
+			$this->mockSettings,
+			$this->mockSession,
+			$this->mockResendThrottle,
+			$this->mockIpResolver
+		);
+	}
+
+	public function testConstructorThrowsExceptionWithoutResendThrottle(): void
+	{
+		$this->expectException( \InvalidArgumentException::class );
+		$this->expectExceptionMessage( 'ResendVerificationThrottle must be injected' );
+
+		new Registration(
+			$this->mockApp,
+			$this->mockRegistrationService,
+			$this->mockEmailVerifier,
+			$this->mockSettings,
+			$this->mockSession,
+			null,
+			$this->mockIpResolver
+		);
+	}
+
+	public function testConstructorThrowsExceptionWithoutIpResolver(): void
+	{
+		$this->expectException( \InvalidArgumentException::class );
+		$this->expectExceptionMessage( 'IIpResolver must be injected' );
+
+		new Registration(
+			$this->mockApp,
+			$this->mockRegistrationService,
+			$this->mockEmailVerifier,
+			$this->mockSettings,
+			$this->mockSession,
+			$this->mockResendThrottle,
+			null
+		);
 	}
 
 	public function testShowRegistrationFormWhenEnabled(): void

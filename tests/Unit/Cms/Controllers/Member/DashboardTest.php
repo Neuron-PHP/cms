@@ -1,8 +1,8 @@
 <?php
 
-namespace Tests\Cms\Controllers\Admin;
+namespace Tests\Cms\Controllers\Member;
 
-use Neuron\Cms\Controllers\Admin\Dashboard;
+use Neuron\Cms\Controllers\Member\Dashboard;
 use Neuron\Data\Settings\Source\Memory;
 use Neuron\Data\Settings\SettingManager;
 use Neuron\Mvc\Application;
@@ -15,8 +15,6 @@ class DashboardTest extends TestCase
 {
 	private SettingManager $_settingManager;
 	private string $_versionFilePath;
-	private $mockSettingManager;
-	private $mockSessionManager;
 
 	protected function setUp(): void
 	{
@@ -37,9 +35,6 @@ class DashboardTest extends TestCase
 
 		$this->_settingManager = new SettingManager( $settings );
 		Registry::getInstance()->set( 'Settings', $this->_settingManager );
-
-		$this->mockSettingManager = Registry::getInstance()->get( 'Settings' );
-		$this->mockSessionManager = $this->createMock( \Neuron\Cms\Auth\SessionManager::class );
 	}
 
 	protected function tearDown(): void
@@ -62,14 +57,20 @@ class DashboardTest extends TestCase
 
 	public function testConstructor(): void
 	{
-		$controller = new Dashboard( null, $this->mockSettingManager, $this->mockSessionManager );
+		$mockSettingManager = Registry::getInstance()->get( 'Settings' );
+		$mockSessionManager = $this->createMock( \Neuron\Cms\Auth\SessionManager::class );
+
+		$controller = new Dashboard( null, $mockSettingManager, $mockSessionManager );
 		$this->assertInstanceOf( Dashboard::class, $controller );
 	}
 
 	public function testConstructorWithApplication(): void
 	{
 		$mockApp = $this->createMock( Application::class );
-		$controller = new Dashboard( $mockApp, $this->mockSettingManager, $this->mockSessionManager );
+		$mockSettingManager = Registry::getInstance()->get( 'Settings' );
+		$mockSessionManager = $this->createMock( \Neuron\Cms\Auth\SessionManager::class );
+
+		$controller = new Dashboard( $mockApp, $mockSettingManager, $mockSessionManager );
 		$this->assertInstanceOf( Dashboard::class, $controller );
 	}
 
@@ -79,9 +80,12 @@ class DashboardTest extends TestCase
 	 */
 	public function testIndexRendersView(): void
 	{
+		$mockSettingManager = Registry::getInstance()->get( 'Settings' );
+		$mockSessionManager = $this->createMock( \Neuron\Cms\Auth\SessionManager::class );
+
 		// Mock the controller to test view() method chain
 		$controller = $this->getMockBuilder( Dashboard::class )
-			->setConstructorArgs( [ null, $this->mockSettingManager, $this->mockSessionManager ] )
+			->setConstructorArgs( [ null, $mockSettingManager, $mockSessionManager ] )
 			->onlyMethods( [ 'view' ] )
 			->getMock();
 
@@ -95,13 +99,13 @@ class DashboardTest extends TestCase
 		$mockViewContext->method( 'description' )->willReturn( $mockViewContext );
 		$mockViewContext->method( 'withCurrentUser' )->willReturn( $mockViewContext );
 		$mockViewContext->method( 'withCsrfToken' )->willReturn( $mockViewContext );
-		$mockViewContext->method( 'render' )->willReturn( '<html>Dashboard</html>' );
+		$mockViewContext->method( 'render' )->willReturn( '<html>Member Dashboard</html>' );
 
 		$controller->method( 'view' )->willReturn( $mockViewContext );
 
 		$request = new Request();
 		$result = $controller->index( $request );
 
-		$this->assertEquals( '<html>Dashboard</html>', $result );
+		$this->assertEquals( '<html>Member Dashboard</html>', $result );
 	}
 }

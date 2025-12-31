@@ -273,4 +273,70 @@ class PasswordResetterTest extends TestCase
 
 		$this->assertEquals( 5, $result );
 	}
+
+	public function testResetPasswordWhenUserNotFound(): void
+	{
+		$plainToken = bin2hex( random_bytes( 32 ) );
+		$hashedToken = hash( 'sha256', $plainToken );
+		$email = 'deleted@example.com';
+
+		// Create mock token
+		$token = new PasswordResetToken( $email, $hashedToken, 60 );
+
+		// Repository finds token
+		$this->_tokenRepository
+			->expects( $this->once() )
+			->method( 'findByToken' )
+			->with( $hashedToken )
+			->willReturn( $token );
+
+		// User repository doesn't find user (user was deleted)
+		$this->_userRepository
+			->expects( $this->once() )
+			->method( 'findByEmail' )
+			->with( $email )
+			->willReturn( null );
+
+		$result = $this->_manager->resetPassword( $plainToken, 'NewPassword123!' );
+
+		$this->assertFalse( $result );
+	}
+
+	public function testConstructorWithCustomRandom(): void
+	{
+		$mockRandom = $this->createMock( \Neuron\Core\System\IRandom::class );
+
+		$mockRandom
+			->expects( $this->once() )
+			->method( 'string' )
+			->with( 64, 'hex' )
+			->willReturn( str_repeat( 'a', 64 ) );
+
+		$user = new User();
+		$user->setEmail( 'test@example.com' );
+
+		$this->_userRepository
+			->method( 'findByEmail' )
+			->willReturn( $user );
+
+		$this->_tokenRepository
+			->method( 'deleteByEmail' );
+
+		$this->_tokenRepository
+			->expects( $this->once() )
+			->method( 'create' )
+			->with( $this->isInstanceOf( PasswordResetToken::class ) );
+
+		$manager = new PasswordResetter(
+			$this->_tokenRepository,
+			$this->_userRepository,
+			$this->_passwordHasher,
+			$this->_settings,
+			$this->_basePath,
+			$this->_resetUrl,
+			$mockRandom
+		);
+
+		$manager->requestReset( 'test@example.com' );
+	}
 }

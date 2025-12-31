@@ -81,7 +81,9 @@ class CategoriesControllerTest extends TestCase
 
 		$creator = $this->createMock( Creator::class );
 		$updater = $this->createMock( Updater::class );
-		$deleter = $this->createMock( Deleter::class );
+
+		$mockSettingManager = Registry::getInstance()->get( 'Settings' );
+		$mockSessionManager = $this->createMock( \Neuron\Cms\Auth\SessionManager::class );
 
 		$controller = $this->getMockBuilder( Categories::class )
 			->setConstructorArgs([
@@ -89,7 +91,8 @@ class CategoriesControllerTest extends TestCase
 				$repository,
 				$creator,
 				$updater,
-				$deleter
+				$mockSettingManager,
+				$mockSessionManager
 			])
 			->onlyMethods( ['view'] )
 			->getMock();
@@ -131,7 +134,9 @@ class CategoriesControllerTest extends TestCase
 		$repository = $this->createMock( DatabaseCategoryRepository::class );
 		$creator = $this->createMock( Creator::class );
 		$updater = $this->createMock( Updater::class );
-		$deleter = $this->createMock( Deleter::class );
+
+		$mockSettingManager = Registry::getInstance()->get( 'Settings' );
+		$mockSessionManager = $this->createMock( \Neuron\Cms\Auth\SessionManager::class );
 
 		$controller = $this->getMockBuilder( Categories::class )
 			->setConstructorArgs([
@@ -139,7 +144,8 @@ class CategoriesControllerTest extends TestCase
 				$repository,
 				$creator,
 				$updater,
-				$deleter
+				$mockSettingManager,
+				$mockSessionManager
 			])
 			->onlyMethods( ['view'] )
 			->getMock();
@@ -182,14 +188,17 @@ class CategoriesControllerTest extends TestCase
 
 		$creator = $this->createMock( Creator::class );
 		$updater = $this->createMock( Updater::class );
-		$deleter = $this->createMock( Deleter::class );
+
+		$mockSettingManager = Registry::getInstance()->get( 'Settings' );
+		$mockSessionManager = $this->createMock( \Neuron\Cms\Auth\SessionManager::class );
 
 		$controller = new Categories(
 			null,
 			$repository,
 			$creator,
 			$updater,
-			$deleter
+			$mockSettingManager,
+			$mockSessionManager
 		);
 
 		$request = $this->createMock( Request::class );
