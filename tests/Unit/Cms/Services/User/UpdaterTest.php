@@ -251,4 +251,73 @@ class UpdaterTest extends TestCase
 
 		$this->assertEquals( User::ROLE_ADMIN, $result->getRole() );
 	}
+
+	public function testConstructorSetsPropertiesCorrectly(): void
+	{
+		$userRepository = $this->createMock( IUserRepository::class );
+		$passwordHasher = $this->createMock( PasswordHasher::class );
+
+		$updater = new Updater( $userRepository, $passwordHasher );
+
+		$this->assertInstanceOf( Updater::class, $updater );
+	}
+
+	public function testConstructorWithEventEmitter(): void
+	{
+		$userRepository = $this->createMock( IUserRepository::class );
+		$passwordHasher = $this->createMock( PasswordHasher::class );
+		$eventEmitter = $this->createMock( \Neuron\Events\Emitter::class );
+
+		$user = new User();
+		$user->setId( 1 );
+		$user->setUsername( 'testuser' );
+		$user->setEmail( 'test@example.com' );
+		$user->setRole( User::ROLE_SUBSCRIBER );
+		$user->setPasswordHash( 'existing_hash' );
+
+		$userRepository
+			->method( 'findById' )
+			->willReturn( $user );
+
+		$userRepository
+			->method( 'update' );
+
+		// Event emitter should emit UserUpdatedEvent
+		$eventEmitter
+			->expects( $this->once() )
+			->method( 'emit' )
+			->with( $this->isInstanceOf( \Neuron\Cms\Events\UserUpdatedEvent::class ) );
+
+		$updater = new Updater( $userRepository, $passwordHasher, $eventEmitter );
+
+		$dto = $this->createDto(
+			1,
+			'testuser',
+			'test@example.com',
+			User::ROLE_SUBSCRIBER
+		);
+
+		$updater->update( $dto );
+	}
+
+	public function testThrowsExceptionWhenUserNotFound(): void
+	{
+		$this->_mockUserRepository
+			->expects( $this->once() )
+			->method( 'findById' )
+			->with( 999 )
+			->willReturn( null );
+
+		$this->expectException( \Exception::class );
+		$this->expectExceptionMessage( 'User with ID 999 not found' );
+
+		$dto = $this->createDto(
+			999,
+			'testuser',
+			'test@example.com',
+			User::ROLE_SUBSCRIBER
+		);
+
+		$this->_updater->update( $dto );
+	}
 }

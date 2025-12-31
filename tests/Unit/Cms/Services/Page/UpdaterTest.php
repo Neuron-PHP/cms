@@ -264,4 +264,37 @@ class UpdaterTest extends TestCase
 
 		$this->assertInstanceOf( Page::class, $result );
 	}
+
+	public function testConstructorSetsPropertiesCorrectly(): void
+	{
+		$repository = $this->createMock( IPageRepository::class );
+
+		$updater = new Updater( $repository );
+
+		$this->assertInstanceOf( Updater::class, $updater );
+	}
+
+	public function testUpdateThrowsExceptionWhenPageNotFound(): void
+	{
+		$repository = $this->createMock( IPageRepository::class );
+		$updater = new Updater( $repository );
+
+		$repository
+			->expects( $this->once() )
+			->method( 'findById' )
+			->with( 999 )
+			->willReturn( null );
+
+		$this->expectException( \Exception::class );
+		$this->expectExceptionMessage( 'Page with ID 999 not found' );
+
+		$dto = $this->createDto(
+			id: 999,
+			title: 'Title',
+			content: '{}',
+			status: Page::STATUS_DRAFT
+		);
+
+		$updater->update( $dto );
+	}
 }

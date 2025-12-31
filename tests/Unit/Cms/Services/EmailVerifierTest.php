@@ -342,4 +342,70 @@ class EmailVerifierTest extends TestCase
 
 		$this->assertEquals( 5, $result );
 	}
+
+	public function testVerifyEmailWhenUserNotFound(): void
+	{
+		$plainToken = bin2hex( random_bytes( 32 ) );
+		$hashedToken = hash( 'sha256', $plainToken );
+		$userId = 999;
+
+		// Create mock token
+		$token = new EmailVerificationToken( $userId, $hashedToken, 60 );
+
+		// Repository finds token
+		$this->_tokenRepository
+			->expects( $this->once() )
+			->method( 'findByToken' )
+			->with( $hashedToken )
+			->willReturn( $token );
+
+		// Repository doesn't find user (user was deleted)
+		$this->_userRepository
+			->expects( $this->once() )
+			->method( 'findById' )
+			->with( $userId )
+			->willReturn( null );
+
+		$result = $this->_manager->verifyEmail( $plainToken );
+
+		$this->assertFalse( $result );
+	}
+
+	public function testConstructorWithCustomRandom(): void
+	{
+		$mockRandom = $this->createMock( \Neuron\Core\System\IRandom::class );
+
+		$mockRandom
+			->expects( $this->once() )
+			->method( 'string' )
+			->with( 64, 'hex' )
+			->willReturn( str_repeat( 'a', 64 ) );
+
+		$user = new User();
+		$user->setId( 1 );
+		$user->setEmail( 'test@example.com' );
+		$user->setUsername( 'testuser' );
+
+		$tokenRepository = $this->createMock( \Neuron\Cms\Repositories\IEmailVerificationTokenRepository::class );
+		$userRepository = $this->createMock( \Neuron\Cms\Repositories\IUserRepository::class );
+
+		$tokenRepository
+			->method( 'deleteByUserId' );
+
+		$tokenRepository
+			->expects( $this->once() )
+			->method( 'create' )
+			->with( $this->isInstanceOf( EmailVerificationToken::class ) );
+
+		$manager = new EmailVerifier(
+			$tokenRepository,
+			$userRepository,
+			$this->_settings,
+			$this->_basePath,
+			$this->_verificationUrl,
+			$mockRandom
+		);
+
+		$manager->sendVerificationEmail( $user );
+	}
 }
