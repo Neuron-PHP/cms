@@ -86,7 +86,9 @@ class EventsControllerTest extends TestCase
 		$categoryRepository = $this->createMock( DatabaseEventCategoryRepository::class );
 		$creator = $this->createMock( Creator::class );
 		$updater = $this->createMock( Updater::class );
-		$deleter = $this->createMock( Deleter::class );
+
+		$mockSettingManager = Registry::getInstance()->get( 'Settings' );
+		$mockSessionManager = $this->createMock( \Neuron\Cms\Auth\SessionManager::class );
 
 		$controller = $this->getMockBuilder( Events::class )
 			->setConstructorArgs([
@@ -95,7 +97,8 @@ class EventsControllerTest extends TestCase
 				$categoryRepository,
 				$creator,
 				$updater,
-				$deleter
+				$mockSettingManager,
+				$mockSessionManager
 			])
 			->onlyMethods( ['view'] )
 			->getMock();
@@ -151,7 +154,9 @@ class EventsControllerTest extends TestCase
 		$categoryRepository = $this->createMock( DatabaseEventCategoryRepository::class );
 		$creator = $this->createMock( Creator::class );
 		$updater = $this->createMock( Updater::class );
-		$deleter = $this->createMock( Deleter::class );
+
+		$mockSettingManager = Registry::getInstance()->get( 'Settings' );
+		$mockSessionManager = $this->createMock( \Neuron\Cms\Auth\SessionManager::class );
 
 		$controller = $this->getMockBuilder( Events::class )
 			->setConstructorArgs([
@@ -160,7 +165,8 @@ class EventsControllerTest extends TestCase
 				$categoryRepository,
 				$creator,
 				$updater,
-				$deleter
+				$mockSettingManager,
+				$mockSessionManager
 			])
 			->onlyMethods( ['view'] )
 			->getMock();
@@ -207,7 +213,9 @@ class EventsControllerTest extends TestCase
 
 		$creator = $this->createMock( Creator::class );
 		$updater = $this->createMock( Updater::class );
-		$deleter = $this->createMock( Deleter::class );
+
+		$mockSettingManager = Registry::getInstance()->get( 'Settings' );
+		$mockSessionManager = $this->createMock( \Neuron\Cms\Auth\SessionManager::class );
 
 		$controller = $this->getMockBuilder( Events::class )
 			->setConstructorArgs([
@@ -216,7 +224,8 @@ class EventsControllerTest extends TestCase
 				$categoryRepository,
 				$creator,
 				$updater,
-				$deleter
+				$mockSettingManager,
+				$mockSessionManager
 			])
 			->onlyMethods( ['view'] )
 			->getMock();

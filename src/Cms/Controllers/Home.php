@@ -1,8 +1,10 @@
 <?php
 namespace Neuron\Cms\Controllers;
 
+use Neuron\Cms\Auth\SessionManager;
 use Neuron\Cms\Services\Member\IRegistrationService;
 use Neuron\Core\Exceptions\NotFound;
+use Neuron\Data\Settings\SettingManager;
 use Neuron\Mvc\Application;
 use Neuron\Mvc\Requests\Request;
 use Neuron\Mvc\Responses\HttpResponseStatus;
@@ -19,23 +21,31 @@ use Neuron\Routing\Attributes\Get;
  */
 class Home extends Content
 {
-	private ?IRegistrationService $_registrationService;
+	private IRegistrationService $_registrationService;
 
 	/**
 	 * @param Application|null $app
 	 * @param IRegistrationService|null $registrationService
+	 * @param SettingManager|null $settings
+	 * @param SessionManager|null $sessionManager
 	 * @throws \Exception
 	 */
 	public function __construct(
 		?Application $app = null,
-		?IRegistrationService $registrationService = null
+		?IRegistrationService $registrationService = null,
+		?SettingManager $settings = null,
+		?SessionManager $sessionManager = null
 	)
 	{
-		parent::__construct( $app );
+		parent::__construct( $app, $settings, $sessionManager );
 
-		// Use dependency injection when available (container provides dependencies)
-		// Otherwise resolve from container (fallback for compatibility)
-		$this->_registrationService = $registrationService ?? $app?->getContainer()?->get( IRegistrationService::class );
+		// Pure dependency injection - no service locator fallback
+		if( $registrationService === null )
+		{
+			throw new \InvalidArgumentException( 'IRegistrationService must be injected' );
+		}
+
+		$this->_registrationService = $registrationService;
 	}
 
 	/**
@@ -49,7 +59,7 @@ class Home extends Content
 	public function index( Request $request ): string
 	{
 		// Check if registration is enabled
-		$registrationEnabled = $this->_registrationService?->isRegistrationEnabled() ?? false;
+		$registrationEnabled = $this->_registrationService->isRegistrationEnabled();
 
 		return $this->renderHtml(
 			HttpResponseStatus::OK,

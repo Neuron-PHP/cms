@@ -2,6 +2,7 @@
 
 namespace Neuron\Cms\Controllers\Admin;
 
+use Neuron\Cms\Auth\SessionManager;
 use Neuron\Cms\Controllers\Content;
 use Neuron\Cms\Enums\FlashMessageType;
 use Neuron\Cms\Models\Page;
@@ -9,6 +10,7 @@ use Neuron\Cms\Repositories\IPageRepository;
 use Neuron\Cms\Services\Page\IPageCreator;
 use Neuron\Cms\Services\Page\IPageUpdater;
 use Neuron\Cms\Services\Auth\CsrfToken;
+use Neuron\Data\Settings\SettingManager;
 use Neuron\Mvc\Application;
 use Neuron\Mvc\Requests\Request;
 use Neuron\Mvc\Responses\HttpResponseStatus;
@@ -38,21 +40,37 @@ class Pages extends Content
 	 * @param IPageRepository|null $pageRepository
 	 * @param IPageCreator|null $pageCreator
 	 * @param IPageUpdater|null $pageUpdater
+	 * @param SettingManager|null $settings
+	 * @param SessionManager|null $sessionManager
 	 */
 	public function __construct(
 		?Application $app = null,
 		?IPageRepository $pageRepository = null,
 		?IPageCreator $pageCreator = null,
-		?IPageUpdater $pageUpdater = null
+		?IPageUpdater $pageUpdater = null,
+		?SettingManager $settings = null,
+		?SessionManager $sessionManager = null
 	)
 	{
-		parent::__construct( $app );
+		parent::__construct( $app, $settings, $sessionManager );
 
-		// Use dependency injection when available (container provides dependencies)
-		// Otherwise resolve from container (fallback for compatibility)
-		$this->_pageRepository = $pageRepository ?? $app?->getContainer()?->get( IPageRepository::class );
-		$this->_pageCreator = $pageCreator ?? $app?->getContainer()?->get( IPageCreator::class );
-		$this->_pageUpdater = $pageUpdater ?? $app?->getContainer()?->get( IPageUpdater::class );
+		if( $pageRepository === null )
+		{
+			throw new \InvalidArgumentException( 'IPageRepository must be injected' );
+		}
+		$this->_pageRepository = $pageRepository;
+
+		if( $pageCreator === null )
+		{
+			throw new \InvalidArgumentException( 'IPageCreator must be injected' );
+		}
+		$this->_pageCreator = $pageCreator;
+
+		if( $pageUpdater === null )
+		{
+			throw new \InvalidArgumentException( 'IPageUpdater must be injected' );
+		}
+		$this->_pageUpdater = $pageUpdater;
 	}
 
 	/**

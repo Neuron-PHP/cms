@@ -55,14 +55,20 @@ class DashboardTest extends TestCase
 
 	public function testConstructor(): void
 	{
-		$controller = new Dashboard();
+		$mockSettingManager = Registry::getInstance()->get( 'Settings' );
+		$mockSessionManager = $this->createMock( \Neuron\Cms\Auth\SessionManager::class );
+
+		$controller = new Dashboard( null, $mockSettingManager, $mockSessionManager );
 		$this->assertInstanceOf( Dashboard::class, $controller );
 	}
 
 	public function testConstructorWithApplication(): void
 	{
 		$mockApp = $this->createMock( Application::class );
-		$controller = new Dashboard( $mockApp );
+		$mockSettingManager = Registry::getInstance()->get( 'Settings' );
+		$mockSessionManager = $this->createMock( \Neuron\Cms\Auth\SessionManager::class );
+
+		$controller = new Dashboard( $mockApp, $mockSettingManager, $mockSessionManager );
 		$this->assertInstanceOf( Dashboard::class, $controller );
 	}
 
@@ -72,8 +78,12 @@ class DashboardTest extends TestCase
 	 */
 	public function testIndexRendersView(): void
 	{
+		$mockSettingManager = Registry::getInstance()->get( 'Settings' );
+		$mockSessionManager = $this->createMock( \Neuron\Cms\Auth\SessionManager::class );
+
 		// Mock the controller to test view() method chain
 		$controller = $this->getMockBuilder( Dashboard::class )
+			->setConstructorArgs( [ null, $mockSettingManager, $mockSessionManager ] )
 			->onlyMethods( [ 'view' ] )
 			->getMock();
 

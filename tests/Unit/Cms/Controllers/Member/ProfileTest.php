@@ -71,8 +71,10 @@ class ProfileTest extends TestCase
 		$mockRepository = $this->createMock( IUserRepository::class );
 		$mockHasher = $this->createMock( PasswordHasher::class );
 		$mockUpdater = $this->createMock( IUserUpdater::class );
+		$mockSettingManager = Registry::getInstance()->get( 'Settings' );
+		$mockSessionManager = $this->createMock( \Neuron\Cms\Auth\SessionManager::class );
 
-		$controller = new Profile( null, $mockRepository, $mockHasher, $mockUpdater );
+		$controller = new Profile( null, $mockRepository, $mockHasher, $mockUpdater, $mockSettingManager, $mockSessionManager );
 
 		$this->assertInstanceOf( Profile::class, $controller );
 	}

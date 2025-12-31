@@ -81,7 +81,9 @@ class EventCategoriesControllerTest extends TestCase
 
 		$creator = $this->createMock( Creator::class );
 		$updater = $this->createMock( Updater::class );
-		$deleter = $this->createMock( Deleter::class );
+
+		$mockSettingManager = Registry::getInstance()->get( 'Settings' );
+		$mockSessionManager = $this->createMock( \Neuron\Cms\Auth\SessionManager::class );
 
 		$controller = $this->getMockBuilder( EventCategories::class )
 			->setConstructorArgs([
@@ -89,7 +91,8 @@ class EventCategoriesControllerTest extends TestCase
 				$repository,
 				$creator,
 				$updater,
-				$deleter
+				$mockSettingManager,
+				$mockSessionManager
 			])
 			->onlyMethods( ['view'] )
 			->getMock();
@@ -132,7 +135,9 @@ class EventCategoriesControllerTest extends TestCase
 		$repository = $this->createMock( DatabaseEventCategoryRepository::class );
 		$creator = $this->createMock( Creator::class );
 		$updater = $this->createMock( Updater::class );
-		$deleter = $this->createMock( Deleter::class );
+
+		$mockSettingManager = Registry::getInstance()->get( 'Settings' );
+		$mockSessionManager = $this->createMock( \Neuron\Cms\Auth\SessionManager::class );
 
 		$controller = $this->getMockBuilder( EventCategories::class )
 			->setConstructorArgs([
@@ -140,7 +145,8 @@ class EventCategoriesControllerTest extends TestCase
 				$repository,
 				$creator,
 				$updater,
-				$deleter
+				$mockSettingManager,
+				$mockSessionManager
 			])
 			->onlyMethods( ['view'] )
 			->getMock();

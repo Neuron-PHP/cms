@@ -56,29 +56,44 @@ class CategoriesTest extends TestCase
 
 	public function testConstructorWithAllDependencies(): void
 	{
+		$mockSettingManager = Registry::getInstance()->get( 'Settings' );
+		$mockSessionManager = $this->createMock( SessionManager::class );
+
 		$controller = new Categories(
 			$this->mockApp,
 			$this->mockCategoryRepo,
 			$this->mockCategoryCreator,
-			$this->mockCategoryUpdater
+			$this->mockCategoryUpdater,
+			$mockSettingManager,
+			$mockSessionManager
 		);
 
 		$this->assertInstanceOf( Categories::class, $controller );
 	}
 
-	public function testConstructorResolvesFromContainer(): void
+	public function testConstructorThrowsExceptionWithoutSettingManager(): void
 	{
-		$controller = new Categories( $this->mockApp );
-		$this->assertInstanceOf( Categories::class, $controller );
+		$this->expectException( \InvalidArgumentException::class );
+		$this->expectExceptionMessage( 'SettingManager must be injected' );
+
+		new Categories( null );
 	}
 
-	public function testConstructorWithPartialDependencies(): void
+	public function testConstructorThrowsExceptionWithoutCategoryRepository(): void
 	{
-		$controller = new Categories(
+		$this->expectException( \InvalidArgumentException::class );
+		$this->expectExceptionMessage( 'ICategoryRepository must be injected' );
+
+		$mockSettings = Registry::getInstance()->get( 'Settings' );
+		$mockSessionManager = $this->createMock( SessionManager::class );
+
+		new Categories(
 			$this->mockApp,
-			$this->mockCategoryRepo
+			null,
+			null,
+			null,
+			$mockSettings,
+			$mockSessionManager
 		);
-
-		$this->assertInstanceOf( Categories::class, $controller );
 	}
 }

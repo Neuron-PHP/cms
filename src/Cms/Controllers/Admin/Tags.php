@@ -2,11 +2,13 @@
 
 namespace Neuron\Cms\Controllers\Admin;
 
+use Neuron\Cms\Auth\SessionManager;
 use Neuron\Cms\Enums\FlashMessageType;
 use Neuron\Cms\Controllers\Content;
 use Neuron\Cms\Models\Tag;
 use Neuron\Cms\Repositories\ITagRepository;
 use Neuron\Cms\Services\SlugGenerator;
+use Neuron\Data\Settings\SettingManager;
 use Neuron\Mvc\Application;
 use Neuron\Mvc\Requests\Request;
 use Neuron\Mvc\Responses\HttpResponseStatus;
@@ -31,20 +33,31 @@ class Tags extends Content
 	 * @param Application|null $app
 	 * @param ITagRepository|null $tagRepository
 	 * @param SlugGenerator|null $slugGenerator
+	 * @param SettingManager|null $settings
+	 * @param SessionManager|null $sessionManager
 	 * @throws \Exception
 	 */
 	public function __construct(
 		?Application $app = null,
 		?ITagRepository $tagRepository = null,
-		?SlugGenerator $slugGenerator = null
+		?SlugGenerator $slugGenerator = null,
+		?SettingManager $settings = null,
+		?SessionManager $sessionManager = null
 	)
 	{
-		parent::__construct( $app );
+		parent::__construct( $app, $settings, $sessionManager );
 
-		// Use dependency injection when available (container provides dependencies)
-		// Otherwise resolve from container (fallback for compatibility)
-		$this->_tagRepository = $tagRepository ?? $app?->getContainer()?->get( ITagRepository::class );
-		$this->_slugGenerator = $slugGenerator ?? new SlugGenerator();
+		if( $tagRepository === null )
+		{
+			throw new \InvalidArgumentException( 'ITagRepository must be injected' );
+		}
+		$this->_tagRepository = $tagRepository;
+
+		if( $slugGenerator === null )
+		{
+			throw new \InvalidArgumentException( 'SlugGenerator must be injected' );
+		}
+		$this->_slugGenerator = $slugGenerator;
 	}
 
 	/**

@@ -2,9 +2,11 @@
 
 namespace Neuron\Cms\Controllers\Member;
 
+use Neuron\Cms\Auth\SessionManager;
 use Neuron\Cms\Controllers\Content;
 use Neuron\Cms\Services\Auth\CsrfToken;
 use Neuron\Core\Exceptions\NotFound;
+use Neuron\Data\Settings\SettingManager;
 use Neuron\Mvc\Application;
 use Neuron\Mvc\Requests\Request;
 use Neuron\Mvc\Responses\HttpResponseStatus;
@@ -22,12 +24,18 @@ class Dashboard extends Content
 {
 	/**
 	 * @param Application|null $app
+	 * @param SettingManager|null $settings
+	 * @param SessionManager|null $sessionManager
 	 * @return void
 	 * @throws \Exception
 	 */
-	public function __construct( ?Application $app = null )
+	public function __construct(
+		?Application $app = null,
+		?SettingManager $settings = null,
+		?SessionManager $sessionManager = null
+	)
 	{
-		parent::__construct( $app );
+		parent::__construct( $app, $settings, $sessionManager );
 	}
 
 	/**

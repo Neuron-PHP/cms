@@ -3,6 +3,7 @@
 namespace Tests\Cms\Controllers\Admin;
 
 use Neuron\Cms\Auth\PasswordHasher;
+use Neuron\Cms\Auth\SessionManager;
 use Neuron\Cms\Controllers\Admin\Profile;
 use Neuron\Cms\Models\User;
 use Neuron\Cms\Repositories\IUserRepository;
@@ -71,9 +72,25 @@ class ProfileTest extends TestCase
 		$mockRepository = $this->createMock( IUserRepository::class );
 		$mockHasher = $this->createMock( PasswordHasher::class );
 		$mockUpdater = $this->createMock( IUserUpdater::class );
+		$mockSessionManager = $this->createMock( SessionManager::class );
 
-		$controller = new Profile( null, $mockRepository, $mockHasher, $mockUpdater );
+		$controller = new Profile(
+			null,
+			$mockRepository,
+			$mockHasher,
+			$mockUpdater,
+			$this->_settingManager,
+			$mockSessionManager
+		);
 
 		$this->assertInstanceOf( Profile::class, $controller );
+	}
+
+	public function testConstructorThrowsExceptionWithoutSettingManager(): void
+	{
+		$this->expectException( \InvalidArgumentException::class );
+		$this->expectExceptionMessage( 'SettingManager must be injected' );
+
+		new Profile( null );
 	}
 }

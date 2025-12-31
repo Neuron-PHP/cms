@@ -59,8 +59,10 @@ class CalendarTest extends TestCase
 	{
 		$mockEventRepository = $this->createMock( IEventRepository::class );
 		$mockCategoryRepository = $this->createMock( IEventCategoryRepository::class );
+		$mockSettingManager = Registry::getInstance()->get( 'Settings' );
+		$mockSessionManager = $this->createMock( \Neuron\Cms\Auth\SessionManager::class );
 
-		$controller = new Calendar( null, $mockEventRepository, $mockCategoryRepository );
+		$controller = new Calendar( null, $mockEventRepository, $mockCategoryRepository, $mockSettingManager, $mockSessionManager );
 
 		$this->assertInstanceOf( Calendar::class, $controller );
 	}
@@ -73,8 +75,11 @@ class CalendarTest extends TestCase
 		$mockEventRepository->method( 'getByDateRange' )->willReturn( [] );
 		$mockCategoryRepository->method( 'all' )->willReturn( [] );
 
+		$mockSettingManager = Registry::getInstance()->get( 'Settings' );
+		$mockSessionManager = $this->createMock( \Neuron\Cms\Auth\SessionManager::class );
+
 		$controller = $this->getMockBuilder( Calendar::class )
-			->setConstructorArgs( [ null, $mockEventRepository, $mockCategoryRepository ] )
+			->setConstructorArgs( [ null, $mockEventRepository, $mockCategoryRepository, $mockSettingManager, $mockSessionManager ] )
 			->onlyMethods( [ 'renderHtml' ] )
 			->getMock();
 
@@ -121,8 +126,11 @@ class CalendarTest extends TestCase
 
 		$mockCategoryRepository->method( 'all' )->willReturn( [] );
 
+		$mockSettingManager = Registry::getInstance()->get( 'Settings' );
+		$mockSessionManager = $this->createMock( \Neuron\Cms\Auth\SessionManager::class );
+
 		$controller = $this->getMockBuilder( Calendar::class )
-			->setConstructorArgs( [ null, $mockEventRepository, $mockCategoryRepository ] )
+			->setConstructorArgs( [ null, $mockEventRepository, $mockCategoryRepository, $mockSettingManager, $mockSessionManager ] )
 			->onlyMethods( [ 'renderHtml' ] )
 			->getMock();
 
@@ -160,8 +168,11 @@ class CalendarTest extends TestCase
 
 		$mockCategoryRepository = $this->createMock( IEventCategoryRepository::class );
 
+		$mockSettingManager = Registry::getInstance()->get( 'Settings' );
+		$mockSessionManager = $this->createMock( \Neuron\Cms\Auth\SessionManager::class );
+
 		$controller = $this->getMockBuilder( Calendar::class )
-			->setConstructorArgs( [ null, $mockEventRepository, $mockCategoryRepository ] )
+			->setConstructorArgs( [ null, $mockEventRepository, $mockCategoryRepository, $mockSettingManager, $mockSessionManager ] )
 			->onlyMethods( [ 'renderHtml' ] )
 			->getMock();
 
@@ -193,7 +204,10 @@ class CalendarTest extends TestCase
 
 		$mockCategoryRepository = $this->createMock( IEventCategoryRepository::class );
 
-		$controller = new Calendar( null, $mockEventRepository, $mockCategoryRepository );
+		$mockSettingManager = Registry::getInstance()->get( 'Settings' );
+		$mockSessionManager = $this->createMock( \Neuron\Cms\Auth\SessionManager::class );
+
+		$controller = new Calendar( null, $mockEventRepository, $mockCategoryRepository, $mockSettingManager, $mockSessionManager );
 
 		$this->expectException( \RuntimeException::class );
 		$this->expectExceptionMessage( 'Event not found' );
@@ -213,7 +227,10 @@ class CalendarTest extends TestCase
 
 		$mockCategoryRepository = $this->createMock( IEventCategoryRepository::class );
 
-		$controller = new Calendar( null, $mockEventRepository, $mockCategoryRepository );
+		$mockSettingManager = Registry::getInstance()->get( 'Settings' );
+		$mockSessionManager = $this->createMock( \Neuron\Cms\Auth\SessionManager::class );
+
+		$controller = new Calendar( null, $mockEventRepository, $mockCategoryRepository, $mockSettingManager, $mockSessionManager );
 
 		$this->expectException( \RuntimeException::class );
 		$this->expectExceptionMessage( 'Event not found' );
@@ -235,8 +252,11 @@ class CalendarTest extends TestCase
 		$mockCategoryRepository = $this->createMock( IEventCategoryRepository::class );
 		$mockCategoryRepository->method( 'findBySlug' )->with( 'workshops' )->willReturn( $mockCategory );
 
+		$mockSettingManager = Registry::getInstance()->get( 'Settings' );
+		$mockSessionManager = $this->createMock( \Neuron\Cms\Auth\SessionManager::class );
+
 		$controller = $this->getMockBuilder( Calendar::class )
-			->setConstructorArgs( [ null, $mockEventRepository, $mockCategoryRepository ] )
+			->setConstructorArgs( [ null, $mockEventRepository, $mockCategoryRepository, $mockSettingManager, $mockSessionManager ] )
 			->onlyMethods( [ 'renderHtml' ] )
 			->getMock();
 
@@ -268,7 +288,10 @@ class CalendarTest extends TestCase
 		$mockCategoryRepository = $this->createMock( IEventCategoryRepository::class );
 		$mockCategoryRepository->method( 'findBySlug' )->willReturn( null );
 
-		$controller = new Calendar( null, $mockEventRepository, $mockCategoryRepository );
+		$mockSettingManager = Registry::getInstance()->get( 'Settings' );
+		$mockSessionManager = $this->createMock( \Neuron\Cms\Auth\SessionManager::class );
+
+		$controller = new Calendar( null, $mockEventRepository, $mockCategoryRepository, $mockSettingManager, $mockSessionManager );
 
 		$this->expectException( \RuntimeException::class );
 		$this->expectExceptionMessage( 'Category not found' );
@@ -291,8 +314,11 @@ class CalendarTest extends TestCase
 
 		$mockCategoryRepository = $this->createMock( IEventCategoryRepository::class );
 
+		$mockSettingManager = Registry::getInstance()->get( 'Settings' );
+		$mockSessionManager = $this->createMock( \Neuron\Cms\Auth\SessionManager::class );
+
 		$controller = $this->getMockBuilder( Calendar::class )
-			->setConstructorArgs( [ null, $mockEventRepository, $mockCategoryRepository ] )
+			->setConstructorArgs( [ null, $mockEventRepository, $mockCategoryRepository, $mockSettingManager, $mockSessionManager ] )
 			->onlyMethods( [ 'renderHtml' ] )
 			->getMock();
 

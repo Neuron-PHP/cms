@@ -2,12 +2,14 @@
 
 namespace Neuron\Cms\Controllers\Admin;
 
+use Neuron\Cms\Auth\SessionManager;
 use Neuron\Cms\Enums\FlashMessageType;
 use Neuron\Cms\Controllers\Content;
 use Neuron\Cms\Repositories\IUserRepository;
 use Neuron\Cms\Services\User\IUserCreator;
 use Neuron\Cms\Services\User\IUserUpdater;
 use Neuron\Cms\Services\User\IUserDeleter;
+use Neuron\Data\Settings\SettingManager;
 use Neuron\Mvc\Application;
 use Neuron\Mvc\Requests\Request;
 use Neuron\Cms\Enums\UserRole;
@@ -36,23 +38,44 @@ class Users extends Content
 	 * @param IUserCreator|null $userCreator
 	 * @param IUserUpdater|null $userUpdater
 	 * @param IUserDeleter|null $userDeleter
+	 * @param SettingManager|null $settings
+	 * @param SessionManager|null $sessionManager
 	 */
 	public function __construct(
 		?Application $app = null,
 		?IUserRepository $repository = null,
 		?IUserCreator $userCreator = null,
 		?IUserUpdater $userUpdater = null,
-		?IUserDeleter $userDeleter = null
+		?IUserDeleter $userDeleter = null,
+		?SettingManager $settings = null,
+		?SessionManager $sessionManager = null
 	)
 	{
-		parent::__construct( $app );
+		parent::__construct( $app, $settings, $sessionManager );
 
-		// Use dependency injection when available (container provides dependencies)
-		// Otherwise resolve from container (fallback for compatibility)
-		$this->_repository = $repository ?? $app?->getContainer()?->get( IUserRepository::class );
-		$this->_userCreator = $userCreator ?? $app?->getContainer()?->get( IUserCreator::class );
-		$this->_userUpdater = $userUpdater ?? $app?->getContainer()?->get( IUserUpdater::class );
-		$this->_userDeleter = $userDeleter ?? $app?->getContainer()?->get( IUserDeleter::class );
+		if( $repository === null )
+		{
+			throw new \InvalidArgumentException( 'IUserRepository must be injected' );
+		}
+		$this->_repository = $repository;
+
+		if( $userCreator === null )
+		{
+			throw new \InvalidArgumentException( 'IUserCreator must be injected' );
+		}
+		$this->_userCreator = $userCreator;
+
+		if( $userUpdater === null )
+		{
+			throw new \InvalidArgumentException( 'IUserUpdater must be injected' );
+		}
+		$this->_userUpdater = $userUpdater;
+
+		if( $userDeleter === null )
+		{
+			throw new \InvalidArgumentException( 'IUserDeleter must be injected' );
+		}
+		$this->_userDeleter = $userDeleter;
 	}
 
 	/**

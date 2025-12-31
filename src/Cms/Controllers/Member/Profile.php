@@ -2,10 +2,12 @@
 
 namespace Neuron\Cms\Controllers\Member;
 
+use Neuron\Cms\Auth\SessionManager;
 use Neuron\Cms\Controllers\Content;
 use Neuron\Cms\Repositories\IUserRepository;
 use Neuron\Cms\Services\User\IUserUpdater;
 use Neuron\Cms\Auth\PasswordHasher;
+use Neuron\Data\Settings\SettingManager;
 use Neuron\Mvc\Application;
 use Neuron\Mvc\Requests\Request;
 use Neuron\Mvc\Responses\HttpResponseStatus;
@@ -30,22 +32,38 @@ class Profile extends Content
 	 * @param IUserRepository|null $repository
 	 * @param PasswordHasher|null $hasher
 	 * @param IUserUpdater|null $userUpdater
+	 * @param SettingManager|null $settings
+	 * @param SessionManager|null $sessionManager
 	 * @throws \Exception
 	 */
 	public function __construct(
 		?Application $app = null,
 		?IUserRepository $repository = null,
 		?PasswordHasher $hasher = null,
-		?IUserUpdater $userUpdater = null
+		?IUserUpdater $userUpdater = null,
+		?SettingManager $settings = null,
+		?SessionManager $sessionManager = null
 	)
 	{
-		parent::__construct( $app );
+		parent::__construct( $app, $settings, $sessionManager );
 
-		// Use dependency injection when available (container provides dependencies)
-		// Otherwise resolve from container (fallback for compatibility)
-		$this->_repository = $repository ?? $app?->getContainer()?->get( IUserRepository::class );
-		$this->_hasher = $hasher ?? $app?->getContainer()?->get( PasswordHasher::class );
-		$this->_userUpdater = $userUpdater ?? $app?->getContainer()?->get( IUserUpdater::class );
+		if( $repository === null )
+		{
+			throw new \InvalidArgumentException( 'IUserRepository must be injected' );
+		}
+		$this->_repository = $repository;
+
+		if( $hasher === null )
+		{
+			throw new \InvalidArgumentException( 'PasswordHasher must be injected' );
+		}
+		$this->_hasher = $hasher;
+
+		if( $userUpdater === null )
+		{
+			throw new \InvalidArgumentException( 'IUserUpdater must be injected' );
+		}
+		$this->_userUpdater = $userUpdater;
 	}
 
 	/**

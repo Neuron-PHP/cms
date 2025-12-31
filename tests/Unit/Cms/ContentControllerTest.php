@@ -14,6 +14,7 @@ use PHPUnit\Framework\TestCase;
 class ContentControllerTest extends TestCase
 {
 	private SettingManager $_settingManager;
+	private $mockSessionManager;
 
 	protected function setUp(): void
 	{
@@ -31,6 +32,9 @@ class ContentControllerTest extends TestCase
 
 		// Wrap in SettingManager
 		$this->_settingManager = new SettingManager( $settings );
+
+		// Create mock SessionManager
+		$this->mockSessionManager = $this->createMock( \Neuron\Cms\Auth\SessionManager::class );
 
 		// Store settings in registry for backward compatibility
 		Registry::getInstance()->set( 'Settings', $this->_settingManager );
@@ -76,7 +80,7 @@ class ContentControllerTest extends TestCase
 	 */
 	public function testConstructor()
 	{
-		$controller = new Content( null, $this->_settingManager );
+		$controller = new Content( null, $this->_settingManager, $this->mockSessionManager );
 
 		// Check that properties were set from settings
 		$this->assertEquals( 'Test Site', $controller->getName() );
@@ -96,7 +100,7 @@ class ContentControllerTest extends TestCase
 	 */
 	public function testSettersAndGetters()
 	{
-		$controller = new Content();
+		$controller = new Content( null, $this->_settingManager, $this->mockSessionManager );
 
 		// Test Name
 		$controller->setName( 'New Name' );
@@ -124,7 +128,7 @@ class ContentControllerTest extends TestCase
 	 */
 	public function testMethodChaining()
 	{
-		$controller = new Content();
+		$controller = new Content( null, $this->_settingManager, $this->mockSessionManager );
 
 		$result = $controller
 			->setName( 'Chained Name' )
@@ -152,6 +156,7 @@ class ContentControllerTest extends TestCase
 	public function testMarkdownMethod()
 	{
 		$controller = $this->getMockBuilder( Content::class )
+			->setConstructorArgs( [ null, $this->_settingManager, $this->mockSessionManager ] )
 			->onlyMethods( [ 'renderMarkdown' ] )
 			->getMock();
 
@@ -178,7 +183,7 @@ class ContentControllerTest extends TestCase
 	 */
 	public function testGetSessionManager()
 	{
-		$controller = new Content();
+		$controller = new Content( null, $this->_settingManager, $this->mockSessionManager );
 
 		// Use reflection to access protected method
 		$reflection = new \ReflectionClass( $controller );
@@ -201,7 +206,7 @@ class ContentControllerTest extends TestCase
 	 */
 	public function testFlash()
 	{
-		$controller = new Content();
+		$controller = new Content( null, $this->_settingManager, $this->mockSessionManager );
 
 		// Use reflection to access protected methods
 		$reflection = new \ReflectionClass( $controller );

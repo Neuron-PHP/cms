@@ -55,6 +55,9 @@ class PostsTest extends TestCase
 
 	public function testConstructorWithAllDependencies(): void
 	{
+		$mockSettingManager = Registry::getInstance()->get( 'Settings' );
+		$mockSessionManager = $this->createMock( SessionManager::class );
+
 		$controller = new Posts(
 			$this->mockApp,
 			$this->createMock( IPostRepository::class ),
@@ -62,25 +65,40 @@ class PostsTest extends TestCase
 			$this->createMock( ITagRepository::class ),
 			$this->createMock( IPostCreator::class ),
 			$this->createMock( IPostUpdater::class ),
-			$this->createMock( IPostDeleter::class )
+			$this->createMock( IPostDeleter::class ),
+			$mockSettingManager,
+			$mockSessionManager
 		);
 
 		$this->assertInstanceOf( Posts::class, $controller );
 	}
 
-	public function testConstructorResolvesFromContainer(): void
+	public function testConstructorThrowsExceptionWithoutSettingManager(): void
 	{
-		$controller = new Posts( $this->mockApp );
-		$this->assertInstanceOf( Posts::class, $controller );
+		$this->expectException( \InvalidArgumentException::class );
+		$this->expectExceptionMessage( 'SettingManager must be injected' );
+
+		new Posts( null );
 	}
 
-	public function testConstructorWithPartialDependencies(): void
+	public function testConstructorThrowsExceptionWithoutPostRepository(): void
 	{
-		$controller = new Posts(
+		$this->expectException( \InvalidArgumentException::class );
+		$this->expectExceptionMessage( 'IPostRepository must be injected' );
+
+		$mockSettings = Registry::getInstance()->get( 'Settings' );
+		$mockSessionManager = $this->createMock( SessionManager::class );
+
+		new Posts(
 			$this->mockApp,
-			$this->createMock( IPostRepository::class )
+			null,
+			null,
+			null,
+			null,
+			null,
+			null,
+			$mockSettings,
+			$mockSessionManager
 		);
-
-		$this->assertInstanceOf( Posts::class, $controller );
 	}
 }

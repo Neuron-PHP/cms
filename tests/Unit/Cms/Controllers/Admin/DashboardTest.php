@@ -14,6 +14,8 @@ use PHPUnit\Framework\TestCase;
 class DashboardTest extends TestCase
 {
 	private SettingManager $_settingManager;
+	private $mockSettingManager;
+	private $mockSessionManager;
 
 	protected function setUp(): void
 	{
@@ -36,6 +38,9 @@ class DashboardTest extends TestCase
 		{
 			file_put_contents( $parentDir . '/.version.json', $versionContent );
 		}
+
+		$this->mockSettingManager = Registry::getInstance()->get( 'Settings' );
+		$this->mockSessionManager = $this->createMock( \Neuron\Cms\Auth\SessionManager::class );
 	}
 
 	protected function tearDown(): void
@@ -55,14 +60,14 @@ class DashboardTest extends TestCase
 
 	public function testConstructor(): void
 	{
-		$controller = new Dashboard();
+		$controller = new Dashboard( null, $this->mockSettingManager, $this->mockSessionManager );
 		$this->assertInstanceOf( Dashboard::class, $controller );
 	}
 
 	public function testConstructorWithApplication(): void
 	{
 		$mockApp = $this->createMock( Application::class );
-		$controller = new Dashboard( $mockApp );
+		$controller = new Dashboard( $mockApp, $this->mockSettingManager, $this->mockSessionManager );
 		$this->assertInstanceOf( Dashboard::class, $controller );
 	}
 
@@ -74,6 +79,7 @@ class DashboardTest extends TestCase
 	{
 		// Mock the controller to test view() method chain
 		$controller = $this->getMockBuilder( Dashboard::class )
+			->setConstructorArgs( [ null, $this->mockSettingManager, $this->mockSessionManager ] )
 			->onlyMethods( [ 'view' ] )
 			->getMock();
 

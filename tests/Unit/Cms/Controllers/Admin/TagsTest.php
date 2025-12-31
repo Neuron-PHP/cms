@@ -46,18 +46,25 @@ class TagsTest extends TestCase
 
 	public function testConstructorWithAllDependencies(): void
 	{
+		$mockSettingManager = Registry::getInstance()->get( 'Settings' );
+		$mockSessionManager = $this->createMock( SessionManager::class );
+
 		$controller = new Tags(
 			$this->mockApp,
 			$this->createMock( ITagRepository::class ),
-			$this->createMock( SlugGenerator::class )
+			$this->createMock( SlugGenerator::class ),
+			$mockSettingManager,
+			$mockSessionManager
 		);
 
 		$this->assertInstanceOf( Tags::class, $controller );
 	}
 
-	public function testConstructorResolvesFromContainer(): void
+	public function testConstructorThrowsExceptionWithoutSettingManager(): void
 	{
-		$controller = new Tags( $this->mockApp );
-		$this->assertInstanceOf( Tags::class, $controller );
+		$this->expectException( \InvalidArgumentException::class );
+		$this->expectExceptionMessage( 'SettingManager must be injected' );
+
+		new Tags( null );
 	}
 }

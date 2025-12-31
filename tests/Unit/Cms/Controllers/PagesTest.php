@@ -69,8 +69,10 @@ class PagesTest extends TestCase
 	{
 		$mockPageRepository = $this->createMock( IPageRepository::class );
 		$mockRenderer = $this->createMock( EditorJsRenderer::class );
+		$mockSettingManager = Registry::getInstance()->get( 'Settings' );
+		$mockSessionManager = $this->createMock( \Neuron\Cms\Auth\SessionManager::class );
 
-		$controller = new Pages( null, $mockPageRepository, $mockRenderer );
+		$controller = new Pages( null, $mockPageRepository, $mockRenderer, $mockSettingManager, $mockSessionManager );
 
 		$this->assertInstanceOf( Pages::class, $controller );
 	}
@@ -95,8 +97,11 @@ class PagesTest extends TestCase
 		$mockRenderer = $this->createMock( EditorJsRenderer::class );
 		$mockRenderer->method( 'render' )->willReturn( '<p>Rendered content</p>' );
 
+		$mockSettingManager = Registry::getInstance()->get( 'Settings' );
+		$mockSessionManager = $this->createMock( \Neuron\Cms\Auth\SessionManager::class );
+
 		$controller = $this->getMockBuilder( Pages::class )
-			->setConstructorArgs( [ null, $mockPageRepository, $mockRenderer ] )
+			->setConstructorArgs( [ null, $mockPageRepository, $mockRenderer, $mockSettingManager, $mockSessionManager ] )
 			->onlyMethods( [ 'renderHtml' ] )
 			->getMock();
 
@@ -128,8 +133,10 @@ class PagesTest extends TestCase
 		$mockPageRepository->method( 'findBySlug' )->with( 'nonexistent' )->willReturn( null );
 
 		$mockRenderer = $this->createMock( EditorJsRenderer::class );
+		$mockSettingManager = Registry::getInstance()->get( 'Settings' );
+		$mockSessionManager = $this->createMock( \Neuron\Cms\Auth\SessionManager::class );
 
-		$controller = new Pages( null, $mockPageRepository, $mockRenderer );
+		$controller = new Pages( null, $mockPageRepository, $mockRenderer, $mockSettingManager, $mockSessionManager );
 
 		$this->expectException( NotFound::class );
 		$this->expectExceptionMessage( 'Page not found' );
@@ -148,8 +155,10 @@ class PagesTest extends TestCase
 		$mockPageRepository->method( 'findBySlug' )->with( 'unpublished' )->willReturn( $mockPage );
 
 		$mockRenderer = $this->createMock( EditorJsRenderer::class );
+		$mockSettingManager = Registry::getInstance()->get( 'Settings' );
+		$mockSessionManager = $this->createMock( \Neuron\Cms\Auth\SessionManager::class );
 
-		$controller = new Pages( null, $mockPageRepository, $mockRenderer );
+		$controller = new Pages( null, $mockPageRepository, $mockRenderer, $mockSettingManager, $mockSessionManager );
 
 		$this->expectException( NotFound::class );
 		$this->expectExceptionMessage( 'Page not found' );
@@ -177,8 +186,11 @@ class PagesTest extends TestCase
 		$mockRenderer = $this->createMock( EditorJsRenderer::class );
 		$mockRenderer->method( 'render' )->willReturn( '<p>Content</p>' );
 
+		$mockSettingManager = Registry::getInstance()->get( 'Settings' );
+		$mockSessionManager = $this->createMock( \Neuron\Cms\Auth\SessionManager::class );
+
 		$controller = $this->getMockBuilder( Pages::class )
-			->setConstructorArgs( [ null, $mockPageRepository, $mockRenderer ] )
+			->setConstructorArgs( [ null, $mockPageRepository, $mockRenderer, $mockSettingManager, $mockSessionManager ] )
 			->onlyMethods( [ 'renderHtml' ] )
 			->getMock();
 
@@ -217,8 +229,11 @@ class PagesTest extends TestCase
 		$mockRenderer = $this->createMock( EditorJsRenderer::class );
 		$mockRenderer->method( 'render' )->willReturn( '<p>Content</p>' );
 
+		$mockSettingManager = Registry::getInstance()->get( 'Settings' );
+		$mockSessionManager = $this->createMock( \Neuron\Cms\Auth\SessionManager::class );
+
 		$controller = $this->getMockBuilder( Pages::class )
-			->setConstructorArgs( [ null, $mockPageRepository, $mockRenderer ] )
+			->setConstructorArgs( [ null, $mockPageRepository, $mockRenderer, $mockSettingManager, $mockSessionManager ] )
 			->onlyMethods( [ 'renderHtml', 'getDescription' ] )
 			->getMock();
 

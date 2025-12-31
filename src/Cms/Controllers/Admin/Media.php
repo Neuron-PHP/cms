@@ -2,10 +2,12 @@
 
 namespace Neuron\Cms\Controllers\Admin;
 
+use Neuron\Cms\Auth\SessionManager;
 use Neuron\Cms\Enums\FlashMessageType;
 use Neuron\Cms\Controllers\Content;
 use Neuron\Cms\Services\Media\CloudinaryUploader;
 use Neuron\Cms\Services\Media\MediaValidator;
+use Neuron\Data\Settings\SettingManager;
 use Neuron\Log\Log;
 use Neuron\Mvc\Application;
 use Neuron\Mvc\Requests\Request;
@@ -24,8 +26,8 @@ use Neuron\Routing\Attributes\RouteGroup;
 #[RouteGroup(prefix: '/admin', filters: ['auth'])]
 class Media extends Content
 {
-	private ?CloudinaryUploader $_uploader = null;
-	private ?MediaValidator $_validator = null;
+	private CloudinaryUploader $_uploader;
+	private MediaValidator $_validator;
 
 	/**
 	 * Constructor
@@ -33,20 +35,31 @@ class Media extends Content
 	 * @param Application|null $app
 	 * @param CloudinaryUploader|null $uploader
 	 * @param MediaValidator|null $validator
+	 * @param SettingManager|null $settings
+	 * @param SessionManager|null $sessionManager
 	 * @throws \Exception
 	 */
 	public function __construct(
 		?Application $app = null,
 		?CloudinaryUploader $uploader = null,
-		?MediaValidator $validator = null
+		?MediaValidator $validator = null,
+		?SettingManager $settings = null,
+		?SessionManager $sessionManager = null
 	)
 	{
-		parent::__construct( $app );
+		parent::__construct( $app, $settings, $sessionManager );
 
-		// Use dependency injection when available (container provides dependencies)
-		// Otherwise resolve from container (fallback for compatibility)
-		$this->_uploader = $uploader ?? $app?->getContainer()?->get( CloudinaryUploader::class );
-		$this->_validator = $validator ?? $app?->getContainer()?->get( MediaValidator::class );
+		if( $uploader === null )
+		{
+			throw new \InvalidArgumentException( 'CloudinaryUploader must be injected' );
+		}
+		$this->_uploader = $uploader;
+
+		if( $validator === null )
+		{
+			throw new \InvalidArgumentException( 'MediaValidator must be injected' );
+		}
+		$this->_validator = $validator;
 	}
 
 	/**
