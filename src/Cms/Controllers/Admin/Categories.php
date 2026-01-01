@@ -10,7 +10,7 @@ use Neuron\Cms\Services\Category\ICategoryCreator;
 use Neuron\Cms\Services\Category\ICategoryUpdater;
 use Neuron\Core\Exceptions\NotFound;
 use Neuron\Data\Settings\SettingManager;
-use Neuron\Mvc\Application;
+use Neuron\Mvc\IMvcApplication;
 use Neuron\Mvc\Requests\Request;
 use Neuron\Mvc\Responses\HttpResponseStatus;
 use Neuron\Routing\Attributes\Get;
@@ -32,20 +32,20 @@ class Categories extends Content
 	private ICategoryUpdater $_categoryUpdater;
 
 	/**
-	 * @param Application|null $app
+	 * @param IMvcApplication $app
+	 * @param SettingManager $settings
+	 * @param SessionManager $sessionManager
 	 * @param ICategoryRepository|null $categoryRepository
 	 * @param ICategoryCreator|null $categoryCreator
 	 * @param ICategoryUpdater|null $categoryUpdater
-	 * @param SettingManager|null $settings
-	 * @param SessionManager|null $sessionManager
 	 */
 	public function __construct(
-		?Application $app = null,
+		IMvcApplication $app,
+		SettingManager $settings,
+		SessionManager $sessionManager,
 		?ICategoryRepository $categoryRepository = null,
 		?ICategoryCreator $categoryCreator = null,
-		?ICategoryUpdater $categoryUpdater = null,
-		?SettingManager $settings = null,
-		?SessionManager $sessionManager = null
+		?ICategoryUpdater $categoryUpdater = null
 	)
 	{
 		parent::__construct( $app, $settings, $sessionManager );

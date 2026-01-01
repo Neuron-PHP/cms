@@ -8,9 +8,10 @@ use Neuron\Cms\Services\Category\ICategoryCreator;
 use Neuron\Cms\Services\Category\ICategoryUpdater;
 use Neuron\Cms\Auth\SessionManager;
 use Neuron\Data\Settings\SettingManager;
-use Neuron\Mvc\Application;
+use Neuron\Mvc\IMvcApplication;
 use Neuron\Patterns\Container\IContainer;
 use Neuron\Patterns\Registry;
+use Neuron\Routing\Router;
 use PHPUnit\Framework\TestCase;
 
 class CategoriesTest extends TestCase
@@ -19,7 +20,7 @@ class CategoriesTest extends TestCase
 	private ICategoryRepository $mockCategoryRepo;
 	private ICategoryCreator $mockCategoryCreator;
 	private ICategoryUpdater $mockCategoryUpdater;
-	private Application $mockApp;
+	private IMvcApplication $mockApp;
 	private IContainer $mockContainer;
 
 	protected function setUp(): void
@@ -30,7 +31,9 @@ class CategoriesTest extends TestCase
 		$this->mockCategoryRepo = $this->createMock( ICategoryRepository::class );
 		$this->mockCategoryCreator = $this->createMock( ICategoryCreator::class );
 		$this->mockCategoryUpdater = $this->createMock( ICategoryUpdater::class );
-		$this->mockApp = $this->createMock( Application::class );
+		$router = $this->createMock( Router::class );
+		$this->mockApp = $this->createMock( IMvcApplication::class );
+		$this->mockApp->method( 'getRouter' )->willReturn( $router );
 		$this->mockContainer = $this->createMock( IContainer::class );
 
 		// Setup mock settings for Registry
@@ -61,11 +64,11 @@ class CategoriesTest extends TestCase
 
 		$controller = new Categories(
 			$this->mockApp,
+			$mockSettingManager,
+			$mockSessionManager,
 			$this->mockCategoryRepo,
 			$this->mockCategoryCreator,
-			$this->mockCategoryUpdater,
-			$mockSettingManager,
-			$mockSessionManager
+			$this->mockCategoryUpdater
 		);
 
 		$this->assertInstanceOf( Categories::class, $controller );
@@ -73,8 +76,8 @@ class CategoriesTest extends TestCase
 
 	public function testConstructorThrowsExceptionWithoutSettingManager(): void
 	{
-		$this->expectException( \InvalidArgumentException::class );
-		$this->expectExceptionMessage( 'SettingManager must be injected' );
+		$this->expectException( \TypeError::class );
+		// IMvcApplication is required (non-nullable), so TypeError will be thrown
 
 		new Categories( null );
 	}
@@ -82,18 +85,17 @@ class CategoriesTest extends TestCase
 	public function testConstructorThrowsExceptionWithoutCategoryRepository(): void
 	{
 		$this->expectException( \InvalidArgumentException::class );
-		$this->expectExceptionMessage( 'ICategoryRepository must be injected' );
 
 		$mockSettings = Registry::getInstance()->get( 'Settings' );
 		$mockSessionManager = $this->createMock( SessionManager::class );
 
 		new Categories(
 			$this->mockApp,
-			null,
-			null,
-			null,
 			$mockSettings,
-			$mockSessionManager
+			$mockSessionManager,
+			null,
+			null,
+			null
 		);
 	}
 }

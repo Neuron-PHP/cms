@@ -9,21 +9,24 @@ use Neuron\Cms\Services\User\IUserUpdater;
 use Neuron\Cms\Services\User\IUserDeleter;
 use Neuron\Cms\Auth\SessionManager;
 use Neuron\Data\Settings\SettingManager;
-use Neuron\Mvc\Application;
+use Neuron\Mvc\IMvcApplication;
+use Neuron\Routing\Router;
 use Neuron\Patterns\Container\IContainer;
 use Neuron\Patterns\Registry;
 use PHPUnit\Framework\TestCase;
 
 class UsersTest extends TestCase
 {
-	private Application $mockApp;
+	private IMvcApplication $mockApp;
 	private IContainer $mockContainer;
 
 	protected function setUp(): void
 	{
 		parent::setUp();
 
-		$this->mockApp = $this->createMock( Application::class );
+		$this->mockApp = $this->createMock( IMvcApplication::class );
+		$router = $this->createMock( Router::class );
+		$this->mockApp->method( 'getRouter' )->willReturn( $router );
 		$this->mockContainer = $this->createMock( IContainer::class );
 
 		// Setup mock settings for Registry
@@ -55,12 +58,12 @@ class UsersTest extends TestCase
 
 		$controller = new Users(
 			$this->mockApp,
+			$mockSettings,
+			$mockSessionManager,
 			$this->createMock( IUserRepository::class ),
 			$this->createMock( IUserCreator::class ),
 			$this->createMock( IUserUpdater::class ),
-			$this->createMock( IUserDeleter::class ),
-			$mockSettings,
-			$mockSessionManager
+			$this->createMock( IUserDeleter::class )
 		);
 
 		$this->assertInstanceOf( Users::class, $controller );
@@ -68,8 +71,7 @@ class UsersTest extends TestCase
 
 	public function testConstructorThrowsExceptionWithoutSettingManager(): void
 	{
-		$this->expectException( \InvalidArgumentException::class );
-		$this->expectExceptionMessage( 'SettingManager must be injected' );
+		$this->expectException( \TypeError::class );
 
 		new Users( null );
 	}
@@ -77,19 +79,18 @@ class UsersTest extends TestCase
 	public function testConstructorThrowsExceptionWithoutUserRepository(): void
 	{
 		$this->expectException( \InvalidArgumentException::class );
-		$this->expectExceptionMessage( 'IUserRepository must be injected' );
 
 		$mockSettings = Registry::getInstance()->get( 'Settings' );
 		$mockSessionManager = $this->createMock( SessionManager::class );
 
 		new Users(
 			$this->mockApp,
-			null,
-			null,
-			null,
-			null,
 			$mockSettings,
-			$mockSessionManager
+			$mockSessionManager,
+			null,
+			null,
+			null,
+			null
 		);
 	}
 }

@@ -10,7 +10,7 @@ use Neuron\Cms\Services\Auth\IPasswordResetter;
 use Neuron\Core\Exceptions\NotFound;
 use Neuron\Data\Settings\SettingManager;
 use Neuron\Log\Log;
-use Neuron\Mvc\Application;
+use Neuron\Mvc\IMvcApplication;
 use Neuron\Mvc\Requests\Request;
 use Neuron\Mvc\Responses\HttpResponseStatus;
 use Neuron\Mvc\Views\Html;
@@ -32,17 +32,17 @@ class PasswordReset extends Content
 	private IPasswordResetter $_passwordResetter;
 
 	/**
-	 * @param Application|null $app
+	 * @param IMvcApplication $app
+	 * @param SettingManager $settings
+	 * @param SessionManager $sessionManager
 	 * @param IPasswordResetter|null $passwordResetter
-	 * @param SettingManager|null $settings
-	 * @param SessionManager|null $sessionManager
 	 * @throws \Exception
 	 */
 	public function __construct(
-		?Application $app = null,
-		?IPasswordResetter $passwordResetter = null,
-		?SettingManager $settings = null,
-		?SessionManager $sessionManager = null
+		IMvcApplication $app,
+		SettingManager $settings,
+		SessionManager $sessionManager,
+		?IPasswordResetter $passwordResetter = null
 	)
 	{
 		parent::__construct( $app, $settings, $sessionManager );

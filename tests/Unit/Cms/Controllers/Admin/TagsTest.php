@@ -7,21 +7,24 @@ use Neuron\Cms\Repositories\ITagRepository;
 use Neuron\Cms\Services\SlugGenerator;
 use Neuron\Cms\Auth\SessionManager;
 use Neuron\Data\Settings\SettingManager;
-use Neuron\Mvc\Application;
+use Neuron\Mvc\IMvcApplication;
+use Neuron\Routing\Router;
 use Neuron\Patterns\Container\IContainer;
 use Neuron\Patterns\Registry;
 use PHPUnit\Framework\TestCase;
 
 class TagsTest extends TestCase
 {
-	private Application $mockApp;
+	private IMvcApplication $mockApp;
 	private IContainer $mockContainer;
 
 	protected function setUp(): void
 	{
 		parent::setUp();
 
-		$this->mockApp = $this->createMock( Application::class );
+		$this->mockApp = $this->createMock( IMvcApplication::class );
+		$router = $this->createMock( Router::class );
+		$this->mockApp->method( 'getRouter' )->willReturn( $router );
 		$this->mockContainer = $this->createMock( IContainer::class );
 
 		// Setup mock settings for Registry
@@ -51,10 +54,10 @@ class TagsTest extends TestCase
 
 		$controller = new Tags(
 			$this->mockApp,
-			$this->createMock( ITagRepository::class ),
-			$this->createMock( SlugGenerator::class ),
 			$mockSettingManager,
-			$mockSessionManager
+			$mockSessionManager,
+			$this->createMock( ITagRepository::class ),
+			$this->createMock( SlugGenerator::class )
 		);
 
 		$this->assertInstanceOf( Tags::class, $controller );
@@ -62,8 +65,7 @@ class TagsTest extends TestCase
 
 	public function testConstructorThrowsExceptionWithoutSettingManager(): void
 	{
-		$this->expectException( \InvalidArgumentException::class );
-		$this->expectExceptionMessage( 'SettingManager must be injected' );
+		$this->expectException( \TypeError::class );
 
 		new Tags( null );
 	}

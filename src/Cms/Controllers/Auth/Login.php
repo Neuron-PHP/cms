@@ -9,7 +9,7 @@ use Neuron\Cms\Enums\FlashMessageType;
 use Neuron\Cms\Services\Auth\IAuthenticationService;
 use Neuron\Core\Exceptions\NotFound;
 use Neuron\Data\Settings\SettingManager;
-use Neuron\Mvc\Application;
+use Neuron\Mvc\IMvcApplication;
 use Neuron\Mvc\Responses\HttpResponseStatus;
 use Neuron\Mvc\Requests\Request;
 use Neuron\Routing\Attributes\Get;
@@ -29,25 +29,21 @@ class Login extends Content
 	private IAuthenticationService $_authentication;
 
 	/**
-	 * @param Application|null $app
-	 * @param IAuthenticationService|null $authentication
-	 * @param SettingManager|null $settings
-	 * @param SessionManager|null $sessionManager
+	 * @param IMvcApplication $app
+	 * @param IAuthenticationService $authentication
+	 * @param SettingManager $settings
+	 * @param SessionManager $sessionManager
 	 * @throws \Exception
 	 */
 	public function __construct(
-		?Application $app = null,
-		?IAuthenticationService $authentication = null,
-		?SettingManager $settings = null,
-		?SessionManager $sessionManager = null
+		IMvcApplication $app,
+		IAuthenticationService $authentication,
+		SettingManager $settings,
+		SessionManager $sessionManager
 	)
 	{
 		parent::__construct( $app, $settings, $sessionManager );
 
-		if( $authentication === null )
-		{
-			throw new \InvalidArgumentException( 'IAuthenticationService must be injected' );
-		}
 		$this->_authentication = $authentication;
 	}
 

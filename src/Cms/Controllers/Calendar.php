@@ -6,7 +6,7 @@ use Neuron\Cms\Auth\SessionManager;
 use Neuron\Cms\Repositories\IEventRepository;
 use Neuron\Cms\Repositories\IEventCategoryRepository;
 use Neuron\Data\Settings\SettingManager;
-use Neuron\Mvc\Application;
+use Neuron\Mvc\IMvcApplication;
 use Neuron\Mvc\Requests\Request;
 use Neuron\Mvc\Responses\HttpResponseStatus;
 use DateTimeImmutable;
@@ -27,19 +27,19 @@ class Calendar extends Content
 	private IEventCategoryRepository $_categoryRepository;
 
 	/**
-	 * @param Application|null $app
+	 * @param IMvcApplication $app
+	 * @param SettingManager $settings
+	 * @param SessionManager $sessionManager
 	 * @param IEventRepository|null $eventRepository
 	 * @param IEventCategoryRepository|null $categoryRepository
-	 * @param SettingManager|null $settings
-	 * @param SessionManager|null $sessionManager
 	 * @throws \Exception
 	 */
 	public function __construct(
-		?Application $app = null,
+		IMvcApplication $app,
+		SettingManager $settings,
+		SessionManager $sessionManager,
 		?IEventRepository $eventRepository = null,
-		?IEventCategoryRepository $categoryRepository = null,
-		?SettingManager $settings = null,
-		?SessionManager $sessionManager = null
+		?IEventCategoryRepository $categoryRepository = null
 	)
 	{
 		parent::__construct( $app, $settings, $sessionManager );

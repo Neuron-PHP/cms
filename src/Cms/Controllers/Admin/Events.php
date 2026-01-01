@@ -12,7 +12,7 @@ use Neuron\Cms\Services\Event\IEventUpdater;
 use Neuron\Cms\Services\Auth\CsrfToken;
 use Neuron\Data\Settings\SettingManager;
 use Neuron\Log\Log;
-use Neuron\Mvc\Application;
+use Neuron\Mvc\IMvcApplication;
 use Neuron\Mvc\Requests\Request;
 use Neuron\Mvc\Responses\HttpResponseStatus;
 use DateTimeImmutable;
@@ -36,22 +36,22 @@ class Events extends Content
 	private IEventUpdater $_updater;
 
 	/**
-	 * @param Application|null $app
+	 * @param IMvcApplication $app
+	 * @param SettingManager $settings
+	 * @param SessionManager $sessionManager
 	 * @param IEventRepository|null $eventRepository
 	 * @param IEventCategoryRepository|null $categoryRepository
 	 * @param IEventCreator|null $creator
 	 * @param IEventUpdater|null $updater
-	 * @param SettingManager|null $settings
-	 * @param SessionManager|null $sessionManager
 	 */
 	public function __construct(
-		?Application $app = null,
+		IMvcApplication $app,
+		SettingManager $settings,
+		SessionManager $sessionManager,
 		?IEventRepository $eventRepository = null,
 		?IEventCategoryRepository $categoryRepository = null,
 		?IEventCreator $creator = null,
-		?IEventUpdater $updater = null,
-		?SettingManager $settings = null,
-		?SessionManager $sessionManager = null
+		?IEventUpdater $updater = null
 	)
 	{
 		parent::__construct( $app, $settings, $sessionManager );

@@ -9,8 +9,10 @@ use Neuron\Cms\Services\Media\CloudinaryUploader;
 use Neuron\Cms\Services\Media\MediaValidator;
 use Neuron\Data\Settings\SettingManager;
 use Neuron\Data\Settings\Source\Memory;
+use Neuron\Mvc\IMvcApplication;
 use Neuron\Mvc\Requests\Request;
 use Neuron\Patterns\Registry;
+use Neuron\Routing\Router;
 
 /**
  * Unit tests for Media controller upload methods
@@ -19,10 +21,16 @@ class MediaUploadTest extends TestCase
 {
 	private array $_originalRegistry = [];
 	private SettingManager $_settings;
+	private IMvcApplication $_mockApp;
 
 	protected function setUp(): void
 	{
 		parent::setUp();
+
+		// Create mock application
+		$router = $this->createMock( Router::class );
+		$this->_mockApp = $this->createMock( IMvcApplication::class );
+		$this->_mockApp->method( 'getRouter' )->willReturn( $router );
 
 		// Store original registry values
 		$this->_originalRegistry = [
@@ -70,7 +78,7 @@ class MediaUploadTest extends TestCase
 		$mockCloudinaryUploader = $this->createMock( CloudinaryUploader::class );
 		$mockMediaValidator = $this->createMock( MediaValidator::class );
 
-		$media = new Media( null, $mockCloudinaryUploader, $mockMediaValidator, $mockSettingManager, $mockSessionManager );
+		$media = new Media( $this->_mockApp, $mockSettingManager, $mockSessionManager, $mockCloudinaryUploader, $mockMediaValidator );
 		$request = $this->createMock( Request::class );
 		$result = $media->uploadImage( $request );
 
@@ -105,7 +113,7 @@ class MediaUploadTest extends TestCase
 		$mockMediaValidator = $this->createMock( MediaValidator::class );
 
 		// Create Media controller
-		$media = new Media( null, $mockCloudinaryUploader, $mockMediaValidator, $mockSettingManager, $mockSessionManager );
+		$media = new Media( $this->_mockApp, $mockSettingManager, $mockSessionManager, $mockCloudinaryUploader, $mockMediaValidator );
 
 		// Create a mock validator that fails
 		$validatorMock = $this->createMock( MediaValidator::class );
@@ -142,7 +150,7 @@ class MediaUploadTest extends TestCase
 		$mockCloudinaryUploader = $this->createMock( CloudinaryUploader::class );
 		$mockMediaValidator = $this->createMock( MediaValidator::class );
 
-		$media = new Media( null, $mockCloudinaryUploader, $mockMediaValidator, $mockSettingManager, $mockSessionManager );
+		$media = new Media( $this->_mockApp, $mockSettingManager, $mockSessionManager, $mockCloudinaryUploader, $mockMediaValidator );
 		$request = $this->createMock( Request::class );
 		$result = $media->uploadFeaturedImage( $request );
 
@@ -177,7 +185,7 @@ class MediaUploadTest extends TestCase
 		$mockMediaValidator = $this->createMock( MediaValidator::class );
 
 		// Create Media controller
-		$media = new Media( null, $mockCloudinaryUploader, $mockMediaValidator, $mockSettingManager, $mockSessionManager );
+		$media = new Media( $this->_mockApp, $mockSettingManager, $mockSessionManager, $mockCloudinaryUploader, $mockMediaValidator );
 
 		// Create a mock validator that fails
 		$validatorMock = $this->createMock( MediaValidator::class );
@@ -222,7 +230,7 @@ class MediaUploadTest extends TestCase
 		$mockMediaValidator = $this->createMock( MediaValidator::class );
 
 		// Create Media controller
-		$media = new Media( null, $mockCloudinaryUploader, $mockMediaValidator, $mockSettingManager, $mockSessionManager );
+		$media = new Media( $this->_mockApp, $mockSettingManager, $mockSessionManager, $mockCloudinaryUploader, $mockMediaValidator );
 
 		// Create a mock validator that passes
 		$validatorMock = $this->createMock( MediaValidator::class );
@@ -285,7 +293,7 @@ class MediaUploadTest extends TestCase
 		$mockMediaValidator = $this->createMock( MediaValidator::class );
 
 		// Create Media controller
-		$media = new Media( null, $mockCloudinaryUploader, $mockMediaValidator, $mockSettingManager, $mockSessionManager );
+		$media = new Media( $this->_mockApp, $mockSettingManager, $mockSessionManager, $mockCloudinaryUploader, $mockMediaValidator );
 
 		// Create a mock validator that passes
 		$validatorMock = $this->createMock( MediaValidator::class );
@@ -348,7 +356,7 @@ class MediaUploadTest extends TestCase
 		$mockMediaValidator = $this->createMock( MediaValidator::class );
 
 		// Create Media controller
-		$media = new Media( null, $mockCloudinaryUploader, $mockMediaValidator, $mockSettingManager, $mockSessionManager );
+		$media = new Media( $this->_mockApp, $mockSettingManager, $mockSessionManager, $mockCloudinaryUploader, $mockMediaValidator );
 
 		// Create a mock validator that passes
 		$validatorMock = $this->createMock( MediaValidator::class );
@@ -401,7 +409,7 @@ class MediaUploadTest extends TestCase
 		$mockMediaValidator = $this->createMock( MediaValidator::class );
 
 		// Create Media controller
-		$media = new Media( null, $mockCloudinaryUploader, $mockMediaValidator, $mockSettingManager, $mockSessionManager );
+		$media = new Media( $this->_mockApp, $mockSettingManager, $mockSessionManager, $mockCloudinaryUploader, $mockMediaValidator );
 
 		// Create a mock validator that passes
 		$validatorMock = $this->createMock( MediaValidator::class );

@@ -8,21 +8,24 @@ use Neuron\Cms\Services\Page\IPageCreator;
 use Neuron\Cms\Services\Page\IPageUpdater;
 use Neuron\Cms\Auth\SessionManager;
 use Neuron\Data\Settings\SettingManager;
-use Neuron\Mvc\Application;
+use Neuron\Mvc\IMvcApplication;
+use Neuron\Routing\Router;
 use Neuron\Patterns\Container\IContainer;
 use Neuron\Patterns\Registry;
 use PHPUnit\Framework\TestCase;
 
 class PagesTest extends TestCase
 {
-	private Application $mockApp;
+	private IMvcApplication $mockApp;
 	private IContainer $mockContainer;
 
 	protected function setUp(): void
 	{
 		parent::setUp();
 
-		$this->mockApp = $this->createMock( Application::class );
+		$this->mockApp = $this->createMock( IMvcApplication::class );
+		$router = $this->createMock( Router::class );
+		$this->mockApp->method( 'getRouter' )->willReturn( $router );
 		$this->mockContainer = $this->createMock( IContainer::class );
 
 		// Setup mock settings for Registry
@@ -53,11 +56,11 @@ class PagesTest extends TestCase
 
 		$controller = new Pages(
 			$this->mockApp,
+			$mockSettingManager,
+			$mockSessionManager,
 			$this->createMock( IPageRepository::class ),
 			$this->createMock( IPageCreator::class ),
-			$this->createMock( IPageUpdater::class ),
-			$mockSettingManager,
-			$mockSessionManager
+			$this->createMock( IPageUpdater::class )
 		);
 
 		$this->assertInstanceOf( Pages::class, $controller );
@@ -65,8 +68,7 @@ class PagesTest extends TestCase
 
 	public function testConstructorThrowsExceptionWithoutSettingManager(): void
 	{
-		$this->expectException( \InvalidArgumentException::class );
-		$this->expectExceptionMessage( 'SettingManager must be injected' );
+		$this->expectException( \TypeError::class );
 
 		new Pages( null );
 	}

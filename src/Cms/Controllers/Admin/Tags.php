@@ -9,7 +9,7 @@ use Neuron\Cms\Models\Tag;
 use Neuron\Cms\Repositories\ITagRepository;
 use Neuron\Cms\Services\SlugGenerator;
 use Neuron\Data\Settings\SettingManager;
-use Neuron\Mvc\Application;
+use Neuron\Mvc\IMvcApplication;
 use Neuron\Mvc\Requests\Request;
 use Neuron\Mvc\Responses\HttpResponseStatus;
 use Neuron\Routing\Attributes\Get;
@@ -30,19 +30,19 @@ class Tags extends Content
 	private SlugGenerator $_slugGenerator;
 
 	/**
-	 * @param Application|null $app
+	 * @param IMvcApplication $app
+	 * @param SettingManager $settings
+	 * @param SessionManager $sessionManager
 	 * @param ITagRepository|null $tagRepository
 	 * @param SlugGenerator|null $slugGenerator
-	 * @param SettingManager|null $settings
-	 * @param SessionManager|null $sessionManager
 	 * @throws \Exception
 	 */
 	public function __construct(
-		?Application $app = null,
+		IMvcApplication $app,
+		SettingManager $settings,
+		SessionManager $sessionManager,
 		?ITagRepository $tagRepository = null,
-		?SlugGenerator $slugGenerator = null,
-		?SettingManager $settings = null,
-		?SessionManager $sessionManager = null
+		?SlugGenerator $slugGenerator = null
 	)
 	{
 		parent::__construct( $app, $settings, $sessionManager );

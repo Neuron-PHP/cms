@@ -10,7 +10,7 @@ use Neuron\Cms\Services\EventCategory\IEventCategoryCreator;
 use Neuron\Cms\Services\EventCategory\IEventCategoryUpdater;
 use Neuron\Data\Settings\SettingManager;
 use Neuron\Log\Log;
-use Neuron\Mvc\Application;
+use Neuron\Mvc\IMvcApplication;
 use Neuron\Mvc\Requests\Request;
 use Neuron\Mvc\Responses\HttpResponseStatus;
 use Neuron\Routing\Attributes\Get;
@@ -32,21 +32,21 @@ class EventCategories extends Content
 	private IEventCategoryUpdater $_updater;
 
 	/**
-	 * @param Application|null $app
+	 * @param IMvcApplication $app
+	 * @param SettingManager $settings
+	 * @param SessionManager $sessionManager
 	 * @param IEventCategoryRepository|null $repository
 	 * @param IEventCategoryCreator|null $creator
 	 * @param IEventCategoryUpdater|null $updater
-	 * @param SettingManager|null $settings
-	 * @param SessionManager|null $sessionManager
 	 * @throws \Exception
 	 */
 	public function __construct(
-		?Application $app = null,
+		IMvcApplication $app,
+		SettingManager $settings,
+		SessionManager $sessionManager,
 		?IEventCategoryRepository $repository = null,
 		?IEventCategoryCreator $creator = null,
-		?IEventCategoryUpdater $updater = null,
-		?SettingManager $settings = null,
-		?SessionManager $sessionManager = null
+		?IEventCategoryUpdater $updater = null
 	)
 	{
 		parent::__construct( $app, $settings, $sessionManager );

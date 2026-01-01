@@ -5,9 +5,11 @@ namespace Tests\Cms;
 use Neuron\Cms\Controllers\Content;
 use Neuron\Data\Settings\Source\Memory;
 use Neuron\Data\Settings\SettingManager;
+use Neuron\Mvc\IMvcApplication;
 use Neuron\Mvc\Requests\Request;
 use Neuron\Mvc\Responses\HttpResponseStatus;
 use Neuron\Patterns\Registry;
+use Neuron\Routing\Router;
 use org\bovigo\vfs\vfsStream;
 use PHPUnit\Framework\TestCase;
 
@@ -16,10 +18,16 @@ class ContentControllerTest extends TestCase
 	private SettingManager $_settingManager;
 	private string $_versionFilePath;
 	private $mockSessionManager;
+	private IMvcApplication $_mockApp;
 
 	protected function setUp(): void
 	{
 		parent::setUp();
+
+		// Create mock application
+		$router = $this->createMock( Router::class );
+		$this->_mockApp = $this->createMock( IMvcApplication::class );
+		$this->_mockApp->method( 'getRouter' )->willReturn( $router );
 
 		// Create version file in temp directory
 		$this->_versionFilePath = sys_get_temp_dir() . '/neuron-test-version-' . uniqid() . '.json';
@@ -71,7 +79,7 @@ class ContentControllerTest extends TestCase
 	 */
 	public function testConstructor()
 	{
-		$controller = new Content( null, $this->_settingManager, $this->mockSessionManager );
+		$controller = new Content( $this->_mockApp, $this->_settingManager, $this->mockSessionManager );
 
 		// Check that properties were set from settings
 		$this->assertEquals( 'Test Site', $controller->getName() );
@@ -91,7 +99,7 @@ class ContentControllerTest extends TestCase
 	 */
 	public function testSettersAndGetters()
 	{
-		$controller = new Content( null, $this->_settingManager, $this->mockSessionManager );
+		$controller = new Content( $this->_mockApp, $this->_settingManager, $this->mockSessionManager );
 
 		// Test Name
 		$controller->setName( 'New Name' );
@@ -119,7 +127,7 @@ class ContentControllerTest extends TestCase
 	 */
 	public function testMethodChaining()
 	{
-		$controller = new Content( null, $this->_settingManager, $this->mockSessionManager );
+		$controller = new Content( $this->_mockApp, $this->_settingManager, $this->mockSessionManager );
 
 		$result = $controller
 			->setName( 'Chained Name' )
@@ -147,7 +155,7 @@ class ContentControllerTest extends TestCase
 	public function testMarkdownMethod()
 	{
 		$controller = $this->getMockBuilder( Content::class )
-			->setConstructorArgs( [ null, $this->_settingManager, $this->mockSessionManager ] )
+			->setConstructorArgs( [ $this->_mockApp, $this->_settingManager, $this->mockSessionManager ] )
 			->onlyMethods( [ 'renderMarkdown' ] )
 			->getMock();
 
@@ -174,7 +182,7 @@ class ContentControllerTest extends TestCase
 	 */
 	public function testGetSessionManager()
 	{
-		$controller = new Content( null, $this->_settingManager, $this->mockSessionManager );
+		$controller = new Content( $this->_mockApp, $this->_settingManager, $this->mockSessionManager );
 
 		// Use reflection to access protected method
 		$reflection = new \ReflectionClass( $controller );
@@ -197,7 +205,7 @@ class ContentControllerTest extends TestCase
 	 */
 	public function testFlash()
 	{
-		$controller = new Content( null, $this->_settingManager, $this->mockSessionManager );
+		$controller = new Content( $this->_mockApp, $this->_settingManager, $this->mockSessionManager );
 
 		// Use reflection to access protected methods
 		$reflection = new \ReflectionClass( $controller );

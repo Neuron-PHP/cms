@@ -4,6 +4,7 @@ namespace Neuron\Cms;
 use Neuron\Data\Objects\Version;
 use Neuron\Data\Settings\Source\Yaml;
 use Neuron\Mvc\Application;
+use Neuron\Mvc\IMvcApplication;
 use Neuron\Orm\Model;
 use Neuron\Cms\Database\ConnectionFactory;
 use Neuron\Cms\Container\Container;
@@ -57,8 +58,9 @@ function boot( string $configPath ) : Application
 		$container = Container::build( $app->getSettingManager() );
 
 		// Register the Application instance in the container
-		// so controllers can have it injected
+		// Controllers can depend on either Application or IMvcApplication
 		$container->instance( Application::class, $app );
+		$container->instance( IMvcApplication::class, $app );
 
 		// Set container on Application so MVC router can use it for controller instantiation
 		$app->setContainer( $container );

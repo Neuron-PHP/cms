@@ -5,10 +5,11 @@ namespace Tests\Cms\Controllers\Admin;
 use Neuron\Cms\Controllers\Admin\Dashboard;
 use Neuron\Data\Settings\Source\Memory;
 use Neuron\Data\Settings\SettingManager;
-use Neuron\Mvc\Application;
+use Neuron\Mvc\IMvcApplication;
 use Neuron\Mvc\Requests\Request;
 use Neuron\Mvc\Views\ViewContext;
 use Neuron\Patterns\Registry;
+use Neuron\Routing\Router;
 use PHPUnit\Framework\TestCase;
 
 class DashboardTest extends TestCase
@@ -17,10 +18,16 @@ class DashboardTest extends TestCase
 	private string $_versionFilePath;
 	private $mockSettingManager;
 	private $mockSessionManager;
+	private IMvcApplication $_mockApp;
 
 	protected function setUp(): void
 	{
 		parent::setUp();
+
+		// Create mock application
+		$router = $this->createMock( Router::class );
+		$this->_mockApp = $this->createMock( IMvcApplication::class );
+		$this->_mockApp->method( 'getRouter' )->willReturn( $router );
 
 		// Create version file in temp directory
 		$this->_versionFilePath = sys_get_temp_dir() . '/neuron-test-version-' . uniqid() . '.json';
@@ -62,14 +69,13 @@ class DashboardTest extends TestCase
 
 	public function testConstructor(): void
 	{
-		$controller = new Dashboard( null, $this->mockSettingManager, $this->mockSessionManager );
+		$controller = new Dashboard( $this->_mockApp, $this->mockSettingManager, $this->mockSessionManager );
 		$this->assertInstanceOf( Dashboard::class, $controller );
 	}
 
 	public function testConstructorWithApplication(): void
 	{
-		$mockApp = $this->createMock( Application::class );
-		$controller = new Dashboard( $mockApp, $this->mockSettingManager, $this->mockSessionManager );
+		$controller = new Dashboard( $this->_mockApp, $this->mockSettingManager, $this->mockSessionManager );
 		$this->assertInstanceOf( Dashboard::class, $controller );
 	}
 
@@ -81,7 +87,7 @@ class DashboardTest extends TestCase
 	{
 		// Mock the controller to test view() method chain
 		$controller = $this->getMockBuilder( Dashboard::class )
-			->setConstructorArgs( [ null, $this->mockSettingManager, $this->mockSessionManager ] )
+			->setConstructorArgs( [ $this->_mockApp, $this->mockSettingManager, $this->mockSessionManager ] )
 			->onlyMethods( [ 'view' ] )
 			->getMock();
 

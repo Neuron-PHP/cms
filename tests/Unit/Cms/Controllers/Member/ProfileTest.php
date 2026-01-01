@@ -9,7 +9,8 @@ use Neuron\Cms\Repositories\IUserRepository;
 use Neuron\Cms\Services\User\IUserUpdater;
 use Neuron\Data\Settings\Source\Memory;
 use Neuron\Data\Settings\SettingManager;
-use Neuron\Mvc\Application;
+use Neuron\Mvc\IMvcApplication;
+use Neuron\Routing\Router;
 use Neuron\Mvc\Requests\Request;
 use Neuron\Mvc\Views\ViewContext;
 use Neuron\Patterns\Registry;
@@ -19,10 +20,16 @@ class ProfileTest extends TestCase
 {
 	private SettingManager $_settingManager;
 	private string $_versionFilePath;
+	private IMvcApplication $_mockApp;
 
 	protected function setUp(): void
 	{
 		parent::setUp();
+
+		// Create mock application
+		$router = $this->createMock( Router::class );
+		$this->_mockApp = $this->createMock( IMvcApplication::class );
+		$this->_mockApp->method( 'getRouter' )->willReturn( $router );
 
 		// Create version file in temp directory
 		$this->_versionFilePath = sys_get_temp_dir() . '/neuron-test-version-' . uniqid() . '.json';
@@ -77,7 +84,7 @@ class ProfileTest extends TestCase
 		$mockSettingManager = Registry::getInstance()->get( 'Settings' );
 		$mockSessionManager = $this->createMock( \Neuron\Cms\Auth\SessionManager::class );
 
-		$controller = new Profile( null, $mockRepository, $mockHasher, $mockUpdater, $mockSettingManager, $mockSessionManager );
+		$controller = new Profile( $this->_mockApp, $mockSettingManager, $mockSessionManager, $mockRepository, $mockHasher, $mockUpdater );
 
 		$this->assertInstanceOf( Profile::class, $controller );
 	}

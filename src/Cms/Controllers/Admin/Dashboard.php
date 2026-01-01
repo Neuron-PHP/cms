@@ -6,7 +6,7 @@ use Neuron\Cms\Auth\SessionManager;
 use Neuron\Cms\Controllers\Content;
 use Neuron\Core\Exceptions\NotFound;
 use Neuron\Data\Settings\SettingManager;
-use Neuron\Mvc\Application;
+use Neuron\Mvc\IMvcApplication;
 use Neuron\Mvc\Requests\Request;
 use Neuron\Mvc\Responses\HttpResponseStatus;
 use Neuron\Routing\Attributes\Get;
@@ -21,16 +21,16 @@ use Neuron\Routing\Attributes\RouteGroup;
 class Dashboard extends Content
 {
 	/**
-	 * @param Application|null $app
-	 * @param SettingManager|null $settings
-	 * @param SessionManager|null $sessionManager
+	 * @param IMvcApplication $app
+	 * @param SettingManager $settings
+	 * @param SessionManager $sessionManager
 	 * @return void
 	 * @throws \Exception
 	 */
 	public function __construct(
-		?Application $app = null,
-		?SettingManager $settings = null,
-		?SessionManager $sessionManager = null
+		IMvcApplication $app,
+		SettingManager $settings,
+		SessionManager $sessionManager
 	)
 	{
 		parent::__construct( $app, $settings, $sessionManager );

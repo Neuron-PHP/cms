@@ -15,7 +15,7 @@ use Neuron\Cms\Services\Post\IPostDeleter;
 use Neuron\Cms\Services\Tag\Resolver as TagResolver;
 use Neuron\Cms\Services\Auth\CsrfToken;
 use Neuron\Data\Settings\SettingManager;
-use Neuron\Mvc\Application;
+use Neuron\Mvc\IMvcApplication;
 use Neuron\Mvc\Requests\Request;
 use Neuron\Mvc\Responses\HttpResponseStatus;
 use Neuron\Cms\Enums\ContentStatus;
@@ -41,26 +41,26 @@ class Posts extends Content
 	private IPostDeleter $_postDeleter;
 
 	/**
-	 * @param Application|null $app
+	 * @param IMvcApplication $app
+	 * @param SettingManager $settings
+	 * @param SessionManager $sessionManager
 	 * @param IPostRepository|null $postRepository
 	 * @param ICategoryRepository|null $categoryRepository
 	 * @param ITagRepository|null $tagRepository
 	 * @param IPostCreator|null $postCreator
 	 * @param IPostUpdater|null $postUpdater
 	 * @param IPostDeleter|null $postDeleter
-	 * @param SettingManager|null $settings
-	 * @param SessionManager|null $sessionManager
 	 */
 	public function __construct(
-		?Application $app = null,
+		IMvcApplication $app,
+		SettingManager $settings,
+		SessionManager $sessionManager,
 		?IPostRepository $postRepository = null,
 		?ICategoryRepository $categoryRepository = null,
 		?ITagRepository $tagRepository = null,
 		?IPostCreator $postCreator = null,
 		?IPostUpdater $postUpdater = null,
-		?IPostDeleter $postDeleter = null,
-		?SettingManager $settings = null,
-		?SessionManager $sessionManager = null
+		?IPostDeleter $postDeleter = null
 	)
 	{
 		parent::__construct( $app, $settings, $sessionManager );

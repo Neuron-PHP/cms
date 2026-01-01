@@ -9,7 +9,7 @@ use Neuron\Cms\Services\Media\CloudinaryUploader;
 use Neuron\Cms\Services\Media\MediaValidator;
 use Neuron\Data\Settings\SettingManager;
 use Neuron\Log\Log;
-use Neuron\Mvc\Application;
+use Neuron\Mvc\IMvcApplication;
 use Neuron\Mvc\Requests\Request;
 use Neuron\Mvc\Responses\HttpResponseStatus;
 use Neuron\Routing\Attributes\Get;
@@ -32,19 +32,19 @@ class Media extends Content
 	/**
 	 * Constructor
 	 *
-	 * @param Application|null $app
+	 * @param IMvcApplication $app
+	 * @param SettingManager $settings
+	 * @param SessionManager $sessionManager
 	 * @param CloudinaryUploader|null $uploader
 	 * @param MediaValidator|null $validator
-	 * @param SettingManager|null $settings
-	 * @param SessionManager|null $sessionManager
 	 * @throws \Exception
 	 */
 	public function __construct(
-		?Application $app = null,
+		IMvcApplication $app,
+		SettingManager $settings,
+		SessionManager $sessionManager,
 		?CloudinaryUploader $uploader = null,
-		?MediaValidator $validator = null,
-		?SettingManager $settings = null,
-		?SessionManager $sessionManager = null
+		?MediaValidator $validator = null
 	)
 	{
 		parent::__construct( $app, $settings, $sessionManager );

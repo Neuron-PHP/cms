@@ -10,20 +10,27 @@ use Neuron\Cms\Repositories\IUserRepository;
 use Neuron\Cms\Services\User\IUserUpdater;
 use Neuron\Data\Settings\Source\Memory;
 use Neuron\Data\Settings\SettingManager;
-use Neuron\Mvc\Application;
+use Neuron\Mvc\IMvcApplication;
 use Neuron\Mvc\Requests\Request;
 use Neuron\Mvc\Views\ViewContext;
 use Neuron\Patterns\Registry;
+use Neuron\Routing\Router;
 use PHPUnit\Framework\TestCase;
 
 class ProfileTest extends TestCase
 {
 	private SettingManager $_settingManager;
 	private string $_versionFilePath;
+	private IMvcApplication $_mockApp;
 
 	protected function setUp(): void
 	{
 		parent::setUp();
+
+		// Create mock application
+		$router = $this->createMock( Router::class );
+		$this->_mockApp = $this->createMock( IMvcApplication::class );
+		$this->_mockApp->method( 'getRouter' )->willReturn( $router );
 
 		// Create version file in temp directory
 		$this->_versionFilePath = sys_get_temp_dir() . '/neuron-test-version-' . uniqid() . '.json';
@@ -78,12 +85,12 @@ class ProfileTest extends TestCase
 		$mockSessionManager = $this->createMock( SessionManager::class );
 
 		$controller = new Profile(
-			null,
+			$this->_mockApp,
+			$this->_settingManager,
+			$mockSessionManager,
 			$mockRepository,
 			$mockHasher,
-			$mockUpdater,
-			$this->_settingManager,
-			$mockSessionManager
+			$mockUpdater
 		);
 
 		$this->assertInstanceOf( Profile::class, $controller );
@@ -91,8 +98,7 @@ class ProfileTest extends TestCase
 
 	public function testConstructorThrowsExceptionWithoutSettingManager(): void
 	{
-		$this->expectException( \InvalidArgumentException::class );
-		$this->expectExceptionMessage( 'SettingManager must be injected' );
+		$this->expectException( \TypeError::class );
 
 		new Profile( null );
 	}

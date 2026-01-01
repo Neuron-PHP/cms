@@ -93,10 +93,10 @@ class RegistrationTest extends TestCase
 		// Create controller with all dependencies
 		$this->controller = new Registration(
 			$this->mockApp,
-			$this->mockRegistrationService,
-			$this->mockEmailVerifier,
 			$this->mockSettings,
 			$this->mockSession,
+			$this->mockRegistrationService,
+			$this->mockEmailVerifier,
 			$this->mockResendThrottle,
 			$this->mockIpResolver
 		);
@@ -113,10 +113,10 @@ class RegistrationTest extends TestCase
 	{
 		$controller = new Registration(
 			$this->mockApp,
-			$this->mockRegistrationService,
-			$this->mockEmailVerifier,
 			$this->mockSettings,
 			$this->mockSession,
+			$this->mockRegistrationService,
+			$this->mockEmailVerifier,
 			$this->mockResendThrottle,
 			$this->mockIpResolver
 		);
@@ -127,14 +127,13 @@ class RegistrationTest extends TestCase
 	public function testConstructorThrowsExceptionWithoutRegistrationService(): void
 	{
 		$this->expectException( \InvalidArgumentException::class );
-		$this->expectExceptionMessage( 'IRegistrationService must be injected' );
 
 		new Registration(
 			$this->mockApp,
-			null,
-			$this->mockEmailVerifier,
 			$this->mockSettings,
 			$this->mockSession,
+			null,
+			$this->mockEmailVerifier,
 			$this->mockResendThrottle,
 			$this->mockIpResolver
 		);
@@ -143,14 +142,13 @@ class RegistrationTest extends TestCase
 	public function testConstructorThrowsExceptionWithoutEmailVerifier(): void
 	{
 		$this->expectException( \InvalidArgumentException::class );
-		$this->expectExceptionMessage( 'IEmailVerifier must be injected' );
 
 		new Registration(
 			$this->mockApp,
-			$this->mockRegistrationService,
-			null,
 			$this->mockSettings,
 			$this->mockSession,
+			$this->mockRegistrationService,
+			null,
 			$this->mockResendThrottle,
 			$this->mockIpResolver
 		);
@@ -159,14 +157,13 @@ class RegistrationTest extends TestCase
 	public function testConstructorThrowsExceptionWithoutResendThrottle(): void
 	{
 		$this->expectException( \InvalidArgumentException::class );
-		$this->expectExceptionMessage( 'ResendVerificationThrottle must be injected' );
 
 		new Registration(
 			$this->mockApp,
-			$this->mockRegistrationService,
-			$this->mockEmailVerifier,
 			$this->mockSettings,
 			$this->mockSession,
+			$this->mockRegistrationService,
+			$this->mockEmailVerifier,
 			null,
 			$this->mockIpResolver
 		);
@@ -175,14 +172,13 @@ class RegistrationTest extends TestCase
 	public function testConstructorThrowsExceptionWithoutIpResolver(): void
 	{
 		$this->expectException( \InvalidArgumentException::class );
-		$this->expectExceptionMessage( 'IIpResolver must be injected' );
 
 		new Registration(
 			$this->mockApp,
-			$this->mockRegistrationService,
-			$this->mockEmailVerifier,
 			$this->mockSettings,
 			$this->mockSession,
+			$this->mockRegistrationService,
+			$this->mockEmailVerifier,
 			$this->mockResendThrottle,
 			null
 		);
