@@ -1,0 +1,84 @@
+# Neuron CMS Configuration
+# Main configuration file for the Neuron CMS application
+
+system:
+  timezone: UTC
+  base_path: resources
+  routes_path: resources/config
+
+logging:
+  destination: \Neuron\Log\Destination\File
+  format: \Neuron\Log\Format\PlainText
+  file: storage/logs/app.log
+  level: info
+
+cache:
+  enabled: false
+  storage: file
+  path: storage/cache/views
+  ttl: 3600
+  html: true
+  markdown: true
+  json: false
+  xml: false
+
+views:
+  path: resources/views
+
+site:
+  name: 'Neuron CMS'
+  url: 'https://localhost'
+  description: 'A modern content management system built with Neuron.'
+  title: 'Neuron CMS'
+
+# Theme Configuration
+# Controls the Bootswatch theme for different portals
+# Available themes: cerulean, cosmo, cyborg, darkly, flatly, journal, litera,
+# lumen, lux, materia, minty, morph, pulse, quartz, sandstone, simplex, sketchy,
+# slate, solar, spacelab, superhero, united, vapor, yeti, zephyr
+theme:
+  # Admin portal theme (for admin role users)
+  admin: vapor
+
+  # Member portal theme (for subscriber, editor, author roles)
+  subscriber: sandstone
+
+  # Guest theme (for public website and login/registration pages)
+  guest: sandstone
+
+# Security Configuration
+security:
+  # Content Security Policy (CSP)
+  # Customize this based on your application's needs
+  # content_security_policy: "default-src 'self'; script-src 'self' 'unsafe-inline';"
+
+  # X-Frame-Options: Prevent clickjacking
+  # Options: DENY, SAMEORIGIN, ALLOW-FROM https://example.com
+  # frame_options: DENY
+
+  # Referrer-Policy: Control referrer information leakage
+  # Options: no-referrer, no-referrer-when-downgrade, origin, origin-when-cross-origin,
+  #          same-origin, strict-origin, strict-origin-when-cross-origin, unsafe-url
+  # referrer_policy: strict-origin-when-cross-origin
+
+# Member Registration and Management Configuration
+member:
+  # Enable or disable user registration
+  # Set to false to prevent new users from signing up
+  registration_enabled: true
+
+  # Default role assigned to new users
+  # Options: admin, editor, author, subscriber
+  default_role: subscriber
+
+  # Require email verification before users can log in
+  # When true, users must verify their email before accessing member areas
+  require_email_verification: true
+
+  # Email verification URL path
+  # This is appended to the site URL to create the verification link
+  verification_url: /verify-email
+
+  # Email verification token expiration time (in minutes)
+  # Tokens older than this will be considered invalid
+  verification_token_expiration_minutes: 60

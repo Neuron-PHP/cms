@@ -56,6 +56,10 @@ function boot( string $configPath ) : Application
 	{
 		$container = Container::build( $app->getSettingManager() );
 
+		// Register the Application instance in the container
+		// so controllers can have it injected
+		$container->instance( Application::class, $app );
+
 		// Set container on Application so MVC router can use it for controller instantiation
 		$app->setContainer( $container );
 	}
