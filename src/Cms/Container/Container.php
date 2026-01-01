@@ -29,6 +29,7 @@ use Neuron\Cms\Repositories\DatabaseTagRepository;
 use Neuron\Cms\Repositories\DatabaseEventRepository;
 use Neuron\Cms\Repositories\DatabaseEventCategoryRepository;
 use Neuron\Cms\Repositories\DatabasePasswordResetTokenRepository;
+use Neuron\Cms\Repositories\DatabaseEmailVerificationTokenRepository;
 use Neuron\Cms\Repositories\IUserRepository;
 use Neuron\Cms\Repositories\IPostRepository;
 use Neuron\Cms\Repositories\IPageRepository;
@@ -37,6 +38,7 @@ use Neuron\Cms\Repositories\ITagRepository;
 use Neuron\Cms\Repositories\IEventRepository;
 use Neuron\Cms\Repositories\IEventCategoryRepository;
 use Neuron\Cms\Repositories\IPasswordResetTokenRepository;
+use Neuron\Cms\Repositories\IEmailVerificationTokenRepository;
 use Neuron\Data\Settings\SettingManager;
 use Neuron\Patterns\Registry;
 use Neuron\Patterns\Container\IContainer;
@@ -137,6 +139,12 @@ class Container
 			DatabaseUserRepository::class => \DI\create( DatabaseUserRepository::class )
 				->constructor( \DI\get( SettingManager::class ) ),
 
+			DatabaseEmailVerificationTokenRepository::class => \DI\create( DatabaseEmailVerificationTokenRepository::class )
+				->constructor( \DI\get( SettingManager::class ) ),
+
+			IUserRepository::class => \DI\get( DatabaseUserRepository::class ),
+			IEmailVerificationTokenRepository::class => \DI\get( DatabaseEmailVerificationTokenRepository::class ),
+
 			// Auth Services
 			CsrfToken::class => \DI\create( CsrfToken::class )
 				->constructor( \DI\get( SessionManager::class ) ),
@@ -149,15 +157,22 @@ class Container
 				),
 
 			EmailVerifier::class => \DI\factory( function( ContainerInterface $c ) use ( $settings ) {
-				$userRepository = $c->get( DatabaseUserRepository::class );
-				return new EmailVerifier( $userRepository, $settings );
+				$tokenRepository = $c->get( IEmailVerificationTokenRepository::class );
+				$userRepository = $c->get( IUserRepository::class );
+
+				// Get base path and verification URL from settings/registry
+				$basePath = Registry::getInstance()->get( 'Base.Path' ) ?? getcwd();
+				$siteUrl = $settings->get( 'site', 'url' ) ?? 'http://localhost';
+				$verificationUrl = rtrim( $siteUrl, '/' ) . '/verify';
+
+				return new EmailVerifier( $tokenRepository, $userRepository, $settings, $basePath, $verificationUrl );
 			}),
 
 			RegistrationService::class => \DI\factory( function( ContainerInterface $c ) use ( $settings ) {
-				$userRepository = $c->get( DatabaseUserRepository::class );
+				$userRepository = $c->get( IUserRepository::class );
 				$emailVerifier = $c->get( EmailVerifier::class );
 				$passwordHasher = $c->get( PasswordHasher::class );
-				return new RegistrationService( $userRepository, $emailVerifier, $passwordHasher, $settings );
+				return new RegistrationService( $userRepository, $passwordHasher, $emailVerifier, $settings );
 			}),
 
 			PasswordResetter::class => \DI\factory( function( ContainerInterface $c ) use ( $settings ) {
