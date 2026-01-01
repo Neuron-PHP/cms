@@ -8,21 +8,24 @@ use Neuron\Cms\Services\EventCategory\IEventCategoryCreator;
 use Neuron\Cms\Services\EventCategory\IEventCategoryUpdater;
 use Neuron\Cms\Auth\SessionManager;
 use Neuron\Data\Settings\SettingManager;
-use Neuron\Mvc\Application;
+use Neuron\Mvc\IMvcApplication;
+use Neuron\Routing\Router;
 use Neuron\Patterns\Container\IContainer;
 use Neuron\Patterns\Registry;
 use PHPUnit\Framework\TestCase;
 
 class EventCategoriesTest extends TestCase
 {
-	private Application $mockApp;
+	private IMvcApplication $mockApp;
 	private IContainer $mockContainer;
 
 	protected function setUp(): void
 	{
 		parent::setUp();
 
-		$this->mockApp = $this->createMock( Application::class );
+		$this->mockApp = $this->createMock( IMvcApplication::class );
+		$router = $this->createMock( Router::class );
+		$this->mockApp->method( 'getRouter' )->willReturn( $router );
 		$this->mockContainer = $this->createMock( IContainer::class );
 
 		// Setup mock settings for Registry
@@ -53,11 +56,11 @@ class EventCategoriesTest extends TestCase
 
 		$controller = new EventCategories(
 			$this->mockApp,
+			$mockSettingManager,
+			$mockSessionManager,
 			$this->createMock( IEventCategoryRepository::class ),
 			$this->createMock( IEventCategoryCreator::class ),
-			$this->createMock( IEventCategoryUpdater::class ),
-			$mockSettingManager,
-			$mockSessionManager
+			$this->createMock( IEventCategoryUpdater::class )
 		);
 
 		$this->assertInstanceOf( EventCategories::class, $controller );
@@ -65,8 +68,7 @@ class EventCategoriesTest extends TestCase
 
 	public function testConstructorThrowsExceptionWithoutSettingManager(): void
 	{
-		$this->expectException( \InvalidArgumentException::class );
-		$this->expectExceptionMessage( 'SettingManager must be injected' );
+		$this->expectException( \TypeError::class );
 
 		new EventCategories( null );
 	}

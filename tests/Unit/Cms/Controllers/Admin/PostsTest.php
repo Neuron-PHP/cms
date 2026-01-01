@@ -11,7 +11,8 @@ use Neuron\Cms\Services\Post\IPostUpdater;
 use Neuron\Cms\Services\Post\IPostDeleter;
 use Neuron\Cms\Auth\SessionManager;
 use Neuron\Data\Settings\SettingManager;
-use Neuron\Mvc\Application;
+use Neuron\Mvc\IMvcApplication;
+use Neuron\Routing\Router;
 use Neuron\Patterns\Container\IContainer;
 use Neuron\Patterns\Registry;
 use PHPUnit\Framework\TestCase;
@@ -19,14 +20,16 @@ use PHPUnit\Framework\TestCase;
 class PostsTest extends TestCase
 {
 	private Posts $controller;
-	private Application $mockApp;
+	private IMvcApplication $mockApp;
 	private IContainer $mockContainer;
 
 	protected function setUp(): void
 	{
 		parent::setUp();
 
-		$this->mockApp = $this->createMock( Application::class );
+		$this->mockApp = $this->createMock( IMvcApplication::class );
+		$router = $this->createMock( Router::class );
+		$this->mockApp->method( 'getRouter' )->willReturn( $router );
 		$this->mockContainer = $this->createMock( IContainer::class );
 
 		// Setup mock settings for Registry
@@ -60,14 +63,14 @@ class PostsTest extends TestCase
 
 		$controller = new Posts(
 			$this->mockApp,
+			$mockSettingManager,
+			$mockSessionManager,
 			$this->createMock( IPostRepository::class ),
 			$this->createMock( ICategoryRepository::class ),
 			$this->createMock( ITagRepository::class ),
 			$this->createMock( IPostCreator::class ),
 			$this->createMock( IPostUpdater::class ),
-			$this->createMock( IPostDeleter::class ),
-			$mockSettingManager,
-			$mockSessionManager
+			$this->createMock( IPostDeleter::class )
 		);
 
 		$this->assertInstanceOf( Posts::class, $controller );
@@ -75,8 +78,7 @@ class PostsTest extends TestCase
 
 	public function testConstructorThrowsExceptionWithoutSettingManager(): void
 	{
-		$this->expectException( \InvalidArgumentException::class );
-		$this->expectExceptionMessage( 'SettingManager must be injected' );
+		$this->expectException( \TypeError::class );
 
 		new Posts( null );
 	}
@@ -84,21 +86,20 @@ class PostsTest extends TestCase
 	public function testConstructorThrowsExceptionWithoutPostRepository(): void
 	{
 		$this->expectException( \InvalidArgumentException::class );
-		$this->expectExceptionMessage( 'IPostRepository must be injected' );
 
 		$mockSettings = Registry::getInstance()->get( 'Settings' );
 		$mockSessionManager = $this->createMock( SessionManager::class );
 
 		new Posts(
 			$this->mockApp,
-			null,
-			null,
-			null,
-			null,
-			null,
-			null,
 			$mockSettings,
-			$mockSessionManager
+			$mockSessionManager,
+			null,
+			null,
+			null,
+			null,
+			null,
+			null
 		);
 	}
 }

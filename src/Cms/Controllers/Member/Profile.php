@@ -8,7 +8,7 @@ use Neuron\Cms\Repositories\IUserRepository;
 use Neuron\Cms\Services\User\IUserUpdater;
 use Neuron\Cms\Auth\PasswordHasher;
 use Neuron\Data\Settings\SettingManager;
-use Neuron\Mvc\Application;
+use Neuron\Mvc\IMvcApplication;
 use Neuron\Mvc\Requests\Request;
 use Neuron\Mvc\Responses\HttpResponseStatus;
 use Neuron\Routing\Attributes\Get;
@@ -28,21 +28,21 @@ class Profile extends Content
 	private IUserUpdater $_userUpdater;
 
 	/**
-	 * @param Application|null $app
+	 * @param IMvcApplication $app
+	 * @param SettingManager $settings
+	 * @param SessionManager $sessionManager
 	 * @param IUserRepository|null $repository
 	 * @param PasswordHasher|null $hasher
 	 * @param IUserUpdater|null $userUpdater
-	 * @param SettingManager|null $settings
-	 * @param SessionManager|null $sessionManager
 	 * @throws \Exception
 	 */
 	public function __construct(
-		?Application $app = null,
+		IMvcApplication $app,
+		SettingManager $settings,
+		SessionManager $sessionManager,
 		?IUserRepository $repository = null,
 		?PasswordHasher $hasher = null,
-		?IUserUpdater $userUpdater = null,
-		?SettingManager $settings = null,
-		?SessionManager $sessionManager = null
+		?IUserUpdater $userUpdater = null
 	)
 	{
 		parent::__construct( $app, $settings, $sessionManager );

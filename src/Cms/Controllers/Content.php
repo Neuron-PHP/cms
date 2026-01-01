@@ -53,7 +53,7 @@ use Neuron\Cms\Auth\SessionManager;
 use Neuron\Core\Exceptions\NotFound;
 use Neuron\Data\Objects\Version;
 use Neuron\Data\Settings\SettingManager;
-use Neuron\Mvc\Application;
+use Neuron\Mvc\IMvcApplication;
 use Neuron\Mvc\Controllers\Base;
 use Neuron\Mvc\Requests\Request;
 use Neuron\Mvc\Responses\HttpResponseStatus;
@@ -70,27 +70,17 @@ class Content extends Base
 	protected SettingManager $_settings;
 
 	/**
-	 * @param Application|null $app
-	 * @param SettingManager|null $settings
-	 * @param SessionManager|null $sessionManager
+	 * @param IMvcApplication $app
+	 * @param SettingManager $settings
+	 * @param SessionManager $sessionManager
 	 */
 	public function __construct(
-		?Application $app = null,
-		?SettingManager $settings = null,
-		?SessionManager $sessionManager = null
+		IMvcApplication $app,
+		SettingManager $settings,
+		SessionManager $sessionManager
 	)
 	{
 		parent::__construct( $app );
-
-		// Pure dependency injection - no service locator fallback
-		if( $settings === null )
-		{
-			throw new \InvalidArgumentException( 'SettingManager must be injected' );
-		}
-		if( $sessionManager === null )
-		{
-			throw new \InvalidArgumentException( 'SessionManager must be injected' );
-		}
 
 		$this->_settings = $settings;
 		$this->_sessionManager = $sessionManager;

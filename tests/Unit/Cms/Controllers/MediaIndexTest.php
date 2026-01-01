@@ -10,8 +10,10 @@ use Neuron\Cms\Services\Media\MediaValidator;
 use Neuron\Cms\Auth\SessionManager;
 use Neuron\Data\Settings\SettingManager;
 use Neuron\Data\Settings\Source\Memory;
+use Neuron\Mvc\IMvcApplication;
 use Neuron\Mvc\Requests\Request;
 use Neuron\Patterns\Registry;
+use Neuron\Routing\Router;
 
 /**
  * Unit tests for Media controller index method
@@ -20,10 +22,16 @@ class MediaIndexTest extends TestCase
 {
 	private array $_originalRegistry = [];
 	private SettingManager $_settings;
+	private IMvcApplication $_mockApp;
 
 	protected function setUp(): void
 	{
 		parent::setUp();
+
+		// Create mock application
+		$router = $this->createMock( Router::class );
+		$this->_mockApp = $this->createMock( IMvcApplication::class );
+		$this->_mockApp->method( 'getRouter' )->willReturn( $router );
 
 		// Store original registry values
 		$this->_originalRegistry = [
@@ -71,7 +79,7 @@ class MediaIndexTest extends TestCase
 
 		// Create a partial mock that mocks renderHtml but allows view() to work
 		$media = $this->getMockBuilder( Media::class )
-			->setConstructorArgs( [ null, $mockCloudinaryUploader, $mockMediaValidator, $mockSettingManager, $mockSessionManager ] )
+			->setConstructorArgs( [ $this->_mockApp, $mockSettingManager, $mockSessionManager, $mockCloudinaryUploader, $mockMediaValidator ] )
 			->onlyMethods( ['renderHtml'] )
 			->getMock();
 
@@ -123,7 +131,7 @@ class MediaIndexTest extends TestCase
 
 		// Create a partial mock that mocks renderHtml but allows view() to work
 		$media = $this->getMockBuilder( Media::class )
-			->setConstructorArgs( [ null, $mockCloudinaryUploader, $mockMediaValidator, $mockSettingManager, $mockSessionManager ] )
+			->setConstructorArgs( [ $this->_mockApp, $mockSettingManager, $mockSessionManager, $mockCloudinaryUploader, $mockMediaValidator ] )
 			->onlyMethods( ['renderHtml'] )
 			->getMock();
 
@@ -167,7 +175,7 @@ class MediaIndexTest extends TestCase
 
 		// Create a partial mock that mocks renderHtml but allows view() to work
 		$media = $this->getMockBuilder( Media::class )
-			->setConstructorArgs( [ null, $mockCloudinaryUploader, $mockMediaValidator, $mockSettingManager, $mockSessionManager ] )
+			->setConstructorArgs( [ $this->_mockApp, $mockSettingManager, $mockSessionManager, $mockCloudinaryUploader, $mockMediaValidator ] )
 			->onlyMethods( ['renderHtml'] )
 			->getMock();
 

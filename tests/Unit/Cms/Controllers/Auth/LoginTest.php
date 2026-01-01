@@ -8,7 +8,8 @@ use Neuron\Cms\Auth\SessionManager;
 use Neuron\Cms\Services\Dto\DtoFactoryService;
 use Neuron\Data\Settings\SettingManager;
 use Neuron\Dto\Dto;
-use Neuron\Mvc\Application;
+use Neuron\Mvc\IMvcApplication;
+use Neuron\Routing\Router;
 use Neuron\Mvc\Requests\Request;
 use Neuron\Patterns\Container\IContainer;
 use Neuron\Patterns\Registry;
@@ -18,7 +19,7 @@ class LoginTest extends TestCase
 {
 	private Login $controller;
 	private IAuthenticationService $mockAuth;
-	private Application $mockApp;
+	private IMvcApplication $mockApp;
 	private SessionManager $mockSession;
 	private IContainer $mockContainer;
 	private Request $mockRequest;
@@ -30,7 +31,7 @@ class LoginTest extends TestCase
 
 		// Create mocks
 		$this->mockAuth = $this->createMock( IAuthenticationService::class );
-		$this->mockApp = $this->createMock( Application::class );
+		$this->mockApp = $this->createMock( IMvcApplication::class );
 		$this->mockSession = $this->createMock( SessionManager::class );
 		$this->mockContainer = $this->createMock( IContainer::class );
 		$this->mockRequest = $this->createMock( Request::class );
@@ -70,8 +71,7 @@ class LoginTest extends TestCase
 
 	public function testConstructorThrowsExceptionWithoutAuthenticationService(): void
 	{
-		$this->expectException( \InvalidArgumentException::class );
-		$this->expectExceptionMessage( 'IAuthenticationService must be injected' );
+		$this->expectException( \TypeError::class );
 
 		$mockSettingManager = Registry::getInstance()->get( 'Settings' );
 		$mockSessionManager = $this->createMock( \Neuron\Cms\Auth\SessionManager::class );

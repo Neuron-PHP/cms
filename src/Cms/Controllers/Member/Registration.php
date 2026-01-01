@@ -10,7 +10,7 @@ use Neuron\Cms\Services\Member\IRegistrationService;
 use Neuron\Cms\Services\Auth\IEmailVerifier;
 use Neuron\Core\Exceptions\NotFound;
 use Neuron\Data\Settings\SettingManager;
-use Neuron\Mvc\Application;
+use Neuron\Mvc\IMvcApplication;
 use Neuron\Mvc\Requests\Request;
 use Neuron\Mvc\Responses\HttpResponseStatus;
 use Neuron\Routing\DefaultIpResolver;
@@ -35,21 +35,21 @@ class Registration extends Content
 	private IIpResolver $_ipResolver;
 
 	/**
-	 * @param Application|null $app
+	 * @param IMvcApplication $app
+	 * @param SettingManager $settings
+	 * @param SessionManager $sessionManager
 	 * @param IRegistrationService|null $registrationService
 	 * @param IEmailVerifier|null $emailVerifier
-	 * @param SettingManager|null $settings
-	 * @param SessionManager|null $sessionManager
 	 * @param ResendVerificationThrottle|null $resendThrottle
 	 * @param IIpResolver|null $ipResolver
 	 * @throws \Exception
 	 */
 	public function __construct(
-		?Application $app = null,
+		IMvcApplication $app,
+		SettingManager $settings,
+		SessionManager $sessionManager,
 		?IRegistrationService $registrationService = null,
 		?IEmailVerifier $emailVerifier = null,
-		?SettingManager $settings = null,
-		?SessionManager $sessionManager = null,
 		?ResendVerificationThrottle $resendThrottle = null,
 		?IIpResolver $ipResolver = null
 	)

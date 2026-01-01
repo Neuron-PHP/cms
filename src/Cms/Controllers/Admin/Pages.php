@@ -11,7 +11,7 @@ use Neuron\Cms\Services\Page\IPageCreator;
 use Neuron\Cms\Services\Page\IPageUpdater;
 use Neuron\Cms\Services\Auth\CsrfToken;
 use Neuron\Data\Settings\SettingManager;
-use Neuron\Mvc\Application;
+use Neuron\Mvc\IMvcApplication;
 use Neuron\Mvc\Requests\Request;
 use Neuron\Mvc\Responses\HttpResponseStatus;
 use Neuron\Log\Log;
@@ -36,20 +36,20 @@ class Pages extends Content
 	private IPageUpdater $_pageUpdater;
 
 	/**
-	 * @param Application|null $app
+	 * @param IMvcApplication $app
+	 * @param SettingManager $settings
+	 * @param SessionManager $sessionManager
 	 * @param IPageRepository|null $pageRepository
 	 * @param IPageCreator|null $pageCreator
 	 * @param IPageUpdater|null $pageUpdater
-	 * @param SettingManager|null $settings
-	 * @param SessionManager|null $sessionManager
 	 */
 	public function __construct(
-		?Application $app = null,
+		IMvcApplication $app,
+		SettingManager $settings,
+		SessionManager $sessionManager,
 		?IPageRepository $pageRepository = null,
 		?IPageCreator $pageCreator = null,
-		?IPageUpdater $pageUpdater = null,
-		?SettingManager $settings = null,
-		?SessionManager $sessionManager = null
+		?IPageUpdater $pageUpdater = null
 	)
 	{
 		parent::__construct( $app, $settings, $sessionManager );

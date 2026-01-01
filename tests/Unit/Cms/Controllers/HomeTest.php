@@ -6,19 +6,26 @@ use Neuron\Cms\Controllers\Home;
 use Neuron\Cms\Services\Member\IRegistrationService;
 use Neuron\Data\Settings\Source\Memory;
 use Neuron\Data\Settings\SettingManager;
-use Neuron\Mvc\Application;
+use Neuron\Mvc\IMvcApplication;
 use Neuron\Mvc\Requests\Request;
 use Neuron\Patterns\Registry;
+use Neuron\Routing\Router;
 use PHPUnit\Framework\TestCase;
 
 class HomeTest extends TestCase
 {
 	private SettingManager $_settingManager;
 	private string $_versionFilePath;
+	private IMvcApplication $_mockApp;
 
 	protected function setUp(): void
 	{
 		parent::setUp();
+
+		// Create mock application
+		$router = $this->createMock( Router::class );
+		$this->_mockApp = $this->createMock( IMvcApplication::class );
+		$this->_mockApp->method( 'getRouter' )->willReturn( $router );
 
 		// Create version file in temp directory
 		$this->_versionFilePath = sys_get_temp_dir() . '/neuron-test-version-' . uniqid() . '.json';
@@ -67,18 +74,17 @@ class HomeTest extends TestCase
 		$mockRegistrationService = $this->createMock( IRegistrationService::class );
 		$mockSessionManager = $this->createMock( \Neuron\Cms\Auth\SessionManager::class );
 
-		$controller = new Home( null, $mockRegistrationService, $this->_settingManager, $mockSessionManager );
+		$controller = new Home( $this->_mockApp, $this->_settingManager, $mockSessionManager, $mockRegistrationService );
 
 		$this->assertInstanceOf( Home::class, $controller );
 	}
 
 	public function testConstructorThrowsExceptionWithoutDependencies(): void
 	{
-		$this->expectException( \InvalidArgumentException::class );
-		// Either SettingManager or IRegistrationService exception will be thrown
-		// depending on check order (SettingManager is checked in parent first)
+		$this->expectException( \TypeError::class );
+		// IMvcApplication is required (non-nullable), so TypeError will be thrown
 
-		new Home( null, null, null, null );
+		new Home( $this->_mockApp, null, null, null );
 	}
 
 	public function testIndexWithRegistrationEnabled(): void
@@ -90,7 +96,7 @@ class HomeTest extends TestCase
 
 		// Mock the controller to test renderHtml is called with correct params
 		$controller = $this->getMockBuilder( Home::class )
-			->setConstructorArgs( [ null, $mockRegistrationService, $this->_settingManager, $mockSessionManager ] )
+			->setConstructorArgs( [ $this->_mockApp, $this->_settingManager, $mockSessionManager, $mockRegistrationService ] )
 			->onlyMethods( [ 'renderHtml' ] )
 			->getMock();
 
@@ -123,7 +129,7 @@ class HomeTest extends TestCase
 		$mockSessionManager = $this->createMock( \Neuron\Cms\Auth\SessionManager::class );
 
 		$controller = $this->getMockBuilder( Home::class )
-			->setConstructorArgs( [ null, $mockRegistrationService, $this->_settingManager, $mockSessionManager ] )
+			->setConstructorArgs( [ $this->_mockApp, $this->_settingManager, $mockSessionManager, $mockRegistrationService ] )
 			->onlyMethods( [ 'renderHtml' ] )
 			->getMock();
 
@@ -154,7 +160,7 @@ class HomeTest extends TestCase
 		$mockSessionManager = $this->createMock( \Neuron\Cms\Auth\SessionManager::class );
 
 		$controller = $this->getMockBuilder( Home::class )
-			->setConstructorArgs( [ null, $mockRegistrationService, $this->_settingManager, $mockSessionManager ] )
+			->setConstructorArgs( [ $this->_mockApp, $this->_settingManager, $mockSessionManager, $mockRegistrationService ] )
 			->onlyMethods( [ 'renderHtml' ] )
 			->getMock();
 

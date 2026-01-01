@@ -12,9 +12,11 @@ use Neuron\Cms\Services\Category\Updater;
 use Neuron\Cms\Services\Category\Deleter;
 use Neuron\Cms\Auth\SessionManager;
 use Neuron\Data\Settings\SettingManager;
+use Neuron\Mvc\IMvcApplication;
 use Neuron\Mvc\Requests\Request;
 use Neuron\Mvc\Views\ViewContext;
 use Neuron\Patterns\Registry;
+use Neuron\Routing\Router;
 
 /**
  * Unit tests for Categories admin controller
@@ -22,10 +24,16 @@ use Neuron\Patterns\Registry;
 class CategoriesControllerTest extends TestCase
 {
 	private array $_originalRegistry = [];
+	private IMvcApplication $_mockApp;
 
 	protected function setUp(): void
 	{
 		parent::setUp();
+
+		// Create mock application
+		$router = $this->createMock( Router::class );
+		$this->_mockApp = $this->createMock( IMvcApplication::class );
+		$this->_mockApp->method( 'getRouter' )->willReturn( $router );
 
 		// Store original registry values
 		$this->_originalRegistry = [
@@ -87,12 +95,12 @@ class CategoriesControllerTest extends TestCase
 
 		$controller = $this->getMockBuilder( Categories::class )
 			->setConstructorArgs([
-				null,
+				$this->_mockApp,
+				$mockSettingManager,
+				$mockSessionManager,
 				$repository,
 				$creator,
-				$updater,
-				$mockSettingManager,
-				$mockSessionManager
+				$updater
 			])
 			->onlyMethods( ['view'] )
 			->getMock();
@@ -140,12 +148,12 @@ class CategoriesControllerTest extends TestCase
 
 		$controller = $this->getMockBuilder( Categories::class )
 			->setConstructorArgs([
-				null,
+				$this->_mockApp,
+				$mockSettingManager,
+				$mockSessionManager,
 				$repository,
 				$creator,
-				$updater,
-				$mockSettingManager,
-				$mockSessionManager
+				$updater
 			])
 			->onlyMethods( ['view'] )
 			->getMock();
@@ -193,12 +201,12 @@ class CategoriesControllerTest extends TestCase
 		$mockSessionManager = $this->createMock( \Neuron\Cms\Auth\SessionManager::class );
 
 		$controller = new Categories(
-			null,
+			$this->_mockApp,
+			$mockSettingManager,
+			$mockSessionManager,
 			$repository,
 			$creator,
-			$updater,
-			$mockSettingManager,
-			$mockSessionManager
+			$updater
 		);
 
 		$request = $this->createMock( Request::class );

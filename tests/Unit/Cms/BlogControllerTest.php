@@ -14,9 +14,11 @@ use Neuron\Cms\Repositories\DatabaseTagRepository;
 use Neuron\Cms\Repositories\DatabaseUserRepository;
 use Neuron\Data\Settings\Source\Memory;
 use Neuron\Data\Settings\SettingManager;
+use Neuron\Mvc\IMvcApplication;
 use Neuron\Mvc\Requests\Request;
 use Neuron\Orm\Model;
 use Neuron\Patterns\Registry;
+use Neuron\Routing\Router;
 use PDO;
 use PHPUnit\Framework\TestCase;
 
@@ -28,10 +30,16 @@ class BlogControllerTest extends TestCase
 	private DatabaseTagRepository $_tagRepository;
 	private DatabaseUserRepository $_userRepository;
 	private $originalRegistry;
+	private IMvcApplication $_mockApp;
 
 	protected function setUp(): void
 	{
 		parent::setUp();
+
+		// Create mock application
+		$router = $this->createMock( Router::class );
+		$this->_mockApp = $this->createMock( IMvcApplication::class );
+		$this->_mockApp->method( 'getRouter' )->willReturn( $router );
 
 		// Store original registry values
 		$this->originalRegistry = [
@@ -266,8 +274,8 @@ class BlogControllerTest extends TestCase
 		$renderer = $this->createMock( \Neuron\Cms\Services\Content\EditorJsRenderer::class );
 
 		// Create Blog controller with required dependencies - no reflection needed!
-		$blog = new Blog( null, $this->_postRepository, $this->_categoryRepository,
-			$this->_tagRepository, $this->_userRepository, $renderer, $settingManager, $sessionManager );
+		$blog = new Blog( $this->_mockApp, $settingManager, $sessionManager, $this->_postRepository,
+			$this->_categoryRepository, $this->_tagRepository, $this->_userRepository, $renderer );
 
 		// CRITICAL: Restore the test PDO on Model class
 		// Blog constructor created repositories which called Model::setPdo() with ConnectionFactory PDO,

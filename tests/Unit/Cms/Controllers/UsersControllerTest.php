@@ -11,10 +11,11 @@ use Neuron\Cms\Services\User\IUserUpdater;
 use Neuron\Cms\Services\User\IUserDeleter;
 use Neuron\Cms\Auth\SessionManager;
 use Neuron\Data\Settings\SettingManager;
-use Neuron\Mvc\Application;
+use Neuron\Mvc\IMvcApplication;
 use Neuron\Mvc\Requests\Request;
 use Neuron\Mvc\Views\ViewContext;
 use Neuron\Patterns\Registry;
+use Neuron\Routing\Router;
 
 /**
  * Unit tests for Users admin controller
@@ -22,10 +23,16 @@ use Neuron\Patterns\Registry;
 class UsersControllerTest extends TestCase
 {
 	private array $_originalRegistry = [];
+	private IMvcApplication $_mockApp;
 
 	protected function setUp(): void
 	{
 		parent::setUp();
+
+		// Create mock application
+		$router = $this->createMock( Router::class );
+		$this->_mockApp = $this->createMock( IMvcApplication::class );
+		$this->_mockApp->method( 'getRouter' )->willReturn( $router );
 
 		// Store original registry values
 		$this->_originalRegistry = [
@@ -70,7 +77,7 @@ class UsersControllerTest extends TestCase
 		Registry::getInstance()->set( 'Auth.User', $user );
 
 		// Mock Application
-		$app = $this->createMock( Application::class );
+		$app = $this->createMock( IMvcApplication::class );
 
 		// Mock repository to return users
 		$repository = $this->createMock( IUserRepository::class );
@@ -94,12 +101,12 @@ class UsersControllerTest extends TestCase
 		$controller = $this->getMockBuilder( Users::class )
 			->setConstructorArgs([
 				$app,
+				$mockSettingManager,
+				$mockSessionManager,
 				$repository,
 				$creator,
 				$updater,
-				$deleter,
-				$mockSettingManager,
-				$mockSessionManager
+				$deleter
 			])
 			->onlyMethods( ['view'] )
 			->getMock();
@@ -131,7 +138,7 @@ class UsersControllerTest extends TestCase
 		Registry::getInstance()->set( 'Auth.User', $user );
 
 		// Mock Application
-		$app = $this->createMock( Application::class );
+		$app = $this->createMock( IMvcApplication::class );
 
 		$repository = $this->createMock( IUserRepository::class );
 		$creator = $this->createMock( IUserCreator::class );
@@ -144,12 +151,12 @@ class UsersControllerTest extends TestCase
 		$controller = $this->getMockBuilder( Users::class )
 			->setConstructorArgs([
 				$app,
+				$mockSettingManager,
+				$mockSessionManager,
 				$repository,
 				$creator,
 				$updater,
-				$deleter,
-				$mockSettingManager,
-				$mockSessionManager
+				$deleter
 			])
 			->onlyMethods( ['view'] )
 			->getMock();
@@ -181,7 +188,7 @@ class UsersControllerTest extends TestCase
 		Registry::getInstance()->set( 'Auth.User', $user );
 
 		// Mock Application
-		$app = $this->createMock( Application::class );
+		$app = $this->createMock( IMvcApplication::class );
 
 		// Mock user to edit
 		$userToEdit = $this->createMock( User::class );
@@ -200,12 +207,12 @@ class UsersControllerTest extends TestCase
 		$controller = $this->getMockBuilder( Users::class )
 			->setConstructorArgs([
 				$app,
+				$mockSettingManager,
+				$mockSessionManager,
 				$repository,
 				$creator,
 				$updater,
-				$deleter,
-				$mockSettingManager,
-				$mockSessionManager
+				$deleter
 			])
 			->onlyMethods( ['view'] )
 			->getMock();

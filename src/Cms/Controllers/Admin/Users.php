@@ -10,7 +10,7 @@ use Neuron\Cms\Services\User\IUserCreator;
 use Neuron\Cms\Services\User\IUserUpdater;
 use Neuron\Cms\Services\User\IUserDeleter;
 use Neuron\Data\Settings\SettingManager;
-use Neuron\Mvc\Application;
+use Neuron\Mvc\IMvcApplication;
 use Neuron\Mvc\Requests\Request;
 use Neuron\Cms\Enums\UserRole;
 use Neuron\Routing\Attributes\Get;
@@ -33,22 +33,22 @@ class Users extends Content
 	private IUserDeleter $_userDeleter;
 
 	/**
-	 * @param Application|null $app
+	 * @param IMvcApplication $app
+	 * @param SettingManager $settings
+	 * @param SessionManager $sessionManager
 	 * @param IUserRepository|null $repository
 	 * @param IUserCreator|null $userCreator
 	 * @param IUserUpdater|null $userUpdater
 	 * @param IUserDeleter|null $userDeleter
-	 * @param SettingManager|null $settings
-	 * @param SessionManager|null $sessionManager
 	 */
 	public function __construct(
-		?Application $app = null,
+		IMvcApplication $app,
+		SettingManager $settings,
+		SessionManager $sessionManager,
 		?IUserRepository $repository = null,
 		?IUserCreator $userCreator = null,
 		?IUserUpdater $userUpdater = null,
-		?IUserDeleter $userDeleter = null,
-		?SettingManager $settings = null,
-		?SessionManager $sessionManager = null
+		?IUserDeleter $userDeleter = null
 	)
 	{
 		parent::__construct( $app, $settings, $sessionManager );

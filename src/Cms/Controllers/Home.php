@@ -5,7 +5,7 @@ use Neuron\Cms\Auth\SessionManager;
 use Neuron\Cms\Services\Member\IRegistrationService;
 use Neuron\Core\Exceptions\NotFound;
 use Neuron\Data\Settings\SettingManager;
-use Neuron\Mvc\Application;
+use Neuron\Mvc\IMvcApplication;
 use Neuron\Mvc\Requests\Request;
 use Neuron\Mvc\Responses\HttpResponseStatus;
 use Neuron\Routing\Attributes\Get;
@@ -24,17 +24,17 @@ class Home extends Content
 	private IRegistrationService $_registrationService;
 
 	/**
-	 * @param Application|null $app
+	 * @param IMvcApplication $app
+	 * @param SettingManager $settings
+	 * @param SessionManager $sessionManager
 	 * @param IRegistrationService|null $registrationService
-	 * @param SettingManager|null $settings
-	 * @param SessionManager|null $sessionManager
 	 * @throws \Exception
 	 */
 	public function __construct(
-		?Application $app = null,
-		?IRegistrationService $registrationService = null,
-		?SettingManager $settings = null,
-		?SessionManager $sessionManager = null
+		IMvcApplication $app,
+		SettingManager $settings,
+		SessionManager $sessionManager,
+		?IRegistrationService $registrationService = null
 	)
 	{
 		parent::__construct( $app, $settings, $sessionManager );

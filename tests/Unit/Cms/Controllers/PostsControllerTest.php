@@ -14,9 +14,11 @@ use Neuron\Cms\Services\Post\Updater;
 use Neuron\Cms\Services\Post\Deleter;
 use Neuron\Cms\Auth\SessionManager;
 use Neuron\Data\Settings\SettingManager;
+use Neuron\Mvc\IMvcApplication;
 use Neuron\Mvc\Requests\Request;
 use Neuron\Mvc\Views\ViewContext;
 use Neuron\Patterns\Registry;
+use Neuron\Routing\Router;
 
 /**
  * Unit tests for Posts admin controller
@@ -24,10 +26,16 @@ use Neuron\Patterns\Registry;
 class PostsControllerTest extends TestCase
 {
 	private array $_originalRegistry = [];
+	private IMvcApplication $_mockApp;
 
 	protected function setUp(): void
 	{
 		parent::setUp();
+
+		// Create mock application
+		$router = $this->createMock( Router::class );
+		$this->_mockApp = $this->createMock( IMvcApplication::class );
+		$this->_mockApp->method( 'getRouter' )->willReturn( $router );
 
 		// Store original registry values
 		$this->_originalRegistry = [
@@ -97,15 +105,15 @@ class PostsControllerTest extends TestCase
 
 		$controller = $this->getMockBuilder( Posts::class )
 			->setConstructorArgs([
-				null,
+				$this->_mockApp,
+				$mockSettingManager,
+				$mockSessionManager,
 				$postRepository,
 				$categoryRepository,
 				$tagRepository,
 				$creator,
 				$updater,
-				$deleter,
-				$mockSettingManager,
-				$mockSessionManager
+				$deleter
 			])
 			->onlyMethods( ['view'] )
 			->getMock();
@@ -170,15 +178,15 @@ class PostsControllerTest extends TestCase
 
 		$controller = $this->getMockBuilder( Posts::class )
 			->setConstructorArgs([
-				null,
+				$this->_mockApp,
+				$mockSettingManager,
+				$mockSessionManager,
 				$postRepository,
 				$categoryRepository,
 				$tagRepository,
 				$creator,
 				$updater,
-				$deleter,
-				$mockSettingManager,
-				$mockSessionManager
+				$deleter
 			])
 			->onlyMethods( ['view'] )
 			->getMock();
@@ -233,15 +241,15 @@ class PostsControllerTest extends TestCase
 
 		$controller = $this->getMockBuilder( Posts::class )
 			->setConstructorArgs([
-				null,
+				$this->_mockApp,
+				$mockSettingManager,
+				$mockSessionManager,
 				$postRepository,
 				$categoryRepository,
 				$tagRepository,
 				$creator,
 				$updater,
-				$deleter,
-				$mockSettingManager,
-				$mockSessionManager
+				$deleter
 			])
 			->onlyMethods( ['view'] )
 			->getMock();
@@ -289,15 +297,15 @@ class PostsControllerTest extends TestCase
 		$mockSessionManager = $this->createMock( SessionManager::class );
 
 		$controller = new Posts(
-			null,
+			$this->_mockApp,
+			$mockSettingManager,
+			$mockSessionManager,
 			$postRepository,
 			$categoryRepository,
 			$tagRepository,
 			$creator,
 			$updater,
-			$deleter,
-			$mockSettingManager,
-			$mockSessionManager
+			$deleter
 		);
 
 		$request = $this->createMock( Request::class );

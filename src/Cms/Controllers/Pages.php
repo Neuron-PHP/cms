@@ -11,7 +11,7 @@ use Neuron\Cms\Services\Content\ShortcodeParser;
 use Neuron\Cms\Services\Widget\WidgetRenderer;
 use Neuron\Core\Exceptions\NotFound;
 use Neuron\Data\Settings\SettingManager;
-use Neuron\Mvc\Application;
+use Neuron\Mvc\IMvcApplication;
 use Neuron\Mvc\Requests\Request;
 use Neuron\Mvc\Responses\HttpResponseStatus;
 use Neuron\Routing\Attributes\Get;
@@ -31,19 +31,19 @@ class Pages extends Content
 	private EditorJsRenderer $_renderer;
 
 	/**
-	 * @param Application|null $app
+	 * @param IMvcApplication $app
+	 * @param SettingManager $settings
+	 * @param SessionManager $sessionManager
 	 * @param IPageRepository|null $pageRepository
 	 * @param EditorJsRenderer|null $renderer
-	 * @param SettingManager|null $settings
-	 * @param SessionManager|null $sessionManager
 	 * @throws \Exception
 	 */
 	public function __construct(
-		?Application $app = null,
+		IMvcApplication $app,
+		SettingManager $settings,
+		SessionManager $sessionManager,
 		?IPageRepository $pageRepository = null,
-		?EditorJsRenderer $renderer = null,
-		?SettingManager $settings = null,
-		?SessionManager $sessionManager = null
+		?EditorJsRenderer $renderer = null
 	)
 	{
 		parent::__construct( $app, $settings, $sessionManager );

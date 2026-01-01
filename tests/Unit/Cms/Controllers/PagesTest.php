@@ -9,7 +9,8 @@ use Neuron\Cms\Services\Content\EditorJsRenderer;
 use Neuron\Core\Exceptions\NotFound;
 use Neuron\Data\Settings\Source\Memory;
 use Neuron\Data\Settings\SettingManager;
-use Neuron\Mvc\Application;
+use Neuron\Mvc\IMvcApplication;
+use Neuron\Routing\Router;
 use Neuron\Mvc\Requests\Request;
 use Neuron\Patterns\Registry;
 use PHPUnit\Framework\TestCase;
@@ -18,10 +19,16 @@ class PagesTest extends TestCase
 {
 	private SettingManager $_settingManager;
 	private string $_versionFilePath;
+	private IMvcApplication $_mockApp;
 
 	protected function setUp(): void
 	{
 		parent::setUp();
+
+		// Create mock application
+		$router = $this->createMock( Router::class );
+		$this->_mockApp = $this->createMock( IMvcApplication::class );
+		$this->_mockApp->method( 'getRouter' )->willReturn( $router );
 
 		// Create version file in temp directory
 		$this->_versionFilePath = sys_get_temp_dir() . '/neuron-test-version-' . uniqid() . '.json';
@@ -72,7 +79,7 @@ class PagesTest extends TestCase
 		$mockSettingManager = Registry::getInstance()->get( 'Settings' );
 		$mockSessionManager = $this->createMock( \Neuron\Cms\Auth\SessionManager::class );
 
-		$controller = new Pages( null, $mockPageRepository, $mockRenderer, $mockSettingManager, $mockSessionManager );
+		$controller = new Pages( $this->_mockApp, $mockSettingManager, $mockSessionManager, $mockPageRepository, $mockRenderer );
 
 		$this->assertInstanceOf( Pages::class, $controller );
 	}
@@ -101,7 +108,7 @@ class PagesTest extends TestCase
 		$mockSessionManager = $this->createMock( \Neuron\Cms\Auth\SessionManager::class );
 
 		$controller = $this->getMockBuilder( Pages::class )
-			->setConstructorArgs( [ null, $mockPageRepository, $mockRenderer, $mockSettingManager, $mockSessionManager ] )
+			->setConstructorArgs( [ $this->_mockApp, $mockSettingManager, $mockSessionManager, $mockPageRepository, $mockRenderer ] )
 			->onlyMethods( [ 'renderHtml' ] )
 			->getMock();
 
@@ -136,7 +143,7 @@ class PagesTest extends TestCase
 		$mockSettingManager = Registry::getInstance()->get( 'Settings' );
 		$mockSessionManager = $this->createMock( \Neuron\Cms\Auth\SessionManager::class );
 
-		$controller = new Pages( null, $mockPageRepository, $mockRenderer, $mockSettingManager, $mockSessionManager );
+		$controller = new Pages( $this->_mockApp, $mockSettingManager, $mockSessionManager, $mockPageRepository, $mockRenderer );
 
 		$this->expectException( NotFound::class );
 		$this->expectExceptionMessage( 'Page not found' );
@@ -158,7 +165,7 @@ class PagesTest extends TestCase
 		$mockSettingManager = Registry::getInstance()->get( 'Settings' );
 		$mockSessionManager = $this->createMock( \Neuron\Cms\Auth\SessionManager::class );
 
-		$controller = new Pages( null, $mockPageRepository, $mockRenderer, $mockSettingManager, $mockSessionManager );
+		$controller = new Pages( $this->_mockApp, $mockSettingManager, $mockSessionManager, $mockPageRepository, $mockRenderer );
 
 		$this->expectException( NotFound::class );
 		$this->expectExceptionMessage( 'Page not found' );
@@ -190,7 +197,7 @@ class PagesTest extends TestCase
 		$mockSessionManager = $this->createMock( \Neuron\Cms\Auth\SessionManager::class );
 
 		$controller = $this->getMockBuilder( Pages::class )
-			->setConstructorArgs( [ null, $mockPageRepository, $mockRenderer, $mockSettingManager, $mockSessionManager ] )
+			->setConstructorArgs( [ $this->_mockApp, $mockSettingManager, $mockSessionManager, $mockPageRepository, $mockRenderer ] )
 			->onlyMethods( [ 'renderHtml' ] )
 			->getMock();
 
@@ -233,7 +240,7 @@ class PagesTest extends TestCase
 		$mockSessionManager = $this->createMock( \Neuron\Cms\Auth\SessionManager::class );
 
 		$controller = $this->getMockBuilder( Pages::class )
-			->setConstructorArgs( [ null, $mockPageRepository, $mockRenderer, $mockSettingManager, $mockSessionManager ] )
+			->setConstructorArgs( [ $this->_mockApp, $mockSettingManager, $mockSessionManager, $mockPageRepository, $mockRenderer ] )
 			->onlyMethods( [ 'renderHtml', 'getDescription' ] )
 			->getMock();
 
