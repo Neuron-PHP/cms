@@ -33,7 +33,7 @@ class CreatorTest extends TestCase
 	 */
 	private function createDto( string $username, string $email, string $password, string $role, ?string $timezone = null ): Dto
 	{
-		$factory = new Factory( __DIR__ . '/../../../../../config/dtos/users/create-user-request.yaml' );
+		$factory = new Factory( __DIR__ . "/../../../../../src/Cms/Dtos/users/create-user-request.yaml" );
 		$dto = $factory->create();
 
 		$dto->username = $username;

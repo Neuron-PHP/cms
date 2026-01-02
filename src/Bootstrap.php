@@ -3,6 +3,7 @@ namespace Neuron\Cms;
 
 use Neuron\Data\Objects\Version;
 use Neuron\Data\Settings\Source\Yaml;
+use Neuron\Data\Settings\SettingManager;
 use Neuron\Mvc\Application;
 use Neuron\Mvc\IMvcApplication;
 use Neuron\Orm\Model;
@@ -41,8 +42,6 @@ require_once __DIR__ . '/Cms/Auth/helpers.php';
 
 function boot( string $configPath ) : Application
 {
-	$app = \Neuron\Mvc\boot( $configPath );
-
 	// Register CMS exceptions that should bubble up to application-level handlers
 	// These exceptions require special handling (redirects, specific error pages)
 	Registry::getInstance()->set( 'BubbleExceptions', [
@@ -51,12 +50,28 @@ function boot( string $configPath ) : Application
 		'Neuron\\Cms\\Exceptions\\CsrfValidationException'
 	] );
 
-	// Build and register the DI container
-	// This must happen before initializers run so they can resolve services
+	// Build and register the DI container BEFORE MVC boot
+	// This ensures the container is available to initializers during boot
 	try
 	{
-		$container = Container::build( $app->getSettingManager() );
+		// Create SettingManager from config file
+		$yaml = new Yaml( "$configPath/neuron.yaml" );
+		$settings = new SettingManager( $yaml );
 
+		// Build container (automatically registers in Registry)
+		$container = Container::build( $settings );
+	}
+	catch( \Exception $e )
+	{
+		\Neuron\Log\Log::error( 'Container initialization failed: ' . $e->getMessage() );
+	}
+
+	// Boot MVC application (initializers can now access Container from Registry)
+	$app = \Neuron\Mvc\boot( $configPath );
+
+	// Update container with Application instance and set on app
+	if( isset( $container ) )
+	{
 		// Register the Application instance in the container
 		// Controllers can depend on either Application or IMvcApplication
 		$container->instance( Application::class, $app );
@@ -64,14 +79,6 @@ function boot( string $configPath ) : Application
 
 		// Set container on Application so MVC router can use it for controller instantiation
 		$app->setContainer( $container );
-
-		// Register container in Registry so initializers can access it
-		Registry::getInstance()->set( 'Container', $container );
-	}
-	catch( \Exception $e )
-	{
-		\Neuron\Log\Log::error( 'Container initialization failed: ' . $e->getMessage() );
-		\Neuron\Log\Log::error( 'Container initialization stack trace: ' . $e->getTraceAsString() );
 	}
 
 	// Initialize ORM with PDO connection from settings
@@ -84,7 +91,7 @@ function boot( string $configPath ) : Application
 	{
 		// If database configuration is missing or invalid, log but don't fail
 		// This allows the application to start even without database
-		error_log( 'CMS ORM initialization warning: ' . $e->getMessage() );
+		\Neuron\Log\Log::error( 'CMS ORM initialization warning: ' . $e->getMessage() );
 	}
 
 	return $app;

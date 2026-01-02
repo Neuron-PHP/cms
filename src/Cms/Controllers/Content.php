@@ -334,13 +334,13 @@ class Content extends Base
 	/**
 	 * Create a DTO from a YAML configuration file.
 	 *
-	 * @param string $config Path to YAML config file relative to config/dtos/
+	 * @param string $config Path to YAML config file relative to Dtos/ (e.g., 'auth/login-request.yaml')
 	 * @return \Neuron\Dto\Dto
 	 * @throws \Exception If DTO factory fails
 	 */
 	protected function createDto( string $config ): \Neuron\Dto\Dto
 	{
-		$configPath = __DIR__ . '/../../config/dtos/' . $config;
+		$configPath = __DIR__ . '/../Dtos/' . $config;
 
 		if( !file_exists( $configPath ) )
 		{

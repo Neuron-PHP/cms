@@ -32,7 +32,7 @@ class UpdaterTest extends TestCase
 	 */
 	private function createDto( int $id, string $username, string $email, string $role, ?string $password = null ): Dto
 	{
-		$factory = new Factory( __DIR__ . '/../../../../../config/dtos/users/update-user-request.yaml' );
+		$factory = new Factory( __DIR__ . "/../../../../../src/Cms/Dtos/users/update-user-request.yaml" );
 		$dto = $factory->create();
 
 		$dto->id = $id;

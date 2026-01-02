@@ -5,7 +5,6 @@ namespace Tests\Cms\Controllers\Auth;
 use Neuron\Cms\Controllers\Auth\Login;
 use Neuron\Cms\Services\Auth\IAuthenticationService;
 use Neuron\Cms\Auth\SessionManager;
-use Neuron\Cms\Services\Dto\DtoFactoryService;
 use Neuron\Data\Settings\SettingManager;
 use Neuron\Dto\Dto;
 use Neuron\Mvc\IMvcApplication;
@@ -23,7 +22,6 @@ class LoginTest extends TestCase
 	private SessionManager $mockSession;
 	private IContainer $mockContainer;
 	private Request $mockRequest;
-	private DtoFactoryService $mockDtoFactory;
 
 	protected function setUp(): void
 	{
@@ -35,7 +33,6 @@ class LoginTest extends TestCase
 		$this->mockSession = $this->createMock( SessionManager::class );
 		$this->mockContainer = $this->createMock( IContainer::class );
 		$this->mockRequest = $this->createMock( Request::class );
-		$this->mockDtoFactory = $this->createMock( DtoFactoryService::class );
 
 		// Setup mock settings for Registry
 		$mockSettings = $this->createMock( SettingManager::class );
@@ -48,7 +45,6 @@ class LoginTest extends TestCase
 			->willReturnCallback( function( $class ) {
 				if( $class === IAuthenticationService::class ) return $this->mockAuth;
 				if( $class === SessionManager::class ) return $this->mockSession;
-				if( $class === DtoFactoryService::class ) return $this->mockDtoFactory;
 				return null;
 			});
 

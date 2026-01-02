@@ -1,0 +1,32 @@
+# DTO for user registration
+# Validates user registration form data
+dto:
+  username:
+    type: string
+    required: true
+    length:
+      min: 3
+      max: 50
+    pattern: /^[a-zA-Z0-9_]+$/
+    description: Unique username (alphanumeric and underscore only)
+
+  email:
+    type: email
+    required: true
+    description: Valid email address (must be unique)
+
+  password:
+    type: string
+    required: true
+    length:
+      min: 8
+      max: 255
+    description: Password (min 8 chars, will be validated for strength)
+
+  password_confirmation:
+    type: string
+    required: true
+    length:
+      min: 8
+      max: 255
+    description: Password confirmation (must match password)

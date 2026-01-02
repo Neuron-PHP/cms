@@ -32,7 +32,7 @@ class UpdaterTest extends TestCase
 		?string $description = null
 	): Dto
 	{
-		$factory = new Factory( __DIR__ . '/../../../../../config/dtos/event-categories/update-event-category-request.yaml' );
+		$factory = new Factory( __DIR__ . "/../../../../../src/Cms/Dtos/event-categories/update-event-category-request.yaml" );
 		$dto = $factory->create();
 
 		$dto->id = $id;

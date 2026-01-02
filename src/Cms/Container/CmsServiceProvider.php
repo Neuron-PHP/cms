@@ -30,7 +30,6 @@ use Neuron\Cms\Services\Security\ResendVerificationThrottle;
 use Neuron\Cms\Services\Content\EditorJsRenderer;
 use Neuron\Cms\Services\Content\ShortcodeParser;
 use Neuron\Cms\Services\Widget\WidgetRenderer;
-use Neuron\Cms\Services\Dto\DtoFactoryService;
 use Neuron\Data\Settings\SettingManager;
 use Neuron\Events\Emitter;
 use Neuron\Routing\IIpResolver;
@@ -147,11 +146,6 @@ class CmsServiceProvider implements IServiceProvider
 			return new EditorJsRenderer(
 				$c->get( ShortcodeParser::class )
 			);
-		});
-
-		// DTO factory service
-		$container->singleton( DtoFactoryService::class, function( $c ) {
-			return new DtoFactoryService();
 		});
 	}
 

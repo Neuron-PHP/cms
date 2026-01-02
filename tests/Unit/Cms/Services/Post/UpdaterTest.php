@@ -46,7 +46,7 @@ class UpdaterTest extends TestCase
 		?string $featuredImage = null
 	): Dto
 	{
-		$factory = new Factory( __DIR__ . '/../../../../../config/dtos/posts/update-post-request.yaml' );
+		$factory = new Factory( __DIR__ . "/../../../../../src/Cms/Dtos/posts/update-post-request.yaml" );
 		$dto = $factory->create();
 
 		$dto->id = $id;

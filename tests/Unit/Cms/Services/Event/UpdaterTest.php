@@ -50,7 +50,7 @@ class UpdaterTest extends TestCase
 		?string $contactPhone = null
 	): Dto
 	{
-		$factory = new Factory( __DIR__ . '/../../../../../config/dtos/events/update-event-request.yaml' );
+		$factory = new Factory( __DIR__ . "/../../../../../src/Cms/Dtos/events/update-event-request.yaml" );
 		$dto = $factory->create();
 
 		$dto->id = $id;

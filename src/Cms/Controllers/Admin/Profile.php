@@ -5,7 +5,6 @@ namespace Neuron\Cms\Controllers\Admin;
 use Neuron\Cms\Auth\SessionManager;
 use Neuron\Cms\Enums\FlashMessageType;
 use Neuron\Cms\Controllers\Content;
-use Neuron\Cms\Controllers\Traits\UsesDtos;
 use Neuron\Cms\Repositories\IUserRepository;
 use Neuron\Cms\Services\User\IUserUpdater;
 use Neuron\Cms\Auth\PasswordHasher;
@@ -25,8 +24,6 @@ use Neuron\Routing\Attributes\RouteGroup;
 #[RouteGroup(prefix: '/admin', filters: ['auth'])]
 class Profile extends Content
 {
-	use UsesDtos;
-
 	private IUserRepository $_repository;
 	private PasswordHasher $_hasher;
 	private IUserUpdater $_userUpdater;

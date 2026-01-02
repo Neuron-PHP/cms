@@ -3,7 +3,6 @@
 namespace Neuron\Cms\Controllers\Member;
 
 use Neuron\Cms\Controllers\Content;
-use Neuron\Cms\Controllers\Traits\UsesDtos;
 use Neuron\Cms\Services\Security\ResendVerificationThrottle;
 use Neuron\Cms\Auth\SessionManager;
 use Neuron\Cms\Services\Member\IRegistrationService;
@@ -28,7 +27,6 @@ use Neuron\Routing\Attributes\Post;
  */
 class Registration extends Content
 {
-	use UsesDtos;
 	private IRegistrationService $_registrationService;
 	private IEmailVerifier $_emailVerifier;
 	private ResendVerificationThrottle $_resendThrottle;
@@ -121,10 +119,23 @@ class Registration extends Content
 		try
 		{
 			// Create and populate RegisterUser DTO from request
-			$dto = $this->createDtoFromRequest( 'RegisterUser', $request );
+			$dto = $this->createDto( 'users/register-user-request.yaml' );
+			$this->mapRequestToDto( $dto, $request );
 
 			// Validate the DTO
-			$this->validateDtoOrFail( $dto );
+			if( !$dto->validate() )
+			{
+				$errors = [];
+				foreach( $dto->getErrors() as $field => $fieldErrors )
+				{
+					foreach( $fieldErrors as $error )
+					{
+						$errors[] = $field . ': ' . $error;
+					}
+				}
+				$errorMessage = implode( ', ', $errors );
+				throw new \Exception( $errorMessage );
+			}
 
 			// Register user using DTO
 			$this->_registrationService->registerWithDto( $dto );

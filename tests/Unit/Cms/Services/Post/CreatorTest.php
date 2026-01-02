@@ -47,7 +47,7 @@ class CreatorTest extends TestCase
 		?string $featuredImage = null
 	): Dto
 	{
-		$factory = new Factory( __DIR__ . '/../../../../../config/dtos/posts/create-post-request.yaml' );
+		$factory = new Factory( __DIR__ . "/../../../../../src/Cms/Dtos/posts/create-post-request.yaml" );
 		$dto = $factory->create();
 
 		$dto->title = $title;

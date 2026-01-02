@@ -22,7 +22,6 @@ use Neuron\Cms\Repositories\ITagRepository;
 use Neuron\Cms\Repositories\IUserRepository;
 use Neuron\Cms\Services\Content\EditorJsRenderer;
 use Neuron\Cms\Services\Content\ShortcodeParser;
-use Neuron\Cms\Services\Dto\DtoFactoryService;
 use Neuron\Cms\Services\User\Creator;
 use Neuron\Cms\Services\User\Deleter;
 use Neuron\Cms\Services\User\IUserCreator;
@@ -139,16 +138,6 @@ class CmsServiceProviderTest extends TestCase
 		$this->assertInstanceOf( EditorJsRenderer::class, $this->container->get( EditorJsRenderer::class ) );
 	}
 
-	public function testRegisterCreatesDtoFactorySingleton(): void
-	{
-		$this->provider->register( $this->container );
-
-		// Verify DTO factory is registered as singleton - get same instance twice
-		$factory1 = $this->container->get( DtoFactoryService::class );
-		$factory2 = $this->container->get( DtoFactoryService::class );
-		$this->assertSame( $factory1, $factory2, 'DtoFactoryService should be singleton' );
-	}
-
 	public function testRegisterCreatesSharedServiceSingletons(): void
 	{
 		$this->provider->register( $this->container );
@@ -186,11 +175,10 @@ class CmsServiceProviderTest extends TestCase
 			SessionManager::class,
 			ResendVerificationThrottle::class,
 			IIpResolver::class,
-			// Content services (4)
+			// Content services (3)
 			WidgetRenderer::class,
 			ShortcodeParser::class,
 			EditorJsRenderer::class,
-			DtoFactoryService::class,
 			// Shared services (2)
 			SettingManager::class,
 			Emitter::class,
