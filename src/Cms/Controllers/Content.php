@@ -366,7 +366,15 @@ class Content extends Base
 
 			if( $value !== null )
 			{
-				$dto->$name = $value;
+				// Handle boolean fields - convert checkbox 'on' to true
+				if( isset( $property['type'] ) && $property['type'] === 'boolean' )
+				{
+					$dto->$name = ( $value === 'on' || $value === '1' || $value === 1 || $value === true );
+				}
+				else
+				{
+					$dto->$name = $value;
+				}
 			}
 		}
 	}

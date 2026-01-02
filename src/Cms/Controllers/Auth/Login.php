@@ -94,12 +94,6 @@ class Login extends Content
 		$dto = $this->createDto( 'auth/login-request.yaml' );
 		$this->mapRequestToDto( $dto, $request );
 
-		// Convert 'on' checkbox value to boolean
-		if( $request->post( 'remember' ) === 'on' )
-		{
-			$dto->remember = true;
-		}
-
 		// Validate DTO
 		if( !$dto->validate() )
 		{
