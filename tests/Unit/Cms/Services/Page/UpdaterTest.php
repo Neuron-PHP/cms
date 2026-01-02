@@ -26,7 +26,7 @@ class UpdaterTest extends TestCase
 		?string $metaKeywords = null
 	): Dto
 	{
-		$factory = new Factory( __DIR__ . '/../../../../../config/dtos/pages/update-page-request.yaml' );
+		$factory = new Factory( __DIR__ . "/../../../../../src/Cms/Dtos/pages/update-page-request.yaml" );
 		$dto = $factory->create();
 
 		$dto->id = $id;

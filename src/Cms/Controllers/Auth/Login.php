@@ -4,7 +4,6 @@ namespace Neuron\Cms\Controllers\Auth;
 
 use Neuron\Cms\Auth\SessionManager;
 use Neuron\Cms\Controllers\Content;
-use Neuron\Cms\Controllers\Traits\UsesDtos;
 use Neuron\Cms\Enums\FlashMessageType;
 use Neuron\Cms\Services\Auth\IAuthenticationService;
 use Neuron\Core\Exceptions\NotFound;
@@ -24,8 +23,6 @@ use Neuron\Routing\Attributes\Post;
  */
 class Login extends Content
 {
-	use UsesDtos;
-
 	private IAuthenticationService $_authentication;
 
 	/**

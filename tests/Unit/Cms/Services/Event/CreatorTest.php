@@ -50,7 +50,7 @@ class CreatorTest extends TestCase
 		?string $contactPhone = null
 	): Dto
 	{
-		$factory = new Factory( __DIR__ . '/../../../../../config/dtos/events/create-event-request.yaml' );
+		$factory = new Factory( __DIR__ . "/../../../../../src/Cms/Dtos/events/create-event-request.yaml" );
 		$dto = $factory->create();
 
 		$dto->title = $title;

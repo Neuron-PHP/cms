@@ -4,7 +4,6 @@ namespace Neuron\Cms\Controllers\Auth;
 
 use Neuron\Cms\Auth\SessionManager;
 use Neuron\Cms\Controllers\Content;
-use Neuron\Cms\Controllers\Traits\UsesDtos;
 use Neuron\Cms\Enums\FlashMessageType;
 use Neuron\Cms\Services\Auth\IPasswordResetter;
 use Neuron\Core\Exceptions\NotFound;
@@ -27,8 +26,6 @@ use Exception;
  */
 class PasswordReset extends Content
 {
-	use UsesDtos;
-
 	private IPasswordResetter $_passwordResetter;
 
 	/**

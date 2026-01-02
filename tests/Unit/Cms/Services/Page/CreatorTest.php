@@ -26,7 +26,7 @@ class CreatorTest extends TestCase
 		?string $metaKeywords = null
 	): Dto
 	{
-		$factory = new Factory( __DIR__ . '/../../../../../config/dtos/pages/create-page-request.yaml' );
+		$factory = new Factory( __DIR__ . "/../../../../../src/Cms/Dtos/pages/create-page-request.yaml" );
 		$dto = $factory->create();
 
 		$dto->title = $title;

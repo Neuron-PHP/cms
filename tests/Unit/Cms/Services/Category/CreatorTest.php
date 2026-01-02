@@ -30,7 +30,7 @@ class CreatorTest extends TestCase
 		?string $description = null
 	): Dto
 	{
-		$factory = new Factory( __DIR__ . '/../../../../../config/dtos/categories/create-category-request.yaml' );
+		$factory = new Factory( __DIR__ . "/../../../../../src/Cms/Dtos/categories/create-category-request.yaml" );
 		$dto = $factory->create();
 
 		$dto->name = $name;
