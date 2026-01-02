@@ -58,7 +58,11 @@ class InstallCommand extends Command
 	 */
 	public function configure(): void
 	{
-		// Additional configuration can go here
+		$this->addOption(
+			'force',
+			'f',
+			'Force reinstall without prompts (skips database setup, migrations, and user creation)'
+		);
 	}
 
 	/**
@@ -66,9 +70,17 @@ class InstallCommand extends Command
 	 */
 	public function execute( array $parameters = [] ): int
 	{
+		$force = $this->hasOption( 'force' ) || $this->hasOption( 'f' );
+
 		$this->output->writeln( "\n╔═══════════════════════════════════════╗" );
 		$this->output->writeln( "║  Neuron CMS - Installation            ║" );
 		$this->output->writeln( "╚═══════════════════════════════════════╝\n" );
+
+		if( $force )
+		{
+			$this->output->info( "Force mode enabled - skipping interactive prompts" );
+			$this->output->writeln( "" );
+		}
 
 		// Check if already installed
 		if( $this->isAlreadyInstalled() )
@@ -77,14 +89,20 @@ class InstallCommand extends Command
 			$this->output->writeln( "Resources directory exists: resources/views/admin/" );
 			$this->output->writeln( "" );
 
-			if( !$this->confirm( "Do you want to reinstall? This will overwrite existing files", false ) )
+			if( !$force && !$this->confirm( "Do you want to reinstall? This will overwrite existing files", false ) )
 			{
 				$this->output->error( "Installation cancelled." );
 				return 1;
 			}
+
+			if( $force )
+			{
+				$this->output->info( "Reinstalling (force mode)..." );
+			}
 		}
 
 		// Run installation steps
+		// In force mode, skip database setup
 		$steps = [
 			'createDirectories' => 'Creating directories...',
 			'publishViews' => 'Publishing view templates...',
@@ -92,9 +110,14 @@ class InstallCommand extends Command
 			'createRouteConfig' => 'Creating route configuration...',
 			'createAuthConfig' => 'Creating auth configuration...',
 			'createPublicFiles' => 'Creating public folder and copying static assets...',
-			'setupDatabase' => 'Setting up database...',
 			'copyMigrations' => 'Copying database migrations...',
 		];
+
+		// Only setup database if not in force mode
+		if( !$force )
+		{
+			$steps['setupDatabase'] = 'Setting up database...';
+		}
 
 		foreach( $steps as $method => $message )
 		{
@@ -107,44 +130,62 @@ class InstallCommand extends Command
 			}
 		}
 
-		// Ask to run migration
-		$this->output->writeln( "" );
-		if( $this->confirm( "Would you like to run the migration now?", true ) )
+		// Ask to run migration (skip in force mode)
+		if( !$force )
 		{
-			if( !$this->runMigration() )
-			{
-				$this->output->error( "Migration failed!" );
-				$this->output->info( "You can run it manually with: php neuron db:migrate" );
-				return 1;
-			}
-
-			// Seed default data after successful migration
 			$this->output->writeln( "" );
-			$this->output->writeln( "Seeding default data..." );
-			if( !$this->seedDefaultData() )
+			if( $this->confirm( "Would you like to run the migration now?", true ) )
 			{
-				$this->output->warning( "Failed to seed default data" );
-				$this->output->info( "You can create default categories manually in the admin panel" );
+				if( !$this->runMigration() )
+				{
+					$this->output->error( "Migration failed!" );
+					$this->output->info( "You can run it manually with: php neuron db:migrate" );
+					return 1;
+				}
+
+				// Seed default data after successful migration
+				$this->output->writeln( "" );
+				$this->output->writeln( "Seeding default data..." );
+				if( !$this->seedDefaultData() )
+				{
+					$this->output->warning( "Failed to seed default data" );
+					$this->output->info( "You can create default categories manually in the admin panel" );
+				}
+			}
+			else
+			{
+				$this->output->info( "Remember to run migration with: php neuron db:migrate" );
 			}
 		}
 		else
 		{
-			$this->output->info( "Remember to run migration with: php neuron db:migrate" );
+			$this->output->writeln( "" );
+			$this->output->info( "Skipping migration in force mode" );
+			$this->output->info( "Run migrations with: vendor/bin/phinx migrate" );
 		}
 
 		// Display summary
 		$this->output->success( "Installation complete!" );
 		$this->displaySummary();
 
-		// Create first admin user
-		$this->output->writeln( "" );
-		if( $this->confirm( "Would you like to create an admin user now?", true ) )
+		// Create first admin user (skip in force mode)
+		if( !$force )
 		{
-			$this->createAdminUser();
+			$this->output->writeln( "" );
+			if( $this->confirm( "Would you like to create an admin user now?", true ) )
+			{
+				$this->createAdminUser();
+			}
+			else
+			{
+				$this->output->info( "You can create an admin user later with: php neuron cms:user:create" );
+			}
 		}
 		else
 		{
-			$this->output->info( "You can create an admin user later with: php neuron cms:user:create" );
+			$this->output->writeln( "" );
+			$this->output->info( "Skipping admin user creation in force mode" );
+			$this->output->info( "Create admin user with: vendor/bin/neuron cms:user:create" );
 		}
 
 		return 0;
