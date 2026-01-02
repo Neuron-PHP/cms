@@ -64,10 +64,14 @@ function boot( string $configPath ) : Application
 
 		// Set container on Application so MVC router can use it for controller instantiation
 		$app->setContainer( $container );
+
+		// Register container in Registry so initializers can access it
+		Registry::getInstance()->set( 'Container', $container );
 	}
 	catch( \Exception $e )
 	{
-		error_log( 'Container initialization failed: ' . $e->getMessage() );
+		\Neuron\Log\Log::error( 'Container initialization failed: ' . $e->getMessage() );
+		\Neuron\Log\Log::error( 'Container initialization stack trace: ' . $e->getTraceAsString() );
 	}
 
 	// Initialize ORM with PDO connection from settings
