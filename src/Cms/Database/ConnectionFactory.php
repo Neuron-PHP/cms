@@ -77,8 +77,8 @@ class ConnectionFactory
 
 		$pdo = new PDO(
 			$dsn,
-			$config['user'] ?? null,
-			$config['pass'] ?? null,
+			$config['user'] ?? $config['username'] ?? null,
+			$config['pass'] ?? $config['password'] ?? null,
 			[
 				PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
 				PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC

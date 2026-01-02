@@ -781,6 +781,18 @@ class InstallCommand extends Command
 			'views' => [
 				'path' => 'resources/views'
 			],
+			'routing' => [
+				'controller_paths' => [
+					[
+						'path' => 'app/Controllers',
+						'namespace' => 'App\\Controllers'
+					],
+					[
+						'path' => 'vendor/neuron-php/cms/src/Cms/Controllers',
+						'namespace' => 'Neuron\\Cms\\Controllers'
+					]
+				]
+			],
 			'system' => [
 				'timezone' => $appConfig['timezone'],
 				'base_path' => $this->_projectPath
@@ -1002,8 +1014,35 @@ class InstallCommand extends Command
 		{
 			if( is_array( $value ) )
 			{
-				$yaml .= $indentStr . $key . ":\n";
-				$yaml .= $this->arrayToYaml( $value, $indent + 1 );
+				// Check if this is a numeric array (list)
+				if( array_keys( $value ) === range( 0, count( $value ) - 1 ) )
+				{
+					// This is a list, output the key first if not numeric
+					if( !is_int( $key ) )
+					{
+						$yaml .= $indentStr . $key . ":\n";
+					}
+
+					// Format list items with dashes
+					foreach( $value as $item )
+					{
+						if( is_array( $item ) )
+						{
+							$yaml .= $indentStr . "  -\n";
+							$yaml .= $this->arrayToYaml( $item, $indent + 2 );
+						}
+						else
+						{
+							$yaml .= $indentStr . "  - " . $this->yamlValue( $item ) . "\n";
+						}
+					}
+				}
+				else
+				{
+					// This is an associative array
+					$yaml .= $indentStr . $key . ":\n";
+					$yaml .= $this->arrayToYaml( $value, $indent + 1 );
+				}
 			}
 			else
 			{
