@@ -54,8 +54,25 @@ function boot( string $configPath ) : Application
 	// This ensures the container is available to initializers during boot
 	try
 	{
+		// Determine which configuration file to load based on environment
+		// Check APP_ENV environment variable (testing, development, production)
+		$environment = getenv( 'APP_ENV' ) ?: 'production';
+		$configFile = match( $environment ) {
+			'testing' => 'neuron.testing.yaml',
+			'development' => 'neuron.yaml',
+			'production' => 'neuron.yaml',
+			default => 'neuron.yaml'
+		};
+
+		// Fallback to neuron.yaml if environment-specific file doesn't exist
+		$configFilePath = "$configPath/$configFile";
+		if( !file_exists( $configFilePath ) )
+		{
+			$configFilePath = "$configPath/neuron.yaml";
+		}
+
 		// Create SettingManager from config file
-		$yaml = new Yaml( "$configPath/neuron.yaml" );
+		$yaml = new Yaml( $configFilePath );
 		$settings = new SettingManager( $yaml );
 
 		// Build container (automatically registers in Registry)
