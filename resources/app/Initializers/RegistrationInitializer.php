@@ -9,7 +9,7 @@ use Neuron\Cms\Services\Member\RegistrationService;
 use Neuron\Log\Log;
 use Neuron\Patterns\Registry;
 use Neuron\Patterns\IRunnable;
-use Psr\Container\ContainerInterface;
+use Neuron\Patterns\Container\IContainer;
 
 /**
  * Initialize the member registration system
@@ -47,7 +47,7 @@ class RegistrationInitializer implements IRunnable
 		// Get Container from Registry
 		$container = Registry::getInstance()->get( 'Container' );
 
-		if( !$container || !$container instanceof ContainerInterface )
+		if( !$container || !$container instanceof IContainer )
 		{
 			Log::error( "Container not found in Registry, skipping registration initialization" );
 			return null;
