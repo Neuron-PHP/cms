@@ -1,0 +1,340 @@
+# CMS Service Container Configuration
+#
+# This file defines all services registered in the dependency injection container.
+# Services are organized by category for maintainability.
+#
+# Definition Types:
+#   - autowire: Automatically resolve dependencies (default)
+#   - create: Explicitly create with constructor parameters
+#   - factory: Use a factory class to create the service
+#   - alias: Reference another service (interface -> implementation binding)
+#   - value: Simple value/scalar
+#   - instance: Instance loaded from Registry (set at runtime)
+#
+# Parameter References:
+#   Use @ prefix to reference other services (e.g., @ServiceName)
+
+services:
+  # ============================================================================
+  # SETTINGS & CONFIGURATION
+  # ============================================================================
+
+  # Note: SettingManager is NOT defined here because it's passed as a parameter
+  # to Container::build() and set programmatically. See Container.php line 51.
+
+
+  # ============================================================================
+  # CORE SERVICES
+  # ============================================================================
+
+  Neuron\Cms\Services\SlugGenerator:
+    type: autowire
+
+  Neuron\Cms\Auth\SessionManager:
+    type: factory
+    factory_class: Neuron\Cms\Container\Factories\SessionManagerFactory
+
+  Neuron\Cms\Auth\PasswordHasher:
+    type: factory
+    factory_class: Neuron\Cms\Container\Factories\PasswordHasherFactory
+
+
+  # ============================================================================
+  # REPOSITORIES - Implementations
+  # ============================================================================
+
+  Neuron\Cms\Repositories\DatabaseUserRepository:
+    type: create
+    constructor:
+      - '@Neuron\Data\Settings\SettingManager'
+
+  Neuron\Cms\Repositories\DatabaseEmailVerificationTokenRepository:
+    type: create
+    constructor:
+      - '@Neuron\Data\Settings\SettingManager'
+
+  Neuron\Cms\Repositories\DatabasePostRepository:
+    type: autowire
+
+  Neuron\Cms\Repositories\DatabasePageRepository:
+    type: autowire
+
+  Neuron\Cms\Repositories\DatabaseCategoryRepository:
+    type: autowire
+
+  Neuron\Cms\Repositories\DatabaseTagRepository:
+    type: autowire
+
+  Neuron\Cms\Repositories\DatabaseEventRepository:
+    type: autowire
+
+  Neuron\Cms\Repositories\DatabaseEventCategoryRepository:
+    type: autowire
+
+  Neuron\Cms\Repositories\DatabasePasswordResetTokenRepository:
+    type: autowire
+
+
+  # ============================================================================
+  # REPOSITORIES - Interface Bindings
+  # ============================================================================
+
+  Neuron\Cms\Repositories\IUserRepository:
+    type: alias
+    target: Neuron\Cms\Repositories\DatabaseUserRepository
+
+  Neuron\Cms\Repositories\IEmailVerificationTokenRepository:
+    type: alias
+    target: Neuron\Cms\Repositories\DatabaseEmailVerificationTokenRepository
+
+  Neuron\Cms\Repositories\IPostRepository:
+    type: alias
+    target: Neuron\Cms\Repositories\DatabasePostRepository
+
+  Neuron\Cms\Repositories\IPageRepository:
+    type: alias
+    target: Neuron\Cms\Repositories\DatabasePageRepository
+
+  Neuron\Cms\Repositories\ICategoryRepository:
+    type: alias
+    target: Neuron\Cms\Repositories\DatabaseCategoryRepository
+
+  Neuron\Cms\Repositories\ITagRepository:
+    type: alias
+    target: Neuron\Cms\Repositories\DatabaseTagRepository
+
+  Neuron\Cms\Repositories\IEventRepository:
+    type: alias
+    target: Neuron\Cms\Repositories\DatabaseEventRepository
+
+  Neuron\Cms\Repositories\IEventCategoryRepository:
+    type: alias
+    target: Neuron\Cms\Repositories\DatabaseEventCategoryRepository
+
+  Neuron\Cms\Repositories\IPasswordResetTokenRepository:
+    type: alias
+    target: Neuron\Cms\Repositories\DatabasePasswordResetTokenRepository
+
+
+  # ============================================================================
+  # AUTHENTICATION SERVICES
+  # ============================================================================
+
+  Neuron\Cms\Services\Auth\CsrfToken:
+    type: create
+    constructor:
+      - '@Neuron\Cms\Auth\SessionManager'
+
+  Neuron\Cms\Services\Auth\Authentication:
+    type: create
+    constructor:
+      - '@Neuron\Cms\Repositories\DatabaseUserRepository'
+      - '@Neuron\Cms\Auth\SessionManager'
+      - '@Neuron\Cms\Auth\PasswordHasher'
+
+  Neuron\Cms\Services\Auth\EmailVerifier:
+    type: factory
+    factory_class: Neuron\Cms\Container\Factories\EmailVerifierFactory
+
+  Neuron\Cms\Services\Auth\PasswordResetter:
+    type: factory
+    factory_class: Neuron\Cms\Container\Factories\PasswordResetterFactory
+
+  Neuron\Cms\Services\Member\RegistrationService:
+    type: factory
+    factory_class: Neuron\Cms\Container\Factories\RegistrationServiceFactory
+
+
+  # ============================================================================
+  # AUTHENTICATION SERVICES - Interface Bindings
+  # ============================================================================
+
+  Neuron\Cms\Services\Auth\IAuthenticationService:
+    type: alias
+    target: Neuron\Cms\Services\Auth\Authentication
+
+  Neuron\Cms\Services\Auth\IPasswordResetter:
+    type: alias
+    target: Neuron\Cms\Services\Auth\PasswordResetter
+
+  Neuron\Cms\Services\Auth\IEmailVerifier:
+    type: alias
+    target: Neuron\Cms\Services\Auth\EmailVerifier
+
+  Neuron\Cms\Services\Member\IRegistrationService:
+    type: alias
+    target: Neuron\Cms\Services\Member\RegistrationService
+
+
+  # ============================================================================
+  # USER CRUD SERVICES
+  # ============================================================================
+
+  Neuron\Cms\Services\User\IUserCreator:
+    type: alias
+    target: Neuron\Cms\Services\User\Creator
+
+  Neuron\Cms\Services\User\Creator:
+    type: autowire
+
+  Neuron\Cms\Services\User\IUserUpdater:
+    type: alias
+    target: Neuron\Cms\Services\User\Updater
+
+  Neuron\Cms\Services\User\Updater:
+    type: autowire
+
+  Neuron\Cms\Services\User\IUserDeleter:
+    type: alias
+    target: Neuron\Cms\Services\User\Deleter
+
+  Neuron\Cms\Services\User\Deleter:
+    type: autowire
+
+
+  # ============================================================================
+  # POST CRUD SERVICES
+  # ============================================================================
+
+  Neuron\Cms\Services\Post\IPostCreator:
+    type: alias
+    target: Neuron\Cms\Services\Post\Creator
+
+  Neuron\Cms\Services\Post\Creator:
+    type: autowire
+
+  Neuron\Cms\Services\Post\IPostUpdater:
+    type: alias
+    target: Neuron\Cms\Services\Post\Updater
+
+  Neuron\Cms\Services\Post\Updater:
+    type: autowire
+
+  Neuron\Cms\Services\Post\IPostDeleter:
+    type: alias
+    target: Neuron\Cms\Services\Post\Deleter
+
+  Neuron\Cms\Services\Post\Deleter:
+    type: autowire
+
+
+  # ============================================================================
+  # PAGE CRUD SERVICES
+  # ============================================================================
+
+  Neuron\Cms\Services\Page\IPageCreator:
+    type: alias
+    target: Neuron\Cms\Services\Page\Creator
+
+  Neuron\Cms\Services\Page\Creator:
+    type: autowire
+
+  Neuron\Cms\Services\Page\IPageUpdater:
+    type: alias
+    target: Neuron\Cms\Services\Page\Updater
+
+  Neuron\Cms\Services\Page\Updater:
+    type: autowire
+
+
+  # ============================================================================
+  # EVENT CRUD SERVICES
+  # ============================================================================
+
+  Neuron\Cms\Services\Event\IEventCreator:
+    type: alias
+    target: Neuron\Cms\Services\Event\Creator
+
+  Neuron\Cms\Services\Event\Creator:
+    type: autowire
+
+  Neuron\Cms\Services\Event\IEventUpdater:
+    type: alias
+    target: Neuron\Cms\Services\Event\Updater
+
+  Neuron\Cms\Services\Event\Updater:
+    type: autowire
+
+
+  # ============================================================================
+  # EVENT CATEGORY CRUD SERVICES
+  # ============================================================================
+
+  Neuron\Cms\Services\EventCategory\IEventCategoryCreator:
+    type: alias
+    target: Neuron\Cms\Services\EventCategory\Creator
+
+  Neuron\Cms\Services\EventCategory\Creator:
+    type: autowire
+
+  Neuron\Cms\Services\EventCategory\IEventCategoryUpdater:
+    type: alias
+    target: Neuron\Cms\Services\EventCategory\Updater
+
+  Neuron\Cms\Services\EventCategory\Updater:
+    type: autowire
+
+
+  # ============================================================================
+  # CATEGORY CRUD SERVICES
+  # ============================================================================
+
+  Neuron\Cms\Services\Category\ICategoryCreator:
+    type: alias
+    target: Neuron\Cms\Services\Category\Creator
+
+  Neuron\Cms\Services\Category\Creator:
+    type: autowire
+
+  Neuron\Cms\Services\Category\ICategoryUpdater:
+    type: alias
+    target: Neuron\Cms\Services\Category\Updater
+
+  Neuron\Cms\Services\Category\Updater:
+    type: autowire
+
+
+  # ============================================================================
+  # TAG CRUD SERVICES
+  # ============================================================================
+
+  Neuron\Cms\Services\Tag\ITagCreator:
+    type: alias
+    target: Neuron\Cms\Services\Tag\Creator
+
+  Neuron\Cms\Services\Tag\Creator:
+    type: autowire
+
+
+  # ============================================================================
+  # CONTENT SERVICES
+  # ============================================================================
+
+  Neuron\Cms\Services\Content\EditorJsRenderer:
+    type: autowire
+
+
+  # ============================================================================
+  # MEDIA SERVICES
+  # ============================================================================
+
+  Neuron\Cms\Services\Media\CloudinaryUploader:
+    type: autowire
+
+  Neuron\Cms\Services\Media\MediaValidator:
+    type: autowire
+
+
+  # ============================================================================
+  # SECURITY SERVICES
+  # ============================================================================
+
+  Neuron\Cms\Services\Security\ResendVerificationThrottle:
+    type: autowire
+
+  Neuron\Routing\IIpResolver:
+    type: alias
+    target: Neuron\Routing\DefaultIpResolver
+
+  Neuron\Routing\DefaultIpResolver:
+    type: autowire
