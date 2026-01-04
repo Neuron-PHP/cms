@@ -34,17 +34,10 @@ class Home extends Content
 		IMvcApplication $app,
 		SettingManager $settings,
 		SessionManager $sessionManager,
-		?IRegistrationService $registrationService = null
+		IRegistrationService $registrationService
 	)
 	{
 		parent::__construct( $app, $settings, $sessionManager );
-
-		// Pure dependency injection - no service locator fallback
-		if( $registrationService === null )
-		{
-			throw new \InvalidArgumentException( 'IRegistrationService must be injected' );
-		}
-
 		$this->_registrationService = $registrationService;
 	}
 
