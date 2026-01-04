@@ -19,9 +19,8 @@ services:
   # SETTINGS & CONFIGURATION
   # ============================================================================
 
-  Neuron\Data\Settings\SettingManager:
-    type: instance
-    source: registry
+  # Note: SettingManager is NOT defined here because it's passed as a parameter
+  # to Container::build() and set programmatically. See Container.php line 51.
 
 
   # ============================================================================
