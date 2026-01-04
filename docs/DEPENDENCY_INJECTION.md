@@ -2,11 +2,35 @@
 
 The NeuronPHP framework includes a PSR-11 compatible dependency injection container for managing dependencies and promoting loose coupling.
 
+## Service Configuration
+
+**NEW:** Services are now configured via YAML files for better maintainability and separation of concerns.
+
+See [Service Configuration Guide](SERVICE_CONFIGURATION.md) for complete documentation on YAML-based service configuration.
+
 ## Quick Start
 
 ### 1. Bootstrap the Container
 
-In your application bootstrap (e.g., `public/index.php`):
+The container is automatically bootstrapped in `src/Bootstrap.php`:
+
+```php
+<?php
+
+use Neuron\Cms\Container\Container;
+
+// Container automatically loads services from resources/config/services.yaml
+$container = Container::build($settings, $environment);
+
+// Container is automatically set on the application
+$app->setContainer($container);
+```
+
+**That's it!** All services defined in `services.yaml` are available for injection.
+
+### 2. Alternative: Manual Bootstrap (Legacy)
+
+For backward compatibility, you can still use the service provider approach:
 
 ```php
 <?php
@@ -24,6 +48,8 @@ $provider->register($container);
 // Set container on application
 $app->setContainer($container);
 ```
+
+**Note:** This approach is deprecated in favor of YAML configuration.
 
 ### 2. Use Dependency Injection in Controllers
 
