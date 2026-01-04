@@ -80,7 +80,8 @@ class YamlDefinitionLoader
 		try
 		{
 			$data = YamlParser::parseFile( $file );
-			return $data['services'] ?? [];
+			// Handle empty files (parseFile returns null for empty/whitespace-only files)
+			return is_array( $data ) ? ( $data['services'] ?? [] ) : [];
 		}
 		catch( ParseException $e )
 		{

@@ -375,4 +375,80 @@ YAML;
 		$definitions = $loader->getDefinitions();
 		$this->assertArrayHasKey( 'TestService', $definitions );
 	}
+
+	/**
+	 * Test empty YAML file returns empty array (not crash)
+	 *
+	 * Symfony YAML parseFile() returns null for empty files.
+	 * This test ensures we handle that gracefully.
+	 */
+	public function testEmptyYamlFileReturnsEmptyArray(): void
+	{
+		// Create empty file
+		file_put_contents( $this->_tempDir . '/services.yaml', '' );
+
+		$loader = new YamlDefinitionLoader( $this->_tempDir );
+		$definitions = $loader->load();
+
+		$this->assertIsArray( $definitions );
+		$this->assertEmpty( $definitions );
+	}
+
+	/**
+	 * Test YAML file with only comments returns empty array
+	 */
+	public function testYamlFileWithOnlyCommentsReturnsEmptyArray(): void
+	{
+		$yaml = <<<YAML
+# This is just a comment
+# Another comment
+
+YAML;
+
+		file_put_contents( $this->_tempDir . '/services.yaml', $yaml );
+
+		$loader = new YamlDefinitionLoader( $this->_tempDir );
+		$definitions = $loader->load();
+
+		$this->assertIsArray( $definitions );
+		$this->assertEmpty( $definitions );
+	}
+
+	/**
+	 * Test YAML file with only whitespace returns empty array
+	 */
+	public function testYamlFileWithOnlyWhitespaceReturnsEmptyArray(): void
+	{
+		// Only newlines and spaces (tabs can cause parse errors in YAML)
+		file_put_contents( $this->_tempDir . '/services.yaml', "   \n\n   \n" );
+
+		$loader = new YamlDefinitionLoader( $this->_tempDir );
+		$definitions = $loader->load();
+
+		$this->assertIsArray( $definitions );
+		$this->assertEmpty( $definitions );
+	}
+
+	/**
+	 * Test environment override file can be empty without crashing
+	 */
+	public function testEmptyEnvironmentOverrideFileWorks(): void
+	{
+		// Base file with services
+		$baseYaml = <<<YAML
+services:
+  TestService:
+    type: autowire
+YAML;
+
+		// Empty environment override file
+		file_put_contents( $this->_tempDir . '/services.yaml', $baseYaml );
+		file_put_contents( $this->_tempDir . '/services.testing.yaml', '' );
+
+		$loader = new YamlDefinitionLoader( $this->_tempDir, 'testing' );
+		$definitions = $loader->load();
+
+		// Should still have base service
+		$this->assertArrayHasKey( 'TestService', $definitions );
+	}
 }
