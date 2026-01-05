@@ -4,6 +4,7 @@ namespace Neuron\Cms\Controllers\Admin;
 
 use Neuron\Cms\Auth\SessionManager;
 use Neuron\Cms\Controllers\Content;
+use Neuron\Cms\Enums\FlashMessageType;
 use Neuron\Core\Exceptions\NotFound;
 use Neuron\Data\Settings\SettingManager;
 use Neuron\Mvc\IMvcApplication;
@@ -54,6 +55,8 @@ class Dashboard extends Content
 			->description( 'Admin Dashboard' )
 			->withCurrentUser()
 			->withCsrfToken()
+			->with( 'Error', $this->getSessionManager()->getFlash( FlashMessageType::ERROR->value ) )
+			->with( 'Success', $this->getSessionManager()->getFlash( FlashMessageType::SUCCESS->value ) )
 			->render( 'index', 'admin' );
 	}
 }

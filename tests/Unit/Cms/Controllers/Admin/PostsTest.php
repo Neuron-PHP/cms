@@ -85,7 +85,7 @@ class PostsTest extends TestCase
 
 	public function testConstructorThrowsExceptionWithoutPostRepository(): void
 	{
-		$this->expectException( \InvalidArgumentException::class );
+		$this->expectException( \TypeError::class );
 
 		$mockSettings = Registry::getInstance()->get( 'Settings' );
 		$mockSessionManager = $this->createMock( SessionManager::class );

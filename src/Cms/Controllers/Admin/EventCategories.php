@@ -35,38 +35,24 @@ class EventCategories extends Content
 	 * @param IMvcApplication $app
 	 * @param SettingManager $settings
 	 * @param SessionManager $sessionManager
-	 * @param IEventCategoryRepository|null $repository
-	 * @param IEventCategoryCreator|null $creator
-	 * @param IEventCategoryUpdater|null $updater
+	 * @param IEventCategoryRepository $repository
+	 * @param IEventCategoryCreator $creator
+	 * @param IEventCategoryUpdater $updater
 	 * @throws \Exception
 	 */
 	public function __construct(
 		IMvcApplication $app,
 		SettingManager $settings,
 		SessionManager $sessionManager,
-		?IEventCategoryRepository $repository = null,
-		?IEventCategoryCreator $creator = null,
-		?IEventCategoryUpdater $updater = null
+		IEventCategoryRepository $repository,
+		IEventCategoryCreator $creator,
+		IEventCategoryUpdater $updater
 	)
 	{
 		parent::__construct( $app, $settings, $sessionManager );
 
-		if( $repository === null )
-		{
-			throw new \InvalidArgumentException( 'IEventCategoryRepository must be injected' );
-		}
 		$this->_repository = $repository;
-
-		if( $creator === null )
-		{
-			throw new \InvalidArgumentException( 'IEventCategoryCreator must be injected' );
-		}
 		$this->_creator = $creator;
-
-		if( $updater === null )
-		{
-			throw new \InvalidArgumentException( 'IEventCategoryUpdater must be injected' );
-		}
 		$this->_updater = $updater;
 	}
 

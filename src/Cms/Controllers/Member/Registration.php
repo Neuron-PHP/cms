@@ -36,46 +36,27 @@ class Registration extends Content
 	 * @param IMvcApplication $app
 	 * @param SettingManager $settings
 	 * @param SessionManager $sessionManager
-	 * @param IRegistrationService|null $registrationService
-	 * @param IEmailVerifier|null $emailVerifier
-	 * @param ResendVerificationThrottle|null $resendThrottle
-	 * @param IIpResolver|null $ipResolver
+	 * @param IRegistrationService $registrationService
+	 * @param IEmailVerifier $emailVerifier
+	 * @param ResendVerificationThrottle $resendThrottle
+	 * @param IIpResolver $ipResolver
 	 * @throws \Exception
 	 */
 	public function __construct(
 		IMvcApplication $app,
 		SettingManager $settings,
 		SessionManager $sessionManager,
-		?IRegistrationService $registrationService = null,
-		?IEmailVerifier $emailVerifier = null,
-		?ResendVerificationThrottle $resendThrottle = null,
-		?IIpResolver $ipResolver = null
+		IRegistrationService $registrationService,
+		IEmailVerifier $emailVerifier,
+		ResendVerificationThrottle $resendThrottle,
+		IIpResolver $ipResolver
 	)
 	{
 		parent::__construct( $app, $settings, $sessionManager );
 
-		if( $registrationService === null )
-		{
-			throw new \InvalidArgumentException( 'IRegistrationService must be injected' );
-		}
 		$this->_registrationService = $registrationService;
-
-		if( $emailVerifier === null )
-		{
-			throw new \InvalidArgumentException( 'IEmailVerifier must be injected' );
-		}
 		$this->_emailVerifier = $emailVerifier;
-
-		if( $resendThrottle === null )
-		{
-			throw new \InvalidArgumentException( 'ResendVerificationThrottle must be injected' );
-		}
 		$this->_resendThrottle = $resendThrottle;
-
-		if( $ipResolver === null )
-		{
-			throw new \InvalidArgumentException( 'IIpResolver must be injected' );
-		}
 		$this->_ipResolver = $ipResolver;
 	}
 

@@ -126,7 +126,7 @@ class RegistrationTest extends TestCase
 
 	public function testConstructorThrowsExceptionWithoutRegistrationService(): void
 	{
-		$this->expectException( \InvalidArgumentException::class );
+		$this->expectException( \TypeError::class );
 
 		new Registration(
 			$this->mockApp,
@@ -141,7 +141,7 @@ class RegistrationTest extends TestCase
 
 	public function testConstructorThrowsExceptionWithoutEmailVerifier(): void
 	{
-		$this->expectException( \InvalidArgumentException::class );
+		$this->expectException( \TypeError::class );
 
 		new Registration(
 			$this->mockApp,
@@ -156,7 +156,7 @@ class RegistrationTest extends TestCase
 
 	public function testConstructorThrowsExceptionWithoutResendThrottle(): void
 	{
-		$this->expectException( \InvalidArgumentException::class );
+		$this->expectException( \TypeError::class );
 
 		new Registration(
 			$this->mockApp,
@@ -171,7 +171,7 @@ class RegistrationTest extends TestCase
 
 	public function testConstructorThrowsExceptionWithoutIpResolver(): void
 	{
-		$this->expectException( \InvalidArgumentException::class );
+		$this->expectException( \TypeError::class );
 
 		new Registration(
 			$this->mockApp,

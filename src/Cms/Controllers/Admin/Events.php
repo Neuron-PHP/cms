@@ -39,45 +39,26 @@ class Events extends Content
 	 * @param IMvcApplication $app
 	 * @param SettingManager $settings
 	 * @param SessionManager $sessionManager
-	 * @param IEventRepository|null $eventRepository
-	 * @param IEventCategoryRepository|null $categoryRepository
-	 * @param IEventCreator|null $creator
-	 * @param IEventUpdater|null $updater
+	 * @param IEventRepository $eventRepository
+	 * @param IEventCategoryRepository $categoryRepository
+	 * @param IEventCreator $creator
+	 * @param IEventUpdater $updater
 	 */
 	public function __construct(
 		IMvcApplication $app,
 		SettingManager $settings,
 		SessionManager $sessionManager,
-		?IEventRepository $eventRepository = null,
-		?IEventCategoryRepository $categoryRepository = null,
-		?IEventCreator $creator = null,
-		?IEventUpdater $updater = null
+		IEventRepository $eventRepository,
+		IEventCategoryRepository $categoryRepository,
+		IEventCreator $creator,
+		IEventUpdater $updater
 	)
 	{
 		parent::__construct( $app, $settings, $sessionManager );
 
-		if( $eventRepository === null )
-		{
-			throw new \InvalidArgumentException( 'IEventRepository must be injected' );
-		}
 		$this->_eventRepository = $eventRepository;
-
-		if( $categoryRepository === null )
-		{
-			throw new \InvalidArgumentException( 'IEventCategoryRepository must be injected' );
-		}
 		$this->_categoryRepository = $categoryRepository;
-
-		if( $creator === null )
-		{
-			throw new \InvalidArgumentException( 'IEventCreator must be injected' );
-		}
 		$this->_creator = $creator;
-
-		if( $updater === null )
-		{
-			throw new \InvalidArgumentException( 'IEventUpdater must be injected' );
-		}
 		$this->_updater = $updater;
 	}
 

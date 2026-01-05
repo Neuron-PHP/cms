@@ -4,7 +4,6 @@
 system:
   timezone: UTC
   base_path: resources
-  routes_path: resources/config
 
 logging:
   destination: \Neuron\Log\Destination\File
@@ -82,3 +81,18 @@ member:
   # Email verification token expiration time (in minutes)
   # Tokens older than this will be considered invalid
   verification_token_expiration_minutes: 60
+
+# Exception Handling Configuration
+exceptions:
+  # Exceptions that should pass through to application-level handlers
+  # instead of being caught by the framework's error handler.
+  # This is useful for custom error pages or specific exception handling logic.
+  passthrough:
+    # CMS-specific exceptions that require special handling (redirects, specific error pages)
+    - Neuron\Cms\Exceptions\UnauthenticatedException
+    - Neuron\Cms\Exceptions\EmailVerificationRequiredException
+    - Neuron\Cms\Exceptions\CsrfValidationException
+    # Additional exceptions can be added as needed
+    # - RuntimeException
+    # - LogicException
+    # - InvalidArgumentException

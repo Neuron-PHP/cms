@@ -84,7 +84,7 @@ class CategoriesTest extends TestCase
 
 	public function testConstructorThrowsExceptionWithoutCategoryRepository(): void
 	{
-		$this->expectException( \InvalidArgumentException::class );
+		$this->expectException( \TypeError::class );
 
 		$mockSettings = Registry::getInstance()->get( 'Settings' );
 		$mockSessionManager = $this->createMock( SessionManager::class );

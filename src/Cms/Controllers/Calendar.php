@@ -30,30 +30,21 @@ class Calendar extends Content
 	 * @param IMvcApplication $app
 	 * @param SettingManager $settings
 	 * @param SessionManager $sessionManager
-	 * @param IEventRepository|null $eventRepository
-	 * @param IEventCategoryRepository|null $categoryRepository
+	 * @param IEventRepository $eventRepository
+	 * @param IEventCategoryRepository $categoryRepository
 	 * @throws \Exception
 	 */
 	public function __construct(
 		IMvcApplication $app,
 		SettingManager $settings,
 		SessionManager $sessionManager,
-		?IEventRepository $eventRepository = null,
-		?IEventCategoryRepository $categoryRepository = null
+		IEventRepository $eventRepository,
+		IEventCategoryRepository $categoryRepository
 	)
 	{
 		parent::__construct( $app, $settings, $sessionManager );
 
-		if( $eventRepository === null )
-		{
-			throw new \InvalidArgumentException( 'IEventRepository must be injected' );
-		}
 		$this->_eventRepository = $eventRepository;
-
-		if( $categoryRepository === null )
-		{
-			throw new \InvalidArgumentException( 'IEventCategoryRepository must be injected' );
-		}
 		$this->_categoryRepository = $categoryRepository;
 	}
 

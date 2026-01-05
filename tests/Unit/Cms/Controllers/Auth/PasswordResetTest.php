@@ -111,7 +111,7 @@ class PasswordResetTest extends TestCase
 
 	public function testConstructorThrowsExceptionWithoutPasswordResetter(): void
 	{
-		$this->expectException( \InvalidArgumentException::class );
+		$this->expectException( \TypeError::class );
 
 		$mockSettingManager = Registry::getInstance()->get( 'Settings' );
 		$mockSessionManager = $this->createMock( \Neuron\Cms\Auth\SessionManager::class );

@@ -36,45 +36,26 @@ class Users extends Content
 	 * @param IMvcApplication $app
 	 * @param SettingManager $settings
 	 * @param SessionManager $sessionManager
-	 * @param IUserRepository|null $repository
-	 * @param IUserCreator|null $userCreator
-	 * @param IUserUpdater|null $userUpdater
-	 * @param IUserDeleter|null $userDeleter
+	 * @param IUserRepository $repository
+	 * @param IUserCreator $userCreator
+	 * @param IUserUpdater $userUpdater
+	 * @param IUserDeleter $userDeleter
 	 */
 	public function __construct(
 		IMvcApplication $app,
 		SettingManager $settings,
 		SessionManager $sessionManager,
-		?IUserRepository $repository = null,
-		?IUserCreator $userCreator = null,
-		?IUserUpdater $userUpdater = null,
-		?IUserDeleter $userDeleter = null
+		IUserRepository $repository,
+		IUserCreator $userCreator,
+		IUserUpdater $userUpdater,
+		IUserDeleter $userDeleter
 	)
 	{
 		parent::__construct( $app, $settings, $sessionManager );
 
-		if( $repository === null )
-		{
-			throw new \InvalidArgumentException( 'IUserRepository must be injected' );
-		}
 		$this->_repository = $repository;
-
-		if( $userCreator === null )
-		{
-			throw new \InvalidArgumentException( 'IUserCreator must be injected' );
-		}
 		$this->_userCreator = $userCreator;
-
-		if( $userUpdater === null )
-		{
-			throw new \InvalidArgumentException( 'IUserUpdater must be injected' );
-		}
 		$this->_userUpdater = $userUpdater;
-
-		if( $userDeleter === null )
-		{
-			throw new \InvalidArgumentException( 'IUserDeleter must be injected' );
-		}
 		$this->_userDeleter = $userDeleter;
 	}
 

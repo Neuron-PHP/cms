@@ -33,42 +33,25 @@ class Blog extends Content
 	 * @param IMvcApplication $app
 	 * @param SettingManager $settings
 	 * @param SessionManager $sessionManager
-	 * @param IPostRepository|null $postRepository
-	 * @param ICategoryRepository|null $categoryRepository
-	 * @param ITagRepository|null $tagRepository
-	 * @param IUserRepository|null $userRepository
-	 * @param EditorJsRenderer|null $renderer
+	 * @param IPostRepository $postRepository
+	 * @param ICategoryRepository $categoryRepository
+	 * @param ITagRepository $tagRepository
+	 * @param IUserRepository $userRepository
+	 * @param EditorJsRenderer $renderer
 	 * @throws \Exception
 	 */
 	public function __construct(
 		IMvcApplication $app,
 		SettingManager $settings,
 		SessionManager $sessionManager,
-		?IPostRepository $postRepository = null,
-		?ICategoryRepository $categoryRepository = null,
-		?ITagRepository $tagRepository = null,
-		?IUserRepository $userRepository = null,
-		?EditorJsRenderer $renderer = null
+		IPostRepository $postRepository,
+		ICategoryRepository $categoryRepository,
+		ITagRepository $tagRepository,
+		IUserRepository $userRepository,
+		EditorJsRenderer $renderer
 	)
 	{
 		parent::__construct( $app, $settings, $sessionManager );
-
-		// Pure dependency injection - no service locator fallback
-		if( $postRepository === null ) {
-			throw new \InvalidArgumentException( 'IPostRepository must be injected' );
-		}
-		if( $categoryRepository === null ) {
-			throw new \InvalidArgumentException( 'ICategoryRepository must be injected' );
-		}
-		if( $tagRepository === null ) {
-			throw new \InvalidArgumentException( 'ITagRepository must be injected' );
-		}
-		if( $userRepository === null ) {
-			throw new \InvalidArgumentException( 'IUserRepository must be injected' );
-		}
-		if( $renderer === null ) {
-			throw new \InvalidArgumentException( 'EditorJsRenderer must be injected' );
-		}
 
 		$this->_postRepository = $postRepository;
 		$this->_categoryRepository = $categoryRepository;
@@ -119,20 +102,20 @@ class Blog extends Content
 		$slug = $request->getRouteParameter( 'slug', '' );
 		$post = $this->_postRepository->findBySlug( $slug );
 
-		if( !$post )
+		$responseStatus = HttpResponseStatus::OK;
+
+		if( !$post || !$post->isPublished() )
 		{
 			$post = new Post();
 			$post->setTitle( 'Article Not Found' );
 			$post->setBody( 'The requested article does not exist.' );
 			$post->setSlug( $slug );
+			$responseStatus = HttpResponseStatus::NOT_FOUND;
 		}
 		else
 		{
 			// Increment view count for published posts
-			if( $post->isPublished() )
-			{
-				$this->_postRepository->incrementViewCount( $post->getId() );
-			}
+			$this->_postRepository->incrementViewCount( $post->getId() );
 		}
 
 		$categories = $this->_categoryRepository->all();
@@ -142,8 +125,14 @@ class Blog extends Content
 		$content = $post->getContent();
 		$renderedContent = $this->_renderer?->render( $content ) ?? (is_array($content) ? json_encode($content) : $content);
 
+		// Fallback to plain text body if Editor.js content is empty
+		if( empty( trim( $renderedContent ) ) && !empty( $post->getBody() ) )
+		{
+			$renderedContent = '<p>' . htmlspecialchars( $post->getBody() ) . '</p>';
+		}
+
 		return $this->renderHtml(
-			HttpResponseStatus::OK,
+			$responseStatus,
 			[
 				'Categories' => $categories,
 				'Tags'        => $tags,
@@ -165,7 +154,7 @@ class Blog extends Content
 	#[Get('/author/:username', name: 'blog_author')]
 	public function author( Request $request ): string
 	{
-		$authorName = $request->getRouteParameter( 'author', '' );
+		$authorName = $request->getRouteParameter( 'username', '' );
 
 		// Look up user by username
 		$user = $this->_userRepository->findByUsername( $authorName );
@@ -204,7 +193,7 @@ class Blog extends Content
 	#[Get('/tag/:slug', name: 'blog_tag')]
 	public function tag( Request $request ): string
 	{
-		$tagSlug = $request->getRouteParameter( 'tag', '' );
+		$tagSlug = $request->getRouteParameter( 'slug', '' );
 		$tag = $this->_tagRepository->findBySlug( $tagSlug );
 
 		if( !$tag )
@@ -245,7 +234,7 @@ class Blog extends Content
 	#[Get('/category/:slug', name: 'blog_category')]
 	public function category( Request $request ): string
 	{
-		$categorySlug = $request->getRouteParameter( 'category', '' );
+		$categorySlug = $request->getRouteParameter( 'slug', '' );
 		$category = $this->_categoryRepository->findBySlug( $categorySlug );
 
 		if( !$category )
