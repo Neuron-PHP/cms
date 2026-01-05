@@ -1,4 +1,4 @@
-## 0.8.34
+## 0.8.34 2026-01-05
 * Bug fixes from automated regression test.
 
 ## 0.8.33 2026-01-02
