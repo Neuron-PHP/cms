@@ -34,30 +34,19 @@ class Pages extends Content
 	 * @param IMvcApplication $app
 	 * @param SettingManager $settings
 	 * @param SessionManager $sessionManager
-	 * @param IPageRepository|null $pageRepository
-	 * @param EditorJsRenderer|null $renderer
+	 * @param IPageRepository $pageRepository
+	 * @param EditorJsRenderer $renderer
 	 * @throws \Exception
 	 */
 	public function __construct(
 		IMvcApplication $app,
 		SettingManager $settings,
 		SessionManager $sessionManager,
-		?IPageRepository $pageRepository = null,
-		?EditorJsRenderer $renderer = null
+		IPageRepository $pageRepository,
+		EditorJsRenderer $renderer
 	)
 	{
 		parent::__construct( $app, $settings, $sessionManager );
-
-		// Pure dependency injection - no service locator fallback
-		if( $pageRepository === null )
-		{
-			throw new \InvalidArgumentException( 'IPageRepository must be injected' );
-		}
-
-		if( $renderer === null )
-		{
-			throw new \InvalidArgumentException( 'EditorJsRenderer must be injected' );
-		}
 
 		$this->_pageRepository = $pageRepository;
 		$this->_renderer = $renderer;

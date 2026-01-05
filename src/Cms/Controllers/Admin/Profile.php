@@ -32,38 +32,24 @@ class Profile extends Content
 	 * @param IMvcApplication $app
 	 * @param SettingManager $settings
 	 * @param SessionManager $sessionManager
-	 * @param IUserRepository|null $repository
-	 * @param PasswordHasher|null $hasher
-	 * @param IUserUpdater|null $userUpdater
+	 * @param IUserRepository $repository
+	 * @param PasswordHasher $hasher
+	 * @param IUserUpdater $userUpdater
 	 * @throws \Exception
 	 */
 	public function __construct(
 		IMvcApplication $app,
 		SettingManager $settings,
 		SessionManager $sessionManager,
-		?IUserRepository $repository = null,
-		?PasswordHasher $hasher = null,
-		?IUserUpdater $userUpdater = null
+		IUserRepository $repository,
+		PasswordHasher $hasher,
+		IUserUpdater $userUpdater
 	)
 	{
 		parent::__construct( $app, $settings, $sessionManager );
 
-		if( $repository === null )
-		{
-			throw new \InvalidArgumentException( 'IUserRepository must be injected' );
-		}
 		$this->_repository = $repository;
-
-		if( $hasher === null )
-		{
-			throw new \InvalidArgumentException( 'PasswordHasher must be injected' );
-		}
 		$this->_hasher = $hasher;
-
-		if( $userUpdater === null )
-		{
-			throw new \InvalidArgumentException( 'IUserUpdater must be injected' );
-		}
 		$this->_userUpdater = $userUpdater;
 	}
 

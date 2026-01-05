@@ -44,61 +44,32 @@ class Posts extends Content
 	 * @param IMvcApplication $app
 	 * @param SettingManager $settings
 	 * @param SessionManager $sessionManager
-	 * @param IPostRepository|null $postRepository
-	 * @param ICategoryRepository|null $categoryRepository
-	 * @param ITagRepository|null $tagRepository
-	 * @param IPostCreator|null $postCreator
-	 * @param IPostUpdater|null $postUpdater
-	 * @param IPostDeleter|null $postDeleter
+	 * @param IPostRepository $postRepository
+	 * @param ICategoryRepository $categoryRepository
+	 * @param ITagRepository $tagRepository
+	 * @param IPostCreator $postCreator
+	 * @param IPostUpdater $postUpdater
+	 * @param IPostDeleter $postDeleter
 	 */
 	public function __construct(
 		IMvcApplication $app,
 		SettingManager $settings,
 		SessionManager $sessionManager,
-		?IPostRepository $postRepository = null,
-		?ICategoryRepository $categoryRepository = null,
-		?ITagRepository $tagRepository = null,
-		?IPostCreator $postCreator = null,
-		?IPostUpdater $postUpdater = null,
-		?IPostDeleter $postDeleter = null
+		IPostRepository $postRepository,
+		ICategoryRepository $categoryRepository,
+		ITagRepository $tagRepository,
+		IPostCreator $postCreator,
+		IPostUpdater $postUpdater,
+		IPostDeleter $postDeleter
 	)
 	{
 		parent::__construct( $app, $settings, $sessionManager );
 
-		if( $postRepository === null )
-		{
-			throw new \InvalidArgumentException( 'IPostRepository must be injected' );
-		}
 		$this->_postRepository = $postRepository;
-
-		if( $categoryRepository === null )
-		{
-			throw new \InvalidArgumentException( 'ICategoryRepository must be injected' );
-		}
 		$this->_categoryRepository = $categoryRepository;
-
-		if( $tagRepository === null )
-		{
-			throw new \InvalidArgumentException( 'ITagRepository must be injected' );
-		}
 		$this->_tagRepository = $tagRepository;
-
-		if( $postCreator === null )
-		{
-			throw new \InvalidArgumentException( 'IPostCreator must be injected' );
-		}
 		$this->_postCreator = $postCreator;
-
-		if( $postUpdater === null )
-		{
-			throw new \InvalidArgumentException( 'IPostUpdater must be injected' );
-		}
 		$this->_postUpdater = $postUpdater;
-
-		if( $postDeleter === null )
-		{
-			throw new \InvalidArgumentException( 'IPostDeleter must be injected' );
-		}
 		$this->_postDeleter = $postDeleter;
 	}
 

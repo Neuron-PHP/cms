@@ -42,14 +42,6 @@ require_once __DIR__ . '/Cms/Auth/helpers.php';
 
 function boot( string $configPath ) : Application
 {
-	// Register CMS exceptions that should bubble up to application-level handlers
-	// These exceptions require special handling (redirects, specific error pages)
-	Registry::getInstance()->set( 'BubbleExceptions', [
-		'Neuron\\Cms\\Exceptions\\UnauthenticatedException',
-		'Neuron\\Cms\\Exceptions\\EmailVerificationRequiredException',
-		'Neuron\\Cms\\Exceptions\\CsrfValidationException'
-	] );
-
 	// Build and register the DI container BEFORE MVC boot
 	// This ensures the container is available to initializers during boot
 	try

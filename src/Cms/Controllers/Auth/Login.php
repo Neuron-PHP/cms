@@ -102,7 +102,7 @@ class Login extends Content
 		}
 
 		// Attempt authentication
-		if( !$this->_authentication->attempt( $dto->username, $dto->password, $dto->remember ) )
+		if( !$this->_authentication->attempt( $dto->username, $dto->password, $dto->remember ?? false ) )
 		{
 			$this->redirect( 'login', [], [FlashMessageType::ERROR->value, 'Invalid username or password.'] );
 		}

@@ -78,7 +78,7 @@ class UsersTest extends TestCase
 
 	public function testConstructorThrowsExceptionWithoutUserRepository(): void
 	{
-		$this->expectException( \InvalidArgumentException::class );
+		$this->expectException( \TypeError::class );
 
 		$mockSettings = Registry::getInstance()->get( 'Settings' );
 		$mockSessionManager = $this->createMock( SessionManager::class );

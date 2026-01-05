@@ -386,7 +386,7 @@ class BlogControllerTest extends TestCase
 
 		$blog = $this->createBlogWithInjectedRepositories();
 		$request = new Request();
-		$request->setRouteParameters( [ 'tag' => $tag->getSlug() ] );
+		$request->setRouteParameters( [ 'slug' => $tag->getSlug() ] );
 		$result = $blog->tag( $request );
 
 		$this->assertIsString( $result );
@@ -404,7 +404,7 @@ class BlogControllerTest extends TestCase
 
 		$blog = $this->createBlogWithInjectedRepositories();
 		$request = new Request();
-		$request->setRouteParameters( [ 'category' => $category->getSlug() ] );
+		$request->setRouteParameters( [ 'slug' => $category->getSlug() ] );
 		$result = $blog->category( $request );
 
 		$this->assertIsString( $result );
@@ -422,11 +422,11 @@ class BlogControllerTest extends TestCase
 
 		$blog = $this->createBlogWithInjectedRepositories();
 
-		// Create mock request with author parameter
+		// Create mock request with username parameter
 		$request = $this->createMock( Request::class );
 		$request->expects( $this->once() )
 			->method( 'getRouteParameter' )
-			->with( 'author', '' )
+			->with( 'username', '' )
 			->willReturn( 'author1' );
 
 		$result = $blog->author( $request );

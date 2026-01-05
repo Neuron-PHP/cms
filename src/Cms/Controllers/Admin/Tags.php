@@ -33,30 +33,21 @@ class Tags extends Content
 	 * @param IMvcApplication $app
 	 * @param SettingManager $settings
 	 * @param SessionManager $sessionManager
-	 * @param ITagRepository|null $tagRepository
-	 * @param SlugGenerator|null $slugGenerator
+	 * @param ITagRepository $tagRepository
+	 * @param SlugGenerator $slugGenerator
 	 * @throws \Exception
 	 */
 	public function __construct(
 		IMvcApplication $app,
 		SettingManager $settings,
 		SessionManager $sessionManager,
-		?ITagRepository $tagRepository = null,
-		?SlugGenerator $slugGenerator = null
+		ITagRepository $tagRepository,
+		SlugGenerator $slugGenerator
 	)
 	{
 		parent::__construct( $app, $settings, $sessionManager );
 
-		if( $tagRepository === null )
-		{
-			throw new \InvalidArgumentException( 'ITagRepository must be injected' );
-		}
 		$this->_tagRepository = $tagRepository;
-
-		if( $slugGenerator === null )
-		{
-			throw new \InvalidArgumentException( 'SlugGenerator must be injected' );
-		}
 		$this->_slugGenerator = $slugGenerator;
 	}
 

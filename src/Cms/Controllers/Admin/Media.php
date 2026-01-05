@@ -35,30 +35,21 @@ class Media extends Content
 	 * @param IMvcApplication $app
 	 * @param SettingManager $settings
 	 * @param SessionManager $sessionManager
-	 * @param CloudinaryUploader|null $uploader
-	 * @param MediaValidator|null $validator
+	 * @param CloudinaryUploader $uploader
+	 * @param MediaValidator $validator
 	 * @throws \Exception
 	 */
 	public function __construct(
 		IMvcApplication $app,
 		SettingManager $settings,
 		SessionManager $sessionManager,
-		?CloudinaryUploader $uploader = null,
-		?MediaValidator $validator = null
+		CloudinaryUploader $uploader,
+		MediaValidator $validator
 	)
 	{
 		parent::__construct( $app, $settings, $sessionManager );
 
-		if( $uploader === null )
-		{
-			throw new \InvalidArgumentException( 'CloudinaryUploader must be injected' );
-		}
 		$this->_uploader = $uploader;
-
-		if( $validator === null )
-		{
-			throw new \InvalidArgumentException( 'MediaValidator must be injected' );
-		}
 		$this->_validator = $validator;
 	}
 

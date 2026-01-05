@@ -32,22 +32,16 @@ class PasswordReset extends Content
 	 * @param IMvcApplication $app
 	 * @param SettingManager $settings
 	 * @param SessionManager $sessionManager
-	 * @param IPasswordResetter|null $passwordResetter
-	 * @throws \Exception
+	 * @param IPasswordResetter $passwordResetter
 	 */
 	public function __construct(
 		IMvcApplication $app,
 		SettingManager $settings,
 		SessionManager $sessionManager,
-		?IPasswordResetter $passwordResetter = null
+		IPasswordResetter $passwordResetter
 	)
 	{
 		parent::__construct( $app, $settings, $sessionManager );
-
-		if( $passwordResetter === null )
-		{
-			throw new \InvalidArgumentException( 'IPasswordResetter must be injected' );
-		}
 		$this->_passwordResetter = $passwordResetter;
 	}
 

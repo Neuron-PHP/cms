@@ -35,37 +35,23 @@ class Categories extends Content
 	 * @param IMvcApplication $app
 	 * @param SettingManager $settings
 	 * @param SessionManager $sessionManager
-	 * @param ICategoryRepository|null $categoryRepository
-	 * @param ICategoryCreator|null $categoryCreator
-	 * @param ICategoryUpdater|null $categoryUpdater
+	 * @param ICategoryRepository $categoryRepository
+	 * @param ICategoryCreator $categoryCreator
+	 * @param ICategoryUpdater $categoryUpdater
 	 */
 	public function __construct(
 		IMvcApplication $app,
 		SettingManager $settings,
 		SessionManager $sessionManager,
-		?ICategoryRepository $categoryRepository = null,
-		?ICategoryCreator $categoryCreator = null,
-		?ICategoryUpdater $categoryUpdater = null
+		ICategoryRepository $categoryRepository,
+		ICategoryCreator $categoryCreator,
+		ICategoryUpdater $categoryUpdater
 	)
 	{
 		parent::__construct( $app, $settings, $sessionManager );
 
-		if( $categoryRepository === null )
-		{
-			throw new \InvalidArgumentException( 'ICategoryRepository must be injected' );
-		}
 		$this->_categoryRepository = $categoryRepository;
-
-		if( $categoryCreator === null )
-		{
-			throw new \InvalidArgumentException( 'ICategoryCreator must be injected' );
-		}
 		$this->_categoryCreator = $categoryCreator;
-
-		if( $categoryUpdater === null )
-		{
-			throw new \InvalidArgumentException( 'ICategoryUpdater must be injected' );
-		}
 		$this->_categoryUpdater = $categoryUpdater;
 	}
 

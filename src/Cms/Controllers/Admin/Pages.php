@@ -39,37 +39,23 @@ class Pages extends Content
 	 * @param IMvcApplication $app
 	 * @param SettingManager $settings
 	 * @param SessionManager $sessionManager
-	 * @param IPageRepository|null $pageRepository
-	 * @param IPageCreator|null $pageCreator
-	 * @param IPageUpdater|null $pageUpdater
+	 * @param IPageRepository $pageRepository
+	 * @param IPageCreator $pageCreator
+	 * @param IPageUpdater $pageUpdater
 	 */
 	public function __construct(
 		IMvcApplication $app,
 		SettingManager $settings,
 		SessionManager $sessionManager,
-		?IPageRepository $pageRepository = null,
-		?IPageCreator $pageCreator = null,
-		?IPageUpdater $pageUpdater = null
+		IPageRepository $pageRepository,
+		IPageCreator $pageCreator,
+		IPageUpdater $pageUpdater
 	)
 	{
 		parent::__construct( $app, $settings, $sessionManager );
 
-		if( $pageRepository === null )
-		{
-			throw new \InvalidArgumentException( 'IPageRepository must be injected' );
-		}
 		$this->_pageRepository = $pageRepository;
-
-		if( $pageCreator === null )
-		{
-			throw new \InvalidArgumentException( 'IPageCreator must be injected' );
-		}
 		$this->_pageCreator = $pageCreator;
-
-		if( $pageUpdater === null )
-		{
-			throw new \InvalidArgumentException( 'IPageUpdater must be injected' );
-		}
 		$this->_pageUpdater = $pageUpdater;
 	}
 

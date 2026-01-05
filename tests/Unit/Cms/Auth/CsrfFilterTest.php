@@ -263,20 +263,19 @@ class CsrfFilterTest extends TestCase
 		$method->setAccessible( true );
 		$token = $method->invoke( $this->_filter );
 
-		// In unit tests, filter_input(INPUT_POST) returns null because
-		// it reads from PHP's input buffer, not $_POST. Therefore, the
-		// method falls back to the header token even though we set POST.
+		// POST token should take precedence over header token.
+		// The implementation uses Neuron\Data\Filters\Post which can read $_POST
+		// directly, so it works correctly in both unit tests and real requests.
 		$this->assertEquals(
-			'header-token',
+			'post-token',
 			$token,
-			'Unit tests fall back to header because filter_input(INPUT_POST) cannot read $_POST'
+			'POST token takes precedence over header token'
 		);
 
 		// Verify our test setup was correct (POST was set)
 		$this->assertEquals( 'post-token', $_POST['csrf_token'] );
 
-		// In real requests (integration/E2E tests), POST would take precedence
-		// and the token would be 'post-token', not 'header-token'
+		// This behavior is now consistent in both unit tests and real requests
 
 		// Cleanup
 		unset( $_POST['csrf_token'] );

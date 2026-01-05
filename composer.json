@@ -13,6 +13,7 @@
         "ext-curl": "*",
         "ext-json": "*",
         "neuron-php/mvc": "0.9.*",
+        "neuron-php/routing": "0.8.*",
         "neuron-php/data": "0.9.*",
         "neuron-php/cli": "0.8.*",
         "neuron-php/jobs": "0.2.*",
@@ -20,7 +21,8 @@
         "neuron-php/dto": "0.0.*",
         "phpmailer/phpmailer": "^6.9",
         "cloudinary/cloudinary_php": "^2.0",
-        "php-di/php-di": "^7.1"
+        "php-di/php-di": "^7.1",
+        "symfony/yaml": "^6.4"
     },
     "require-dev": {
         "phpunit/phpunit": "9.*",
@@ -28,7 +30,11 @@
         "neuron-php/scaffolding": "0.8.*",
         "phpstan/phpstan": "^1.10",
         "phpstan/extension-installer": "^1.3",
-        "infection/infection": "^0.32.0"
+        "infection/infection": "^0.32.0",
+        "codeception/codeception": "^5.3",
+        "codeception/module-phpbrowser": "^3.0",
+        "codeception/module-asserts": "^3.2",
+        "codeception/module-db": "^3.2"
     },
     "autoload": {
         "psr-4": {

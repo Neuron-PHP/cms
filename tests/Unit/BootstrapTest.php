@@ -176,42 +176,55 @@ YAML;
 	}
 
 	/**
-	 * Test that CMS Boot registers bubble exceptions in Registry
+	 * Test that CMS Boot loads passthrough exceptions from YAML config
 	 */
-	public function testBootRegistersBubbleExceptions()
+	public function testBootLoadsPassthroughExceptionsFromConfig()
 	{
-		// Clear registry before test
-		Registry::getInstance()->set( 'BubbleExceptions', null );
+		// Boot a fresh application in isolation to avoid Registry state pollution from previous tests
+		// Use a separate PHP process to ensure clean state
+		$code = <<<'PHP'
+		require 'vendor/autoload.php';
+		$app = Neuron\Cms\boot('examples/config');
+		$exceptions = Neuron\Patterns\Registry::getInstance()->get('PassthroughExceptions');
+		echo json_encode($exceptions);
+		PHP;
 
-		// Boot the CMS application
-		$app = Boot( 'examples/config' );
+		$output = shell_exec("php -r " . escapeshellarg($code));
+		$passthroughExceptions = json_decode($output, true);
 
-		// Verify bubble exceptions are registered
-		$bubbleExceptions = Registry::getInstance()->get( 'BubbleExceptions' );
+		$this->assertIsArray( $passthroughExceptions, 'PassthroughExceptions should be an array' );
+		$this->assertNotEmpty( $passthroughExceptions, 'PassthroughExceptions should not be empty. Got: ' . json_encode( $passthroughExceptions ) );
 
-		$this->assertIsArray( $bubbleExceptions );
-		$this->assertContains( 'Neuron\\Cms\\Exceptions\\UnauthenticatedException', $bubbleExceptions );
-		$this->assertContains( 'Neuron\\Cms\\Exceptions\\EmailVerificationRequiredException', $bubbleExceptions );
-		$this->assertContains( 'Neuron\\Cms\\Exceptions\\CsrfValidationException', $bubbleExceptions );
+		// These are defined in examples/config/neuron.yaml
+		$this->assertContains( 'Neuron\\Cms\\Exceptions\\UnauthenticatedException', $passthroughExceptions );
+		$this->assertContains( 'Neuron\\Cms\\Exceptions\\EmailVerificationRequiredException', $passthroughExceptions );
+		$this->assertContains( 'Neuron\\Cms\\Exceptions\\CsrfValidationException', $passthroughExceptions );
 	}
 
 	/**
-	 * Test that registered bubble exceptions are the correct classes
+	 * Test that passthrough exceptions loaded from config are valid classes
 	 */
-	public function testBubbleExceptionsAreValidClasses()
+	public function testPassthroughExceptionsAreValidClasses()
 	{
-		// Boot the CMS application
-		$app = Boot( 'examples/config' );
+		// Boot a fresh application in isolation
+		$code = <<<'PHP'
+		require 'vendor/autoload.php';
+		$app = Neuron\Cms\boot('examples/config');
+		$exceptions = Neuron\Patterns\Registry::getInstance()->get('PassthroughExceptions');
+		echo json_encode($exceptions);
+		PHP;
 
-		// Get registered exceptions
-		$bubbleExceptions = Registry::getInstance()->get( 'BubbleExceptions' );
+		$output = shell_exec("php -r " . escapeshellarg($code));
+		$passthroughExceptions = json_decode($output, true);
+
+		$this->assertIsArray( $passthroughExceptions );
 
 		// Verify each exception class exists
-		foreach( $bubbleExceptions as $exceptionClass )
+		foreach( $passthroughExceptions as $exceptionClass )
 		{
 			$this->assertTrue(
 				class_exists( $exceptionClass ),
-				"Bubble exception class does not exist: $exceptionClass"
+				"Passthrough exception class does not exist: $exceptionClass"
 			);
 		}
 	}
