@@ -48,6 +48,20 @@ class RegistrationTest extends TestCase
 		$this->mockSettings = $this->createMock( SettingManager::class );
 		$this->mockContainer = $this->createMock( IContainer::class );
 
+		// Create a mock setting source for the SettingManager
+		$mockSettingSource = $this->createMock( \Neuron\Data\Settings\Source\ISettingSource::class );
+		$mockSettingSource->method( 'get' )->willReturnCallback( function( $section, $key = null ) {
+			if( $section === 'site' && $key === 'name' ) return 'Test Site';
+			if( $section === 'site' && $key === 'title' ) return 'Test Site';
+			if( $section === 'site' && $key === 'description' ) return 'Test Description';
+			if( $section === 'site' && $key === 'url' ) return 'https://test.com';
+			if( $section === 'site' && $key === 'theme' ) return 'flatly';
+			if( $section === 'views' && $key === 'path' ) return __DIR__ . '/../../../../../resources/views';
+			if( $section === 'cache' && $key === 'enabled' ) return false;
+			if( $section === 'member' && $key === 'require_email_verification' ) return true;
+			return null;
+		});
+
 		// Setup default mock settings
 		$this->mockSettings->method( 'get' )->willReturnCallback( function( $section, $key = null ) {
 			if( $section === 'site' && $key === 'name' ) return 'Test Site';
@@ -60,6 +74,9 @@ class RegistrationTest extends TestCase
 			if( $section === 'member' && $key === 'require_email_verification' ) return true;
 			return null;
 		});
+
+		// IMPORTANT: Mock the getSource() method to return the mock setting source
+		$this->mockSettings->method( 'getSource' )->willReturn( $mockSettingSource );
 
 		Registry::getInstance()->set( 'Settings', $this->mockSettings );
 		Registry::getInstance()->set( 'Views.Path', __DIR__ . '/../../../../../resources/views' );

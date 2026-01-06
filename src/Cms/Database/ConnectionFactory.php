@@ -38,12 +38,27 @@ class ConnectionFactory
 	/**
 	 * Create a PDO connection from configuration array
 	 *
+	 * Supports both URL-based configuration and individual parameters.
+	 * If 'url' is provided, it will be parsed and merged with individual parameters.
+	 * Individual parameters take precedence over URL-parsed values.
+	 *
 	 * @param array $config Database configuration
 	 * @return PDO
-	 * @throws Exception if adapter is unsupported
+	 * @throws Exception if adapter is unsupported or configuration is invalid
 	 */
 	public static function createFromConfig( array $config ): PDO
 	{
+		// If URL is provided, parse it and merge with config
+		if( !empty( $config['url'] ) )
+		{
+			$urlConfig = self::parseUrl( $config['url'] );
+			// Merge URL config with provided config (provided config takes precedence)
+			$config = array_merge( $urlConfig, array_filter( $config, function( $value, $key ) {
+				// Keep non-null values that aren't the URL itself
+				return $key !== 'url' && $value !== null;
+			}, ARRAY_FILTER_USE_BOTH ) );
+		}
+
 		$adapter = $config['adapter'] ?? 'sqlite';
 
 		if( empty( $config['name'] ) )
@@ -89,6 +104,115 @@ class ConnectionFactory
 		self::initializeConnection( $pdo, $adapter );
 
 		return $pdo;
+	}
+
+	/**
+	 * Parse a database URL into configuration array
+	 *
+	 * Supports common database URL formats:
+	 * - postgresql://user:pass@host:5432/dbname?option=value
+	 * - mysql://user:pass@host:3306/dbname?charset=utf8mb4
+	 * - sqlite:///path/to/database.db or sqlite::memory:
+	 *
+	 * @param string $url Database URL
+	 * @return array Parsed configuration
+	 * @throws Exception if URL is malformed
+	 */
+	private static function parseUrl( string $url ): array
+	{
+		// Handle SQLite's special cases first
+		if( str_starts_with( $url, 'sqlite:' ) )
+		{
+			// Remove sqlite: prefix
+			$path = substr( $url, 7 );
+
+			// Handle special :memory: database
+			if( $path === ':memory:' )
+			{
+				return [
+					'adapter' => 'sqlite',
+					'name' => ':memory:'
+				];
+			}
+
+			// Handle absolute paths (sqlite:///path or sqlite://path)
+			if( str_starts_with( $path, '//' ) )
+			{
+				$path = substr( $path, 2 );
+			}
+			elseif( str_starts_with( $path, '///' ) )
+			{
+				// Three slashes means absolute path
+				$path = substr( $path, 2 );
+			}
+
+			return [
+				'adapter' => 'sqlite',
+				'name' => $path
+			];
+		}
+
+		// Parse URL for other databases
+		$parsed = parse_url( $url );
+
+		if( $parsed === false || !isset( $parsed['scheme'] ) )
+		{
+			throw new Exception( "Malformed database URL: $url" );
+		}
+
+		// Map URL scheme to adapter
+		$adapter = match( $parsed['scheme'] )
+		{
+			'mysql' => 'mysql',
+			'postgresql', 'postgres', 'pgsql' => 'pgsql',
+			default => throw new Exception( "Unsupported database scheme: {$parsed['scheme']}" )
+		};
+
+		$config = [ 'adapter' => $adapter ];
+
+		// Extract host, port, user, password
+		if( isset( $parsed['host'] ) )
+		{
+			$config['host'] = $parsed['host'];
+		}
+
+		if( isset( $parsed['port'] ) )
+		{
+			$config['port'] = $parsed['port'];
+		}
+
+		if( isset( $parsed['user'] ) )
+		{
+			$config['user'] = $parsed['user'];
+		}
+
+		if( isset( $parsed['pass'] ) )
+		{
+			$config['pass'] = $parsed['pass'];
+		}
+
+		// Extract database name from path
+		if( isset( $parsed['path'] ) && $parsed['path'] !== '/' )
+		{
+			// Remove leading slash
+			$config['name'] = ltrim( $parsed['path'], '/' );
+		}
+
+		// Parse query parameters for additional options
+		if( isset( $parsed['query'] ) )
+		{
+			parse_str( $parsed['query'], $queryParams );
+
+			// Common query parameters
+			if( isset( $queryParams['charset'] ) )
+			{
+				$config['charset'] = $queryParams['charset'];
+			}
+
+			// You can add more query parameter mappings here as needed
+		}
+
+		return $config;
 	}
 
 	/**

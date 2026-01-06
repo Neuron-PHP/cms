@@ -6,7 +6,7 @@
 <body>
     <h1>Forgot Password</h1>
     <p>Enter your email address and we'll send you a password reset link.</p>
-    <form method="POST" action="/auth/password-reset/send">
+    <form method="POST" action="/forgot-password">
         <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrfToken ?? '') ?>">
 
         <label>Email:</label>
