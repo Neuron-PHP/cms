@@ -1,3 +1,5 @@
+## 0.8.36
+
 ## 0.8.35 2026-01-07
 * Enhancements for secrets.
 * Bug fixes from automated regression test.
