@@ -136,13 +136,15 @@ class ConnectionFactory
 			}
 
 			// Handle absolute paths (sqlite:///path or sqlite://path)
-			if( str_starts_with( $path, '//' ) )
-			{
-				$path = substr( $path, 2 );
-			}
-			elseif( str_starts_with( $path, '///' ) )
+			// Check triple slash first (absolute path)
+			if( str_starts_with( $path, '///' ) )
 			{
 				// Three slashes means absolute path
+				$path = substr( $path, 2 );
+			}
+			elseif( str_starts_with( $path, '//' ) )
+			{
+				// Two slashes, could be relative or network path
 				$path = substr( $path, 2 );
 			}
 
@@ -183,12 +185,14 @@ class ConnectionFactory
 
 		if( isset( $parsed['user'] ) )
 		{
-			$config['user'] = $parsed['user'];
+			// Decode URL-encoded characters (e.g., %40 for @)
+			$config['user'] = rawurldecode( $parsed['user'] );
 		}
 
 		if( isset( $parsed['pass'] ) )
 		{
-			$config['pass'] = $parsed['pass'];
+			// Decode URL-encoded characters (e.g., %40 for @)
+			$config['pass'] = rawurldecode( $parsed['pass'] );
 		}
 
 		// Extract database name from path

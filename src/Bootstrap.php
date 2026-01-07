@@ -44,6 +44,10 @@ require_once __DIR__ . '/Cms/Auth/helpers.php';
 
 function boot( string $configPath ) : Application
 {
+	// Initialize settings variable to avoid undefined variable error
+	$settings = null;
+	$container = null;
+
 	// Build and register the DI container BEFORE MVC boot
 	// This ensures the container is available to initializers during boot
 	try
@@ -94,6 +98,11 @@ function boot( string $configPath ) : Application
 	catch( \Exception $e )
 	{
 		\Neuron\Log\Log::error( 'Container initialization failed: ' . $e->getMessage() );
+
+		// Create a fallback settings with minimal configuration
+		// This allows the application to start even if advanced configuration fails
+		$yaml = new Yaml( "$configPath/neuron.yaml" );
+		$settings = new SettingManager( $yaml );
 	}
 
 	// Create MVC application with our configured SettingManager

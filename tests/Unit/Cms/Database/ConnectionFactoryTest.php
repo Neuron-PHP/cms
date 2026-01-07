@@ -196,6 +196,39 @@ class ConnectionFactoryTest extends TestCase
 	}
 
 	/**
+	 * Test URL with encoded special characters in credentials
+	 */
+	public function testUrlWithEncodedCredentials(): void
+	{
+		$reflection = new \ReflectionClass( ConnectionFactory::class );
+		$method = $reflection->getMethod( 'parseUrl' );
+		$method->setAccessible( true );
+
+		// Test password with @ symbol (encoded as %40)
+		$result = $method->invokeArgs( null, [ 'mysql://user:p%40ssw%3Ard@localhost:3306/testdb' ] );
+
+		// Credentials should be decoded
+		$this->assertEquals( 'user', $result['user'] );
+		$this->assertEquals( 'p@ssw:rd', $result['pass'] );  // %40 becomes @, %3A becomes :
+	}
+
+	/**
+	 * Test SQLite URL with triple slash (absolute path)
+	 */
+	public function testSqliteUrlWithTripleSlash(): void
+	{
+		$reflection = new \ReflectionClass( ConnectionFactory::class );
+		$method = $reflection->getMethod( 'parseUrl' );
+		$method->setAccessible( true );
+
+		$result = $method->invokeArgs( null, [ 'sqlite:///storage/database.sqlite3' ] );
+
+		// Should preserve absolute path with single leading slash
+		$this->assertEquals( 'sqlite', $result['adapter'] );
+		$this->assertEquals( '/storage/database.sqlite3', $result['name'] );
+	}
+
+	/**
 	 * Helper method to create settings with a database URL
 	 */
 	private function createSettingsWithUrl( string $url ): SettingManager

@@ -922,29 +922,44 @@ class InstallCommand extends Command
 
 			if( $useSecrets )
 			{
-				// Keep non-sensitive database info in public config
-				$publicConfig['database'] = [
-					'adapter' => $db['adapter']
-				];
-
-				// SQLite path is not sensitive, keep it public
-				if( $db['adapter'] === 'sqlite' )
+				// Check if using URL-based configuration
+				if( isset( $db['url'] ) )
 				{
-					$publicConfig['database']['name'] = $db['name'];
+					// With URL config, keep entire URL in secrets for security
+					$secretsConfig['database'] = [ 'url' => $db['url'] ];
+
+					// Keep minimal public config to indicate database is configured
+					$publicConfig['database'] = [
+						'adapter' => 'configured' // Placeholder to show database is configured via secrets
+					];
 				}
 				else
 				{
-					// For MySQL/PostgreSQL, put credentials in secrets
-					$publicConfig['database']['host'] = $db['host'] ?? 'localhost';
-					$publicConfig['database']['port'] = $db['port'] ?? null;
-					$publicConfig['database']['name'] = $db['name'] ?? null;
+					// Traditional configuration with individual parameters
+					// Keep non-sensitive database info in public config
+					$publicConfig['database'] = [
+						'adapter' => $db['adapter']
+					];
 
-					// Put username and password in secrets
-					if( isset( $db['user'] ) || isset( $db['pass'] ) )
+					// SQLite path is not sensitive, keep it public
+					if( $db['adapter'] === 'sqlite' )
 					{
-						$secretsConfig['database'] = [];
-						if( isset( $db['user'] ) ) $secretsConfig['database']['user'] = $db['user'];
-						if( isset( $db['pass'] ) ) $secretsConfig['database']['pass'] = $db['pass'];
+						$publicConfig['database']['name'] = $db['name'];
+					}
+					else
+					{
+						// For MySQL/PostgreSQL, put credentials in secrets
+						$publicConfig['database']['host'] = $db['host'] ?? 'localhost';
+						$publicConfig['database']['port'] = $db['port'] ?? null;
+						$publicConfig['database']['name'] = $db['name'] ?? null;
+
+						// Put username and password in secrets
+						if( isset( $db['user'] ) || isset( $db['pass'] ) )
+						{
+							$secretsConfig['database'] = [];
+							if( isset( $db['user'] ) ) $secretsConfig['database']['user'] = $db['user'];
+							if( isset( $db['pass'] ) ) $secretsConfig['database']['pass'] = $db['pass'];
+						}
 					}
 				}
 			}
@@ -978,7 +993,7 @@ class InstallCommand extends Command
 			{
 				// Keep non-sensitive email config public
 				$publicConfig['email'] = [
-					'transport' => $email['transport'] ?? 'mail',
+					'driver' => $email['driver'] ?? 'mail',
 					'from_address' => $email['from_address'] ?? 'noreply@example.com',
 					'from_name' => $email['from_name'] ?? 'Neuron CMS'
 				];
@@ -1049,9 +1064,6 @@ class InstallCommand extends Command
 		// Validate the URL by trying to parse it
 		try
 		{
-			// We can test if it parses by creating a temporary config
-			$testConfig = [ 'url' => $url ];
-
 			// Try to extract adapter from URL to display confirmation
 			$scheme = parse_url( $url, PHP_URL_SCHEME );
 			$adapter = match( $scheme )
