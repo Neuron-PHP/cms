@@ -47,6 +47,7 @@ theme:
 
 # Security Configuration
 security:
+  enabled: true  # Dummy value to prevent null errors in PHP 8.4
   # Content Security Policy (CSP)
   # Customize this based on your application's needs
   # content_security_policy: "default-src 'self'; script-src 'self' 'unsafe-inline';"
