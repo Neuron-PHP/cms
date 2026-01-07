@@ -60,10 +60,10 @@ function boot( string $configPath ) : Application
 		// This will automatically load:
 		// 1. neuron.yaml (base configuration)
 		// 2. Environment-specific config if exists
-		// 3. Encrypted secrets from config/secrets.yml.enc
+		// 3. Encrypted secrets from config/secrets.yml.enc (if exists)
 		// 4. Environment-specific encrypted secrets if exist
 		// 5. Environment variables (highest priority)
-		$settings = SettingManagerFactory::createCustom( [
+		$sources = [
 			[
 				'type' => 'yaml',
 				'path' => match( $environment ) {
@@ -74,23 +74,28 @@ function boot( string $configPath ) : Application
 				},
 				'name' => 'config'
 			],
-			[
+			// Only include main secrets if both the encrypted file and key exist
+			file_exists( "$configPath/secrets.yml.enc" ) && file_exists( "$configPath/master.key" ) ? [
 				'type' => 'encrypted',
 				'path' => "$configPath/secrets.yml.enc",
 				'key' => "$configPath/master.key",
 				'name' => 'secrets'
-			],
-			[
+			] : null,
+			// Only include environment-specific secrets if both files exist
+			file_exists( "$configPath/secrets/$environment.yml.enc" ) && file_exists( "$configPath/secrets/$environment.key" ) ? [
 				'type' => 'encrypted',
 				'path' => "$configPath/secrets/$environment.yml.enc",
 				'key' => "$configPath/secrets/$environment.key",
 				'name' => "secrets:$environment"
-			],
+			] : null,
 			[
 				'type' => 'env',
 				'name' => 'environment'
 			]
-		] );
+		];
+
+		// Filter out null entries (non-existent encrypted sources)
+		$settings = SettingManagerFactory::createCustom( array_filter( $sources ) );
 
 		// Build container (automatically registers in Registry)
 		$container = Container::build( $settings );

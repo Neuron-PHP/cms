@@ -928,10 +928,8 @@ class InstallCommand extends Command
 					// With URL config, keep entire URL in secrets for security
 					$secretsConfig['database'] = [ 'url' => $db['url'] ];
 
-					// Keep minimal public config to indicate database is configured
-					$publicConfig['database'] = [
-						'adapter' => 'configured' // Placeholder to show database is configured via secrets
-					];
+					// Don't set any database config in public file when using URL in secrets
+					// The URL contains all needed configuration
 				}
 				else
 				{
@@ -1061,32 +1059,56 @@ class InstallCommand extends Command
 			return [];
 		}
 
-		// Validate the URL by trying to parse it
-		try
+		// SQLite URLs don't parse with parse_url, handle them specially
+		if( str_starts_with( $url, 'sqlite:' ) )
 		{
-			// Try to extract adapter from URL to display confirmation
+			$adapter = 'SQLite';
+		}
+		else
+		{
+			// Validate non-SQLite URLs by parsing them
 			$scheme = parse_url( $url, PHP_URL_SCHEME );
+
+			// parse_url returns false or null for invalid URLs
+			if( !$scheme )
+			{
+				$this->output->error( "Invalid database URL format. Please provide a valid URL." );
+				return [];
+			}
+
+			// Check if the scheme is supported
 			$adapter = match( $scheme )
 			{
 				'mysql' => 'MySQL',
 				'postgresql', 'postgres', 'pgsql' => 'PostgreSQL',
-				'sqlite' => 'SQLite',
-				default => 'Unknown'
+				default => null
 			};
 
-			$this->_messages[] = "Database: $adapter (configured via URL)";
+			if( !$adapter )
+			{
+				$this->output->error( "Unsupported database scheme: '$scheme'. Supported: mysql, postgresql, postgres, pgsql, sqlite" );
+				return [];
+			}
+		}
 
-			return [
-				'database' => [
-					'url' => $url
-				]
-			];
-		}
-		catch( \Exception $e )
+		// For non-SQLite databases, validate that we have required components
+		if( $adapter !== 'SQLite' )
 		{
-			$this->output->error( "Invalid database URL: " . $e->getMessage() );
-			return [];
+			$parsed = parse_url( $url );
+			if( !isset( $parsed['host'] ) || !isset( $parsed['path'] ) || $parsed['path'] === '/' )
+			{
+				$this->output->error( "Invalid database URL. MySQL/PostgreSQL URLs must include host and database name." );
+				return [];
+			}
 		}
+
+		$this->_messages[] = "Database: $adapter (configured via URL)";
+
+		return [
+			'database' => [
+				'url' => $url
+			]
+		];
 	}
 
 	/**
