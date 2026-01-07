@@ -12,9 +12,11 @@ use Neuron\Cms\Repositories\DatabaseCategoryRepository;
 use Neuron\Cms\Auth\PasswordHasher;
 use Neuron\Data\Settings\SettingManager;
 use Neuron\Data\Settings\Source\Yaml;
+use Neuron\Data\Settings\SecretManager;
 use Neuron\Patterns\Registry;
 use Neuron\Cms\Enums\UserRole;
 use Neuron\Cms\Enums\UserStatus;
+use Symfony\Component\Yaml\Yaml as YamlParser;
 
 /**
  * Install the CMS admin UI into the project
@@ -63,6 +65,11 @@ class InstallCommand extends Command
 			'f',
 			'Force reinstall without prompts (skips database setup, migrations, and user creation)'
 		);
+		$this->addOption(
+			'use-secrets',
+			's',
+			'Use encrypted credentials for sensitive configuration (recommended for production)'
+		);
 	}
 
 	/**
@@ -71,6 +78,7 @@ class InstallCommand extends Command
 	public function execute( array $parameters = [] ): int
 	{
 		$force = $this->hasOption( 'force' ) || $this->hasOption( 'f' );
+		$useSecrets = $this->hasOption( 'use-secrets' ) || $this->hasOption( 's' );
 
 		$this->output->writeln( "\n╔═══════════════════════════════════════╗" );
 		$this->output->writeln( "║  Neuron CMS - Installation            ║" );
@@ -123,7 +131,16 @@ class InstallCommand extends Command
 		{
 			$this->output->writeln( $message );
 
-			if( !$this->$method() )
+			// Pass useSecrets flag to setupDatabase
+			if( $method === 'setupDatabase' )
+			{
+				if( !$this->$method( $useSecrets ) )
+				{
+					$this->output->error( "Installation failed!" );
+					return 1;
+				}
+			}
+			elseif( !$this->$method() )
 			{
 				$this->output->error( "Installation failed!" );
 				return 1;
@@ -318,10 +335,43 @@ class InstallCommand extends Command
 	}
 
 	/**
+	 * Copy .gitignore template to config directory
+	 */
+	protected function copyGitignoreTemplate(): bool
+	{
+		$sourceFile = $this->_componentPath . '/resources/config/.gitignore.template';
+		$destFile = $this->_projectPath . '/config/.gitignore';
+
+		// Skip if already exists
+		if( file_exists( $destFile ) )
+		{
+			return true;
+		}
+
+		// Check if source exists
+		if( !file_exists( $sourceFile ) )
+		{
+			// Not critical, just skip
+			return true;
+		}
+
+		// Copy the template
+		if( copy( $sourceFile, $destFile ) )
+		{
+			$this->_messages[] = "Created: config/.gitignore";
+		}
+
+		return true;
+	}
+
+	/**
 	 * Create route configuration
 	 */
 	protected function createRouteConfig(): bool
 	{
+		// Copy .gitignore template first
+		$this->copyGitignoreTemplate();
+
 		$routeFile = $this->_projectPath . '/config/routes.yaml';
 		$resourceFile = $this->_componentPath . '/resources/config/routes.yaml';
 
@@ -489,35 +539,45 @@ class InstallCommand extends Command
 	/**
 	 * Setup database configuration
 	 */
-	protected function setupDatabase(): bool
+	protected function setupDatabase( bool $useSecrets = false ): bool
 	{
 		$this->output->writeln( "\n╔═══════════════════════════════════════╗" );
 		$this->output->writeln( "║  Database Configuration               ║" );
 		$this->output->writeln( "╚═══════════════════════════════════════╝\n" );
 
-		$choice = $this->choice(
-			"Select database adapter:",
-			[
-				'sqlite' => 'SQLite - Recommended for development (zero config, single file)',
-				'mysql' => 'MySQL - Recommended for production (proven scalability)',
-				'pgsql' => 'PostgreSQL - Enterprise features (advanced querying)'
-			],
-			'sqlite'
-		);
+		// First, ask if they want to use URL configuration
+		$useUrl = $this->confirm( "Would you like to configure the database using a URL? (e.g., from cloud provider)", false );
 
-		$this->output->writeln( "\nAll databases support:" );
-		$this->output->writeln( "  ✓ Foreign key constraints with cascade deletes" );
-		$this->output->writeln( "  ✓ Automatic timestamp management" );
-		$this->output->writeln( "  ✓ Full ACID transaction support" );
-		$this->output->writeln( "" );
-
-		$config = match( $choice )
+		if( $useUrl )
 		{
-			'sqlite' => $this->configureSqlite(),
-			'mysql' => $this->configureMysql(),
-			'pgsql' => $this->configurePostgresql(),
-			default => $this->configureSqlite()
-		};
+			$config = $this->configureDatabaseUrl();
+		}
+		else
+		{
+			$choice = $this->choice(
+				"Select database adapter:",
+				[
+					'sqlite' => 'SQLite - Recommended for development (zero config, single file)',
+					'mysql' => 'MySQL - Recommended for production (proven scalability)',
+					'pgsql' => 'PostgreSQL - Enterprise features (advanced querying)'
+				],
+				'sqlite'
+			);
+
+			$this->output->writeln( "\nAll databases support:" );
+			$this->output->writeln( "  ✓ Foreign key constraints with cascade deletes" );
+			$this->output->writeln( "  ✓ Automatic timestamp management" );
+			$this->output->writeln( "  ✓ Full ACID transaction support" );
+			$this->output->writeln( "" );
+
+			$config = match( $choice )
+			{
+				'sqlite' => $this->configureSqlite(),
+				'mysql' => $this->configureMysql(),
+				'pgsql' => $this->configurePostgresql(),
+				default => $this->configureSqlite()
+			};
+		}
 
 		if( !$config )
 		{
@@ -539,7 +599,7 @@ class InstallCommand extends Command
 		$emailConfig = $this->configureEmail();
 
 		// Merge and save complete configuration
-		return $this->saveCompleteConfig( $config, $appConfig, $cloudinaryConfig, $emailConfig );
+		return $this->saveCompleteConfig( $config, $appConfig, $cloudinaryConfig, $emailConfig, $useSecrets );
 	}
 
 	/**
@@ -809,10 +869,10 @@ class InstallCommand extends Command
 	/**
 	 * Save complete configuration with all required sections
 	 */
-	protected function saveCompleteConfig( array $databaseConfig, array $appConfig, array $cloudinaryConfig = [], array $emailConfig = [] ): bool
+	protected function saveCompleteConfig( array $databaseConfig, array $appConfig, array $cloudinaryConfig = [], array $emailConfig = [], bool $useSecrets = false ): bool
 	{
-		// Build complete configuration
-		$config = [
+		// Build base configuration (non-sensitive)
+		$publicConfig = [
 			'logging' => [
 				'destination' => '\\Neuron\\Log\\Destination\\File',
 				'format' => '\\Neuron\\Log\\Format\\PlainText',
@@ -852,23 +912,203 @@ class InstallCommand extends Command
 			]
 		];
 
-		// Merge database configuration
-		$config = array_merge( $config, $databaseConfig );
+		// Initialize secrets array
+		$secretsConfig = [];
 
-		// Merge Cloudinary configuration if provided
-		if( !empty( $cloudinaryConfig ) )
+		// Handle database configuration
+		if( isset( $databaseConfig['database'] ) )
 		{
-			$config = array_merge( $config, $cloudinaryConfig );
+			$db = $databaseConfig['database'];
+
+			if( $useSecrets )
+			{
+				// Check if using URL-based configuration
+				if( isset( $db['url'] ) )
+				{
+					// With URL config, keep entire URL in secrets for security
+					$secretsConfig['database'] = [ 'url' => $db['url'] ];
+
+					// Don't set any database config in public file when using URL in secrets
+					// The URL contains all needed configuration
+				}
+				else
+				{
+					// Traditional configuration with individual parameters
+					// Keep non-sensitive database info in public config
+					$publicConfig['database'] = [
+						'adapter' => $db['adapter']
+					];
+
+					// SQLite path is not sensitive, keep it public
+					if( $db['adapter'] === 'sqlite' )
+					{
+						$publicConfig['database']['name'] = $db['name'];
+					}
+					else
+					{
+						// For MySQL/PostgreSQL, put credentials in secrets
+						$publicConfig['database']['host'] = $db['host'] ?? 'localhost';
+						$publicConfig['database']['port'] = $db['port'] ?? null;
+						$publicConfig['database']['name'] = $db['name'] ?? null;
+
+						// Put username and password in secrets
+						if( isset( $db['user'] ) || isset( $db['pass'] ) )
+						{
+							$secretsConfig['database'] = [];
+							if( isset( $db['user'] ) ) $secretsConfig['database']['user'] = $db['user'];
+							if( isset( $db['pass'] ) ) $secretsConfig['database']['pass'] = $db['pass'];
+						}
+					}
+				}
+			}
+			else
+			{
+				// Not using secrets, put everything in public config
+				$publicConfig = array_merge( $publicConfig, $databaseConfig );
+			}
 		}
 
-		// Merge Email configuration if provided
-		if( !empty( $emailConfig ) )
+		// Handle Cloudinary configuration
+		if( !empty( $cloudinaryConfig['cloudinary'] ) )
 		{
-			$config = array_merge( $config, $emailConfig );
+			if( $useSecrets )
+			{
+				// All Cloudinary config is sensitive (contains API keys)
+				$secretsConfig['cloudinary'] = $cloudinaryConfig['cloudinary'];
+			}
+			else
+			{
+				$publicConfig = array_merge( $publicConfig, $cloudinaryConfig );
+			}
+		}
+
+		// Handle Email configuration
+		if( !empty( $emailConfig['email'] ) )
+		{
+			$email = $emailConfig['email'];
+
+			if( $useSecrets )
+			{
+				// Keep non-sensitive email config public
+				$publicConfig['email'] = [
+					'driver' => $email['driver'] ?? 'mail',
+					'from_address' => $email['from_address'] ?? 'noreply@example.com',
+					'from_name' => $email['from_name'] ?? 'Neuron CMS'
+				];
+
+				if( isset( $email['test_mode'] ) )
+				{
+					$publicConfig['email']['test_mode'] = $email['test_mode'];
+				}
+
+				// SMTP-specific settings
+				if( isset( $email['host'] ) )
+				{
+					$publicConfig['email']['host'] = $email['host'];
+					$publicConfig['email']['port'] = $email['port'] ?? 587;
+					$publicConfig['email']['encryption'] = $email['encryption'] ?? 'tls';
+				}
+
+				// Put credentials in secrets
+				if( isset( $email['username'] ) || isset( $email['password'] ) )
+				{
+					$secretsConfig['email'] = [];
+					if( isset( $email['username'] ) ) $secretsConfig['email']['username'] = $email['username'];
+					if( isset( $email['password'] ) ) $secretsConfig['email']['password'] = $email['password'];
+				}
+			}
+			else
+			{
+				$publicConfig = array_merge( $publicConfig, $emailConfig );
+			}
 		}
 
 		// Save configuration
-		return $this->saveConfig( $config );
+		if( $useSecrets && !empty( $secretsConfig ) )
+		{
+			// Save with encrypted secrets
+			return $this->saveConfigWithSecrets( $publicConfig, $secretsConfig );
+		}
+		else
+		{
+			// Save everything in one file
+			return $this->saveConfig( $publicConfig );
+		}
+	}
+
+	/**
+	 * Configure database using URL
+	 */
+	protected function configureDatabaseUrl(): array
+	{
+		$this->output->writeln( "\n--- Database URL Configuration ---\n" );
+		$this->output->writeln( "Enter your database URL in one of these formats:" );
+		$this->output->writeln( "  • MySQL:      mysql://user:pass@host:3306/dbname?charset=utf8mb4" );
+		$this->output->writeln( "  • PostgreSQL: postgresql://user:pass@host:5432/dbname" );
+		$this->output->writeln( "  • SQLite:     sqlite:///path/to/database.sqlite3" );
+		$this->output->writeln( "  • SQLite:     sqlite::memory: (for in-memory database)" );
+		$this->output->writeln( "" );
+		$this->output->writeln( "Cloud platforms often provide DATABASE_URL automatically." );
+		$this->output->writeln( "" );
+
+		$url = $this->prompt( "Database URL" );
+
+		if( !$url )
+		{
+			$this->output->error( "Database URL is required!" );
+			return [];
+		}
+
+		// SQLite URLs don't parse with parse_url, handle them specially
+		if( str_starts_with( $url, 'sqlite:' ) )
+		{
+			$adapter = 'SQLite';
+		}
+		else
+		{
+			// Validate non-SQLite URLs by parsing them
+			$scheme = parse_url( $url, PHP_URL_SCHEME );
+
+			// parse_url returns false or null for invalid URLs
+			if( !$scheme )
+			{
+				$this->output->error( "Invalid database URL format. Please provide a valid URL." );
+				return [];
+			}
+
+			// Check if the scheme is supported
+			$adapter = match( $scheme )
+			{
+				'mysql' => 'MySQL',
+				'postgresql', 'postgres', 'pgsql' => 'PostgreSQL',
+				default => null
+			};
+
+			if( !$adapter )
+			{
+				$this->output->error( "Unsupported database scheme: '$scheme'. Supported: mysql, postgresql, postgres, pgsql, sqlite" );
+				return [];
+			}
+		}
+
+		// For non-SQLite databases, validate that we have required components
+		if( $adapter !== 'SQLite' )
+		{
+			$parsed = parse_url( $url );
+			if( !isset( $parsed['host'] ) || !isset( $parsed['path'] ) || $parsed['path'] === '/' )
+			{
+				$this->output->error( "Invalid database URL. MySQL/PostgreSQL URLs must include host and database name." );
+				return [];
+			}
+		}
+
+		$this->_messages[] = "Database: $adapter (configured via URL)";
+
+		return [
+			'database' => [
+				'url' => $url
+			]
+		];
 	}
 
 	/**
@@ -1040,6 +1280,148 @@ class InstallCommand extends Command
 		}
 
 		$this->_messages[] = "Created: config/neuron.yaml";
+		return true;
+	}
+
+	/**
+	 * Save configuration with encrypted secrets
+	 */
+	protected function saveConfigWithSecrets( array $publicConfig, array $secretsConfig ): bool
+	{
+		$configDir = $this->_projectPath . '/config';
+		$keyPath = $configDir . '/master.key';
+		$credentialsPath = $configDir . '/secrets.yml.enc';
+		$configFile = $configDir . '/neuron.yaml';
+
+		// Generate master key if it doesn't exist
+		if( !file_exists( $keyPath ) )
+		{
+			$this->output->writeln( "\nGenerating encryption key..." );
+
+			$secretManager = new SecretManager();
+			$key = $secretManager->generateKey( $keyPath );
+
+			$this->output->success( "Generated master key: {$keyPath}" );
+			$this->output->warning( "IMPORTANT: Add this file to .gitignore - NEVER commit it!" );
+			$this->output->info( "Key value (save this securely): {$key}" );
+			$this->output->writeln( "" );
+
+			$this->_messages[] = "Generated encryption key: config/master.key";
+		}
+
+		// Save encrypted secrets
+		if( !empty( $secretsConfig ) )
+		{
+			$this->output->writeln( "Encrypting sensitive configuration..." );
+
+			$secretManager = new SecretManager();
+			$yamlContent = YamlParser::dump( $secretsConfig, 4, 2 );
+
+			try
+			{
+				$secretManager->encrypt( $yamlContent, $credentialsPath, $keyPath );
+				$this->_messages[] = "Created encrypted secrets: config/secrets.yml.enc";
+			}
+			catch( \Exception $e )
+			{
+				$this->output->error( "Failed to encrypt secrets: " . $e->getMessage() );
+				return false;
+			}
+		}
+
+		// Save public configuration
+		$this->output->writeln( "Saving public configuration..." );
+
+		// Convert to YAML
+		$yamlContent = $this->arrayToYaml( $publicConfig );
+
+		if( file_put_contents( $configFile, $yamlContent ) === false )
+		{
+			$this->output->error( "Failed to save configuration file!" );
+			return false;
+		}
+
+		$this->_messages[] = "Created public configuration: config/neuron.yaml";
+
+		// Update or create .gitignore
+		$this->updateGitignore();
+
+		// Show security instructions
+		$this->output->writeln( "\n╔═══════════════════════════════════════╗" );
+		$this->output->writeln( "║  Security Instructions                ║" );
+		$this->output->writeln( "╚═══════════════════════════════════════╝\n" );
+		$this->output->writeln( "1. The master key has been generated at: config/master.key" );
+		$this->output->writeln( "2. This key is required to decrypt your secrets" );
+		$this->output->writeln( "3. NEVER commit this key to version control" );
+		$this->output->writeln( "4. Share this key securely with your team" );
+		$this->output->writeln( "5. You can also set it as an environment variable:" );
+		$this->output->writeln( "   export NEURON_MASTER_KEY=<key-value>" );
+		$this->output->writeln( "" );
+		$this->output->writeln( "To edit secrets later, run: neuron secrets:edit" );
+		$this->output->writeln( "To view secrets, run: neuron secrets:show" );
+		$this->output->writeln( "" );
+
+		return true;
+	}
+
+	/**
+	 * Update .gitignore to exclude key files
+	 */
+	protected function updateGitignore(): bool
+	{
+		$gitignorePath = $this->_projectPath . '/.gitignore';
+		$configGitignorePath = $this->_projectPath . '/config/.gitignore';
+
+		// Patterns to add
+		$patterns = [
+			'# Encryption keys - NEVER commit these',
+			'/config/master.key',
+			'/config/secrets/*.key',
+			'*.key'
+		];
+
+		// Update root .gitignore if it exists
+		if( file_exists( $gitignorePath ) )
+		{
+			$content = file_get_contents( $gitignorePath );
+			$hasKeyPatterns = false;
+
+			foreach( $patterns as $pattern )
+			{
+				if( strpos( $content, $pattern ) !== false )
+				{
+					$hasKeyPatterns = true;
+					break;
+				}
+			}
+
+			if( !$hasKeyPatterns )
+			{
+				// Add patterns
+				$content .= "\n" . implode( "\n", $patterns ) . "\n";
+				file_put_contents( $gitignorePath, $content );
+				$this->_messages[] = "Updated .gitignore to exclude key files";
+			}
+		}
+
+		// Create config/.gitignore
+		if( !file_exists( $configGitignorePath ) )
+		{
+			$configGitignoreContent = implode( "\n", [
+				'# Encryption keys - NEVER commit these',
+				'/master.key',
+				'/secrets/*.key',
+				'*.key',
+				'',
+				'# Local environment overrides',
+				'.env',
+				'.env.local'
+			] );
+
+			file_put_contents( $configGitignorePath, $configGitignoreContent );
+			$this->_messages[] = "Created config/.gitignore";
+		}
+
 		return true;
 	}
 

@@ -1,0 +1,23 @@
+# Encryption keys - NEVER commit these
+/master.key
+/secrets/*.key
+*.key
+
+# Local environment overrides
+.env
+.env.local
+.env.*.local
+
+# Environment-specific configuration (if not using encrypted secrets)
+/environments/*.local.yaml
+
+# Temporary files
+*.tmp
+*.bak
+*~
+
+# IDE settings (optional, uncomment if needed)
+#.idea/
+#.vscode/
+#*.swp
+#*.swo

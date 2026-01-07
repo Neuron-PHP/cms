@@ -35,6 +35,14 @@ class PostsTest extends TestCase
 		// Setup mock settings for Registry
 		$mockSettings = $this->createMock( SettingManager::class );
 		$mockSettings->method( 'get' )->willReturn( 'Test Site' );
+
+		// Create a mock setting source for the SettingManager
+		$mockSettingSource = $this->createMock( \Neuron\Data\Settings\Source\ISettingSource::class );
+		$mockSettingSource->method( 'get' )->willReturn( false ); // Cache disabled
+
+		// IMPORTANT: Mock the getSource() method to return the mock setting source
+		$mockSettings->method( 'getSource' )->willReturn( $mockSettingSource );
+
 		Registry::getInstance()->set( 'Settings', $mockSettings );
 
 		// Setup container to return mocks

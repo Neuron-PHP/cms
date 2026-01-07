@@ -4,6 +4,8 @@ namespace Neuron\Cms;
 use Neuron\Data\Objects\Version;
 use Neuron\Data\Settings\Source\Yaml;
 use Neuron\Data\Settings\SettingManager;
+use Neuron\Data\Settings\SettingManagerFactory;
+use Neuron\Data\Factories;
 use Neuron\Mvc\Application;
 use Neuron\Mvc\IMvcApplication;
 use Neuron\Orm\Model;
@@ -42,30 +44,58 @@ require_once __DIR__ . '/Cms/Auth/helpers.php';
 
 function boot( string $configPath ) : Application
 {
+	// Initialize settings variable to avoid undefined variable error
+	$settings = null;
+	$container = null;
+
 	// Build and register the DI container BEFORE MVC boot
 	// This ensures the container is available to initializers during boot
 	try
 	{
-		// Determine which configuration file to load based on environment
+		// Determine environment
 		// Check APP_ENV environment variable (testing, development, production)
 		$environment = getenv( 'APP_ENV' ) ?: 'production';
-		$configFile = match( $environment ) {
-			'testing' => 'neuron.testing.yaml',
-			'development' => 'neuron.yaml',
-			'production' => 'neuron.yaml',
-			default => 'neuron.yaml'
-		};
 
-		// Fallback to neuron.yaml if environment-specific file doesn't exist
-		$configFilePath = "$configPath/$configFile";
-		if( !file_exists( $configFilePath ) )
-		{
-			$configFilePath = "$configPath/neuron.yaml";
-		}
+		// Use SettingManagerFactory for comprehensive configuration loading
+		// This will automatically load:
+		// 1. neuron.yaml (base configuration)
+		// 2. Environment-specific config if exists
+		// 3. Encrypted secrets from config/secrets.yml.enc (if exists)
+		// 4. Environment-specific encrypted secrets if exist
+		// 5. Environment variables (highest priority)
+		$sources = [
+			[
+				'type' => 'yaml',
+				'path' => match( $environment ) {
+					'testing' => file_exists( "$configPath/neuron.testing.yaml" )
+						? "$configPath/neuron.testing.yaml"
+						: "$configPath/neuron.yaml",
+					default => "$configPath/neuron.yaml"
+				},
+				'name' => 'config'
+			],
+			// Only include main secrets if both the encrypted file and key exist
+			file_exists( "$configPath/secrets.yml.enc" ) && file_exists( "$configPath/master.key" ) ? [
+				'type' => 'encrypted',
+				'path' => "$configPath/secrets.yml.enc",
+				'key' => "$configPath/master.key",
+				'name' => 'secrets'
+			] : null,
+			// Only include environment-specific secrets if both files exist
+			file_exists( "$configPath/secrets/$environment.yml.enc" ) && file_exists( "$configPath/secrets/$environment.key" ) ? [
+				'type' => 'encrypted',
+				'path' => "$configPath/secrets/$environment.yml.enc",
+				'key' => "$configPath/secrets/$environment.key",
+				'name' => "secrets:$environment"
+			] : null,
+			[
+				'type' => 'env',
+				'name' => 'environment'
+			]
+		];
 
-		// Create SettingManager from config file
-		$yaml = new Yaml( $configFilePath );
-		$settings = new SettingManager( $yaml );
+		// Filter out null entries (non-existent encrypted sources)
+		$settings = SettingManagerFactory::createCustom( array_filter( $sources ) );
 
 		// Build container (automatically registers in Registry)
 		$container = Container::build( $settings );
@@ -73,10 +103,18 @@ function boot( string $configPath ) : Application
 	catch( \Exception $e )
 	{
 		\Neuron\Log\Log::error( 'Container initialization failed: ' . $e->getMessage() );
+
+		// Create a fallback settings with minimal configuration
+		// This allows the application to start even if advanced configuration fails
+		$yaml = new Yaml( "$configPath/neuron.yaml" );
+		$settings = new SettingManager( $yaml );
 	}
 
-	// Boot MVC application (initializers can now access Container from Registry)
-	$app = \Neuron\Mvc\boot( $configPath );
+	// Create MVC application with our configured SettingManager
+	// (Don't use MVC boot as it would create its own SettingManager without secrets)
+	$basePath = $settings->get( 'system', 'base_path' ) ?: getenv( 'SYSTEM_BASE_PATH' ) ?: '.';
+	$version = \Neuron\Data\Factories\Version::fromFile( "$basePath/.version.json" );
+	$app = new Application( $version->getAsString(), $settings );
 
 	// Update container with Application instance and set on app
 	if( isset( $container ) )

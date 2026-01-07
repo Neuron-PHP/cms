@@ -98,6 +98,27 @@ cloudinary:
 # All three databases (SQLite, MySQL, PostgreSQL) are fully supported
 # with identical behavior - choose based on your deployment needs
 
+# === NEW: URL-Based Configuration ===
+# You can now configure your database using a single URL string
+# This is especially useful for cloud platforms and environment-based configs
+#
+# Format: adapter://user:pass@host:port/database?options
+#
+# Examples:
+# database:
+#   url: mysql://myuser:mypass@localhost:3306/neuron_cms?charset=utf8mb4
+#   url: postgresql://postgres:secret@db.example.com:5432/myapp
+#   url: sqlite:///storage/database.sqlite3
+#   url: sqlite::memory:  # For in-memory database
+#
+# Environment variable (takes precedence over config file):
+#   DATABASE_URL=mysql://user:pass@host:3306/dbname
+#
+# You can also mix URL with individual overrides:
+# database:
+#   url: mysql://user:pass@host:3306/dbname
+#   charset: latin1  # Override the charset from URL
+
 # Option 1: SQLite (Recommended for development and small-to-medium sites)
 # - Zero configuration required
 # - Single file database
@@ -106,6 +127,8 @@ cloudinary:
 database:
   adapter: sqlite
   name: storage/database.sqlite3
+  # Or use URL format:
+  # url: sqlite:///storage/database.sqlite3
 
 # Option 2: MySQL (Recommended for large-scale production)
 # - Best for high-traffic websites
@@ -119,6 +142,8 @@ database:
 #   user: root
 #   pass: secret
 #   charset: utf8mb4  # UTF8MB4 recommended for full Unicode support
+#   # Or use URL format:
+#   # url: mysql://root:secret@localhost:3306/neuron_cms?charset=utf8mb4
 
 # Option 3: PostgreSQL (Enterprise features and complex queries)
 # - Advanced query capabilities
@@ -131,6 +156,8 @@ database:
 #   name: neuron_cms
 #   user: postgres
 #   pass: secret
+#   # Or use URL format:
+#   # url: postgresql://postgres:secret@localhost:5432/neuron_cms
 
 # Note: All databases use UTC timezone and have foreign key constraints enforced
 # Timestamp updates (created_at, updated_at) work identically across all platforms
