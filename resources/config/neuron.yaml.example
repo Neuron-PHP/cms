@@ -5,7 +5,6 @@
 system:
   timezone: UTC  # Server timezone (e.g., America/New_York, Europe/London, UTC)
   base_path: resources  # Base path for resources
-  routes_path: resources/config  # Path to routes configuration
 
 routing:
   controller_paths:

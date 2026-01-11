@@ -61,6 +61,14 @@ class AuthInitializer implements IRunnable
 			if( !empty( $settingNames ) )
 			{
 				// Get services from container
+				// Check if services exist before trying to get them (for fallback container scenarios)
+				if( !$container->has( Authentication::class ) ||
+					!$container->has( CsrfToken::class ) )
+				{
+					Log::warning( "Auth services not available in container, skipping auth filter registration" );
+					return null;
+				}
+
 				$authentication = $container->get( Authentication::class );
 				$csrfToken = $container->get( CsrfToken::class );
 
