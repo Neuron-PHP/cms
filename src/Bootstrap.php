@@ -108,6 +108,29 @@ function boot( string $configPath ) : Application
 		// This allows the application to start even if advanced configuration fails
 		$yaml = new Yaml( "$configPath/neuron.yaml" );
 		$settings = new SettingManager( $yaml );
+
+		// Create a minimal container to prevent initializer failures
+		// This ensures the Registry has a Container entry even if full DI setup fails
+		try
+		{
+			$builder = new \DI\ContainerBuilder();
+
+			// Add just the essential service (SettingManager)
+			$builder->addDefinitions([
+				SettingManager::class => $settings
+			]);
+
+			$psr11Container = $builder->build();
+			$container = new \Neuron\Cms\Container\ContainerAdapter( $psr11Container );
+
+			// Register the minimal container in Registry
+			Registry::getInstance()->set( 'Container', $container );
+		}
+		catch( \Exception $containerException )
+		{
+			\Neuron\Log\Log::error( 'Failed to create fallback container: ' . $containerException->getMessage() );
+			// Container remains null, initializers will handle gracefully
+		}
 	}
 
 	// Create MVC application with our configured SettingManager

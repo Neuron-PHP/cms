@@ -1,4 +1,5 @@
 ## 0.8.36
+* Removed support for routes.yaml.
 
 ## 0.8.35 2026-01-07
 * Enhancements for secrets.
