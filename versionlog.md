@@ -1,3 +1,5 @@
+## 0.8.37
+
 ## 0.8.36 2026-01-11
 * Removed support for routes.yaml.
 
