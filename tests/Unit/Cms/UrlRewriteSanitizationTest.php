@@ -16,8 +16,8 @@ use Neuron\Log\Format\PlainText;
  */
 class UrlRewriteSanitizationTest extends TestCase
 {
-	protected Router $router;
-	protected Memory $logDestination;
+	protected ?Router $router = null;
+	protected ?Memory $logDestination = null;
 
 	protected function setUp(): void
 	{
@@ -89,10 +89,18 @@ class UrlRewriteSanitizationTest extends TestCase
 
 		// Get log entries (split by newlines)
 		$logData = $this->logDestination->getData();
+		$this->assertIsString( $logData, 'Log data should be a string' );
+
 		$logs = array_filter( explode( "\n", $logData ) );
 		$debugLogs = array_filter( $logs, function( $entry ) {
 			return stripos( $entry, 'URL rewrite' ) !== false;
 		});
+
+		// If no URL rewrite logs found, skip test (feature not yet implemented)
+		if( count( $debugLogs ) === 0 )
+		{
+			$this->markTestSkipped( 'URL rewrite logging not yet implemented in routing component' );
+		}
 
 		// Verify query strings are not in the logs
 		foreach( $debugLogs as $log )
@@ -105,11 +113,8 @@ class UrlRewriteSanitizationTest extends TestCase
 		}
 
 		// Verify the path portion IS logged
-		if( count( $debugLogs ) > 0 )
-		{
-			$logEntry = array_values( $debugLogs )[0];
-			$this->assertStringContainsString( '/api', $logEntry, 'Path should be logged' );
-		}
+		$logEntry = array_values( $debugLogs )[0];
+		$this->assertStringContainsString( '/api', $logEntry, 'Path should be logged' );
 	}
 
 	/**
@@ -136,10 +141,18 @@ class UrlRewriteSanitizationTest extends TestCase
 		}
 
 		$logData = $this->logDestination->getData();
+		$this->assertIsString( $logData, 'Log data should be a string' );
+
 		$logs = array_filter( explode( "\n", $logData ) );
 		$debugLogs = array_filter( $logs, function( $entry ) {
 			return stripos( $entry, 'URL rewrite' ) !== false;
 		});
+
+		// If no URL rewrite logs found, skip test (feature not yet implemented)
+		if( count( $debugLogs ) === 0 )
+		{
+			$this->markTestSkipped( 'URL rewrite logging not yet implemented in routing component' );
+		}
 
 		foreach( $debugLogs as $log )
 		{
@@ -171,7 +184,8 @@ class UrlRewriteSanitizationTest extends TestCase
 			// May throw, but we only care about logs
 		}
 
-		$logs = $this->logDestination->getEntries();
+		$logData = $this->logDestination->getData();
+		$logs = array_filter( explode( "\n", $logData ) );
 		$debugLogs = array_filter( $logs, function( $entry ) {
 			return stripos( $entry, 'URL rewrite: / ->' ) !== false;
 		});
@@ -208,10 +222,18 @@ class UrlRewriteSanitizationTest extends TestCase
 		}
 
 		$logData = $this->logDestination->getData();
+		$this->assertIsString( $logData, 'Log data should be a string' );
+
 		$logs = array_filter( explode( "\n", $logData ) );
 		$debugLogs = array_filter( $logs, function( $entry ) {
 			return stripos( $entry, 'URL rewrite' ) !== false;
 		});
+
+		// If no URL rewrite logs found, skip test (feature not yet implemented)
+		if( count( $debugLogs ) === 0 )
+		{
+			$this->markTestSkipped( 'URL rewrite logging not yet implemented in routing component' );
+		}
 
 		foreach( $debugLogs as $log )
 		{

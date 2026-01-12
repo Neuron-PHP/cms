@@ -11,21 +11,18 @@ rewrites:
 # Directories to scan for controller classes with route attributes
 # Order matters: controllers listed first take precedence for duplicate routes
 controller_paths:
+  # Application controllers - your custom controllers go here
+  - path: 'app/Controllers'
+    namespace: 'App\Controllers'
+
   # CMS controllers - provides admin panel, blog, auth, etc.
   - path: 'vendor/neuron-php/cms/src/Cms/Controllers'
     namespace: 'Neuron\Cms\Controllers'
 
 # To customize the homepage:
-# 1. Create your own controller with a route for the desired path (e.g., /home)
+# 1. Create your own controller in app/Controllers with a route for the desired path (e.g., /home)
 # 2. Update the rewrite above to point '/' to your path
-# 3. Add your application controllers before CMS controllers in controller_paths
-
-# Example: Custom homepage
+#
+# Example: Custom homepage controller in app/Controllers/HomeController.php
 # rewrites:
 #   '/': '/home'  # Route to custom homepage
-#
-# controller_paths:
-#   - path: 'app/Controllers'
-#     namespace: 'App\Controllers'
-#   - path: 'vendor/neuron-php/cms/src/Cms/Controllers'
-#     namespace: 'Neuron\Cms\Controllers'

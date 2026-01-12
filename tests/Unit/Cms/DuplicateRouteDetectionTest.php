@@ -18,7 +18,7 @@ use Neuron\Routing\Exceptions\DuplicateRouteException;
  */
 class DuplicateRouteDetectionTest extends TestCase
 {
-	protected Router $router;
+	protected ?Router $router = null;
 
 	protected function setUp(): void
 	{
