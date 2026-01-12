@@ -1,0 +1,31 @@
+# Neuron CMS Routing Configuration
+# This file configures URL rewrites and controller scanning for the CMS
+
+# URL Rewrites
+# Transparent URL rewriting (no HTTP redirect) applied before route matching
+# By default, the root path (/) is rewritten to /blog
+rewrites:
+  '/': '/blog'
+
+# Controller Paths
+# Directories to scan for controller classes with route attributes
+# Order matters: controllers listed first take precedence for duplicate routes
+controller_paths:
+  # CMS controllers - provides admin panel, blog, auth, etc.
+  - path: 'vendor/neuron-php/cms/src/Cms/Controllers'
+    namespace: 'Neuron\Cms\Controllers'
+
+# To customize the homepage:
+# 1. Create your own controller with a route for the desired path (e.g., /home)
+# 2. Update the rewrite above to point '/' to your path
+# 3. Add your application controllers before CMS controllers in controller_paths
+
+# Example: Custom homepage
+# rewrites:
+#   '/': '/home'  # Route to custom homepage
+#
+# controller_paths:
+#   - path: 'app/Controllers'
+#     namespace: 'App\Controllers'
+#   - path: 'vendor/neuron-php/cms/src/Cms/Controllers'
+#     namespace: 'Neuron\Cms\Controllers'

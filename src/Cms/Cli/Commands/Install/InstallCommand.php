@@ -372,32 +372,26 @@ class InstallCommand extends Command
 		// Copy .gitignore template first
 		$this->copyGitignoreTemplate();
 
-		$routeFile = $this->_projectPath . '/config/routes.yaml';
-		$resourceFile = $this->_componentPath . '/resources/config/routes.yaml';
+		$routingFile = $this->_projectPath . '/config/routing.yaml';
+		$resourceFile = $this->_componentPath . '/resources/config/routing.yaml';
 
-		// If routes.yaml doesn't exist, copy from resources
-		if( !file_exists( $routeFile ) && file_exists( $resourceFile ) )
+		// If routing.yaml doesn't exist, copy from resources
+		if( !file_exists( $routingFile ) && file_exists( $resourceFile ) )
 		{
-			if( copy( $resourceFile, $routeFile ) )
+			if( copy( $resourceFile, $routingFile ) )
 			{
-				$this->_messages[] = "Created: config/routes.yaml";
+				$this->_messages[] = "Created: config/routing.yaml";
 				return true;
 			}
 
-			$this->output->error( "  Failed to create routes.yaml" );
+			$this->output->error( "  Failed to create routing.yaml" );
 			return false;
 		}
 
-		// If routes.yaml exists, check if it has admin routes
-		if( file_exists( $routeFile ) )
+		// If routing.yaml exists, notify user
+		if( file_exists( $routingFile ) )
 		{
-			$content = file_get_contents( $routeFile );
-
-			if( strpos( $content, '/admin/dashboard' ) === false )
-			{
-				$this->_messages[] = "⚠️  Please add admin routes to config/routes.yaml";
-				$this->_messages[] = "   See resources/config/routes.yaml for reference";
-			}
+			$this->_messages[] = "✓ Routing config exists: config/routing.yaml";
 		}
 
 		return true;
