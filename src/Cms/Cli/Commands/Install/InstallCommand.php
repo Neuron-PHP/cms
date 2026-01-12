@@ -876,18 +876,6 @@ class InstallCommand extends Command
 			'views' => [
 				'path' => 'resources/views'
 			],
-			'routing' => [
-				'controller_paths' => [
-					[
-						'path' => 'app/Controllers',
-						'namespace' => 'App\\Controllers'
-					],
-					[
-						'path' => 'vendor/neuron-php/cms/src/Cms/Controllers',
-						'namespace' => 'Neuron\\Cms\\Controllers'
-					]
-				]
-			],
 			'system' => [
 				'timezone' => $appConfig['timezone'],
 				'base_path' => $this->_projectPath
