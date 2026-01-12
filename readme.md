@@ -104,7 +104,7 @@ The installer will:
 1. Create the complete directory structure (app/, config/, db/, public/, resources/, storage/)
 2. Publish all view templates (admin panel, blog, auth, layouts)
 3. Publish application initializers
-4. Create configuration files (neuron.yaml, routes.yaml, auth.yaml, event-listeners.yaml)
+4. Create configuration files (neuron.yaml, routing.yaml, auth.yaml, event-listeners.yaml)
 5. Generate the front controller (public/index.php)
 6. Set up database migrations
 7. Optionally run migrations to create database tables
@@ -136,7 +136,7 @@ your-project/
 │   ├── auth.yaml           # Authentication configuration
 │   ├── neuron.yaml         # Main application config
 │   ├── event-listeners.yaml # Event listener configuration
-│   └── routes.yaml         # Route definitions
+│   └── routing.yaml        # Routing configuration (URL rewrites, controller paths)
 │
 ├── db/
 │   ├── migrate/            # Database migrations
@@ -224,7 +224,7 @@ database:
   name: storage/database.sqlite3
 ```
 
-All routes, authentication settings, and event listeners are pre-configured by the installer.
+All routing, authentication settings, and event listeners are pre-configured by the installer.
 
 ## Usage
 
@@ -369,23 +369,74 @@ The installer creates `config/auth.yaml` with sensible defaults. You can customi
 - Failed login attempt limits
 - Account lockout duration
 
-### Routes
+### Routing
 
-The installer automatically creates `config/routes.yaml` with pre-configured routes for:
+The CMS uses attribute-based routing defined directly on controller methods. The installer creates `config/routing.yaml` to configure URL rewrites and controller paths.
 
-- Public blog pages (`/blog`, `/blog/article/{slug}`, `/blog/category/{slug}`, `/blog/tag/{slug}`)
-- Admin panel (`/admin/*`)
-- Authentication (`/login`, `/logout`)
-- Password reset (`/password/reset`, `/password/reset/confirm`)
-- Member registration and dashboard:
+#### URL Rewrites
+
+By default, the CMS rewrites the root URL (`/`) to `/blog`. You can customize this in `config/routing.yaml`:
+
+```yaml
+# config/routing.yaml
+rewrites:
+  '/': '/custom/landing'  # Rewrite root to your custom controller
+
+controller_paths:
+  - path: 'app/Controllers'        # Your controllers first (takes precedence)
+    namespace: 'App\Controllers'
+  - path: 'vendor/neuron-php/cms/src/Cms/Controllers'
+    namespace: 'Neuron\Cms\Controllers'
+```
+
+Then create your custom landing controller:
+
+```php
+// app/Controllers/Landing.php
+use Neuron\Mvc\Controller;
+use Neuron\Routing\Attributes\Get;
+
+class Landing extends Controller
+{
+    #[Get('/custom/landing', name: 'landing')]
+    public function index()
+    {
+        return $this->renderHtml(OK, [], 'custom-home');
+    }
+}
+```
+
+URL rewrites are transparent (no HTTP redirect) - the browser URL stays the same while the application routes to a different path internally.
+
+#### Available Routes
+
+The CMS provides these pre-configured routes via controller attributes:
+
+- **Public blog pages**:
+  - `/blog` - Blog listing
+  - `/blog/article/:slug` - Individual post
+  - `/blog/category/:slug` - Category listing
+  - `/blog/tag/:slug` - Tag listing
+  - `/blog/rss` - RSS feed
+
+- **Admin panel**: `/admin/*` - Full admin interface with authentication
+
+- **Authentication**:
+  - `/login` - Login form
+  - `/logout` - Logout handler
+
+- **Password reset**:
+  - `/password/reset` - Request reset form
+  - `/password/reset/confirm` - Reset confirmation
+
+- **Member registration and dashboard**:
   - `/register` - Registration form
   - `/verify-email` - Email verification
   - `/resend-verification` - Resend verification email (rate-limited)
   - `/member` - Member dashboard (requires authentication)
   - `/member/profile` - Profile management
-- RSS feed (`/blog/rss`)
 
-You can customize routes by editing `config/routes.yaml`.
+For more information about routing configuration, URL rewrites, and attribute-based routing, see the [MVC Routing Documentation](https://github.com/Neuron-PHP/mvc).
 
 ### Email
 
