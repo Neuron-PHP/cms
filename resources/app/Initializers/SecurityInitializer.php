@@ -75,8 +75,6 @@ class SecurityInitializer implements IRunnable
 		// For now, routes can use filters: ['security-headers'] to opt-in
 		// Or we can add it to common base routes
 
-		Log::info( "Security headers filter registered successfully" );
-
 		return null;
 	}
 }
