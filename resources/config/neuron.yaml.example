@@ -6,10 +6,8 @@ system:
   timezone: UTC  # Server timezone (e.g., America/New_York, Europe/London, UTC)
   base_path: resources  # Base path for resources
 
-routing:
-  controller_paths:
-    - path: 'vendor/neuron-php/cms/src/Cms/Controllers'
-      namespace: 'Neuron\Cms\Controllers'
+# Routing configuration is now in config/routing.yaml
+# See routing.yaml for URL rewrites and controller path configuration
 
 logging:
   destination: \Neuron\Log\Destination\File  # Log destination class

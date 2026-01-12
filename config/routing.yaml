@@ -1,0 +1,13 @@
+# Neuron CMS Routing Configuration (for CMS package development/testing)
+# This file is used when testing the CMS package itself
+
+# URL Rewrites
+# By default, the root path (/) is rewritten to /blog
+rewrites:
+  '/': '/blog'
+
+# Controller Paths
+# For CMS package development, point directly to src/Cms/Controllers
+controller_paths:
+  - path: 'src/Cms/Controllers'
+    namespace: 'Neuron\Cms\Controllers'
