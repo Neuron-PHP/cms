@@ -3,6 +3,7 @@
 namespace Tests\Unit\Cms\Cli\Commands\Install;
 
 use Neuron\Cli\Console\Output;
+use Neuron\Core\Registry\RegistryKeys;
 use Neuron\Cli\IO\TestInputReader;
 use Neuron\Cms\Cli\Commands\Install\InstallCommand;
 use Neuron\Data\Settings\SettingManager;
@@ -33,7 +34,7 @@ class InstallCommandTest extends TestCase
 			if( $section === 'database' && $key === 'name' ) return ':memory:';
 			return null;
 		});
-		Registry::getInstance()->set( 'Settings', $mockSettings );
+		Registry::getInstance()->set( RegistryKeys::SETTINGS, $mockSettings );
 	}
 
 	protected function tearDown(): void

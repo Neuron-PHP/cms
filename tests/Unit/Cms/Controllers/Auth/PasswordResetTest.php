@@ -3,6 +3,7 @@
 namespace Tests\Cms\Controllers\Auth;
 
 use Neuron\Cms\Controllers\Auth\PasswordReset;
+use Neuron\Core\Registry\RegistryKeys;
 use Neuron\Cms\Models\PasswordResetToken;
 use Neuron\Cms\Services\Auth\IPasswordResetter;
 use Neuron\Cms\Auth\SessionManager;
@@ -56,7 +57,7 @@ class PasswordResetTest extends TestCase
 		// IMPORTANT: Mock the getSource() method to return the mock setting source
 		$mockSettings->method( 'getSource' )->willReturn( $mockSettingSource );
 
-		Registry::getInstance()->set( 'Settings', $mockSettings );
+		Registry::getInstance()->set( RegistryKeys::SETTINGS, $mockSettings );
 		Registry::getInstance()->set( 'Views.Path', __DIR__ . '/../../../../../resources/views' );
 
 		// Setup ViewDataProvider for global view variables
@@ -110,7 +111,7 @@ class PasswordResetTest extends TestCase
 
 	public function testConstructorWithDependencies(): void
 	{
-		$mockSettingManager = Registry::getInstance()->get( 'Settings' );
+		$mockSettingManager = Registry::getInstance()->get( RegistryKeys::SETTINGS );
 		$mockSessionManager = $this->createMock( \Neuron\Cms\Auth\SessionManager::class );
 
 		$controller = new PasswordReset( $this->mockApp, $mockSettingManager, $mockSessionManager, $this->mockPasswordResetter );
@@ -121,7 +122,7 @@ class PasswordResetTest extends TestCase
 	{
 		$this->expectException( \TypeError::class );
 
-		$mockSettingManager = Registry::getInstance()->get( 'Settings' );
+		$mockSettingManager = Registry::getInstance()->get( RegistryKeys::SETTINGS );
 		$mockSessionManager = $this->createMock( \Neuron\Cms\Auth\SessionManager::class );
 
 		new PasswordReset( $this->mockApp, $mockSettingManager, $mockSessionManager, null );

@@ -3,6 +3,7 @@
 namespace Tests\Cms\Controllers\Admin;
 
 use Neuron\Cms\Auth\PasswordHasher;
+use Neuron\Core\Registry\RegistryKeys;
 use Neuron\Cms\Auth\SessionManager;
 use Neuron\Cms\Controllers\Admin\Profile;
 use Neuron\Cms\Models\User;
@@ -45,15 +46,15 @@ class ProfileTest extends TestCase
 		$settings->set( 'paths', 'version_file', $this->_versionFilePath );
 
 		$this->_settingManager = new SettingManager( $settings );
-		Registry::getInstance()->set( 'Settings', $this->_settingManager );
+		Registry::getInstance()->set( RegistryKeys::SETTINGS, $this->_settingManager );
 	}
 
 	protected function tearDown(): void
 	{
-		Registry::getInstance()->set( 'Settings', null );
-		Registry::getInstance()->set( 'version', null );
-		Registry::getInstance()->set( 'name', null );
-		Registry::getInstance()->set( 'rss_url', null );
+		Registry::getInstance()->set( RegistryKeys::SETTINGS, null );
+		Registry::getInstance()->set( RegistryKeys::APP_VERSION, null );
+		Registry::getInstance()->set( RegistryKeys::APP_NAME, null );
+		Registry::getInstance()->set( RegistryKeys::APP_RSS_URL, null );
 		Registry::getInstance()->set( 'DtoFactoryService', null );
 		Registry::getInstance()->set( 'CsrfToken', null );
 		Registry::getInstance()->set( 'User', null );

@@ -3,6 +3,7 @@
 namespace Tests\Cms\Controllers\Auth;
 
 use Neuron\Cms\Controllers\Auth\Login;
+use Neuron\Core\Registry\RegistryKeys;
 use Neuron\Cms\Services\Auth\IAuthenticationService;
 use Neuron\Cms\Auth\SessionManager;
 use Neuron\Data\Settings\SettingManager;
@@ -37,7 +38,7 @@ class LoginTest extends TestCase
 		// Setup mock settings for Registry
 		$mockSettings = $this->createMock( SettingManager::class );
 		$mockSettings->method( 'get' )->willReturn( 'Test Site' );
-		Registry::getInstance()->set( 'Settings', $mockSettings );
+		Registry::getInstance()->set( RegistryKeys::SETTINGS, $mockSettings );
 
 		// Setup container to return mocks
 		$this->mockContainer
@@ -58,7 +59,7 @@ class LoginTest extends TestCase
 
 	public function testConstructorWithDependencies(): void
 	{
-		$mockSettingManager = Registry::getInstance()->get( 'Settings' );
+		$mockSettingManager = Registry::getInstance()->get( RegistryKeys::SETTINGS );
 		$mockSessionManager = $this->createMock( \Neuron\Cms\Auth\SessionManager::class );
 
 		$controller = new Login( $this->mockApp, $this->mockAuth, $mockSettingManager, $mockSessionManager );
@@ -69,7 +70,7 @@ class LoginTest extends TestCase
 	{
 		$this->expectException( \TypeError::class );
 
-		$mockSettingManager = Registry::getInstance()->get( 'Settings' );
+		$mockSettingManager = Registry::getInstance()->get( RegistryKeys::SETTINGS );
 		$mockSessionManager = $this->createMock( \Neuron\Cms\Auth\SessionManager::class );
 
 		new Login( $this->mockApp, null, $mockSettingManager, $mockSessionManager );

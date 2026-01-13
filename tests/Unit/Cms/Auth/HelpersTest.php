@@ -3,6 +3,7 @@
 namespace Tests\Cms\Auth;
 
 use Neuron\Cms\Models\User;
+use Neuron\Core\Registry\RegistryKeys;
 use Neuron\Patterns\Registry;
 use PHPUnit\Framework\TestCase;
 
@@ -41,7 +42,7 @@ class HelpersTest extends TestCase
 			->willReturn( 'admin' );
 
 		// Set authenticated user in registry
-		Registry::getInstance()->set( 'Auth.User', $user );
+		Registry::getInstance()->set( RegistryKeys::AUTH_USER, $user );
 
 		$this->assertEquals( 'admin', current_user_identifier() );
 	}
@@ -49,7 +50,7 @@ class HelpersTest extends TestCase
 	public function testCurrentUserIdentifierFallsBackToOsUser(): void
 	{
 		// No authenticated user in registry
-		Registry::getInstance()->set( 'Auth.User', null );
+		Registry::getInstance()->set( RegistryKeys::AUTH_USER, null );
 
 		// Should fall back to OS user (get_current_user())
 		$osUser = get_current_user();
@@ -71,7 +72,7 @@ class HelpersTest extends TestCase
 		// We can't easily mock get_current_user() since it's a built-in function
 		// But we can at least verify the authenticated user path
 
-		Registry::getInstance()->set( 'Auth.User', null );
+		Registry::getInstance()->set( RegistryKeys::AUTH_USER, null );
 
 		$result = current_user_identifier();
 
@@ -89,7 +90,7 @@ class HelpersTest extends TestCase
 	public function testCsrfFieldGeneratesHiddenInput(): void
 	{
 		// Set a CSRF token in the registry
-		Registry::getInstance()->set( 'Auth.CsrfToken', 'test-token-12345' );
+		Registry::getInstance()->set( RegistryKeys::AUTH_CSRF_TOKEN, 'test-token-12345' );
 
 		$html = csrf_field();
 
@@ -102,7 +103,7 @@ class HelpersTest extends TestCase
 	public function testCsrfFieldEscapesSpecialCharacters(): void
 	{
 		// Set a token with special characters that need escaping
-		Registry::getInstance()->set( 'Auth.CsrfToken', 'token<>"&' );
+		Registry::getInstance()->set( RegistryKeys::AUTH_CSRF_TOKEN, 'token<>"&' );
 
 		$html = csrf_field();
 
@@ -114,7 +115,7 @@ class HelpersTest extends TestCase
 	public function testCsrfFieldWithEmptyToken(): void
 	{
 		// No token set
-		Registry::getInstance()->set( 'Auth.CsrfToken', null );
+		Registry::getInstance()->set( RegistryKeys::AUTH_CSRF_TOKEN, null );
 
 		$html = csrf_field();
 
@@ -135,7 +136,7 @@ class HelpersTest extends TestCase
 		$user->method( 'getRole' )
 			->willReturn( User::ROLE_ADMIN );
 
-		Registry::getInstance()->set( 'Auth.User', $user );
+		Registry::getInstance()->set( RegistryKeys::AUTH_USER, $user );
 
 		$this->assertTrue( has_role( User::ROLE_ADMIN ) );
 	}
@@ -147,7 +148,7 @@ class HelpersTest extends TestCase
 		$user->method( 'getRole' )
 			->willReturn( User::ROLE_SUBSCRIBER );
 
-		Registry::getInstance()->set( 'Auth.User', $user );
+		Registry::getInstance()->set( RegistryKeys::AUTH_USER, $user );
 
 		$this->assertFalse( has_role( User::ROLE_ADMIN ) );
 	}
@@ -155,7 +156,7 @@ class HelpersTest extends TestCase
 	public function testHasRoleReturnsFalseWhenNotAuthenticated(): void
 	{
 		// No authenticated user
-		Registry::getInstance()->set( 'Auth.User', null );
+		Registry::getInstance()->set( RegistryKeys::AUTH_USER, null );
 
 		$this->assertFalse( has_role( User::ROLE_ADMIN ) );
 	}
@@ -175,7 +176,7 @@ class HelpersTest extends TestCase
 			$user->method( 'getRole' )
 				->willReturn( $role );
 
-			Registry::getInstance()->set( 'Auth.User', $user );
+			Registry::getInstance()->set( RegistryKeys::AUTH_USER, $user );
 
 			$this->assertTrue( has_role( $role ) );
 

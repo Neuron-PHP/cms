@@ -3,6 +3,7 @@
 namespace Tests\Cms\Auth;
 
 use Neuron\Cms\Services\Auth\Authentication;
+use Neuron\Core\Registry\RegistryKeys;
 use Neuron\Cms\Auth\Filters\AuthenticationFilter;
 use Neuron\Cms\Models\User;
 use Neuron\Routing\RouteMap;
@@ -73,8 +74,8 @@ class AuthenticationFilterTest extends TestCase
 		$this->_filter->pre( $this->_route );
 
 		// Verify user was set in Registry
-		$this->assertEquals( $user, Registry::getInstance()->get( 'Auth.User' ) );
-		$this->assertEquals( 1, Registry::getInstance()->get( 'Auth.UserId' ) );
+		$this->assertEquals( $user, Registry::getInstance()->get( RegistryKeys::AUTH_USER ) );
+		$this->assertEquals( 1, Registry::getInstance()->get( RegistryKeys::AUTH_USER_ID ) );
 		$this->assertEquals( User::ROLE_ADMIN, Registry::getInstance()->get( 'Auth.UserRole' ) );
 	}
 
@@ -91,7 +92,7 @@ class AuthenticationFilterTest extends TestCase
 
 		$this->_filter->pre( $this->_route );
 
-		$this->assertEquals( 42, Registry::getInstance()->get( 'Auth.UserId' ) );
+		$this->assertEquals( 42, Registry::getInstance()->get( RegistryKeys::AUTH_USER_ID ) );
 	}
 
 	public function testSetsUserRoleCorrectly(): void
@@ -177,8 +178,8 @@ class AuthenticationFilterTest extends TestCase
 			->willReturn( null );
 
 		// Verify Registry is not populated before filter runs
-		$this->assertNull( Registry::getInstance()->get( 'Auth.User' ) );
-		$this->assertNull( Registry::getInstance()->get( 'Auth.UserId' ) );
+		$this->assertNull( Registry::getInstance()->get( RegistryKeys::AUTH_USER ) );
+		$this->assertNull( Registry::getInstance()->get( RegistryKeys::AUTH_USER_ID ) );
 		$this->assertNull( Registry::getInstance()->get( 'Auth.UserRole' ) );
 
 		try
@@ -189,11 +190,11 @@ class AuthenticationFilterTest extends TestCase
 		{
 			// Expected exception - verify Registry still not populated
 			$this->assertNull(
-				Registry::getInstance()->get( 'Auth.User' ),
+				Registry::getInstance()->get( RegistryKeys::AUTH_USER ),
 				'Auth.User should not be set when authentication fails'
 			);
 			$this->assertNull(
-				Registry::getInstance()->get( 'Auth.UserId' ),
+				Registry::getInstance()->get( RegistryKeys::AUTH_USER_ID ),
 				'Auth.UserId should not be set when authentication fails'
 			);
 			$this->assertNull(

@@ -2,6 +2,7 @@
 
 namespace Neuron\Cms\Auth\Filters;
 
+use Neuron\Core\Registry\RegistryKeys;
 use Neuron\Routing\Filter;
 use Neuron\Routing\RouteMap;
 use Neuron\Cms\Services\Auth\Authentication;
@@ -80,9 +81,9 @@ class MemberAuthenticationFilter extends Filter
 		}
 
 		// Set user in Registry for controllers to access
-		Registry::getInstance()->set( 'Auth.User', $user );
-		Registry::getInstance()->set( 'Auth.UserId', $user->getId() );
-		Registry::getInstance()->set( 'Auth.UserRole', $user->getRole() );
+		Registry::getInstance()->set( RegistryKeys::AUTH_USER, $user );
+		Registry::getInstance()->set( RegistryKeys::AUTH_USER_ID, $user->getId() );
+		Registry::getInstance()->set( RegistryKeys::AUTH_USER_ROLE, $user->getRole() );
 	}
 
 	/**

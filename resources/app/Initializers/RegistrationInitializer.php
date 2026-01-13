@@ -2,6 +2,7 @@
 
 namespace App\Initializers;
 
+use Neuron\Core\Registry\RegistryKeys;
 use Neuron\Cms\Services\Auth\EmailVerifier;
 use Neuron\Cms\Auth\Filters\MemberAuthenticationFilter;
 use Neuron\Cms\Services\Auth\Authentication;
@@ -27,7 +28,7 @@ class RegistrationInitializer implements IRunnable
 	public function run( array $argv = [] ): mixed
 	{
 		// Get Settings from Registry
-		$settings = Registry::getInstance()->get( 'Settings' );
+		$settings = Registry::getInstance()->get( RegistryKeys::SETTINGS );
 
 		if( !$settings || !$settings instanceof \Neuron\Data\Settings\SettingManager )
 		{
@@ -36,7 +37,7 @@ class RegistrationInitializer implements IRunnable
 		}
 
 		// Get Application from Registry
-		$app = Registry::getInstance()->get( 'App' );
+		$app = Registry::getInstance()->get( RegistryKeys::APP );
 
 		if( !$app || !$app instanceof \Neuron\Mvc\Application )
 		{
@@ -45,7 +46,7 @@ class RegistrationInitializer implements IRunnable
 		}
 
 		// Get Container from Registry
-		$container = Registry::getInstance()->get( 'Container' );
+		$container = Registry::getInstance()->get( RegistryKeys::CONTAINER );
 
 		if( !$container || !$container instanceof IContainer )
 		{
@@ -86,8 +87,8 @@ class RegistrationInitializer implements IRunnable
 				$app->getRouter()->registerFilter( 'member', $memberFilter );
 
 				// Store services in Registry for backward compatibility
-				Registry::getInstance()->set( 'EmailVerifier', $emailVerifier );
-				Registry::getInstance()->set( 'RegistrationService', $registrationService );
+				Registry::getInstance()->set( RegistryKeys::EMAIL_VERIFIER_LEGACY, $emailVerifier );
+				Registry::getInstance()->set( RegistryKeys::REGISTRATION_SERVICE_LEGACY, $registrationService );
 			}
 		}
 		catch( \Exception $e )

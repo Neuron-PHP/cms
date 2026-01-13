@@ -2,6 +2,7 @@
 
 namespace App\Initializers;
 
+use Neuron\Core\Registry\RegistryKeys;
 use Neuron\Cms\Auth\PasswordHasher;
 use Neuron\Cms\Services\Auth\PasswordResetter;
 use Neuron\Cms\Repositories\DatabasePasswordResetTokenRepository;
@@ -27,7 +28,7 @@ class PasswordResetInitializer implements IRunnable
 	public function run( array $argv = [] ): mixed
 	{
 		// Get Settings from Registry
-		$settings = Registry::getInstance()->get( 'Settings' );
+		$settings = Registry::getInstance()->get( RegistryKeys::SETTINGS );
 
 		if( !$settings || !$settings instanceof SettingManager )
 		{
@@ -49,7 +50,7 @@ class PasswordResetInitializer implements IRunnable
 				$tokenExpiration = $settings->get( 'auth', 'password_reset_expiration' ) ?? 60;
 
 				// Get base path from Registry
-				$basePath = Registry::getInstance()->get( 'Base.Path' ) ?? getcwd();
+				$basePath = Registry::getInstance()->get( RegistryKeys::BASE_PATH ) ?? getcwd();
 
 				// Initialize components
 				$tokenRepository = new DatabasePasswordResetTokenRepository( $settings );
@@ -73,7 +74,7 @@ class PasswordResetInitializer implements IRunnable
 				$passwordResetter->setTokenExpirationMinutes( (int)$tokenExpiration );
 
 				// Store PasswordResetter in Registry for easy access
-				Registry::getInstance()->set( 'PasswordResetter', $passwordResetter );
+				Registry::getInstance()->set( RegistryKeys::PASSWORD_RESETTER_LEGACY, $passwordResetter );
 			}
 		}
 		catch( \Exception $e )

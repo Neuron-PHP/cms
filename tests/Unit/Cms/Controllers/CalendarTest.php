@@ -3,6 +3,7 @@
 namespace Tests\Cms\Controllers;
 
 use Neuron\Cms\Controllers\Calendar;
+use Neuron\Core\Registry\RegistryKeys;
 use Neuron\Cms\Models\Event;
 use Neuron\Cms\Models\EventCategory;
 use Neuron\Cms\Repositories\IEventRepository;
@@ -44,15 +45,15 @@ class CalendarTest extends TestCase
 		$settings->set( 'paths', 'version_file', $this->_versionFilePath );
 
 		$this->_settingManager = new SettingManager( $settings );
-		Registry::getInstance()->set( 'Settings', $this->_settingManager );
+		Registry::getInstance()->set( RegistryKeys::SETTINGS, $this->_settingManager );
 	}
 
 	protected function tearDown(): void
 	{
-		Registry::getInstance()->set( 'Settings', null );
-		Registry::getInstance()->set( 'version', null );
-		Registry::getInstance()->set( 'name', null );
-		Registry::getInstance()->set( 'rss_url', null );
+		Registry::getInstance()->set( RegistryKeys::SETTINGS, null );
+		Registry::getInstance()->set( RegistryKeys::APP_VERSION, null );
+		Registry::getInstance()->set( RegistryKeys::APP_NAME, null );
+		Registry::getInstance()->set( RegistryKeys::APP_RSS_URL, null );
 		Registry::getInstance()->set( 'DtoFactoryService', null );
 
 		// Clean up temp version file
@@ -68,7 +69,7 @@ class CalendarTest extends TestCase
 	{
 		$mockEventRepository = $this->createMock( IEventRepository::class );
 		$mockCategoryRepository = $this->createMock( IEventCategoryRepository::class );
-		$mockSettingManager = Registry::getInstance()->get( 'Settings' );
+		$mockSettingManager = Registry::getInstance()->get( RegistryKeys::SETTINGS );
 		$mockSessionManager = $this->createMock( \Neuron\Cms\Auth\SessionManager::class );
 
 		$controller = new Calendar( $this->_mockApp, $mockSettingManager, $mockSessionManager, $mockEventRepository, $mockCategoryRepository );
@@ -84,7 +85,7 @@ class CalendarTest extends TestCase
 		$mockEventRepository->method( 'getByDateRange' )->willReturn( [] );
 		$mockCategoryRepository->method( 'all' )->willReturn( [] );
 
-		$mockSettingManager = Registry::getInstance()->get( 'Settings' );
+		$mockSettingManager = Registry::getInstance()->get( RegistryKeys::SETTINGS );
 		$mockSessionManager = $this->createMock( \Neuron\Cms\Auth\SessionManager::class );
 
 		$controller = $this->getMockBuilder( Calendar::class )
@@ -135,7 +136,7 @@ class CalendarTest extends TestCase
 
 		$mockCategoryRepository->method( 'all' )->willReturn( [] );
 
-		$mockSettingManager = Registry::getInstance()->get( 'Settings' );
+		$mockSettingManager = Registry::getInstance()->get( RegistryKeys::SETTINGS );
 		$mockSessionManager = $this->createMock( \Neuron\Cms\Auth\SessionManager::class );
 
 		$controller = $this->getMockBuilder( Calendar::class )
@@ -177,7 +178,7 @@ class CalendarTest extends TestCase
 
 		$mockCategoryRepository = $this->createMock( IEventCategoryRepository::class );
 
-		$mockSettingManager = Registry::getInstance()->get( 'Settings' );
+		$mockSettingManager = Registry::getInstance()->get( RegistryKeys::SETTINGS );
 		$mockSessionManager = $this->createMock( \Neuron\Cms\Auth\SessionManager::class );
 
 		$controller = $this->getMockBuilder( Calendar::class )
@@ -213,7 +214,7 @@ class CalendarTest extends TestCase
 
 		$mockCategoryRepository = $this->createMock( IEventCategoryRepository::class );
 
-		$mockSettingManager = Registry::getInstance()->get( 'Settings' );
+		$mockSettingManager = Registry::getInstance()->get( RegistryKeys::SETTINGS );
 		$mockSessionManager = $this->createMock( \Neuron\Cms\Auth\SessionManager::class );
 
 		$controller = new Calendar( $this->_mockApp, $mockSettingManager, $mockSessionManager, $mockEventRepository, $mockCategoryRepository );
@@ -236,7 +237,7 @@ class CalendarTest extends TestCase
 
 		$mockCategoryRepository = $this->createMock( IEventCategoryRepository::class );
 
-		$mockSettingManager = Registry::getInstance()->get( 'Settings' );
+		$mockSettingManager = Registry::getInstance()->get( RegistryKeys::SETTINGS );
 		$mockSessionManager = $this->createMock( \Neuron\Cms\Auth\SessionManager::class );
 
 		$controller = new Calendar( $this->_mockApp, $mockSettingManager, $mockSessionManager, $mockEventRepository, $mockCategoryRepository );
@@ -261,7 +262,7 @@ class CalendarTest extends TestCase
 		$mockCategoryRepository = $this->createMock( IEventCategoryRepository::class );
 		$mockCategoryRepository->method( 'findBySlug' )->with( 'workshops' )->willReturn( $mockCategory );
 
-		$mockSettingManager = Registry::getInstance()->get( 'Settings' );
+		$mockSettingManager = Registry::getInstance()->get( RegistryKeys::SETTINGS );
 		$mockSessionManager = $this->createMock( \Neuron\Cms\Auth\SessionManager::class );
 
 		$controller = $this->getMockBuilder( Calendar::class )
@@ -297,7 +298,7 @@ class CalendarTest extends TestCase
 		$mockCategoryRepository = $this->createMock( IEventCategoryRepository::class );
 		$mockCategoryRepository->method( 'findBySlug' )->willReturn( null );
 
-		$mockSettingManager = Registry::getInstance()->get( 'Settings' );
+		$mockSettingManager = Registry::getInstance()->get( RegistryKeys::SETTINGS );
 		$mockSessionManager = $this->createMock( \Neuron\Cms\Auth\SessionManager::class );
 
 		$controller = new Calendar( $this->_mockApp, $mockSettingManager, $mockSessionManager, $mockEventRepository, $mockCategoryRepository );
@@ -323,7 +324,7 @@ class CalendarTest extends TestCase
 
 		$mockCategoryRepository = $this->createMock( IEventCategoryRepository::class );
 
-		$mockSettingManager = Registry::getInstance()->get( 'Settings' );
+		$mockSettingManager = Registry::getInstance()->get( RegistryKeys::SETTINGS );
 		$mockSessionManager = $this->createMock( \Neuron\Cms\Auth\SessionManager::class );
 
 		$controller = $this->getMockBuilder( Calendar::class )

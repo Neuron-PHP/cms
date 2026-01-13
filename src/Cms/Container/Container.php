@@ -3,6 +3,7 @@
 namespace Neuron\Cms\Container;
 
 use DI\ContainerBuilder;
+use Neuron\Core\Registry\RegistryKeys;
 use Neuron\Data\Settings\SettingManager;
 use Neuron\Patterns\Registry;
 use Neuron\Patterns\Container\IContainer;
@@ -60,7 +61,7 @@ class Container
 		self::$instance = new ContainerAdapter( $psr11Container );
 
 		// Store container in Registry for backward compatibility
-		Registry::getInstance()->set( 'Container', self::$instance );
+		Registry::getInstance()->set( RegistryKeys::CONTAINER, self::$instance );
 
 		return self::$instance;
 	}

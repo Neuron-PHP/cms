@@ -1,15 +1,27 @@
 <?php
 namespace Neuron\Cms\Controllers;
+
 use Neuron\Data\Factories;
+use League\CommonMark\Exception\CommonMarkException;
+use Neuron\Cms\Auth\SessionManager;
+use Neuron\Core\Exceptions\NotFound;
+use Neuron\Core\Registry\RegistryKeys;
+use Neuron\Data\Objects\Version;
+use Neuron\Data\Settings\SettingManager;
+use Neuron\Mvc\IMvcApplication;
+use Neuron\Mvc\Controllers\Base;
+use Neuron\Mvc\Requests\Request;
+use Neuron\Mvc\Responses\HttpResponseStatus;
+use Neuron\Patterns\Registry;
 
 /**
  * Base content controller for the Neuron CMS framework.
- * 
+ *
  * This abstract controller provides foundational functionality for all CMS
  * content types, including site configuration management, version tracking,
  * SEO metadata handling, and common rendering operations. It serves as the
  * base class for specialized controllers like Blog, Pages, and other content types.
- * 
+ *
  * Key features:
  * - Site configuration and metadata management
  * - Version information loading and tracking
@@ -19,14 +31,14 @@ use Neuron\Data\Factories;
  * - Markdown rendering support for content pages
  * - SEO-friendly title and description handling
  * - Base URL and canonical URL management
- * 
+ *
  * The controller automatically loads site settings from the registry and
  * configures common CMS properties, making it easy for derived controllers
  * to focus on content-specific functionality while inheriting consistent
  * site-wide configuration and behavior.
- * 
+ *
  * @package Neuron\Cms
- * 
+ *
  * @example
  * ```php
  * // Custom content controller extending base
@@ -47,17 +59,6 @@ use Neuron\Data\Factories;
  * }
  * ```
  */
-
-use League\CommonMark\Exception\CommonMarkException;
-use Neuron\Cms\Auth\SessionManager;
-use Neuron\Core\Exceptions\NotFound;
-use Neuron\Data\Objects\Version;
-use Neuron\Data\Settings\SettingManager;
-use Neuron\Mvc\IMvcApplication;
-use Neuron\Mvc\Controllers\Base;
-use Neuron\Mvc\Requests\Request;
-use Neuron\Mvc\Responses\HttpResponseStatus;
-use Neuron\Patterns\Registry;
 
 class Content extends Base
 {
@@ -98,15 +99,15 @@ class Content extends Base
 		{
 			$versionFilePath = $this->_settings->get( 'paths', 'version_file' ) ?? "../.version.json";
 			$version = Factories\Version::fromFile( $versionFilePath );
-			Registry::getInstance()->set( 'version', 'v'.$version->getAsString() );
+			Registry::getInstance()->set( RegistryKeys::APP_VERSION, 'v'.$version->getAsString() );
 		}
 		catch( \Exception $e )
 		{
-			Registry::getInstance()->set( 'version', 'v0.0.0' );
+			Registry::getInstance()->set( RegistryKeys::APP_VERSION, 'v0.0.0' );
 		}
 
-		Registry::getInstance()->set( 'name', $this->getName() );
-		Registry::getInstance()->set( 'rss_url', $this->getRssUrl() );
+		Registry::getInstance()->set( RegistryKeys::APP_NAME, $this->getName() );
+		Registry::getInstance()->set( RegistryKeys::APP_RSS_URL, $this->getRssUrl() );
 	}
 
 	/**

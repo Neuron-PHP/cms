@@ -8,6 +8,7 @@
  * @package Neuron\Cms\Auth
  */
 
+use Neuron\Core\Registry\RegistryKeys;
 use Neuron\Patterns\Registry;
 use Neuron\Cms\Models\User;
 
@@ -18,7 +19,7 @@ if( !function_exists( 'auth' ) )
 	 */
 	function auth(): ?User
 	{
-		return Registry::getInstance()->get( 'Auth.User' );
+		return Registry::getInstance()->get( RegistryKeys::AUTH_USER );
 	}
 }
 
@@ -40,7 +41,7 @@ if( !function_exists( 'user_id' ) )
 	 */
 	function user_id(): ?int
 	{
-		return Registry::getInstance()->get( 'Auth.UserId' );
+		return Registry::getInstance()->get( RegistryKeys::AUTH_USER_ID );
 	}
 }
 
@@ -121,7 +122,7 @@ if( !function_exists( 'csrf_token' ) )
 	 */
 	function csrf_token(): string
 	{
-		return Registry::getInstance()->get( 'Auth.CsrfToken' ) ?? '';
+		return Registry::getInstance()->get( RegistryKeys::AUTH_CSRF_TOKEN ) ?? '';
 	}
 }
 

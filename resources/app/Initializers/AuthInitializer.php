@@ -6,6 +6,7 @@ use Neuron\Cms\Services\Auth\Authentication;
 use Neuron\Cms\Services\Auth\CsrfToken;
 use Neuron\Cms\Auth\Filters\AuthenticationFilter;
 use Neuron\Cms\Auth\Filters\CsrfFilter;
+use Neuron\Core\Registry\RegistryKeys;
 use Neuron\Log\Log;
 use Neuron\Patterns\Registry;
 use Neuron\Patterns\IRunnable;
@@ -27,7 +28,7 @@ class AuthInitializer implements IRunnable
 	public function run( array $argv = [] ): mixed
 	{
 		// Get Settings from Registry
-		$settings = Registry::getInstance()->get( 'Settings' );
+		$settings = Registry::getInstance()->get( RegistryKeys::SETTINGS );
 
 		if( !$settings || !$settings instanceof \Neuron\Data\Settings\SettingManager )
 		{
@@ -36,7 +37,7 @@ class AuthInitializer implements IRunnable
 		}
 
 		// Get Application from Registry
-		$app = Registry::getInstance()->get( 'App' );
+		$app = Registry::getInstance()->get( RegistryKeys::APP );
 
 		if( !$app || !$app instanceof \Neuron\Mvc\Application )
 		{
@@ -45,7 +46,7 @@ class AuthInitializer implements IRunnable
 		}
 
 		// Get Container from Registry
-		$container = Registry::getInstance()->get( 'Container' );
+		$container = Registry::getInstance()->get( RegistryKeys::CONTAINER );
 
 		if( !$container || !$container instanceof IContainer )
 		{
@@ -82,8 +83,8 @@ class AuthInitializer implements IRunnable
 				$app->getRouter()->registerFilter( 'csrf', $csrfFilter );
 
 				// Store services in Registry for backward compatibility
-				Registry::getInstance()->set( 'Authentication', $authentication );
-				Registry::getInstance()->set( 'CsrfToken', $csrfToken );
+				Registry::getInstance()->set( RegistryKeys::AUTHENTICATION_LEGACY, $authentication );
+				Registry::getInstance()->set( RegistryKeys::CSRF_TOKEN_LEGACY, $csrfToken );
 			}
 		}
 		catch( \Exception $e )

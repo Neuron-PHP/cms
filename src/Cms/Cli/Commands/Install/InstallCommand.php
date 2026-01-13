@@ -2,6 +2,7 @@
 
 namespace Neuron\Cms\Cli\Commands\Install;
 
+use Neuron\Core\Registry\RegistryKeys;
 use Neuron\Cli\Commands\Command;
 use Neuron\Cms\Models\User;
 use Neuron\Cms\Models\EventCategory;
@@ -1551,7 +1552,7 @@ class InstallCommand extends Command
 		try
 		{
 			// Get the CLI application from the registry
-			$app = Registry::getInstance()->get( 'cli.application' );
+			$app = Registry::getInstance()->get( RegistryKeys::CLI_APPLICATION_LEGACY );
 
 			if( !$app )
 			{
@@ -1635,7 +1636,7 @@ class InstallCommand extends Command
 
 		try
 		{
-			$settings = Registry::getInstance()->get( 'Settings' );
+			$settings = Registry::getInstance()->get( RegistryKeys::SETTINGS );
 
 			if( !$settings )
 			{
@@ -1727,7 +1728,7 @@ class InstallCommand extends Command
 	{
 		try
 		{
-			$settings = Registry::getInstance()->get( 'Settings' );
+			$settings = Registry::getInstance()->get( RegistryKeys::SETTINGS );
 
 			if( !$settings )
 			{

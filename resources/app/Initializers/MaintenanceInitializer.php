@@ -2,6 +2,7 @@
 
 namespace App\Initializers;
 
+use Neuron\Core\Registry\RegistryKeys;
 use Neuron\Cms\Maintenance\MaintenanceManager;
 use Neuron\Cms\Maintenance\MaintenanceFilter;
 use Neuron\Cms\Maintenance\MaintenanceConfig;
@@ -26,7 +27,7 @@ class MaintenanceInitializer implements IRunnable
 	public function run( array $argv = [] ): mixed
 	{
 		// Get Application from Registry
-		$app = Registry::getInstance()->get( 'App' );
+		$app = Registry::getInstance()->get( RegistryKeys::APP );
 
 		if( !$app || !$app instanceof \Neuron\Mvc\Application )
 		{
@@ -42,7 +43,7 @@ class MaintenanceInitializer implements IRunnable
 
 		// Get configuration (if available)
 		$config = null;
-		$settings = Registry::getInstance()->get( 'Settings' );
+		$settings = Registry::getInstance()->get( RegistryKeys::SETTINGS );
 
 		if( $settings && $settings instanceof \Neuron\Data\Settings\SettingManager )
 		{
@@ -69,11 +70,11 @@ class MaintenanceInitializer implements IRunnable
 		$app->getRouter()->addFilter( 'maintenance' );
 
 		// Store manager in registry for CLI commands
-		Registry::getInstance()->set( 'maintenance.manager', $manager );
+		Registry::getInstance()->set( RegistryKeys::MAINTENANCE_MANAGER_LEGACY, $manager );
 
 		if( $config )
 		{
-			Registry::getInstance()->set( 'maintenance.config', $config );
+			Registry::getInstance()->set( RegistryKeys::MAINTENANCE_CONFIG_LEGACY, $config );
 		}
 
 		return null;

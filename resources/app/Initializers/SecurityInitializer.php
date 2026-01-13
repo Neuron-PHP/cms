@@ -2,6 +2,7 @@
 
 namespace App\Initializers;
 
+use Neuron\Core\Registry\RegistryKeys;
 use Neuron\Cms\Auth\Filters\SecurityHeadersFilter;
 use Neuron\Log\Log;
 use Neuron\Patterns\Registry;
@@ -23,7 +24,7 @@ class SecurityInitializer implements IRunnable
 	public function run( array $argv = [] ): mixed
 	{
 		// Get Application from Registry
-		$app = Registry::getInstance()->get( 'App' );
+		$app = Registry::getInstance()->get( RegistryKeys::APP );
 
 		if( !$app || !$app instanceof \Neuron\Mvc\Application )
 		{
@@ -32,7 +33,7 @@ class SecurityInitializer implements IRunnable
 		}
 
 		// Get Settings from Registry for custom configuration
-		$settings = Registry::getInstance()->get( 'Settings' );
+		$settings = Registry::getInstance()->get( RegistryKeys::SETTINGS );
 
 		// Load custom security header configuration if available
 		$config = [];

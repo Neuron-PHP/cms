@@ -3,6 +3,7 @@
 namespace Tests\Cms;
 
 use DateTimeImmutable;
+use Neuron\Core\Registry\RegistryKeys;
 use Neuron\Cms\Controllers\Blog;
 use Neuron\Cms\Models\Post;
 use Neuron\Cms\Models\Category;
@@ -43,7 +44,7 @@ class BlogControllerTest extends TestCase
 
 		// Store original registry values
 		$this->originalRegistry = [
-			'Settings' => Registry::getInstance()->get( 'Settings' ),
+			'Settings' => Registry::getInstance()->get( RegistryKeys::SETTINGS ),
 			'Base.Path' => Registry::getInstance()->get( 'Base.Path' ),
 			'Views.Path' => Registry::getInstance()->get( 'Views.Path' ),
 			'ViewDataProvider' => Registry::getInstance()->get( 'ViewDataProvider' )
@@ -78,7 +79,7 @@ class BlogControllerTest extends TestCase
 		// Wrap in SettingManager
 		$settingManager = new SettingManager( $settings );
 
-		Registry::getInstance()->set( 'Settings', $settingManager );
+		Registry::getInstance()->set( RegistryKeys::SETTINGS, $settingManager );
 
 		// Set paths for views - point to CMS component's resources
 		Registry::getInstance()->set( 'Base.Path', __DIR__ . '/../../..' );
@@ -269,7 +270,7 @@ class BlogControllerTest extends TestCase
 	private function createBlogWithInjectedRepositories(): Blog
 	{
 		// Get SettingManager and SessionManager from Registry for the test
-		$settingManager = Registry::getInstance()->get( 'Settings' );
+		$settingManager = Registry::getInstance()->get( RegistryKeys::SETTINGS );
 		$sessionManager = $this->createMock( \Neuron\Cms\Auth\SessionManager::class );
 		$renderer = $this->createMock( \Neuron\Cms\Services\Content\EditorJsRenderer::class );
 

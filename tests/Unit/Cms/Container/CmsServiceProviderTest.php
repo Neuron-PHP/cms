@@ -3,6 +3,7 @@
 namespace Tests\Cms\Container;
 
 use Neuron\Cms\Auth\PasswordHasher;
+use Neuron\Core\Registry\RegistryKeys;
 use Neuron\Cms\Services\Security\ResendVerificationThrottle;
 use Neuron\Cms\Auth\SessionManager;
 use Neuron\Cms\Container\CmsServiceProvider;
@@ -64,7 +65,7 @@ class CmsServiceProviderTest extends TestCase
 			});
 
 		$mockEmitter = $this->createMock( Emitter::class );
-		Registry::getInstance()->set( 'Settings', $mockSettings );
+		Registry::getInstance()->set( RegistryKeys::SETTINGS, $mockSettings );
 		Registry::getInstance()->set( 'EventEmitter', $mockEmitter );
 
 		// Create real container for testing using ContainerAdapter

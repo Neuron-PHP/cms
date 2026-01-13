@@ -2,6 +2,7 @@
 
 namespace Neuron\Cms\Cli\Commands\User;
 
+use Neuron\Core\Registry\RegistryKeys;
 use Neuron\Cli\Commands\Command;
 use Neuron\Cms\Repositories\DatabaseUserRepository;
 use Neuron\Patterns\Registry;
@@ -119,7 +120,7 @@ class DeleteCommand extends Command
 	{
 		try
 		{
-			$settings = Registry::getInstance()->get( 'Settings' );
+			$settings = Registry::getInstance()->get( RegistryKeys::SETTINGS );
 
 			if( !$settings )
 			{
