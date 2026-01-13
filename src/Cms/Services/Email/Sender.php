@@ -136,8 +136,9 @@ class Sender
 	 */
 	public function send(): bool
 	{
-		// Check for test mode
-		if( $this->_settings && $this->_settings->get( 'email', 'test_mode' ) )
+		// Check for test mode or log driver
+		$driver = $this->_settings?->get( 'mail', 'driver' );
+		if( ($this->_settings && $this->_settings->get( 'email', 'test_mode' )) || $driver === 'log' )
 		{
 			return $this->logEmail();
 		}
@@ -203,15 +204,15 @@ class Sender
 	{
 		$mail = new PHPMailer( true );
 
-		// Get config
-		$driver = $this->_settings?->get( 'email', 'driver' ) ?? 'mail';
-		$host = $this->_settings?->get( 'email', 'host' ) ?? '';
-		$port = $this->_settings?->get( 'email', 'port' ) ?? 587;
-		$username = $this->_settings?->get( 'email', 'username' ) ?? '';
-		$password = $this->_settings?->get( 'email', 'password' ) ?? '';
-		$encryption = $this->_settings?->get( 'email', 'encryption' ) ?? 'tls';
-		$fromAddress = $this->_settings?->get( 'email', 'from_address' ) ?? 'noreply@example.com';
-		$fromName = $this->_settings?->get( 'email', 'from_name' ) ?? 'Neuron CMS';
+		// Get config - check both 'mail' and 'email' for backward compatibility
+		$driver = $this->_settings?->get( 'mail', 'driver' ) ?? $this->_settings?->get( 'email', 'driver' ) ?? 'mail';
+		$host = $this->_settings?->get( 'mail', 'host' ) ?? $this->_settings?->get( 'email', 'host' ) ?? '';
+		$port = $this->_settings?->get( 'mail', 'port' ) ?? $this->_settings?->get( 'email', 'port' ) ?? 587;
+		$username = $this->_settings?->get( 'mail', 'username' ) ?? $this->_settings?->get( 'email', 'username' ) ?? '';
+		$password = $this->_settings?->get( 'mail', 'password' ) ?? $this->_settings?->get( 'email', 'password' ) ?? '';
+		$encryption = $this->_settings?->get( 'mail', 'encryption' ) ?? $this->_settings?->get( 'email', 'encryption' ) ?? 'tls';
+		$fromAddress = $this->_settings?->get( 'mail', 'from_address' ) ?? $this->_settings?->get( 'email', 'from_address' ) ?? 'noreply@example.com';
+		$fromName = $this->_settings?->get( 'mail', 'from_name' ) ?? $this->_settings?->get( 'email', 'from_name' ) ?? 'Neuron CMS';
 
 		// Configure based on driver
 		if( $driver === 'smtp' )

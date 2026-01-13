@@ -2,6 +2,7 @@
 
 namespace Neuron\Cms\Container\Factories;
 
+use Neuron\Core\Registry\RegistryKeys;
 use Neuron\Cms\Services\Auth\EmailVerifier;
 use Neuron\Cms\Repositories\IEmailVerificationTokenRepository;
 use Neuron\Cms\Repositories\IUserRepository;
@@ -29,7 +30,7 @@ class EmailVerifierFactory
 		$settings = $container->get( SettingManager::class );
 
 		// Get base path and verification URL from settings/registry
-		$basePath = Registry::getInstance()->get( 'Base.Path' ) ?? getcwd();
+		$basePath = Registry::getInstance()->get( RegistryKeys::BASE_PATH ) ?? getcwd();
 		$siteUrl = $settings->get( 'site', 'url' ) ?? 'http://localhost';
 		$verificationUrl = rtrim( $siteUrl, '/' ) . '/verify';
 

@@ -3,6 +3,7 @@
 namespace Tests\Cms\Auth;
 
 use Neuron\Cms\Services\Auth\Authentication;
+use Neuron\Core\Registry\RegistryKeys;
 use Neuron\Cms\Auth\Filters\MemberAuthenticationFilter;
 use Neuron\Cms\Models\User;
 use Neuron\Routing\RouteMap;
@@ -83,8 +84,8 @@ class MemberAuthenticationFilterTest extends TestCase
 		$this->_filter->pre( $this->_route );
 
 		// Verify user was set in Registry
-		$this->assertEquals( $user, Registry::getInstance()->get( 'Auth.User' ) );
-		$this->assertEquals( 1, Registry::getInstance()->get( 'Auth.UserId' ) );
+		$this->assertEquals( $user, Registry::getInstance()->get( RegistryKeys::AUTH_USER ) );
+		$this->assertEquals( 1, Registry::getInstance()->get( RegistryKeys::AUTH_USER_ID ) );
 	}
 
 	/**
@@ -152,6 +153,6 @@ class MemberAuthenticationFilterTest extends TestCase
 		$filter->pre( $this->_route );
 
 		// Verify user was set in Registry
-		$this->assertEquals( $user, Registry::getInstance()->get( 'Auth.User' ) );
+		$this->assertEquals( $user, Registry::getInstance()->get( RegistryKeys::AUTH_USER ) );
 	}
 }

@@ -20,26 +20,26 @@ class ConnectionFactoryUrlSecretsTest extends TestCase
 	 */
 	public function testUrlFromSecretsWithoutAdapterConflict(): void
 	{
-		// Simulate what happens at runtime:
-		// 1. Public config has NO database section (after our fix)
-		// 2. Secrets config has the URL
+		// Simulate what happens at runtime with merged config
+		// (SettingManagerFactory does deep merge at boot time)
+		$mergedConfig = [
+			'site' => [
+				'name' => 'Test Site'
+			],
+			'database' => [
+				'url' => 'mysql://user:pass@localhost:3306/testdb'
+			]
+		];
 
-		$publicSource = new Memory();
-		// Public config has other settings but NO database section
-		$publicSource->set( 'site', 'name', 'Test Site' );
-
-		$secretsSource = new Memory();
-		// Secrets has the database URL
-		$secretsSource->set( 'database', 'url', 'mysql://user:pass@localhost:3306/testdb' );
-
-		// Combine sources like the real app does
-		$settings = new SettingManager( $publicSource );
-		$settings->addSource( $secretsSource, 'secrets' );
+		$source = new Memory( $mergedConfig );
+		$settings = new SettingManager();
+		$settings->setSource( $source );
 
 		// Get the merged database config
 		$config = $settings->getSection( 'database' );
 
 		// Should only have URL, no adapter key to cause conflicts
+		$this->assertIsArray( $config, 'Database config should be an array' );
 		$this->assertArrayHasKey( 'url', $config );
 		$this->assertArrayNotHasKey( 'adapter', $config );
 		$this->assertCount( 1, $config, 'Database config should only contain URL' );

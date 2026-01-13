@@ -2,6 +2,7 @@
 
 namespace Neuron\Cms\Container\Factories;
 
+use Neuron\Core\Registry\RegistryKeys;
 use Neuron\Cms\Services\Auth\PasswordResetter;
 use Neuron\Cms\Repositories\IPasswordResetTokenRepository;
 use Neuron\Cms\Repositories\IUserRepository;
@@ -31,7 +32,7 @@ class PasswordResetterFactory
 		$settings = $container->get( SettingManager::class );
 
 		// Get base path and site URL from settings
-		$basePath = Registry::getInstance()->get( 'Base.Path' ) ?? getcwd();
+		$basePath = Registry::getInstance()->get( RegistryKeys::BASE_PATH ) ?? getcwd();
 		$siteUrl = $settings->get( 'site', 'url' ) ?? 'http://localhost';
 		$resetUrl = rtrim( $siteUrl, '/' ) . '/reset-password';
 

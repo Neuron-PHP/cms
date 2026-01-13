@@ -39,18 +39,22 @@ class ConnectionFactoryIntegrationTest extends TestCase
 	 */
 	public function testUrlFromSecretsWithOtherPublicConfig(): void
 	{
-		// Public config has site settings but NO database section
-		$publicSource = new Memory();
-		$publicSource->set( 'site', 'name', 'My Site' );
-		$publicSource->set( 'cache', 'enabled', true );
+		// Merge config like SettingManagerFactory does at boot time
+		$mergedConfig = [
+			'site' => [
+				'name' => 'My Site'
+			],
+			'cache' => [
+				'enabled' => true
+			],
+			'database' => [
+				'url' => 'sqlite::memory:'
+			]
+		];
 
-		// Secrets has database URL
-		$secretsSource = new Memory();
-		$secretsSource->set( 'database', 'url', 'sqlite::memory:' );
-
-		// Combine like the real app does
-		$settings = new SettingManager( $publicSource );
-		$settings->addSource( $secretsSource, 'secrets' );
+		$source = new Memory( $mergedConfig );
+		$settings = new SettingManager();
+		$settings->setSource( $source );
 
 		// Should create connection successfully
 		$pdo = ConnectionFactory::createFromSettings( $settings );

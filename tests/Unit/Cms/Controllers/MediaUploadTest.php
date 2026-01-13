@@ -3,6 +3,7 @@
 namespace Tests\Cms\Controllers;
 
 use PHPUnit\Framework\TestCase;
+use Neuron\Core\Registry\RegistryKeys;
 use Neuron\Cms\Controllers\Admin\Media;
 use Neuron\Cms\Models\User;
 use Neuron\Cms\Services\Media\CloudinaryUploader;
@@ -34,7 +35,7 @@ class MediaUploadTest extends TestCase
 
 		// Store original registry values
 		$this->_originalRegistry = [
-			'Settings' => Registry::getInstance()->get( 'Settings' )
+			'Settings' => Registry::getInstance()->get( RegistryKeys::SETTINGS )
 		];
 
 		// Set up Settings
@@ -47,7 +48,7 @@ class MediaUploadTest extends TestCase
 		$memory->set( 'cloudinary', 'allowed_formats', ['jpg', 'png', 'gif', 'webp'] );
 
 		$this->_settings = new SettingManager( $memory );
-		Registry::getInstance()->set( 'Settings', $this->_settings );
+		Registry::getInstance()->set( RegistryKeys::SETTINGS, $this->_settings );
 	}
 
 	protected function tearDown(): void
@@ -68,12 +69,12 @@ class MediaUploadTest extends TestCase
 	{
 		// Set up user in registry
 		$user = $this->createMock( User::class );
-		Registry::getInstance()->set( 'Auth.User', $user );
+		Registry::getInstance()->set( RegistryKeys::AUTH_USER, $user );
 
 		// Ensure $_FILES is empty
 		$_FILES = [];
 
-		$mockSettingManager = Registry::getInstance()->get( 'Settings' );
+		$mockSettingManager = Registry::getInstance()->get( RegistryKeys::SETTINGS );
 		$mockSessionManager = $this->createMock( \Neuron\Cms\Auth\SessionManager::class );
 		$mockCloudinaryUploader = $this->createMock( CloudinaryUploader::class );
 		$mockMediaValidator = $this->createMock( MediaValidator::class );
@@ -96,7 +97,7 @@ class MediaUploadTest extends TestCase
 		// Set up user in registry
 		$user = $this->createMock( User::class );
 		$user->method( 'getId' )->willReturn( 1 );
-		Registry::getInstance()->set( 'Auth.User', $user );
+		Registry::getInstance()->set( RegistryKeys::AUTH_USER, $user );
 
 		// Set up invalid file in $_FILES
 		$_FILES['image'] = [
@@ -107,7 +108,7 @@ class MediaUploadTest extends TestCase
 			'size' => 1000
 		];
 
-		$mockSettingManager = Registry::getInstance()->get( 'Settings' );
+		$mockSettingManager = Registry::getInstance()->get( RegistryKeys::SETTINGS );
 		$mockSessionManager = $this->createMock( \Neuron\Cms\Auth\SessionManager::class );
 		$mockCloudinaryUploader = $this->createMock( CloudinaryUploader::class );
 		$mockMediaValidator = $this->createMock( MediaValidator::class );
@@ -140,12 +141,12 @@ class MediaUploadTest extends TestCase
 	{
 		// Set up user in registry
 		$user = $this->createMock( User::class );
-		Registry::getInstance()->set( 'Auth.User', $user );
+		Registry::getInstance()->set( RegistryKeys::AUTH_USER, $user );
 
 		// Ensure $_FILES is empty
 		$_FILES = [];
 
-		$mockSettingManager = Registry::getInstance()->get( 'Settings' );
+		$mockSettingManager = Registry::getInstance()->get( RegistryKeys::SETTINGS );
 		$mockSessionManager = $this->createMock( \Neuron\Cms\Auth\SessionManager::class );
 		$mockCloudinaryUploader = $this->createMock( CloudinaryUploader::class );
 		$mockMediaValidator = $this->createMock( MediaValidator::class );
@@ -168,7 +169,7 @@ class MediaUploadTest extends TestCase
 		// Set up user in registry
 		$user = $this->createMock( User::class );
 		$user->method( 'getId' )->willReturn( 1 );
-		Registry::getInstance()->set( 'Auth.User', $user );
+		Registry::getInstance()->set( RegistryKeys::AUTH_USER, $user );
 
 		// Set up invalid file in $_FILES
 		$_FILES['image'] = [
@@ -179,7 +180,7 @@ class MediaUploadTest extends TestCase
 			'size' => 1000
 		];
 
-		$mockSettingManager = Registry::getInstance()->get( 'Settings' );
+		$mockSettingManager = Registry::getInstance()->get( RegistryKeys::SETTINGS );
 		$mockSessionManager = $this->createMock( \Neuron\Cms\Auth\SessionManager::class );
 		$mockCloudinaryUploader = $this->createMock( CloudinaryUploader::class );
 		$mockMediaValidator = $this->createMock( MediaValidator::class );
@@ -213,7 +214,7 @@ class MediaUploadTest extends TestCase
 		// Set up user in registry
 		$user = $this->createMock( User::class );
 		$user->method( 'getId' )->willReturn( 1 );
-		Registry::getInstance()->set( 'Auth.User', $user );
+		Registry::getInstance()->set( RegistryKeys::AUTH_USER, $user );
 
 		// Set up valid file in $_FILES
 		$_FILES['image'] = [
@@ -224,7 +225,7 @@ class MediaUploadTest extends TestCase
 			'size' => 1000
 		];
 
-		$mockSettingManager = Registry::getInstance()->get( 'Settings' );
+		$mockSettingManager = Registry::getInstance()->get( RegistryKeys::SETTINGS );
 		$mockSessionManager = $this->createMock( \Neuron\Cms\Auth\SessionManager::class );
 		$mockCloudinaryUploader = $this->createMock( CloudinaryUploader::class );
 		$mockMediaValidator = $this->createMock( MediaValidator::class );
@@ -276,7 +277,7 @@ class MediaUploadTest extends TestCase
 		// Set up user in registry
 		$user = $this->createMock( User::class );
 		$user->method( 'getId' )->willReturn( 1 );
-		Registry::getInstance()->set( 'Auth.User', $user );
+		Registry::getInstance()->set( RegistryKeys::AUTH_USER, $user );
 
 		// Set up valid file in $_FILES
 		$_FILES['image'] = [
@@ -287,7 +288,7 @@ class MediaUploadTest extends TestCase
 			'size' => 2000
 		];
 
-		$mockSettingManager = Registry::getInstance()->get( 'Settings' );
+		$mockSettingManager = Registry::getInstance()->get( RegistryKeys::SETTINGS );
 		$mockSessionManager = $this->createMock( \Neuron\Cms\Auth\SessionManager::class );
 		$mockCloudinaryUploader = $this->createMock( CloudinaryUploader::class );
 		$mockMediaValidator = $this->createMock( MediaValidator::class );
@@ -339,7 +340,7 @@ class MediaUploadTest extends TestCase
 		// Set up user in registry
 		$user = $this->createMock( User::class );
 		$user->method( 'getId' )->willReturn( 1 );
-		Registry::getInstance()->set( 'Auth.User', $user );
+		Registry::getInstance()->set( RegistryKeys::AUTH_USER, $user );
 
 		// Set up valid file in $_FILES
 		$_FILES['image'] = [
@@ -350,7 +351,7 @@ class MediaUploadTest extends TestCase
 			'size' => 1000
 		];
 
-		$mockSettingManager = Registry::getInstance()->get( 'Settings' );
+		$mockSettingManager = Registry::getInstance()->get( RegistryKeys::SETTINGS );
 		$mockSessionManager = $this->createMock( \Neuron\Cms\Auth\SessionManager::class );
 		$mockCloudinaryUploader = $this->createMock( CloudinaryUploader::class );
 		$mockMediaValidator = $this->createMock( MediaValidator::class );
@@ -392,7 +393,7 @@ class MediaUploadTest extends TestCase
 		// Set up user in registry
 		$user = $this->createMock( User::class );
 		$user->method( 'getId' )->willReturn( 1 );
-		Registry::getInstance()->set( 'Auth.User', $user );
+		Registry::getInstance()->set( RegistryKeys::AUTH_USER, $user );
 
 		// Set up valid file in $_FILES
 		$_FILES['image'] = [
@@ -403,7 +404,7 @@ class MediaUploadTest extends TestCase
 			'size' => 1000
 		];
 
-		$mockSettingManager = Registry::getInstance()->get( 'Settings' );
+		$mockSettingManager = Registry::getInstance()->get( RegistryKeys::SETTINGS );
 		$mockSessionManager = $this->createMock( \Neuron\Cms\Auth\SessionManager::class );
 		$mockCloudinaryUploader = $this->createMock( CloudinaryUploader::class );
 		$mockMediaValidator = $this->createMock( MediaValidator::class );

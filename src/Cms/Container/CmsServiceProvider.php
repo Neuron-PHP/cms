@@ -30,6 +30,7 @@ use Neuron\Cms\Services\Security\ResendVerificationThrottle;
 use Neuron\Cms\Services\Content\EditorJsRenderer;
 use Neuron\Cms\Services\Content\ShortcodeParser;
 use Neuron\Cms\Services\Widget\WidgetRenderer;
+use Neuron\Core\Registry\RegistryKeys;
 use Neuron\Data\Settings\SettingManager;
 use Neuron\Events\Emitter;
 use Neuron\Routing\IIpResolver;
@@ -164,7 +165,7 @@ class CmsServiceProvider implements IServiceProvider
 		$container->singleton( SettingManager::class, function( $c ) {
 			// During transition, still get from Registry
 			// Later: create directly
-			return Registry::getInstance()->get( 'Settings' );
+			return Registry::getInstance()->get( RegistryKeys::SETTINGS );
 		});
 
 		// Event emitter - transition from Registry

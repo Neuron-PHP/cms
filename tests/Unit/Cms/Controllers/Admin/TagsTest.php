@@ -3,6 +3,7 @@
 namespace Tests\Cms\Controllers\Admin;
 
 use Neuron\Cms\Controllers\Admin\Tags;
+use Neuron\Core\Registry\RegistryKeys;
 use Neuron\Cms\Repositories\ITagRepository;
 use Neuron\Cms\Services\SlugGenerator;
 use Neuron\Cms\Auth\SessionManager;
@@ -30,7 +31,7 @@ class TagsTest extends TestCase
 		// Setup mock settings for Registry
 		$mockSettings = $this->createMock( SettingManager::class );
 		$mockSettings->method( 'get' )->willReturn( 'Test Site' );
-		Registry::getInstance()->set( 'Settings', $mockSettings );
+		Registry::getInstance()->set( RegistryKeys::SETTINGS, $mockSettings );
 
 		// Setup container to return mocks
 		$this->mockContainer
@@ -49,7 +50,7 @@ class TagsTest extends TestCase
 
 	public function testConstructorWithAllDependencies(): void
 	{
-		$mockSettingManager = Registry::getInstance()->get( 'Settings' );
+		$mockSettingManager = Registry::getInstance()->get( RegistryKeys::SETTINGS );
 		$mockSessionManager = $this->createMock( SessionManager::class );
 
 		$controller = new Tags(

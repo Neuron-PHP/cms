@@ -3,6 +3,7 @@
 namespace Tests\Cms\Controllers;
 
 use PHPUnit\Framework\TestCase;
+use Neuron\Core\Registry\RegistryKeys;
 use Neuron\Cms\Controllers\Admin\EventCategories;
 use Neuron\Cms\Models\EventCategory;
 use Neuron\Cms\Models\User;
@@ -37,10 +38,10 @@ class EventCategoriesControllerTest extends TestCase
 
 		// Store original registry values
 		$this->_originalRegistry = [
-			'Auth.User' => Registry::getInstance()->get( 'Auth.User' ),
-			'Auth.UserId' => Registry::getInstance()->get( 'Auth.UserId' ),
-			'Auth.CsrfToken' => Registry::getInstance()->get( 'Auth.CsrfToken' ),
-			'Settings' => Registry::getInstance()->get( 'Settings' )
+			'Auth.User' => Registry::getInstance()->get( RegistryKeys::AUTH_USER ),
+			'Auth.UserId' => Registry::getInstance()->get( RegistryKeys::AUTH_USER_ID ),
+			'Auth.CsrfToken' => Registry::getInstance()->get( RegistryKeys::AUTH_CSRF_TOKEN ),
+			'Settings' => Registry::getInstance()->get( RegistryKeys::SETTINGS )
 		];
 
 		// Mock Settings for Content controller parent class
@@ -56,7 +57,7 @@ class EventCategoriesControllerTest extends TestCase
 			];
 			return $defaults[$section][$key] ?? null;
 		});
-		Registry::getInstance()->set( 'Settings', $settings );
+		Registry::getInstance()->set( RegistryKeys::SETTINGS, $settings );
 	}
 
 	protected function tearDown(): void
@@ -75,7 +76,7 @@ class EventCategoriesControllerTest extends TestCase
 		// Set up authenticated user
 		$user = $this->createMock( User::class );
 		$user->method( 'getId' )->willReturn( 1 );
-		Registry::getInstance()->set( 'Auth.User', $user );
+		Registry::getInstance()->set( RegistryKeys::AUTH_USER, $user );
 
 		// Mock repository to return categories
 		$repository = $this->createMock( DatabaseEventCategoryRepository::class );
@@ -90,7 +91,7 @@ class EventCategoriesControllerTest extends TestCase
 		$creator = $this->createMock( Creator::class );
 		$updater = $this->createMock( Updater::class );
 
-		$mockSettingManager = Registry::getInstance()->get( 'Settings' );
+		$mockSettingManager = Registry::getInstance()->get( RegistryKeys::SETTINGS );
 		$mockSessionManager = $this->createMock( \Neuron\Cms\Auth\SessionManager::class );
 
 		$controller = $this->getMockBuilder( EventCategories::class )
@@ -138,13 +139,13 @@ class EventCategoriesControllerTest extends TestCase
 		// Set up authenticated user
 		$user = $this->createMock( User::class );
 		$user->method( 'getId' )->willReturn( 1 );
-		Registry::getInstance()->set( 'Auth.User', $user );
+		Registry::getInstance()->set( RegistryKeys::AUTH_USER, $user );
 
 		$repository = $this->createMock( DatabaseEventCategoryRepository::class );
 		$creator = $this->createMock( Creator::class );
 		$updater = $this->createMock( Updater::class );
 
-		$mockSettingManager = Registry::getInstance()->get( 'Settings' );
+		$mockSettingManager = Registry::getInstance()->get( RegistryKeys::SETTINGS );
 		$mockSessionManager = $this->createMock( \Neuron\Cms\Auth\SessionManager::class );
 
 		$controller = $this->getMockBuilder( EventCategories::class )

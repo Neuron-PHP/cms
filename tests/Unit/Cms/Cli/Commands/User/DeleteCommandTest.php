@@ -3,6 +3,7 @@
 namespace Tests\Unit\Cms\Cli\Commands\User;
 
 use Neuron\Cli\Console\Output;
+use Neuron\Core\Registry\RegistryKeys;
 use Neuron\Cms\Cli\Commands\User\DeleteCommand;
 use Neuron\Cms\Models\User;
 use Neuron\Cms\Repositories\DatabaseUserRepository;
@@ -32,7 +33,7 @@ class DeleteCommandTest extends TestCase
 			if( $section === 'database' && $key === 'name' ) return ':memory:';
 			return null;
 		});
-		Registry::getInstance()->set( 'Settings', $mockSettings );
+		Registry::getInstance()->set( RegistryKeys::SETTINGS, $mockSettings );
 	}
 
 	protected function tearDown(): void

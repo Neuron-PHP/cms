@@ -1,6 +1,7 @@
 <?php
 namespace Neuron\Cms;
 
+use Neuron\Core\Registry\RegistryKeys;
 use Neuron\Data\Settings\SettingManager;
 use Neuron\Mvc\Application;
 use Neuron\Mvc\IMvcApplication;
@@ -78,7 +79,7 @@ function boot( string $configPath ) : Application
 			$container = new \Neuron\Cms\Container\ContainerAdapter( $psr11Container );
 
 			// Register the minimal container in Registry
-			Registry::getInstance()->set( 'Container', $container );
+			Registry::getInstance()->set( RegistryKeys::CONTAINER, $container );
 
 			// Set on app
 			$app->setContainer( $container );

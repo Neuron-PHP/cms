@@ -3,6 +3,7 @@
 namespace Tests\Cms\Controllers\Member;
 
 use Neuron\Cms\Controllers\Member\Dashboard;
+use Neuron\Core\Registry\RegistryKeys;
 use Neuron\Data\Settings\Source\Memory;
 use Neuron\Data\Settings\SettingManager;
 use Neuron\Mvc\IMvcApplication;
@@ -41,15 +42,15 @@ class DashboardTest extends TestCase
 		$settings->set( 'paths', 'version_file', $this->_versionFilePath );
 
 		$this->_settingManager = new SettingManager( $settings );
-		Registry::getInstance()->set( 'Settings', $this->_settingManager );
+		Registry::getInstance()->set( RegistryKeys::SETTINGS, $this->_settingManager );
 	}
 
 	protected function tearDown(): void
 	{
-		Registry::getInstance()->set( 'Settings', null );
-		Registry::getInstance()->set( 'version', null );
-		Registry::getInstance()->set( 'name', null );
-		Registry::getInstance()->set( 'rss_url', null );
+		Registry::getInstance()->set( RegistryKeys::SETTINGS, null );
+		Registry::getInstance()->set( RegistryKeys::APP_VERSION, null );
+		Registry::getInstance()->set( RegistryKeys::APP_NAME, null );
+		Registry::getInstance()->set( RegistryKeys::APP_RSS_URL, null );
 		Registry::getInstance()->set( 'DtoFactoryService', null );
 		Registry::getInstance()->set( 'CsrfToken', null );
 
@@ -64,7 +65,7 @@ class DashboardTest extends TestCase
 
 	public function testConstructor(): void
 	{
-		$mockSettingManager = Registry::getInstance()->get( 'Settings' );
+		$mockSettingManager = Registry::getInstance()->get( RegistryKeys::SETTINGS );
 		$mockSessionManager = $this->createMock( \Neuron\Cms\Auth\SessionManager::class );
 
 		$controller = new Dashboard( $this->_mockApp, $mockSettingManager, $mockSessionManager );
@@ -74,7 +75,7 @@ class DashboardTest extends TestCase
 	public function testConstructorWithApplication(): void
 	{
 		$mockApp = $this->createMock( IMvcApplication::class );
-		$mockSettingManager = Registry::getInstance()->get( 'Settings' );
+		$mockSettingManager = Registry::getInstance()->get( RegistryKeys::SETTINGS );
 		$mockSessionManager = $this->createMock( \Neuron\Cms\Auth\SessionManager::class );
 
 		$controller = new Dashboard( $this->_mockApp, $mockSettingManager, $mockSessionManager );
@@ -87,7 +88,7 @@ class DashboardTest extends TestCase
 	 */
 	public function testIndexRendersView(): void
 	{
-		$mockSettingManager = Registry::getInstance()->get( 'Settings' );
+		$mockSettingManager = Registry::getInstance()->get( RegistryKeys::SETTINGS );
 		$mockSessionManager = $this->createMock( \Neuron\Cms\Auth\SessionManager::class );
 
 		// Mock the controller to test view() method chain

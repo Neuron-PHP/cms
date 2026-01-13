@@ -3,6 +3,7 @@
 namespace Tests\Cms;
 
 use Neuron\Cms\Controllers\Content;
+use Neuron\Core\Registry\RegistryKeys;
 use Neuron\Data\Settings\Source\Memory;
 use Neuron\Data\Settings\SettingManager;
 use Neuron\Mvc\IMvcApplication;
@@ -53,16 +54,16 @@ class ContentControllerTest extends TestCase
 		$this->mockSessionManager = $this->createMock( \Neuron\Cms\Auth\SessionManager::class );
 
 		// Store settings in registry for backward compatibility
-		Registry::getInstance()->set( 'Settings', $this->_settingManager );
+		Registry::getInstance()->set( RegistryKeys::SETTINGS, $this->_settingManager );
 	}
 	
 	protected function tearDown(): void
 	{
 		// Clear registry
-		Registry::getInstance()->set( 'Settings', null );
-		Registry::getInstance()->set( 'version', null );
-		Registry::getInstance()->set( 'name', null );
-		Registry::getInstance()->set( 'rss_url', null );
+		Registry::getInstance()->set( RegistryKeys::SETTINGS, null );
+		Registry::getInstance()->set( RegistryKeys::APP_VERSION, null );
+		Registry::getInstance()->set( RegistryKeys::APP_NAME, null );
+		Registry::getInstance()->set( RegistryKeys::APP_RSS_URL, null );
 		Registry::getInstance()->set( 'DtoFactoryService', null );
 
 		// Clean up temp version file
@@ -89,9 +90,9 @@ class ContentControllerTest extends TestCase
 		$this->assertEquals( 'http://test.com/blog/rss', $controller->getRssUrl() );
 
 		// Check registry values were set
-		$this->assertEquals( 'v1.2.3', Registry::getInstance()->get( 'version' ) );
-		$this->assertEquals( 'Test Site', Registry::getInstance()->get( 'name' ) );
-		$this->assertEquals( 'http://test.com/blog/rss', Registry::getInstance()->get( 'rss_url' ) );
+		$this->assertEquals( 'v1.2.3', Registry::getInstance()->get( RegistryKeys::APP_VERSION ) );
+		$this->assertEquals( 'Test Site', Registry::getInstance()->get( RegistryKeys::APP_NAME ) );
+		$this->assertEquals( 'http://test.com/blog/rss', Registry::getInstance()->get( RegistryKeys::APP_RSS_URL ) );
 	}
 	
 	/**

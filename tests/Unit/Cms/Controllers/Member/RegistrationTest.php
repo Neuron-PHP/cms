@@ -8,6 +8,7 @@ use Neuron\Cms\Services\Auth\IEmailVerifier;
 use Neuron\Cms\Services\Security\ResendVerificationThrottle;
 use Neuron\Cms\Auth\SessionManager;
 use Neuron\Cms\Services\Dto\DtoFactoryService;
+use Neuron\Core\Registry\RegistryKeys;
 use Neuron\Data\Settings\SettingManager;
 use Neuron\Mvc\Application;
 use Neuron\Mvc\Requests\Request;
@@ -78,7 +79,7 @@ class RegistrationTest extends TestCase
 		// IMPORTANT: Mock the getSource() method to return the mock setting source
 		$this->mockSettings->method( 'getSource' )->willReturn( $mockSettingSource );
 
-		Registry::getInstance()->set( 'Settings', $this->mockSettings );
+		Registry::getInstance()->set( RegistryKeys::SETTINGS, $this->mockSettings );
 		Registry::getInstance()->set( 'Views.Path', __DIR__ . '/../../../../../resources/views' );
 
 		// Setup ViewDataProvider for global view variables

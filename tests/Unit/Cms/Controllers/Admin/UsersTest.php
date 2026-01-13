@@ -3,6 +3,7 @@
 namespace Tests\Cms\Controllers\Admin;
 
 use Neuron\Cms\Controllers\Admin\Users;
+use Neuron\Core\Registry\RegistryKeys;
 use Neuron\Cms\Repositories\IUserRepository;
 use Neuron\Cms\Services\User\IUserCreator;
 use Neuron\Cms\Services\User\IUserUpdater;
@@ -32,7 +33,7 @@ class UsersTest extends TestCase
 		// Setup mock settings for Registry
 		$mockSettings = $this->createMock( SettingManager::class );
 		$mockSettings->method( 'get' )->willReturn( 'Test Site' );
-		Registry::getInstance()->set( 'Settings', $mockSettings );
+		Registry::getInstance()->set( RegistryKeys::SETTINGS, $mockSettings );
 
 		// Setup container to return mocks
 		$this->mockContainer
@@ -53,7 +54,7 @@ class UsersTest extends TestCase
 
 	public function testConstructorWithAllDependencies(): void
 	{
-		$mockSettings = Registry::getInstance()->get( 'Settings' );
+		$mockSettings = Registry::getInstance()->get( RegistryKeys::SETTINGS );
 		$mockSessionManager = $this->createMock( SessionManager::class );
 
 		$controller = new Users(
@@ -80,7 +81,7 @@ class UsersTest extends TestCase
 	{
 		$this->expectException( \TypeError::class );
 
-		$mockSettings = Registry::getInstance()->get( 'Settings' );
+		$mockSettings = Registry::getInstance()->get( RegistryKeys::SETTINGS );
 		$mockSessionManager = $this->createMock( SessionManager::class );
 
 		new Users(
