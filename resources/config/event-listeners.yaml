@@ -1,4 +1,35 @@
 events:
+  # HTTP Error Events (from MVC layer)
+  http.401:
+    class: 'Neuron\Mvc\Events\Http401'
+    listeners: []
+  http.403:
+    class: 'Neuron\Mvc\Events\Http403'
+    listeners: []
+  http.404:
+    class: 'Neuron\Mvc\Events\Http404'
+    listeners: []
+  http.500:
+    class: 'Neuron\Mvc\Events\Http500'
+    listeners: []
+
+  # Request and Response Events (from MVC layer)
+  request.received:
+    class: 'Neuron\Mvc\Events\RequestReceivedEvent'
+    listeners: []
+  rate.limit.exceeded:
+    class: 'Neuron\Mvc\Events\RateLimitExceededEvent'
+    listeners: []
+
+  # View Cache Events (from MVC layer)
+  view.cache.hit:
+    class: 'Neuron\Mvc\Events\ViewCacheHitEvent'
+    listeners: []
+  view.cache.miss:
+    class: 'Neuron\Mvc\Events\ViewCacheMissEvent'
+    listeners: []
+
+  # CMS User Events
   user.created:
     class: 'Neuron\Cms\Events\UserCreatedEvent'
     listeners:
@@ -12,6 +43,8 @@ events:
     class: 'Neuron\Cms\Events\UserDeletedEvent'
     listeners:
       - 'Neuron\Cms\Listeners\LogUserActivityListener'
+
+  # CMS Post Events
   post.created:
     class: 'Neuron\Cms\Events\PostCreatedEvent'
     listeners: []
@@ -23,6 +56,8 @@ events:
     class: 'Neuron\Cms\Events\PostDeletedEvent'
     listeners:
       - 'Neuron\Cms\Listeners\ClearCacheListener'
+
+  # CMS Category Events
   category.created:
     class: 'Neuron\Cms\Events\CategoryCreatedEvent'
     listeners: []
