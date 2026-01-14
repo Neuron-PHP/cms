@@ -1,11 +1,10 @@
 ## 0.8.41
+* Fix for site name in error pages.
 
 ## 0.8.40 2026-01-13
 
 ## 0.8.39 2026-01-12
-
 ## 0.8.38 2026-01-12
-
 ## 0.8.37 2026-01-12
 * Added url rewriting through routing.yaml
 

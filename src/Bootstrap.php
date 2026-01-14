@@ -50,6 +50,34 @@ function boot( string $configPath ) : Application
 	// 5. Environment variables (highest priority)
 	$app = \Neuron\Mvc\boot( $configPath );
 
+	// Load site configuration into Registry for global access
+	// This ensures site name, version, etc. are available even when no Content controller runs
+	$settings = $app->getSettingManager();
+	$registry = Registry::getInstance();
+
+	// Site name
+	$siteName = $settings->get( 'site', 'name' ) ?? 'Neuron CMS';
+	$registry->set( RegistryKeys::APP_NAME, $siteName );
+
+	// Site URL
+	$siteUrl = $settings->get( 'site', 'url' ) ?? '';
+	if( $siteUrl )
+	{
+		$registry->set( RegistryKeys::APP_RSS_URL, $siteUrl . '/blog/rss' );
+	}
+
+	// Application version
+	try
+	{
+		$versionFilePath = $settings->get( 'paths', 'version_file' ) ?? "../.version.json";
+		$version = \Neuron\Data\Factories\Version::fromFile( $versionFilePath );
+		$registry->set( RegistryKeys::APP_VERSION, 'v' . $version->getAsString() );
+	}
+	catch( \Exception $e )
+	{
+		$registry->set( RegistryKeys::APP_VERSION, 'v0.0.0' );
+	}
+
 	// Build and register CMS DI container
 	try
 	{
