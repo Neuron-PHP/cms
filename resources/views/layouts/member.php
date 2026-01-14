@@ -63,7 +63,7 @@
 		</div>
 		<?php endif; ?>
 		<div class="text-center small">
-			Powered by <a href="https://neuronphp.com" target="_blank">NeuronPHP</a>.
+			Powered by <a href="https://neuronphp.com" target="_blank">NeuronCMS</a>.
 		</div>
 	</footer>
 </div>
