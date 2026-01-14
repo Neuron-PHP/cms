@@ -2,6 +2,7 @@
 
 namespace App\Initializers;
 
+use Neuron\Core\Registry\RegistryKeys;
 use Neuron\Mvc\Views\ViewDataProvider;
 use Neuron\Patterns\IRunnable;
 use Neuron\Patterns\Registry;
@@ -39,14 +40,14 @@ class ViewDataInitializer implements IRunnable
 		$registry = Registry::getInstance();
 		$provider = ViewDataProvider::getInstance();
 
-		// Site name - pulled from Registry 'name' key
+		// Site name - pulled from Registry using APP_NAME constant
 		$provider->share( 'siteName', function() use ( $registry ) {
-			return $registry->get( 'name' ) ?? 'Neuron CMS';
+			return $registry->get( RegistryKeys::APP_NAME ) ?? 'Neuron CMS';
 		});
 
 		// Application version
 		$provider->share( 'appVersion', function() use ( $registry ) {
-			return $registry->get( 'version' ) ?? '';
+			return $registry->get( RegistryKeys::APP_VERSION ) ?? '';
 		});
 
 		// Current authenticated user
