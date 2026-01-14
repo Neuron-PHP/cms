@@ -1,3 +1,5 @@
+## 0.8.42
+
 ## 0.8.41 2026-01-14
 * Fix for site name in error pages.
 
