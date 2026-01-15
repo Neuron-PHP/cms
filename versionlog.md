@@ -1,4 +1,5 @@
 ## 0.8.43
+* Centralized flash keys.
 
 ## 0.8.42 2026-01-15
 * Adds cms:user:reset-passwordLe command to reset a user's password from the CLI.
