@@ -608,4 +608,58 @@ class AuthenticationTest extends TestCase
 
 		$this->assertFalse($result);
 	}
+
+	/**
+	 * Test attempt() with email address instead of username
+	 */
+	public function testAttemptWithEmailAddress(): void
+	{
+		$user = $this->createTestUser('emailuser', 'TestPass123');
+
+		// Attempt login using email instead of username
+		$result = $this->_authentication->attempt($user->getEmail(), 'TestPass123');
+
+		$this->assertTrue($result);
+		$this->assertTrue($this->_authentication->check());
+		$this->assertEquals('emailuser', $this->_authentication->user()->getUsername());
+	}
+
+	/**
+	 * Test attempt() with username still works
+	 */
+	public function testAttemptWithUsernameStillWorks(): void
+	{
+		$this->createTestUser('usernametest', 'TestPass123');
+
+		// Attempt login using username (traditional method)
+		$result = $this->_authentication->attempt('usernametest', 'TestPass123');
+
+		$this->assertTrue($result);
+		$this->assertTrue($this->_authentication->check());
+		$this->assertEquals('usernametest', $this->_authentication->user()->getUsername());
+	}
+
+	/**
+	 * Test attempt() with nonexistent email returns false
+	 */
+	public function testAttemptWithNonexistentEmail(): void
+	{
+		$result = $this->_authentication->attempt('nobody@example.com', 'TestPass123');
+
+		$this->assertFalse($result);
+		$this->assertFalse($this->_authentication->check());
+	}
+
+	/**
+	 * Test attempt() with incorrect password using email
+	 */
+	public function testAttemptWithEmailAndIncorrectPassword(): void
+	{
+		$user = $this->createTestUser('emailpasstest', 'TestPass123');
+
+		$result = $this->_authentication->attempt($user->getEmail(), 'WrongPassword');
+
+		$this->assertFalse($result);
+		$this->assertFalse($this->_authentication->check());
+	}
 }

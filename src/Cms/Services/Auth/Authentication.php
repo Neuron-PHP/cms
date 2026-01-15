@@ -38,10 +38,24 @@ class Authentication implements IAuthenticationService
 
 	/**
 	 * Attempt to authenticate a user
+	 *
+	 * Accepts either username or email address for login.
+	 * Automatically detects if the input is an email and searches accordingly.
 	 */
 	public function attempt( string $username, string $password, bool $remember = false ): bool
 	{
-		$user = $this->_userRepository->findByUsername( $username );
+		// Detect if input is an email address
+		$isEmail = filter_var( $username, FILTER_VALIDATE_EMAIL );
+
+		// Try to find user by email or username
+		if( $isEmail )
+		{
+			$user = $this->_userRepository->findByEmail( $username );
+		}
+		else
+		{
+			$user = $this->_userRepository->findByUsername( $username );
+		}
 
 		if( !$user )
 		{

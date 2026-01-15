@@ -114,8 +114,8 @@ class Media extends Content
 					'resources' => $result['resources'],
 					'nextCursor' => $result['next_cursor'],
 					'totalCount' => $result['total_count'],
-					FlashMessageType::SUCCESS->value => $sessionManager->getFlash( FlashMessageType::SUCCESS->value ),
-					FlashMessageType::ERROR->value => $sessionManager->getFlash( FlashMessageType::ERROR->value )
+					FlashMessageType::SUCCESS->viewKey() => $sessionManager->getFlash( FlashMessageType::SUCCESS->value ),
+					FlashMessageType::ERROR->viewKey() => $sessionManager->getFlash( FlashMessageType::ERROR->value )
 				])
 				->render( 'index', 'admin' );
 		}
@@ -135,8 +135,8 @@ class Media extends Content
 					'resources' => [],
 					'nextCursor' => null,
 					'totalCount' => 0,
-					FlashMessageType::SUCCESS->value => $sessionManager->getFlash( FlashMessageType::SUCCESS->value ),
-					FlashMessageType::ERROR->value => 'Failed to load media library. Please try again.'
+					FlashMessageType::SUCCESS->viewKey() => $sessionManager->getFlash( FlashMessageType::SUCCESS->value ),
+					FlashMessageType::ERROR->viewKey() => 'Failed to load media library. Please try again.'
 				])
 				->render( 'index', 'admin' );
 		}

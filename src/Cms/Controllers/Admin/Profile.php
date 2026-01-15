@@ -82,8 +82,8 @@ class Profile extends Content
 			->withCsrfToken()
 			->with([
 				'groupedTimezones' => $groupedTimezones,
-				FlashMessageType::SUCCESS->value => $this->getSessionManager()->getFlash( FlashMessageType::SUCCESS->value ),
-				FlashMessageType::ERROR->value => $this->getSessionManager()->getFlash( FlashMessageType::ERROR->value )
+				FlashMessageType::SUCCESS->viewKey() => $this->getSessionManager()->getFlash( FlashMessageType::SUCCESS->value ),
+				FlashMessageType::ERROR->viewKey() => $this->getSessionManager()->getFlash( FlashMessageType::ERROR->value )
 			])
 			->render( 'edit', 'admin' );
 	}

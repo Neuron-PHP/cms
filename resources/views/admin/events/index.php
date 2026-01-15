@@ -4,16 +4,16 @@
 		<a href="<?= route_path('admin_events_create') ?>" class="btn btn-primary">Create New Event</a>
 	</div>
 
-	<?php if($success): ?>
+	<?php if($Success): ?>
 		<div class="alert alert-success alert-dismissible fade show" role="alert">
-			<?= htmlspecialchars($success) ?>
+			<?= htmlspecialchars($Success) ?>
 			<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
 		</div>
 	<?php endif; ?>
 
-	<?php if($error): ?>
+	<?php if($Error): ?>
 		<div class="alert alert-danger alert-dismissible fade show" role="alert">
-			<?= htmlspecialchars($error) ?>
+			<?= htmlspecialchars($Error) ?>
 			<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
 		</div>
 	<?php endif; ?>
