@@ -122,7 +122,7 @@ class ResetPasswordCommand extends Command
 		}
 
 		// Get new password
-		$password = $this->prompt( "\nEnter new password (min 8 characters): " );
+		$password = $this->secret( "\nEnter new password (min 8 characters): " );
 
 		if( strlen( $password ) < 8 )
 		{
@@ -145,7 +145,7 @@ class ResetPasswordCommand extends Command
 		}
 
 		// Confirm password
-		$confirmPassword = $this->prompt( "Confirm new password: " );
+		$confirmPassword = $this->secret( "Confirm new password: " );
 
 		if( $password !== $confirmPassword )
 		{
