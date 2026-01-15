@@ -3,7 +3,7 @@
 
 system:
   timezone: UTC
-  base_path: resources
+  base_path: .
   routes_path: resources/config
 
 logging:
