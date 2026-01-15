@@ -36,3 +36,7 @@ coverage*
 .env.*.local
 
 var/
+
+# Runtime directories (logs, cache, temporary files)
+storage/
+resources/storage/

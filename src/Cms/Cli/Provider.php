@@ -45,6 +45,11 @@ class Provider
 			'Neuron\\Cms\\Cli\\Commands\\User\\DeleteCommand'
 		);
 
+		$registry->register(
+			'cms:user:reset-password',
+			'Neuron\\Cms\\Cli\\Commands\\User\\ResetPasswordCommand'
+		);
+
 		// Maintenance mode commands
 		$registry->register(
 			'cms:maintenance:enable',
