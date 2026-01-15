@@ -629,7 +629,7 @@ class AuthenticationTest extends TestCase
 	 */
 	public function testAttemptWithUsernameStillWorks(): void
 	{
-		$user = $this->createTestUser('usernametest', 'TestPass123');
+		$this->createTestUser('usernametest', 'TestPass123');
 
 		// Attempt login using username (traditional method)
 		$result = $this->_authentication->attempt('usernametest', 'TestPass123');
