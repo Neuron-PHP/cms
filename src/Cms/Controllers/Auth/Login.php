@@ -75,8 +75,8 @@ class Login extends Content
 			->title( 'Login' )
 			->description( 'Login to ' . $this->getName() )
 			->withCsrfToken()
-			->with( FlashMessageType::ERROR->value, $this->getSessionManager()->getFlash( 'error' ) )
-			->with( FlashMessageType::SUCCESS->value, $this->getSessionManager()->getFlash( 'success' ) )
+			->with( FlashMessageType::ERROR->viewKey(), $this->getSessionManager()->getFlash( FlashMessageType::ERROR->value ) )
+			->with( FlashMessageType::SUCCESS->viewKey(), $this->getSessionManager()->getFlash( FlashMessageType::SUCCESS->value ) )
 			->with( 'RedirectUrl', $redirectUrl )
 			->render( 'login', 'auth' );
 	}
