@@ -1,4 +1,4 @@
-## 0.8.42
+## 0.8.42 2026-01-15
 * Adds cms:user:reset-passwordLe command to reset a user's password from the CLI.
 
 ## 0.8.41 2026-01-14
