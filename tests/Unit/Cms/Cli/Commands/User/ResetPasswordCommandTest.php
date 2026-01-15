@@ -503,4 +503,65 @@ YAML;
 		// Should fail with exit code 1
 		$this->assertEquals(1, $exitCode);
 	}
+
+	public function testExecuteLoadsPasswordPolicyFromConfiguration(): void
+	{
+		$this->inputReader->addResponses([
+			'testuser',
+			'yes',
+			'abcdefghij', // 10 chars, all lowercase, no numbers - should fail with default policy
+			'abcdefghij'
+		]);
+
+		$user = new User();
+		$user->setId(1);
+		$user->setUsername('testuser');
+		$user->setEmail('test@example.com');
+		$user->setRole('admin');
+
+		$repository = $this->createMock(DatabaseUserRepository::class);
+		$repository->expects($this->once())
+			->method('findByUsername')
+			->willReturn($user);
+
+		// Mock settings to return custom password policy
+		$settings = $this->createMock(SettingManager::class);
+		$settings->method('get')
+			->willReturnCallback(function(...$args) {
+				if ($args === ['auth', 'passwords', 'min_length']) {
+					return 8;
+				}
+				if ($args === ['auth', 'passwords', 'require_uppercase']) {
+					return true; // Require uppercase - should fail
+				}
+				if ($args === ['auth', 'passwords', 'require_lowercase']) {
+					return true;
+				}
+				if ($args === ['auth', 'passwords', 'require_numbers']) {
+					return true; // Require numbers - should fail
+				}
+				if ($args === ['auth', 'passwords', 'require_special_chars']) {
+					return false;
+				}
+				return null;
+			});
+
+		Registry::getInstance()->set('Settings', $settings);
+
+		$command = $this->getMockBuilder(ResetPasswordCommand::class)
+			->onlyMethods(['getUserRepository'])
+			->getMock();
+		$command->expects($this->once())
+			->method('getUserRepository')
+			->willReturn($repository);
+
+		$command->setInput($this->input);
+		$command->setOutput($this->output);
+		$command->setInputReader($this->inputReader);
+
+		$exitCode = $command->execute();
+
+		// Should fail because password doesn't meet configured requirements
+		$this->assertEquals(1, $exitCode);
+	}
 }
