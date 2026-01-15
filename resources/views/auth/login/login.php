@@ -3,13 +3,13 @@
 	<input type="hidden" name="redirect_url" value="<?= htmlspecialchars($RedirectUrl ?? route_path('admin_dashboard')) ?>">
 
 	<div class="mb-3">
-		<label for="username" class="form-label">Username</label>
+		<label for="username" class="form-label">Username or Email</label>
 		<input
 			type="text"
 			id="username"
 			name="username"
 			class="form-control"
-			placeholder="Enter your username"
+			placeholder="Enter your username or email"
 			required
 			autofocus
 		>

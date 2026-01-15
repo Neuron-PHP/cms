@@ -88,8 +88,8 @@ class Pages extends Content
 			->withCsrfToken()
 			->with([
 				'pages' => $pages,
-				FlashMessageType::SUCCESS->value => $sessionManager->getFlash( FlashMessageType::SUCCESS->value ),
-				FlashMessageType::ERROR->value => $sessionManager->getFlash( FlashMessageType::ERROR->value )
+				FlashMessageType::SUCCESS->viewKey() => $sessionManager->getFlash( FlashMessageType::SUCCESS->value ),
+				FlashMessageType::ERROR->viewKey() => $sessionManager->getFlash( FlashMessageType::ERROR->value )
 			])
 			->render( 'index', 'admin' );
 	}
