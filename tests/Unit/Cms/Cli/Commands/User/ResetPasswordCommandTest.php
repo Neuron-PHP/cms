@@ -458,4 +458,49 @@ YAML;
 		$prompts = $this->inputReader->getPromptHistory();
 		$this->assertCount(3, $prompts);
 	}
+
+	public function testExecuteFailsWhenDatabaseUpdateFails(): void
+	{
+		$this->inputReader->addResponses([
+			'testuser',
+			'yes',
+			'NewSecurePass123!',
+			'NewSecurePass123!'
+		]);
+
+		$user = new User();
+		$user->setId(1);
+		$user->setUsername('testuser');
+		$user->setEmail('test@example.com');
+		$user->setRole('admin');
+
+		$repository = $this->createMock(DatabaseUserRepository::class);
+		$repository->expects($this->once())
+			->method('findByUsername')
+			->willReturn($user);
+
+		// update() returns false, simulating database failure
+		$repository->expects($this->once())
+			->method('update')
+			->willReturn(false);
+
+		$settings = $this->createMock(SettingManager::class);
+		Registry::getInstance()->set('Settings', $settings);
+
+		$command = $this->getMockBuilder(ResetPasswordCommand::class)
+			->onlyMethods(['getUserRepository'])
+			->getMock();
+		$command->expects($this->once())
+			->method('getUserRepository')
+			->willReturn($repository);
+
+		$command->setInput($this->input);
+		$command->setOutput($this->output);
+		$command->setInputReader($this->inputReader);
+
+		$exitCode = $command->execute();
+
+		// Should fail with exit code 1
+		$this->assertEquals(1, $exitCode);
+	}
 }

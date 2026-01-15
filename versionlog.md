@@ -1,5 +1,5 @@
 ## 0.8.42
-* Adds cms:user:password-reset command to reset a user's password from the CLI.
+* Adds cms:user:reset-passwordLe command to reset a user's password from the CLI.
 
 ## 0.8.41 2026-01-14
 * Fix for site name in error pages.

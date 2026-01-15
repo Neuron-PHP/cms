@@ -163,7 +163,13 @@ class ResetPasswordCommand extends Command
 			$user->setFailedLoginAttempts( 0 );
 			$user->setLockedUntil( null );
 
-			$repository->update( $user );
+			$success = $repository->update( $user );
+
+			if( !$success )
+			{
+				$this->output->error( "Failed to update password in database" );
+				return 1;
+			}
 
 			$this->output->success( "Password reset successfully for user: " . $user->getUsername() );
 			$this->output->writeln( "" );
