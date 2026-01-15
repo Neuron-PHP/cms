@@ -168,15 +168,9 @@ class ResetPasswordCommand extends Command
 		}
 
 		// Get new password
-		$password = $this->secret( "\nEnter new password (min 8 characters): " );
+		$password = $this->secret( "\nEnter new password: " );
 
-		if( strlen( $password ) < 8 )
-		{
-			$this->output->error( "Password must be at least 8 characters long!" );
-			return 1;
-		}
-
-		// Validate password
+		// Validate password against configured policy
 		if( !$hasher->meetsRequirements( $password ) )
 		{
 			$this->output->error( "Password does not meet requirements:" );
