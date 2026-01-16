@@ -290,7 +290,7 @@ function updatePublishedAtVisibility() {
 		publishedAtInput.disabled = false;
 	} else {
 		publishedAtWrapper.style.display = 'none';
-		publishedAtInput.value = '';
+		// Don't clear the value - preserve existing published dates from database
 		publishedAtInput.disabled = true;
 	}
 }
