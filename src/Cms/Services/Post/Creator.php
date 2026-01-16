@@ -56,6 +56,7 @@ class Creator implements IPostCreator
 		$slug = $request->slug ?? null;
 		$excerpt = $request->excerpt ?? null;
 		$featuredImage = $request->featured_image ?? null;
+		$publishedAt = $request->published_at ?? null;
 
 		$post = new Post();
 		$post->setTitle( $title );
@@ -67,9 +68,15 @@ class Creator implements IPostCreator
 		$post->setStatus( $status );
 		$post->setCreatedAt( new DateTimeImmutable() );
 
-		// Business rule: auto-set published date for published posts
-		if( $status === ContentStatus::PUBLISHED->value )
+		// Business rule: set published date
+		if( $publishedAt && trim( $publishedAt ) !== '' )
 		{
+			// Use provided published date
+			$post->setPublishedAt( new DateTimeImmutable( $publishedAt ) );
+		}
+		elseif( $status === ContentStatus::PUBLISHED->value )
+		{
+			// Auto-set to now for published posts when not provided
 			$post->setPublishedAt( new DateTimeImmutable() );
 		}
 
