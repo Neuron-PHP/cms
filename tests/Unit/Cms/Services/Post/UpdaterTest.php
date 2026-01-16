@@ -43,7 +43,8 @@ class UpdaterTest extends TestCase
 		string $status,
 		?string $slug = null,
 		?string $excerpt = null,
-		?string $featuredImage = null
+		?string $featuredImage = null,
+		?string $publishedAt = null
 	): Dto
 	{
 		$factory = new Factory( __DIR__ . "/../../../../../src/Cms/Dtos/posts/update-post-request.yaml" );
@@ -65,6 +66,10 @@ class UpdaterTest extends TestCase
 		if( $featuredImage !== null )
 		{
 			$dto->featured_image = $featuredImage;
+		}
+		if( $publishedAt !== null )
+		{
+			$dto->published_at = $publishedAt;
 		}
 
 		return $dto;
@@ -484,5 +489,83 @@ class UpdaterTest extends TestCase
 		);
 
 		$this->_updater->update( $dto );
+	}
+
+	public function testScheduledPostRequiresPublishedDate(): void
+	{
+		$post = new Post();
+		$post->setId( 1 );
+		$post->setTitle( 'Original Title' );
+		$post->setStatus( Post::STATUS_DRAFT );
+
+		$this->_mockPostRepository
+			->expects( $this->once() )
+			->method( 'findById' )
+			->with( 1 )
+			->willReturn( $post );
+
+		$this->expectException( \InvalidArgumentException::class );
+		$this->expectExceptionMessage( 'Scheduled posts require a published date' );
+
+		$dto = $this->createDto(
+			1,
+			'Updated Title',
+			'{"blocks":[{"type":"paragraph","data":{"text":"Body"}}]}',
+			'scheduled',  // Scheduled status
+			null,  // No slug
+			null,  // No excerpt
+			null,  // No featured image
+			null   // No published date - THIS SHOULD THROW EXCEPTION
+		);
+
+		$this->_updater->update( $dto );
+	}
+
+	public function testScheduledPostWithPublishedDateSucceeds(): void
+	{
+		$post = new Post();
+		$post->setId( 1 );
+		$post->setTitle( 'Original Title' );
+		$post->setStatus( Post::STATUS_DRAFT );
+
+		$this->_mockPostRepository
+			->expects( $this->once() )
+			->method( 'findById' )
+			->with( 1 )
+			->willReturn( $post );
+
+		$this->_mockCategoryRepository
+			->method( 'findByIds' )
+			->willReturn( [] );
+
+		$this->_mockTagResolver
+			->method( 'resolveFromString' )
+			->willReturn( [] );
+
+		$publishedDate = '2025-12-31T23:59';
+
+		$this->_mockPostRepository
+			->expects( $this->once() )
+			->method( 'update' )
+			->with( $this->callback( function( Post $post ) {
+				return $post->getStatus() === 'scheduled'
+					&& $post->getPublishedAt() instanceof \DateTimeImmutable;
+			} ) );
+
+		$dto = $this->createDto(
+			1,
+			'Updated Title',
+			'{"blocks":[{"type":"paragraph","data":{"text":"Body"}}]}',
+			'scheduled',
+			null,
+			null,
+			null,
+			$publishedDate
+		);
+
+		$result = $this->_updater->update( $dto );
+
+		$this->assertEquals( 'scheduled', $result->getStatus() );
+		$this->assertInstanceOf( \DateTimeImmutable::class, $result->getPublishedAt() );
 	}
 }

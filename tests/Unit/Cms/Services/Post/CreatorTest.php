@@ -44,7 +44,8 @@ class CreatorTest extends TestCase
 		string $status,
 		?string $slug = null,
 		?string $excerpt = null,
-		?string $featuredImage = null
+		?string $featuredImage = null,
+		?string $publishedAt = null
 	): Dto
 	{
 		$factory = new Factory( __DIR__ . "/../../../../../src/Cms/Dtos/posts/create-post-request.yaml" );
@@ -66,6 +67,10 @@ class CreatorTest extends TestCase
 		if( $featuredImage !== null )
 		{
 			$dto->featured_image = $featuredImage;
+		}
+		if( $publishedAt !== null )
+		{
+			$dto->published_at = $publishedAt;
 		}
 
 		return $dto;
@@ -352,5 +357,62 @@ class CreatorTest extends TestCase
 
 		$this->assertEquals( 'Test excerpt', $result->getExcerpt() );
 		$this->assertEquals( 'image.jpg', $result->getFeaturedImage() );
+	}
+
+	public function testScheduledPostRequiresPublishedDate(): void
+	{
+		$this->expectException( \InvalidArgumentException::class );
+		$this->expectExceptionMessage( 'Scheduled posts require a published date' );
+
+		$dto = $this->createDto(
+			'Scheduled Post',
+			'{"blocks":[{"type":"paragraph","data":{"text":"Body"}}]}',
+			1,
+			'scheduled',  // Scheduled status
+			null,  // No slug
+			null,  // No excerpt
+			null,  // No featured image
+			null   // No published date - THIS SHOULD THROW EXCEPTION
+		);
+
+		$this->_creator->create( $dto );
+	}
+
+	public function testScheduledPostWithPublishedDateSucceeds(): void
+	{
+		$this->_mockCategoryRepository
+			->method( 'findByIds' )
+			->willReturn( [] );
+
+		$this->_mockTagResolver
+			->method( 'resolveFromString' )
+			->willReturn( [] );
+
+		$publishedDate = '2025-12-31T23:59';
+
+		$this->_mockPostRepository
+			->expects( $this->once() )
+			->method( 'create' )
+			->with( $this->callback( function( Post $post ) {
+				return $post->getStatus() === 'scheduled'
+					&& $post->getPublishedAt() instanceof DateTimeImmutable;
+			} ) )
+			->willReturnArgument( 0 );
+
+		$dto = $this->createDto(
+			'Scheduled Post',
+			'{"blocks":[{"type":"paragraph","data":{"text":"Body"}}]}',
+			1,
+			'scheduled',
+			null,
+			null,
+			null,
+			$publishedDate
+		);
+
+		$result = $this->_creator->create( $dto );
+
+		$this->assertEquals( 'scheduled', $result->getStatus() );
+		$this->assertInstanceOf( DateTimeImmutable::class, $result->getPublishedAt() );
 	}
 }

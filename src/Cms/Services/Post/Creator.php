@@ -69,7 +69,16 @@ class Creator implements IPostCreator
 		$post->setCreatedAt( new DateTimeImmutable() );
 
 		// Business rule: set published date
-		if( $publishedAt && trim( $publishedAt ) !== '' )
+		if( $status === ContentStatus::SCHEDULED->value )
+		{
+			// Scheduled posts MUST have a published date
+			if( !$publishedAt || trim( $publishedAt ) === '' )
+			{
+				throw new \InvalidArgumentException( 'Scheduled posts require a published date' );
+			}
+			$post->setPublishedAt( new DateTimeImmutable( $publishedAt ) );
+		}
+		elseif( $publishedAt && trim( $publishedAt ) !== '' )
 		{
 			// Use provided published date
 			$post->setPublishedAt( new DateTimeImmutable( $publishedAt ) );

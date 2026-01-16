@@ -47,7 +47,7 @@
 				<div class="mb-3" id="published-at-wrapper" style="display: <?= in_array($post->getStatus(), ['published', 'scheduled']) ? 'block' : 'none' ?>;">
 					<label for="published_at" class="form-label">Published Date/Time</label>
 					<input type="datetime-local" class="form-control" id="published_at" name="published_at" value="<?= $post->getPublishedAt() ? $post->getPublishedAt()->format('Y-m-d\TH:i') : '' ?>">
-					<small class="form-text text-muted">Leave blank to use current date/time when publishing</small>
+					<small class="form-text text-muted">Required for scheduled posts. Leave blank to use current date/time when publishing.</small>
 				</div>
 
 				<div class="mb-3">
@@ -235,6 +235,15 @@ function initializeEditor() {
 		document.getElementById('post-form').addEventListener('submit', async (e) => {
 			e.preventDefault();
 
+			// Validate scheduled posts have a published date
+			const status = document.getElementById('status').value;
+			const publishedAt = document.getElementById('published_at').value;
+
+			if (status === 'scheduled' && !publishedAt) {
+				alert('Scheduled posts require a published date/time.');
+				return;
+			}
+
 			try {
 				const savedData = await editor.save();
 				console.log('Saved data:', savedData);
@@ -271,14 +280,25 @@ document.getElementById('slug').addEventListener('input', function() {
 });
 
 // Show/hide published date based on status
-document.getElementById('status').addEventListener('change', function() {
+function updatePublishedAtVisibility() {
+	const status = document.getElementById('status').value;
 	const publishedAtWrapper = document.getElementById('published-at-wrapper');
-	if (this.value === 'published' || this.value === 'scheduled') {
+	const publishedAtInput = document.getElementById('published_at');
+
+	if (status === 'published' || status === 'scheduled') {
 		publishedAtWrapper.style.display = 'block';
+		publishedAtInput.disabled = false;
 	} else {
 		publishedAtWrapper.style.display = 'none';
+		publishedAtInput.value = '';
+		publishedAtInput.disabled = true;
 	}
-});
+}
+
+document.getElementById('status').addEventListener('change', updatePublishedAtVisibility);
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', updatePublishedAtVisibility);
 
 // Featured image preview
 document.getElementById('featured_image').addEventListener('change', function() {
