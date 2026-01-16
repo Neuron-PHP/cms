@@ -76,12 +76,12 @@ class Creator implements IPostCreator
 			{
 				throw new \InvalidArgumentException( 'Scheduled posts require a published date' );
 			}
-			$post->setPublishedAt( new DateTimeImmutable( $publishedAt ) );
+			$post->setPublishedAt( $this->parseDateTime( $publishedAt ) );
 		}
 		elseif( $publishedAt && trim( $publishedAt ) !== '' )
 		{
 			// Use provided published date
-			$post->setPublishedAt( new DateTimeImmutable( $publishedAt ) );
+			$post->setPublishedAt( $this->parseDateTime( $publishedAt ) );
 		}
 		elseif( $status === ContentStatus::PUBLISHED->value )
 		{
@@ -112,5 +112,28 @@ class Creator implements IPostCreator
 	private function generateSlug( string $title ): string
 	{
 		return $this->_slugGenerator->generate( $title, 'post' );
+	}
+
+	/**
+	 * Safely parse a datetime string into DateTimeImmutable
+	 *
+	 * @param string $dateTimeString The datetime string to parse
+	 * @return DateTimeImmutable
+	 * @throws \InvalidArgumentException If the datetime string is invalid
+	 */
+	private function parseDateTime( string $dateTimeString ): DateTimeImmutable
+	{
+		try
+		{
+			return new DateTimeImmutable( $dateTimeString );
+		}
+		catch( \DateMalformedStringException | \Exception $e )
+		{
+			throw new \InvalidArgumentException(
+				"Invalid published date format: '{$dateTimeString}'. Please provide a valid datetime.",
+				0,
+				$e
+			);
+		}
 	}
 }

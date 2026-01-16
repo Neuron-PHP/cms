@@ -415,4 +415,61 @@ class CreatorTest extends TestCase
 		$this->assertEquals( 'scheduled', $result->getStatus() );
 		$this->assertInstanceOf( DateTimeImmutable::class, $result->getPublishedAt() );
 	}
+
+	public function testInvalidPublishedDateThrowsException(): void
+	{
+		$this->expectException( \InvalidArgumentException::class );
+		$this->expectExceptionMessage( 'Invalid published date format' );
+
+		$dto = $this->createDto(
+			'Test Post',
+			'{"blocks":[{"type":"paragraph","data":{"text":"Body"}}]}',
+			1,
+			'published',
+			null,
+			null,
+			null,
+			'2024-13-01T10:00'  // Invalid month
+		);
+
+		$this->_creator->create( $dto );
+	}
+
+	public function testInvalidDayThrowsException(): void
+	{
+		$this->expectException( \InvalidArgumentException::class );
+		$this->expectExceptionMessage( 'Invalid published date format' );
+
+		$dto = $this->createDto(
+			'Test Post',
+			'{"blocks":[{"type":"paragraph","data":{"text":"Body"}}]}',
+			1,
+			'published',
+			null,
+			null,
+			null,
+			'2024-01-32T10:00'  // Invalid day
+		);
+
+		$this->_creator->create( $dto );
+	}
+
+	public function testInvalidHourThrowsException(): void
+	{
+		$this->expectException( \InvalidArgumentException::class );
+		$this->expectExceptionMessage( 'Invalid published date format' );
+
+		$dto = $this->createDto(
+			'Test Post',
+			'{"blocks":[{"type":"paragraph","data":{"text":"Body"}}]}',
+			1,
+			'published',
+			null,
+			null,
+			null,
+			'2024-01-01T25:00'  // Invalid hour
+		);
+
+		$this->_creator->create( $dto );
+	}
 }
