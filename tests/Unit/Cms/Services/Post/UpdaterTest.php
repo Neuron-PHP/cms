@@ -658,4 +658,69 @@ class UpdaterTest extends TestCase
 
 		$this->_updater->update( $dto );
 	}
+
+	/**
+	 * Test that when changing a previously published post to draft status,
+	 * the historical published_at date is preserved in the database.
+	 *
+	 * This prevents data loss when users:
+	 * 1. Have a published post with a published_at date
+	 * 2. Change the status back to 'draft' for editing
+	 * 3. Later republish the post
+	 *
+	 * Bug scenario: The published_at date should NOT be cleared when
+	 * changing to draft, so users can see and edit the existing date.
+	 */
+	public function testPreservesPublishedAtWhenChangingPublishedPostToDraft(): void
+	{
+		// Create a post that was previously published
+		$post = new Post();
+		$post->setId( 1 );
+		$post->setTitle( 'Previously Published Post' );
+		$post->setStatus( Post::STATUS_PUBLISHED );
+		$historicalPublishedAt = new \DateTimeImmutable( '2024-06-15 10:30:00' );
+		$post->setPublishedAt( $historicalPublishedAt );
+
+		$this->_mockPostRepository
+			->expects( $this->once() )
+			->method( 'findById' )
+			->with( 1 )
+			->willReturn( $post );
+
+		$this->_mockCategoryRepository
+			->method( 'findByIds' )
+			->willReturn( [] );
+
+		$this->_mockTagResolver
+			->method( 'resolveFromString' )
+			->willReturn( [] );
+
+		$this->_mockPostRepository
+			->expects( $this->once() )
+			->method( 'update' )
+			->with( $this->callback( function( Post $p ) use ( $historicalPublishedAt ) {
+				// Verify the post is now draft AND the published_at is preserved
+				return $p->getStatus() === Post::STATUS_DRAFT
+					&& $p->getPublishedAt() === $historicalPublishedAt;
+			} ) );
+
+		// Update the post to draft status WITHOUT providing a published_at value
+		// (simulating the form submission where the field is hidden for drafts)
+		$dto = $this->createDto(
+			1,
+			'Updated Draft Post',
+			'{"blocks":[{"type":"paragraph","data":{"text":"Updated content"}}]}',
+			Post::STATUS_DRAFT
+			// Note: No published_at provided - field is hidden in UI for drafts
+		);
+
+		$result = $this->_updater->update( $dto );
+
+		// Assert the status changed to draft
+		$this->assertEquals( Post::STATUS_DRAFT, $result->getStatus() );
+
+		// Assert the historical published_at date is preserved (not cleared)
+		$this->assertSame( $historicalPublishedAt, $result->getPublishedAt() );
+		$this->assertEquals( '2024-06-15 10:30:00', $result->getPublishedAt()->format( 'Y-m-d H:i:s' ) );
+	}
 }
