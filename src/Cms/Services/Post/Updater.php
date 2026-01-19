@@ -56,6 +56,7 @@ class Updater implements IPostUpdater
 		$slug = $request->slug ?? null;
 		$excerpt = $request->excerpt ?? null;
 		$featuredImage = $request->featured_image ?? null;
+		$publishedAt = $request->published_at ?? null;
 
 		// Look up the post
 		$post = $this->_postRepository->findById( $id );
@@ -71,9 +72,24 @@ class Updater implements IPostUpdater
 		$post->setFeaturedImage( $featuredImage );
 		$post->setStatus( $status );
 
-		// Business rule: auto-set published date when changing to published status
-		if( $status === ContentStatus::PUBLISHED->value && !$post->getPublishedAt() )
+		// Business rule: set published date
+		if( $status === ContentStatus::SCHEDULED->value )
 		{
+			// Scheduled posts MUST have a published date
+			if( !$publishedAt || trim( $publishedAt ) === '' )
+			{
+				throw new \InvalidArgumentException( 'Scheduled posts require a published date' );
+			}
+			$post->setPublishedAt( $this->parseDateTime( $publishedAt ) );
+		}
+		elseif( $publishedAt && trim( $publishedAt ) !== '' )
+		{
+			// Use provided published date
+			$post->setPublishedAt( $this->parseDateTime( $publishedAt ) );
+		}
+		elseif( $status === ContentStatus::PUBLISHED->value && !$post->getPublishedAt() )
+		{
+			// Auto-set to now for published posts when not provided and not already set
 			$post->setPublishedAt( new \DateTimeImmutable() );
 		}
 
@@ -101,5 +117,28 @@ class Updater implements IPostUpdater
 	private function generateSlug( string $title ): string
 	{
 		return $this->_slugGenerator->generate( $title, 'post' );
+	}
+
+	/**
+	 * Safely parse a datetime string into DateTimeImmutable
+	 *
+	 * @param string $dateTimeString The datetime string to parse
+	 * @return \DateTimeImmutable
+	 * @throws \InvalidArgumentException If the datetime string is invalid
+	 */
+	private function parseDateTime( string $dateTimeString ): \DateTimeImmutable
+	{
+		try
+		{
+			return new \DateTimeImmutable( $dateTimeString );
+		}
+		catch( \DateMalformedStringException | \Exception $e )
+		{
+			throw new \InvalidArgumentException(
+				"Invalid published date format: '{$dateTimeString}'. Please provide a valid datetime.",
+				0,
+				$e
+			);
+		}
 	}
 }
