@@ -43,7 +43,8 @@ class UpdaterTest extends TestCase
 		string $status,
 		?string $slug = null,
 		?string $excerpt = null,
-		?string $featuredImage = null
+		?string $featuredImage = null,
+		?string $publishedAt = null
 	): Dto
 	{
 		$factory = new Factory( __DIR__ . "/../../../../../src/Cms/Dtos/posts/update-post-request.yaml" );
@@ -65,6 +66,10 @@ class UpdaterTest extends TestCase
 		if( $featuredImage !== null )
 		{
 			$dto->featured_image = $featuredImage;
+		}
+		if( $publishedAt !== null )
+		{
+			$dto->published_at = $publishedAt;
 		}
 
 		return $dto;
@@ -484,5 +489,238 @@ class UpdaterTest extends TestCase
 		);
 
 		$this->_updater->update( $dto );
+	}
+
+	public function testScheduledPostRequiresPublishedDate(): void
+	{
+		$post = new Post();
+		$post->setId( 1 );
+		$post->setTitle( 'Original Title' );
+		$post->setStatus( Post::STATUS_DRAFT );
+
+		$this->_mockPostRepository
+			->expects( $this->once() )
+			->method( 'findById' )
+			->with( 1 )
+			->willReturn( $post );
+
+		$this->expectException( \InvalidArgumentException::class );
+		$this->expectExceptionMessage( 'Scheduled posts require a published date' );
+
+		$dto = $this->createDto(
+			1,
+			'Updated Title',
+			'{"blocks":[{"type":"paragraph","data":{"text":"Body"}}]}',
+			'scheduled',  // Scheduled status
+			null,  // No slug
+			null,  // No excerpt
+			null,  // No featured image
+			null   // No published date - THIS SHOULD THROW EXCEPTION
+		);
+
+		$this->_updater->update( $dto );
+	}
+
+	public function testScheduledPostWithPublishedDateSucceeds(): void
+	{
+		$post = new Post();
+		$post->setId( 1 );
+		$post->setTitle( 'Original Title' );
+		$post->setStatus( Post::STATUS_DRAFT );
+
+		$this->_mockPostRepository
+			->expects( $this->once() )
+			->method( 'findById' )
+			->with( 1 )
+			->willReturn( $post );
+
+		$this->_mockCategoryRepository
+			->method( 'findByIds' )
+			->willReturn( [] );
+
+		$this->_mockTagResolver
+			->method( 'resolveFromString' )
+			->willReturn( [] );
+
+		$publishedDate = '2025-12-31T23:59';
+
+		$this->_mockPostRepository
+			->expects( $this->once() )
+			->method( 'update' )
+			->with( $this->callback( function( Post $post ) {
+				return $post->getStatus() === 'scheduled'
+					&& $post->getPublishedAt() instanceof \DateTimeImmutable;
+			} ) );
+
+		$dto = $this->createDto(
+			1,
+			'Updated Title',
+			'{"blocks":[{"type":"paragraph","data":{"text":"Body"}}]}',
+			'scheduled',
+			null,
+			null,
+			null,
+			$publishedDate
+		);
+
+		$result = $this->_updater->update( $dto );
+
+		$this->assertEquals( 'scheduled', $result->getStatus() );
+		$this->assertInstanceOf( \DateTimeImmutable::class, $result->getPublishedAt() );
+	}
+
+	public function testInvalidPublishedDateThrowsException(): void
+	{
+		$post = new Post();
+		$post->setId( 1 );
+		$post->setTitle( 'Original Title' );
+		$post->setStatus( Post::STATUS_DRAFT );
+
+		$this->_mockPostRepository
+			->expects( $this->once() )
+			->method( 'findById' )
+			->with( 1 )
+			->willReturn( $post );
+
+		$this->expectException( \InvalidArgumentException::class );
+		$this->expectExceptionMessage( 'Invalid published date format' );
+
+		$dto = $this->createDto(
+			1,
+			'Updated Title',
+			'{"blocks":[{"type":"paragraph","data":{"text":"Body"}}]}',
+			'published',
+			null,
+			null,
+			null,
+			'2024-13-01T10:00'  // Invalid month
+		);
+
+		$this->_updater->update( $dto );
+	}
+
+	public function testInvalidDayThrowsException(): void
+	{
+		$post = new Post();
+		$post->setId( 1 );
+		$post->setTitle( 'Original Title' );
+		$post->setStatus( Post::STATUS_DRAFT );
+
+		$this->_mockPostRepository
+			->expects( $this->once() )
+			->method( 'findById' )
+			->with( 1 )
+			->willReturn( $post );
+
+		$this->expectException( \InvalidArgumentException::class );
+		$this->expectExceptionMessage( 'Invalid published date format' );
+
+		$dto = $this->createDto(
+			1,
+			'Updated Title',
+			'{"blocks":[{"type":"paragraph","data":{"text":"Body"}}]}',
+			'published',
+			null,
+			null,
+			null,
+			'2024-01-32T10:00'  // Invalid day
+		);
+
+		$this->_updater->update( $dto );
+	}
+
+	public function testInvalidHourThrowsException(): void
+	{
+		$post = new Post();
+		$post->setId( 1 );
+		$post->setTitle( 'Original Title' );
+		$post->setStatus( Post::STATUS_DRAFT );
+
+		$this->_mockPostRepository
+			->expects( $this->once() )
+			->method( 'findById' )
+			->with( 1 )
+			->willReturn( $post );
+
+		$this->expectException( \InvalidArgumentException::class );
+		$this->expectExceptionMessage( 'Invalid published date format' );
+
+		$dto = $this->createDto(
+			1,
+			'Updated Title',
+			'{"blocks":[{"type":"paragraph","data":{"text":"Body"}}]}',
+			'published',
+			null,
+			null,
+			null,
+			'2024-01-01T25:00'  // Invalid hour
+		);
+
+		$this->_updater->update( $dto );
+	}
+
+	/**
+	 * Test that when changing a previously published post to draft status,
+	 * the historical published_at date is preserved in the database.
+	 *
+	 * This prevents data loss when users:
+	 * 1. Have a published post with a published_at date
+	 * 2. Change the status back to 'draft' for editing
+	 * 3. Later republish the post
+	 *
+	 * Bug scenario: The published_at date should NOT be cleared when
+	 * changing to draft, so users can see and edit the existing date.
+	 */
+	public function testPreservesPublishedAtWhenChangingPublishedPostToDraft(): void
+	{
+		// Create a post that was previously published
+		$post = new Post();
+		$post->setId( 1 );
+		$post->setTitle( 'Previously Published Post' );
+		$post->setStatus( Post::STATUS_PUBLISHED );
+		$historicalPublishedAt = new \DateTimeImmutable( '2024-06-15 10:30:00' );
+		$post->setPublishedAt( $historicalPublishedAt );
+
+		$this->_mockPostRepository
+			->expects( $this->once() )
+			->method( 'findById' )
+			->with( 1 )
+			->willReturn( $post );
+
+		$this->_mockCategoryRepository
+			->method( 'findByIds' )
+			->willReturn( [] );
+
+		$this->_mockTagResolver
+			->method( 'resolveFromString' )
+			->willReturn( [] );
+
+		$this->_mockPostRepository
+			->expects( $this->once() )
+			->method( 'update' )
+			->with( $this->callback( function( Post $p ) use ( $historicalPublishedAt ) {
+				// Verify the post is now draft AND the published_at is preserved
+				return $p->getStatus() === Post::STATUS_DRAFT
+					&& $p->getPublishedAt() === $historicalPublishedAt;
+			} ) );
+
+		// Update the post to draft status WITHOUT providing a published_at value
+		// (simulating the form submission where the field is hidden for drafts)
+		$dto = $this->createDto(
+			1,
+			'Updated Draft Post',
+			'{"blocks":[{"type":"paragraph","data":{"text":"Updated content"}}]}',
+			Post::STATUS_DRAFT
+			// Note: No published_at provided - field is hidden in UI for drafts
+		);
+
+		$result = $this->_updater->update( $dto );
+
+		// Assert the status changed to draft
+		$this->assertEquals( Post::STATUS_DRAFT, $result->getStatus() );
+
+		// Assert the historical published_at date is preserved (not cleared)
+		$this->assertSame( $historicalPublishedAt, $result->getPublishedAt() );
+		$this->assertEquals( '2024-06-15 10:30:00', $result->getPublishedAt()->format( 'Y-m-d H:i:s' ) );
 	}
 }

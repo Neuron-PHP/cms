@@ -39,3 +39,8 @@ dto:
     type: string
     required: true
     enum: ['draft', 'published', 'scheduled']
+
+  published_at:
+    type: string
+    required: false
+    pattern: '/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$|^$/'  # datetime-local format: YYYY-MM-DDTHH:MM or empty

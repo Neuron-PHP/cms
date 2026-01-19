@@ -56,6 +56,7 @@ class Creator implements IPostCreator
 		$slug = $request->slug ?? null;
 		$excerpt = $request->excerpt ?? null;
 		$featuredImage = $request->featured_image ?? null;
+		$publishedAt = $request->published_at ?? null;
 
 		$post = new Post();
 		$post->setTitle( $title );
@@ -67,9 +68,24 @@ class Creator implements IPostCreator
 		$post->setStatus( $status );
 		$post->setCreatedAt( new DateTimeImmutable() );
 
-		// Business rule: auto-set published date for published posts
-		if( $status === ContentStatus::PUBLISHED->value )
+		// Business rule: set published date
+		if( $status === ContentStatus::SCHEDULED->value )
 		{
+			// Scheduled posts MUST have a published date
+			if( !$publishedAt || trim( $publishedAt ) === '' )
+			{
+				throw new \InvalidArgumentException( 'Scheduled posts require a published date' );
+			}
+			$post->setPublishedAt( $this->parseDateTime( $publishedAt ) );
+		}
+		elseif( $publishedAt && trim( $publishedAt ) !== '' )
+		{
+			// Use provided published date
+			$post->setPublishedAt( $this->parseDateTime( $publishedAt ) );
+		}
+		elseif( $status === ContentStatus::PUBLISHED->value )
+		{
+			// Auto-set to now for published posts when not provided
 			$post->setPublishedAt( new DateTimeImmutable() );
 		}
 
@@ -96,5 +112,28 @@ class Creator implements IPostCreator
 	private function generateSlug( string $title ): string
 	{
 		return $this->_slugGenerator->generate( $title, 'post' );
+	}
+
+	/**
+	 * Safely parse a datetime string into DateTimeImmutable
+	 *
+	 * @param string $dateTimeString The datetime string to parse
+	 * @return DateTimeImmutable
+	 * @throws \InvalidArgumentException If the datetime string is invalid
+	 */
+	private function parseDateTime( string $dateTimeString ): DateTimeImmutable
+	{
+		try
+		{
+			return new DateTimeImmutable( $dateTimeString );
+		}
+		catch( \DateMalformedStringException | \Exception $e )
+		{
+			throw new \InvalidArgumentException(
+				"Invalid published date format: '{$dateTimeString}'. Please provide a valid datetime.",
+				0,
+				$e
+			);
+		}
 	}
 }
