@@ -1,4 +1,4 @@
-## 0.8.45
+## 0.8.45 2026-05-30
 
 * Fixed warnings in admin index.
 * Fixed tests.
