@@ -4,14 +4,14 @@
 		<a href="<?= route_path('admin_pages_create') ?>" class="btn btn-primary">Create New Page</a>
 	</div>
 
-	<?php if($success): ?>
+	<?php if(isset($success) && $success): ?>
 		<div class="alert alert-success alert-dismissible fade show" role="alert">
 			<?= htmlspecialchars($success) ?>
 			<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
 		</div>
 	<?php endif; ?>
 
-	<?php if($error): ?>
+	<?php if(isset($error) && $error): ?>
 		<div class="alert alert-danger alert-dismissible fade show" role="alert">
 			<?= htmlspecialchars($error) ?>
 			<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
