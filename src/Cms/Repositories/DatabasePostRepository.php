@@ -396,7 +396,6 @@ class DatabasePostRepository implements IPostRepository
 			}
 
 			$property = $reflectionClass->getProperty( '_pdo' );
-			$property->setAccessible( true );
 
 			// Get the value - for static properties, pass null; for instance properties, pass an instance
 			$value = $property->isStatic()

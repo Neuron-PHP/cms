@@ -124,7 +124,6 @@ class MediaUploadTest extends TestCase
 		// Inject mock validator via reflection
 		$reflection = new \ReflectionClass( $media );
 		$validatorProperty = $reflection->getProperty( '_validator' );
-		$validatorProperty->setAccessible( true );
 		$validatorProperty->setValue( $media, $validatorMock );
 
 		$request = $this->createMock( Request::class );
@@ -196,7 +195,6 @@ class MediaUploadTest extends TestCase
 		// Inject mock validator via reflection
 		$reflection = new \ReflectionClass( $media );
 		$validatorProperty = $reflection->getProperty( '_validator' );
-		$validatorProperty->setAccessible( true );
 		$validatorProperty->setValue( $media, $validatorMock );
 
 		$request = $this->createMock( Request::class );
@@ -252,11 +250,9 @@ class MediaUploadTest extends TestCase
 		$reflection = new \ReflectionClass( $media );
 
 		$validatorProperty = $reflection->getProperty( '_validator' );
-		$validatorProperty->setAccessible( true );
 		$validatorProperty->setValue( $media, $validatorMock );
 
 		$uploaderProperty = $reflection->getProperty( '_uploader' );
-		$uploaderProperty->setAccessible( true );
 		$uploaderProperty->setValue( $media, $uploaderMock );
 
 		$request = $this->createMock( Request::class );
@@ -317,11 +313,9 @@ class MediaUploadTest extends TestCase
 		$reflection = new \ReflectionClass( $media );
 
 		$validatorProperty = $reflection->getProperty( '_validator' );
-		$validatorProperty->setAccessible( true );
 		$validatorProperty->setValue( $media, $validatorMock );
 
 		$uploaderProperty = $reflection->getProperty( '_uploader' );
-		$uploaderProperty->setAccessible( true );
 		$uploaderProperty->setValue( $media, $uploaderMock );
 
 		$request = $this->createMock( Request::class );
@@ -371,11 +365,9 @@ class MediaUploadTest extends TestCase
 		$reflection = new \ReflectionClass( $media );
 
 		$validatorProperty = $reflection->getProperty( '_validator' );
-		$validatorProperty->setAccessible( true );
 		$validatorProperty->setValue( $media, $validatorMock );
 
 		$uploaderProperty = $reflection->getProperty( '_uploader' );
-		$uploaderProperty->setAccessible( true );
 		$uploaderProperty->setValue( $media, $uploaderMock );
 
 		$request = $this->createMock( Request::class );
@@ -424,11 +416,9 @@ class MediaUploadTest extends TestCase
 		$reflection = new \ReflectionClass( $media );
 
 		$validatorProperty = $reflection->getProperty( '_validator' );
-		$validatorProperty->setAccessible( true );
 		$validatorProperty->setValue( $media, $validatorMock );
 
 		$uploaderProperty = $reflection->getProperty( '_uploader' );
-		$uploaderProperty->setAccessible( true );
 		$uploaderProperty->setValue( $media, $uploaderMock );
 
 		$request = $this->createMock( Request::class );

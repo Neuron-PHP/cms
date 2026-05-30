@@ -57,7 +57,6 @@ YAML;
 		// Use reflection to access protected method
 		$reflection = new \ReflectionClass($command);
 		$configureMethod = $reflection->getMethod('configure');
-		$configureMethod->setAccessible(true);
 		$configureMethod->invoke($command);
 
 		// Verify command metadata is set
@@ -87,7 +86,6 @@ YAML;
 		// Use reflection to test private getUserRepository method
 		$reflection = new \ReflectionClass($command);
 		$method = $reflection->getMethod('getUserRepository');
-		$method->setAccessible(true);
 
 		// Call the method and verify it returns null
 		$result = $method->invoke($command);
@@ -119,7 +117,6 @@ YAML;
 		// Use reflection to test private getUserRepository method
 		$reflection = new \ReflectionClass($command);
 		$method = $reflection->getMethod('getUserRepository');
-		$method->setAccessible(true);
 
 		// Call the method and verify it returns null
 		$result = $method->invoke($command);

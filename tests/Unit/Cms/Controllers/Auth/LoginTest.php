@@ -81,7 +81,6 @@ class LoginTest extends TestCase
 		// Use reflection to test private method
 		$reflection = new \ReflectionClass( $this->controller );
 		$method = $reflection->getMethod( 'isValidRedirectUrl' );
-		$method->setAccessible( true );
 
 		$this->assertTrue( $method->invoke( $this->controller, '/dashboard' ) );
 		$this->assertTrue( $method->invoke( $this->controller, '/admin/users' ) );
@@ -92,7 +91,6 @@ class LoginTest extends TestCase
 	{
 		$reflection = new \ReflectionClass( $this->controller );
 		$method = $reflection->getMethod( 'isValidRedirectUrl' );
-		$method->setAccessible( true );
 
 		$this->assertFalse( $method->invoke( $this->controller, '' ) );
 	}
@@ -101,7 +99,6 @@ class LoginTest extends TestCase
 	{
 		$reflection = new \ReflectionClass( $this->controller );
 		$method = $reflection->getMethod( 'isValidRedirectUrl' );
-		$method->setAccessible( true );
 
 		$this->assertFalse( $method->invoke( $this->controller, 'https://evil.com' ) );
 		$this->assertFalse( $method->invoke( $this->controller, 'http://evil.com' ) );
@@ -111,7 +108,6 @@ class LoginTest extends TestCase
 	{
 		$reflection = new \ReflectionClass( $this->controller );
 		$method = $reflection->getMethod( 'isValidRedirectUrl' );
-		$method->setAccessible( true );
 
 		$this->assertFalse( $method->invoke( $this->controller, '//evil.com' ) );
 		$this->assertFalse( $method->invoke( $this->controller, '//evil.com/path' ) );
@@ -121,7 +117,6 @@ class LoginTest extends TestCase
 	{
 		$reflection = new \ReflectionClass( $this->controller );
 		$method = $reflection->getMethod( 'isValidRedirectUrl' );
-		$method->setAccessible( true );
 
 		// Reject URLs with @ symbol (phishing protection)
 		$this->assertFalse( $method->invoke( $this->controller, '/path@evil.com' ) );
@@ -136,7 +131,6 @@ class LoginTest extends TestCase
 	{
 		$reflection = new \ReflectionClass( $this->controller );
 		$method = $reflection->getMethod( 'isValidRedirectUrl' );
-		$method->setAccessible( true );
 
 		$this->assertFalse( $method->invoke( $this->controller, 'dashboard' ) );
 		$this->assertFalse( $method->invoke( $this->controller, 'admin/users' ) );

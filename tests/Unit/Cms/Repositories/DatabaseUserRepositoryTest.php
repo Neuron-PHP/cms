@@ -42,7 +42,6 @@ class DatabaseUserRepositoryTest extends TestCase
 		// Get PDO connection via reflection to create table
 		$reflection = new \ReflectionClass( $this->repository );
 		$property = $reflection->getProperty( '_pdo' );
-		$property->setAccessible( true );
 		$this->pdo = $property->getValue( $this->repository );
 
 		// Initialize ORM with the PDO connection

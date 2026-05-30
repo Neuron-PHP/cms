@@ -76,7 +76,6 @@ class DatabaseCompatibilityTest extends IntegrationTestCase
 		if( $reflection->hasProperty( '_pdo' ) )
 		{
 			$pdoProperty = $reflection->getProperty( '_pdo' );
-			$pdoProperty->setAccessible( true );
 			$pdoProperty->setValue( $repository, $this->pdo );
 		}
 

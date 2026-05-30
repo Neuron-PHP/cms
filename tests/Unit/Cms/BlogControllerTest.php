@@ -92,7 +92,6 @@ class BlogControllerTest extends TestCase
 		// Use reflection to reset the shared data
 		$reflection = new \ReflectionClass( $provider );
 		$property = $reflection->getProperty( '_data' );
-		$property->setAccessible( true );
 		$property->setValue( $provider, [] );
 
 		// Now set our test data
@@ -116,7 +115,6 @@ class BlogControllerTest extends TestCase
 		$provider = \Neuron\Mvc\Views\ViewDataProvider::getInstance();
 		$reflection = new \ReflectionClass( $provider );
 		$property = $reflection->getProperty( '_data' );
-		$property->setAccessible( true );
 		$property->setValue( $provider, [] );
 
 		// Restore original registry values (including ViewDataProvider)
@@ -228,7 +226,6 @@ class BlogControllerTest extends TestCase
 			{
 				$reflection = new \ReflectionClass( DatabasePostRepository::class );
 				$property = $reflection->getProperty( '_pdo' );
-				$property->setAccessible( true );
 				$property->setValue( $this, $PDO );
 			}
 		};
@@ -239,7 +236,6 @@ class BlogControllerTest extends TestCase
 			{
 				$reflection = new \ReflectionClass( DatabaseCategoryRepository::class );
 				$property = $reflection->getProperty( '_pdo' );
-				$property->setAccessible( true );
 				$property->setValue( $this, $PDO );
 			}
 		};
@@ -250,7 +246,6 @@ class BlogControllerTest extends TestCase
 			{
 				$reflection = new \ReflectionClass( DatabaseTagRepository::class );
 				$property = $reflection->getProperty( '_pdo' );
-				$property->setAccessible( true );
 				$property->setValue( $this, $PDO );
 			}
 		};
@@ -261,7 +256,6 @@ class BlogControllerTest extends TestCase
 			{
 				$reflection = new \ReflectionClass( DatabaseUserRepository::class );
 				$property = $reflection->getProperty( '_pdo' );
-				$property->setAccessible( true );
 				$property->setValue( $this, $PDO );
 			}
 		};

@@ -188,7 +188,6 @@ class ContentControllerTest extends TestCase
 		// Use reflection to access protected method
 		$reflection = new \ReflectionClass( $controller );
 		$method = $reflection->getMethod( 'getSessionManager' );
-		$method->setAccessible( true );
 
 		$sessionManager = $method->invoke( $controller );
 
@@ -211,9 +210,7 @@ class ContentControllerTest extends TestCase
 		// Use reflection to access protected methods
 		$reflection = new \ReflectionClass( $controller );
 		$flashMethod = $reflection->getMethod( 'flash' );
-		$flashMethod->setAccessible( true );
 		$getSessionMethod = $reflection->getMethod( 'getSessionManager' );
-		$getSessionMethod->setAccessible( true );
 
 		// Invoke flash
 		$flashMethod->invoke( $controller, 'success', 'Test message' );

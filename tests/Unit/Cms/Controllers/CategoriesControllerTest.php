@@ -120,7 +120,6 @@ class CategoriesControllerTest extends TestCase
 		// Mock session manager
 		$reflection = new \ReflectionClass( get_parent_class( Categories::class ) );
 		$sessionProperty = $reflection->getProperty( '_sessionManager' );
-		$sessionProperty->setAccessible( true );
 
 		$sessionManager = $this->createMock( SessionManager::class );
 		$sessionProperty->setValue( $controller, $sessionManager );
@@ -172,7 +171,6 @@ class CategoriesControllerTest extends TestCase
 		// Mock session manager
 		$reflection = new \ReflectionClass( get_parent_class( Categories::class ) );
 		$sessionProperty = $reflection->getProperty( '_sessionManager' );
-		$sessionProperty->setAccessible( true );
 
 		$sessionManager = $this->createMock( SessionManager::class );
 		$sessionProperty->setValue( $controller, $sessionManager );

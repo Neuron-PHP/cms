@@ -55,7 +55,6 @@ class AuthenticationTest extends TestCase
 		// Get PDO connection via reflection to create table
 		$reflection = new \ReflectionClass($this->_userRepository);
 		$property = $reflection->getProperty('_pdo');
-		$property->setAccessible(true);
 		$this->pdo = $property->getValue($this->_userRepository);
 
 		// Initialize ORM with the PDO connection

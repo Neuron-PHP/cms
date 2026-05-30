@@ -132,7 +132,6 @@ class PostsControllerTest extends TestCase
 		// Mock session manager via reflection
 		$reflection = new \ReflectionClass( get_parent_class( Posts::class ) );
 		$sessionProperty = $reflection->getProperty( '_sessionManager' );
-		$sessionProperty->setAccessible( true );
 
 		$sessionManager = $this->createMock( SessionManager::class );
 		$sessionManager->method( 'getFlash' )->willReturn( null );
@@ -205,7 +204,6 @@ class PostsControllerTest extends TestCase
 		// Mock session manager
 		$reflection = new \ReflectionClass( get_parent_class( Posts::class ) );
 		$sessionProperty = $reflection->getProperty( '_sessionManager' );
-		$sessionProperty->setAccessible( true );
 
 		$sessionManager = $this->createMock( SessionManager::class );
 		$sessionManager->method( 'getFlash' )->willReturn( null );

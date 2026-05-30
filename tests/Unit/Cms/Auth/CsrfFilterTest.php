@@ -260,7 +260,6 @@ class CsrfFilterTest extends TestCase
 		// Use reflection to call getTokenFromRequest()
 		$reflection = new \ReflectionClass( $this->_filter );
 		$method = $reflection->getMethod( 'getTokenFromRequest' );
-		$method->setAccessible( true );
 		$token = $method->invoke( $this->_filter );
 
 		// POST token should take precedence over header token.
@@ -297,7 +296,6 @@ class CsrfFilterTest extends TestCase
 		// Use reflection to access private getTokenFromRequest() method
 		$reflection = new \ReflectionClass( $this->_filter );
 		$method = $reflection->getMethod( 'getTokenFromRequest' );
-		$method->setAccessible( true );
 
 		// Execute: Get token from request
 		$token = $method->invoke( $this->_filter );
@@ -328,7 +326,6 @@ class CsrfFilterTest extends TestCase
 		// Use reflection to access private getTokenFromRequest() method
 		$reflection = new \ReflectionClass( $this->_filter );
 		$method = $reflection->getMethod( 'getTokenFromRequest' );
-		$method->setAccessible( true );
 
 		// Execute: Get token from request
 		$token = $method->invoke( $this->_filter );

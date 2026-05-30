@@ -48,7 +48,6 @@ class DatabaseEventCategoryRepositoryTest extends TestCase
 		$this->repository = new DatabaseEventCategoryRepository( $settings );
 		$reflection = new \ReflectionClass( $this->repository );
 		$property = $reflection->getProperty( '_pdo' );
-		$property->setAccessible( true );
 		$property->setValue( $this->repository, $this->pdo );
 	}
 
