@@ -1,3 +1,5 @@
+## 0.8.46
+
 ## 0.8.45 2026-05-30
 
 * Fixed warnings in admin index.
