@@ -41,7 +41,6 @@ class DatabasePasswordResetTokenRepositoryTest extends TestCase
 				// Skip parent constructor and inject PDO directly
 				$reflection = new \ReflectionClass( DatabasePasswordResetTokenRepository::class );
 				$property = $reflection->getProperty( '_pdo' );
-				$property->setAccessible( true );
 				$property->setValue( $this, $pdo );
 			}
 		};

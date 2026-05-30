@@ -57,7 +57,6 @@ class InstallCommandTest extends TestCase
 	{
 		$reflection = new \ReflectionClass( $this->command );
 		$method = $reflection->getMethod( 'isAlreadyInstalled' );
-		$method->setAccessible( true );
 
 		$result = $method->invoke( $this->command );
 
@@ -75,7 +74,6 @@ class InstallCommandTest extends TestCase
 
 		$reflection = new \ReflectionClass( $this->command );
 		$method = $reflection->getMethod( 'configureSqlite' );
-		$method->setAccessible( true );
 
 		$result = $method->invoke( $this->command );
 
@@ -96,7 +94,6 @@ class InstallCommandTest extends TestCase
 
 		$reflection = new \ReflectionClass( $this->command );
 		$method = $reflection->getMethod( 'configureMysql' );
-		$method->setAccessible( true );
 
 		$result = $method->invoke( $this->command );
 
@@ -124,7 +121,6 @@ class InstallCommandTest extends TestCase
 
 		$reflection = new \ReflectionClass( $this->command );
 		$method = $reflection->getMethod( 'configureMysql' );
-		$method->setAccessible( true );
 
 		$result = $method->invoke( $this->command );
 
@@ -145,7 +141,6 @@ class InstallCommandTest extends TestCase
 
 		$reflection = new \ReflectionClass( $this->command );
 		$method = $reflection->getMethod( 'configureMysql' );
-		$method->setAccessible( true );
 
 		$result = $method->invoke( $this->command );
 
@@ -162,7 +157,6 @@ class InstallCommandTest extends TestCase
 
 		$reflection = new \ReflectionClass( $this->command );
 		$method = $reflection->getMethod( 'configurePostgresql' );
-		$method->setAccessible( true );
 
 		$result = $method->invoke( $this->command );
 
@@ -186,7 +180,6 @@ class InstallCommandTest extends TestCase
 
 		$reflection = new \ReflectionClass( $this->command );
 		$method = $reflection->getMethod( 'configureApplication' );
-		$method->setAccessible( true );
 
 		$result = $method->invoke( $this->command );
 
@@ -210,7 +203,6 @@ class InstallCommandTest extends TestCase
 
 		$reflection = new \ReflectionClass( $this->command );
 		$method = $reflection->getMethod( 'configureApplication' );
-		$method->setAccessible( true );
 
 		$result = $method->invoke( $this->command );
 
@@ -231,7 +223,6 @@ class InstallCommandTest extends TestCase
 
 		$reflection = new \ReflectionClass( $this->command );
 		$method = $reflection->getMethod( 'configureApplication' );
-		$method->setAccessible( true );
 
 		$result = $method->invoke( $this->command );
 
@@ -249,7 +240,6 @@ class InstallCommandTest extends TestCase
 
 		$reflection = new \ReflectionClass( $this->command );
 		$method = $reflection->getMethod( 'configureCloudinary' );
-		$method->setAccessible( true );
 
 		$result = $method->invoke( $this->command );
 
@@ -267,7 +257,6 @@ class InstallCommandTest extends TestCase
 
 		$reflection = new \ReflectionClass( $this->command );
 		$method = $reflection->getMethod( 'configureCloudinary' );
-		$method->setAccessible( true );
 
 		$result = $method->invoke( $this->command );
 
@@ -292,7 +281,6 @@ class InstallCommandTest extends TestCase
 
 		$reflection = new \ReflectionClass( $this->command );
 		$method = $reflection->getMethod( 'configureCloudinary' );
-		$method->setAccessible( true );
 
 		$result = $method->invoke( $this->command );
 
@@ -310,7 +298,6 @@ class InstallCommandTest extends TestCase
 
 		$reflection = new \ReflectionClass( $this->command );
 		$method = $reflection->getMethod( 'configureEmail' );
-		$method->setAccessible( true );
 
 		$result = $method->invoke( $this->command );
 
@@ -330,7 +317,6 @@ class InstallCommandTest extends TestCase
 
 		$reflection = new \ReflectionClass( $this->command );
 		$method = $reflection->getMethod( 'configureEmail' );
-		$method->setAccessible( true );
 
 		$result = $method->invoke( $this->command );
 
@@ -357,7 +343,6 @@ class InstallCommandTest extends TestCase
 
 		$reflection = new \ReflectionClass( $this->command );
 		$method = $reflection->getMethod( 'configureEmail' );
-		$method->setAccessible( true );
 
 		$result = $method->invoke( $this->command );
 
@@ -385,7 +370,6 @@ class InstallCommandTest extends TestCase
 
 		$reflection = new \ReflectionClass( $this->command );
 		$method = $reflection->getMethod( 'configureEmail' );
-		$method->setAccessible( true );
 
 		$result = $method->invoke( $this->command );
 
@@ -399,7 +383,6 @@ class InstallCommandTest extends TestCase
 	{
 		$reflection = new \ReflectionClass( $this->command );
 		$method = $reflection->getMethod( 'arrayToYaml' );
-		$method->setAccessible( true );
 
 		$data = [
 			'database' => [
@@ -420,7 +403,6 @@ class InstallCommandTest extends TestCase
 	{
 		$reflection = new \ReflectionClass( $this->command );
 		$method = $reflection->getMethod( 'yamlValue' );
-		$method->setAccessible( true );
 
 		$this->assertEquals( 'true', $method->invoke( $this->command, true ) );
 		$this->assertEquals( 'false', $method->invoke( $this->command, false ) );
@@ -430,7 +412,6 @@ class InstallCommandTest extends TestCase
 	{
 		$reflection = new \ReflectionClass( $this->command );
 		$method = $reflection->getMethod( 'yamlValue' );
-		$method->setAccessible( true );
 
 		$this->assertEquals( '123', $method->invoke( $this->command, 123 ) );
 		$this->assertEquals( '0', $method->invoke( $this->command, 0 ) );
@@ -440,7 +421,6 @@ class InstallCommandTest extends TestCase
 	{
 		$reflection = new \ReflectionClass( $this->command );
 		$method = $reflection->getMethod( 'yamlValue' );
-		$method->setAccessible( true );
 
 		$this->assertEquals( '"test value"', $method->invoke( $this->command, 'test value' ) );
 	}
@@ -449,7 +429,6 @@ class InstallCommandTest extends TestCase
 	{
 		$reflection = new \ReflectionClass( $this->command );
 		$method = $reflection->getMethod( 'yamlValue' );
-		$method->setAccessible( true );
 
 		$this->assertEquals( '"test:value"', $method->invoke( $this->command, 'test:value' ) );
 	}
@@ -458,7 +437,6 @@ class InstallCommandTest extends TestCase
 	{
 		$reflection = new \ReflectionClass( $this->command );
 		$method = $reflection->getMethod( 'yamlValue' );
-		$method->setAccessible( true );
 
 		$this->assertEquals( 'simple', $method->invoke( $this->command, 'simple' ) );
 	}

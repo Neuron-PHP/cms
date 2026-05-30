@@ -72,7 +72,6 @@ class CloudinaryUploaderMockTest extends TestCase
 
 		$reflection = new \ReflectionClass( $uploader );
 		$cloudinaryProperty = $reflection->getProperty( '_cloudinary' );
-		$cloudinaryProperty->setAccessible( true );
 		$cloudinaryProperty->setValue( $uploader, $cloudinaryMock );
 
 		// Call listResources
@@ -110,7 +109,6 @@ class CloudinaryUploaderMockTest extends TestCase
 
 		$reflection = new \ReflectionClass( $uploader );
 		$cloudinaryProperty = $reflection->getProperty( '_cloudinary' );
-		$cloudinaryProperty->setAccessible( true );
 		$cloudinaryProperty->setValue( $uploader, $cloudinaryMock );
 
 		$result = $uploader->listResources( [ 'max_results' => 10 ] );
@@ -140,7 +138,6 @@ class CloudinaryUploaderMockTest extends TestCase
 
 		$reflection = new \ReflectionClass( $uploader );
 		$cloudinaryProperty = $reflection->getProperty( '_cloudinary' );
-		$cloudinaryProperty->setAccessible( true );
 		$cloudinaryProperty->setValue( $uploader, $cloudinaryMock );
 
 		$result = $uploader->listResources( [ 'next_cursor' => 'cursor123' ] );
@@ -170,7 +167,6 @@ class CloudinaryUploaderMockTest extends TestCase
 
 		$reflection = new \ReflectionClass( $uploader );
 		$cloudinaryProperty = $reflection->getProperty( '_cloudinary' );
-		$cloudinaryProperty->setAccessible( true );
 		$cloudinaryProperty->setValue( $uploader, $cloudinaryMock );
 
 		$result = $uploader->listResources( [ 'folder' => 'custom-folder' ] );
@@ -208,7 +204,6 @@ class CloudinaryUploaderMockTest extends TestCase
 
 		$reflection = new \ReflectionClass( $uploader );
 		$cloudinaryProperty = $reflection->getProperty( '_cloudinary' );
-		$cloudinaryProperty->setAccessible( true );
 		$cloudinaryProperty->setValue( $uploader, $cloudinaryMock );
 
 		$result = $uploader->listResources();
@@ -244,7 +239,6 @@ class CloudinaryUploaderMockTest extends TestCase
 
 		$reflection = new \ReflectionClass( $uploader );
 		$cloudinaryProperty = $reflection->getProperty( '_cloudinary' );
-		$cloudinaryProperty->setAccessible( true );
 		$cloudinaryProperty->setValue( $uploader, $cloudinaryMock );
 
 		$result = $uploader->listResources();
@@ -269,7 +263,6 @@ class CloudinaryUploaderMockTest extends TestCase
 
 		$reflection = new \ReflectionClass( $uploader );
 		$cloudinaryProperty = $reflection->getProperty( '_cloudinary' );
-		$cloudinaryProperty->setAccessible( true );
 		$cloudinaryProperty->setValue( $uploader, $cloudinaryMock );
 
 		$this->expectException( \Exception::class );
@@ -294,7 +287,6 @@ class CloudinaryUploaderMockTest extends TestCase
 
 		$reflection = new \ReflectionClass( $uploader );
 		$cloudinaryProperty = $reflection->getProperty( '_cloudinary' );
-		$cloudinaryProperty->setAccessible( true );
 		$cloudinaryProperty->setValue( $uploader, $cloudinaryMock );
 
 		$result = $uploader->delete( 'test-folder/test-image' );
@@ -316,7 +308,6 @@ class CloudinaryUploaderMockTest extends TestCase
 
 		$reflection = new \ReflectionClass( $uploader );
 		$cloudinaryProperty = $reflection->getProperty( '_cloudinary' );
-		$cloudinaryProperty->setAccessible( true );
 		$cloudinaryProperty->setValue( $uploader, $cloudinaryMock );
 
 		$result = $uploader->delete( 'test-folder/nonexistent' );
@@ -338,7 +329,6 @@ class CloudinaryUploaderMockTest extends TestCase
 
 		$reflection = new \ReflectionClass( $uploader );
 		$cloudinaryProperty = $reflection->getProperty( '_cloudinary' );
-		$cloudinaryProperty->setAccessible( true );
 		$cloudinaryProperty->setValue( $uploader, $cloudinaryMock );
 
 		$this->expectException( \Exception::class );
@@ -381,7 +371,6 @@ class CloudinaryUploaderMockTest extends TestCase
 
 		$reflection = new \ReflectionClass( $uploader );
 		$cloudinaryProperty = $reflection->getProperty( '_cloudinary' );
-		$cloudinaryProperty->setAccessible( true );
 		$cloudinaryProperty->setValue( $uploader, $cloudinaryMock );
 
 		$result = $uploader->upload( $tmpFilePath );
@@ -422,7 +411,6 @@ class CloudinaryUploaderMockTest extends TestCase
 
 		$reflection = new \ReflectionClass( $uploader );
 		$cloudinaryProperty = $reflection->getProperty( '_cloudinary' );
-		$cloudinaryProperty->setAccessible( true );
 		$cloudinaryProperty->setValue( $uploader, $cloudinaryMock );
 
 		$this->expectException( \Exception::class );
@@ -470,7 +458,6 @@ class CloudinaryUploaderMockTest extends TestCase
 
 		$reflection = new \ReflectionClass( $uploader );
 		$cloudinaryProperty = $reflection->getProperty( '_cloudinary' );
-		$cloudinaryProperty->setAccessible( true );
 		$cloudinaryProperty->setValue( $uploader, $cloudinaryMock );
 
 		$result = $uploader->upload( $tmpFilePath, [
@@ -520,7 +507,6 @@ class CloudinaryUploaderMockTest extends TestCase
 
 		$reflection = new \ReflectionClass( $uploader );
 		$cloudinaryProperty = $reflection->getProperty( '_cloudinary' );
-		$cloudinaryProperty->setAccessible( true );
 		$cloudinaryProperty->setValue( $uploader, $cloudinaryMock );
 
 		$result = $uploader->upload( $tmpFilePath, [

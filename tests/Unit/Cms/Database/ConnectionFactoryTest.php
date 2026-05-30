@@ -22,7 +22,6 @@ class ConnectionFactoryTest extends TestCase
 		// Use reflection to test the parseUrl method directly
 		$reflection = new \ReflectionClass( ConnectionFactory::class );
 		$method = $reflection->getMethod( 'parseUrl' );
-		$method->setAccessible( true );
 
 		$result = $method->invokeArgs( null, [ 'mysql://testuser:testpass@localhost:3306/testdb?charset=utf8mb4' ] );
 
@@ -42,7 +41,6 @@ class ConnectionFactoryTest extends TestCase
 	{
 		$reflection = new \ReflectionClass( ConnectionFactory::class );
 		$method = $reflection->getMethod( 'parseUrl' );
-		$method->setAccessible( true );
 
 		// Test different PostgreSQL URL schemes
 		$urls = [
@@ -116,7 +114,6 @@ class ConnectionFactoryTest extends TestCase
 			// Instead of creating actual PDO, let's verify the merge logic
 			// by inspecting what createFromConfig would do
 			$parseMethod = $reflection->getMethod( 'parseUrl' );
-			$parseMethod->setAccessible( true );
 
 			// Parse the URL to get base config
 			$urlConfig = $parseMethod->invokeArgs( null, [ $config['url'] ] );
@@ -198,7 +195,6 @@ class ConnectionFactoryTest extends TestCase
 	{
 		$reflection = new \ReflectionClass( ConnectionFactory::class );
 		$method = $reflection->getMethod( 'parseUrl' );
-		$method->setAccessible( true );
 
 		$result = $method->invokeArgs( null, [ 'mysql://user:pass@localhost:3306/testdb?charset=latin1' ] );
 
@@ -228,7 +224,6 @@ class ConnectionFactoryTest extends TestCase
 	{
 		$reflection = new \ReflectionClass( ConnectionFactory::class );
 		$method = $reflection->getMethod( 'parseUrl' );
-		$method->setAccessible( true );
 
 		$result = $method->invokeArgs( null, [ 'mysql://user@localhost:3306/testdb' ] );
 
@@ -244,7 +239,6 @@ class ConnectionFactoryTest extends TestCase
 	{
 		$reflection = new \ReflectionClass( ConnectionFactory::class );
 		$method = $reflection->getMethod( 'parseUrl' );
-		$method->setAccessible( true );
 
 		$result = $method->invokeArgs( null, [ 'mysql://user:pass@localhost/testdb' ] );
 
@@ -261,7 +255,6 @@ class ConnectionFactoryTest extends TestCase
 	{
 		$reflection = new \ReflectionClass( ConnectionFactory::class );
 		$method = $reflection->getMethod( 'parseUrl' );
-		$method->setAccessible( true );
 
 		// Test password with @ symbol (encoded as %40)
 		$result = $method->invokeArgs( null, [ 'mysql://user:p%40ssw%3Ard@localhost:3306/testdb' ] );
@@ -278,7 +271,6 @@ class ConnectionFactoryTest extends TestCase
 	{
 		$reflection = new \ReflectionClass( ConnectionFactory::class );
 		$method = $reflection->getMethod( 'parseUrl' );
-		$method->setAccessible( true );
 
 		$result = $method->invokeArgs( null, [ 'sqlite:///storage/database.sqlite3' ] );
 
@@ -310,7 +302,6 @@ class ConnectionFactoryTest extends TestCase
 		// but we can verify the config is parseable)
 		$reflection = new \ReflectionClass( ConnectionFactory::class );
 		$method = $reflection->getMethod( 'parseUrl' );
-		$method->setAccessible( true );
 
 		$parsed = $method->invokeArgs( null, [ $config['url'] ] );
 		$this->assertEquals( 'mysql', $parsed['adapter'] );

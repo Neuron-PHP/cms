@@ -447,7 +447,6 @@ class CloudinaryUploaderTest extends TestCase
 			// Use reflection to inject the mock
 			$reflection = new \ReflectionClass( $uploader );
 			$property = $reflection->getProperty( '_cloudinary' );
-			$property->setAccessible( true );
 			$property->setValue( $uploader, $mockCloudinary );
 
 			// Test the upload
@@ -513,7 +512,6 @@ class CloudinaryUploaderTest extends TestCase
 			// Use reflection to inject the mock
 			$reflection = new \ReflectionClass( $uploader );
 			$property = $reflection->getProperty( '_cloudinary' );
-			$property->setAccessible( true );
 			$property->setValue( $uploader, $mockCloudinary );
 
 			// Test upload with custom options
@@ -568,7 +566,6 @@ class CloudinaryUploaderTest extends TestCase
 		// Use reflection to inject the mock
 		$reflection = new \ReflectionClass( $uploader );
 		$property = $reflection->getProperty( '_cloudinary' );
-		$property->setAccessible( true );
 		$property->setValue( $uploader, $mockCloudinary );
 
 		// Test uploadFromUrl
@@ -601,7 +598,6 @@ class CloudinaryUploaderTest extends TestCase
 		// Use reflection to inject the mock
 		$reflection = new \ReflectionClass( $uploader );
 		$property = $reflection->getProperty( '_cloudinary' );
-		$property->setAccessible( true );
 		$property->setValue( $uploader, $mockCloudinary );
 
 		// Test delete
@@ -629,7 +625,6 @@ class CloudinaryUploaderTest extends TestCase
 		// Use reflection to inject the mock
 		$reflection = new \ReflectionClass( $uploader );
 		$property = $reflection->getProperty( '_cloudinary' );
-		$property->setAccessible( true );
 		$property->setValue( $uploader, $mockCloudinary );
 
 		// Test delete with non-ok result
@@ -692,7 +687,6 @@ class CloudinaryUploaderTest extends TestCase
 		// Use reflection to inject the mock
 		$reflection = new \ReflectionClass( $uploader );
 		$property = $reflection->getProperty( '_cloudinary' );
-		$property->setAccessible( true );
 		$property->setValue( $uploader, $mockCloudinary );
 
 		// Test listResources
@@ -739,7 +733,6 @@ class CloudinaryUploaderTest extends TestCase
 		// Use reflection to inject the mock
 		$reflection = new \ReflectionClass( $uploader );
 		$property = $reflection->getProperty( '_cloudinary' );
-		$property->setAccessible( true );
 		$property->setValue( $uploader, $mockCloudinary );
 
 		// Test listResources with custom options
@@ -777,7 +770,6 @@ class CloudinaryUploaderTest extends TestCase
 			// Use reflection to inject the mock
 			$reflection = new \ReflectionClass( $uploader );
 			$property = $reflection->getProperty( '_cloudinary' );
-			$property->setAccessible( true );
 			$property->setValue( $uploader, $mockCloudinary );
 
 			$this->expectException( \Exception::class );
@@ -813,7 +805,6 @@ class CloudinaryUploaderTest extends TestCase
 		// Use reflection to inject the mock
 		$reflection = new \ReflectionClass( $uploader );
 		$property = $reflection->getProperty( '_cloudinary' );
-		$property->setAccessible( true );
 		$property->setValue( $uploader, $mockCloudinary );
 
 		$this->expectException( \Exception::class );
@@ -841,7 +832,6 @@ class CloudinaryUploaderTest extends TestCase
 		// Use reflection to inject the mock
 		$reflection = new \ReflectionClass( $uploader );
 		$property = $reflection->getProperty( '_cloudinary' );
-		$property->setAccessible( true );
 		$property->setValue( $uploader, $mockCloudinary );
 
 		$this->expectException( \Exception::class );
@@ -869,7 +859,6 @@ class CloudinaryUploaderTest extends TestCase
 		// Use reflection to inject the mock
 		$reflection = new \ReflectionClass( $uploader );
 		$property = $reflection->getProperty( '_cloudinary' );
-		$property->setAccessible( true );
 		$property->setValue( $uploader, $mockCloudinary );
 
 		$this->expectException( \Exception::class );

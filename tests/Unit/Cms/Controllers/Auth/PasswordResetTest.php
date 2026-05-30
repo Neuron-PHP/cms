@@ -32,7 +32,6 @@ class PasswordResetTest extends TestCase
 		// Reset ViewDataProvider singleton for test isolation
 		$reflection = new \ReflectionClass(\Neuron\Mvc\Views\ViewDataProvider::class);
 		$instance = $reflection->getProperty('_instance');
-		$instance->setAccessible(true);
 		$instance->setValue(null, null);
 
 		// Create mocks

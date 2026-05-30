@@ -214,7 +214,6 @@ class SenderTest extends TestCase
 		$sender = new Sender( $this->settings, $this->basePath );
 		$reflection = new \ReflectionClass( $sender );
 		$method = $reflection->getMethod( 'createMailer' );
-		$method->setAccessible( true );
 
 		$mailer = $method->invoke( $sender );
 
@@ -246,7 +245,6 @@ class SenderTest extends TestCase
 		$sender = new Sender( $this->settings, $this->basePath );
 		$reflection = new \ReflectionClass( $sender );
 		$method = $reflection->getMethod( 'createMailer' );
-		$method->setAccessible( true );
 
 		$mailer = $method->invoke( $sender );
 
@@ -270,7 +268,6 @@ class SenderTest extends TestCase
 		$sender = new Sender( $this->settings, $this->basePath );
 		$reflection = new \ReflectionClass( $sender );
 		$method = $reflection->getMethod( 'createMailer' );
-		$method->setAccessible( true );
 
 		$mailer = $method->invoke( $sender );
 
@@ -294,7 +291,6 @@ class SenderTest extends TestCase
 		$sender = new Sender( $this->settings, $this->basePath );
 		$reflection = new \ReflectionClass( $sender );
 		$method = $reflection->getMethod( 'createMailer' );
-		$method->setAccessible( true );
 
 		$mailer = $method->invoke( $sender );
 
@@ -309,7 +305,6 @@ class SenderTest extends TestCase
 		$sender = new Sender( null, $this->basePath );
 		$reflection = new \ReflectionClass( $sender );
 		$method = $reflection->getMethod( 'createMailer' );
-		$method->setAccessible( true );
 
 		$mailer = $method->invoke( $sender );
 
@@ -336,7 +331,6 @@ class SenderTest extends TestCase
 		$sender = new Sender( $this->settings, $this->basePath );
 		$reflection = new \ReflectionClass( $sender );
 		$method = $reflection->getMethod( 'createMailer' );
-		$method->setAccessible( true );
 
 		$mailer = $method->invoke( $sender );
 
@@ -357,7 +351,6 @@ class SenderTest extends TestCase
 
 		$reflection = new \ReflectionClass( $sender );
 		$method = $reflection->getMethod( 'logEmail' );
-		$method->setAccessible( true );
 
 		$result = $method->invoke( $sender );
 

@@ -48,7 +48,6 @@ class DtoLoadingTest extends TestCase
 		// Make createDto accessible via reflection
 		$reflection = new ReflectionClass( $this->controller );
 		$this->createDtoMethod = $reflection->getMethod( 'createDto' );
-		$this->createDtoMethod->setAccessible( true );
 	}
 
 	/**

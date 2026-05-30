@@ -45,7 +45,6 @@ class DatabasePostRepositoryTest extends TestCase
 				// Skip parent constructor and directly assign PDO
 				$reflection = new \ReflectionClass( DatabasePostRepository::class );
 				$property = $reflection->getProperty( '_pdo' );
-				$property->setAccessible( true );
 				$property->setValue( $this, $PDO );
 			}
 		};

@@ -47,7 +47,6 @@ class ConnectionFactoryUrlSecretsTest extends TestCase
 		// Now test that ConnectionFactory can parse this correctly
 		$reflection = new \ReflectionClass( ConnectionFactory::class );
 		$parseMethod = $reflection->getMethod( 'parseUrl' );
-		$parseMethod->setAccessible( true );
 
 		$parsed = $parseMethod->invokeArgs( null, [ $config['url'] ] );
 
@@ -95,7 +94,6 @@ class ConnectionFactoryUrlSecretsTest extends TestCase
 
 		$reflection = new \ReflectionClass( ConnectionFactory::class );
 		$parseMethod = $reflection->getMethod( 'parseUrl' );
-		$parseMethod->setAccessible( true );
 
 		// Parse URL
 		$urlConfig = $parseMethod->invokeArgs( null, [ $config['url'] ] );
