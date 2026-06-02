@@ -88,7 +88,8 @@ class Pages extends Content
 				'ContentHtml' => $contentHtml,
 				'Title' => $pageTitle,
 				'Description' => $page->getMetaDescription() ?: $this->getDescription(),
-				'MetaKeywords' => $page->getMetaKeywords()
+				'MetaKeywords' => $page->getMetaKeywords(),
+				'Template' => $page->getTemplate()
 			],
 			'show'
 		);
