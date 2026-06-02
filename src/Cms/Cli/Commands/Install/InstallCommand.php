@@ -1620,7 +1620,7 @@ class InstallCommand extends Command
 
 		$this->output->writeln( "\nNext Steps:" );
 		$this->output->writeln( "  1. Create an admin user (prompted below)" );
-		$this->output->writeln( "  2. Review config/routes.yaml for admin routes" );
+		$this->output->writeln( "  2. Review config/routing.yaml for admin routes" );
 		$this->output->writeln( "  3. Start your server and visit /login" );
 		$this->output->writeln( "  4. Access admin at /admin/dashboard" );
 	}
