@@ -1,61 +1,127 @@
-<div class="container py-5">
-	<article class="page-content">
-		<header class="page-header mb-5">
-			<h1 class="display-4 mb-3"><?= htmlspecialchars($Page->getTitle()) ?></h1>
+<?php
+/**
+ * Public page view.
+ *
+ * Template-aware: the page's template controls the content container and chrome.
+ *  - default     : centered, narrow article (max 800px)
+ *  - full-width  : edge-to-edge content, no width cap
+ *  - sidebar     : content column with a page-info sidebar
+ *  - landing     : full-width content only (no header meta or footer)
+ *
+ * Falls back to the page model's template when no Template var is provided
+ * (keeps the view self-contained regardless of the calling controller).
+ */
+$template = $Template ?? ( isset( $Page ) ? $Page->getTemplate() : 'default' );
 
-			<?php if($Page->getPublishedAt()): ?>
-				<div class="text-muted mb-3">
-					<small>
-						<i class="bi bi-calendar3"></i>
-						Published on <?= $Page->getPublishedAt()->format('F j, Y') ?>
-					</small>
+$isLanding   = ( $template === 'landing' );
+$isFullWidth = ( $template === 'full-width' );
+$isSidebar   = ( $template === 'sidebar' );
+
+$containerClass = ( $isFullWidth || $isLanding ) ? 'container-fluid px-lg-5' : 'container';
+$contentColClass = $isSidebar ? 'col-lg-8' : 'col-12';
+?>
+<div class="<?= $containerClass ?> py-5 page-template-<?= htmlspecialchars( $template ) ?>">
+	<div class="row gx-5">
+		<div class="<?= $contentColClass ?>">
+			<article class="page-content">
+				<?php if( !$isLanding ): ?>
+					<header class="page-header mb-5">
+						<h1 class="display-4 mb-3"><?= htmlspecialchars( $Page->getTitle() ) ?></h1>
+
+						<?php if( $Page->getPublishedAt() ): ?>
+							<div class="text-muted mb-3">
+								<small>
+									<i class="bi bi-calendar3"></i>
+									Published on <?= $Page->getPublishedAt()->format( 'F j, Y' ) ?>
+								</small>
+							</div>
+						<?php endif; ?>
+
+						<?php if( $Page->getUpdatedAt() ): ?>
+							<div class="text-muted mb-3">
+								<small>
+									<i class="bi bi-clock"></i>
+									Last updated <?= $Page->getUpdatedAt()->format( 'F j, Y' ) ?>
+								</small>
+							</div>
+						<?php endif; ?>
+
+						<hr class="my-4">
+					</header>
+				<?php endif; ?>
+
+				<div class="page-body">
+					<?= $ContentHtml ?>
 				</div>
-			<?php endif; ?>
 
-			<?php if($Page->getUpdatedAt()): ?>
-				<div class="text-muted mb-3">
-					<small>
-						<i class="bi bi-clock"></i>
-						Last updated <?= $Page->getUpdatedAt()->format('F j, Y') ?>
-					</small>
-				</div>
-			<?php endif; ?>
-
-			<hr class="my-4">
-		</header>
-
-		<div class="page-body">
-			<?= $ContentHtml ?>
+				<?php if( !$isLanding && !$isSidebar ): ?>
+					<footer class="page-footer mt-5 pt-4 border-top">
+						<div class="row">
+							<div class="col-md-6">
+								<?php if( $Page->getAuthor() ): ?>
+									<p class="text-muted small mb-0">
+										<i class="bi bi-person"></i>
+										By <?= htmlspecialchars( $Page->getAuthor()->getUsername() ) ?>
+									</p>
+								<?php endif; ?>
+							</div>
+							<div class="col-md-6 text-md-end">
+								<p class="text-muted small mb-0">
+									<i class="bi bi-eye"></i>
+									<?= $Page->getViewCount() ?> <?= $Page->getViewCount() === 1 ? 'view' : 'views' ?>
+								</p>
+							</div>
+						</div>
+					</footer>
+				<?php endif; ?>
+			</article>
 		</div>
 
-		<footer class="page-footer mt-5 pt-4 border-top">
-			<div class="row">
-				<div class="col-md-6">
-					<?php if($Page->getAuthor()): ?>
-						<p class="text-muted small mb-0">
-							<i class="bi bi-person"></i>
-							By <?= htmlspecialchars($Page->getAuthor()->getUsername()) ?>
-						</p>
-					<?php endif; ?>
+		<?php if( $isSidebar ): ?>
+			<aside class="col-lg-4">
+				<div class="card border-0 shadow-sm">
+					<div class="card-body">
+						<h2 class="h6 text-uppercase text-muted mb-3">Page Info</h2>
+						<ul class="list-unstyled small mb-0">
+							<?php if( $Page->getPublishedAt() ): ?>
+								<li class="mb-2">
+									<i class="bi bi-calendar3 me-1"></i>
+									Published <?= $Page->getPublishedAt()->format( 'F j, Y' ) ?>
+								</li>
+							<?php endif; ?>
+							<?php if( $Page->getUpdatedAt() ): ?>
+								<li class="mb-2">
+									<i class="bi bi-clock me-1"></i>
+									Updated <?= $Page->getUpdatedAt()->format( 'F j, Y' ) ?>
+								</li>
+							<?php endif; ?>
+							<?php if( $Page->getAuthor() ): ?>
+								<li class="mb-2">
+									<i class="bi bi-person me-1"></i>
+									By <?= htmlspecialchars( $Page->getAuthor()->getUsername() ) ?>
+								</li>
+							<?php endif; ?>
+							<li class="mb-0">
+								<i class="bi bi-eye me-1"></i>
+								<?= $Page->getViewCount() ?> <?= $Page->getViewCount() === 1 ? 'view' : 'views' ?>
+							</li>
+						</ul>
+					</div>
 				</div>
-				<div class="col-md-6 text-md-end">
-					<p class="text-muted small mb-0">
-						<i class="bi bi-eye"></i>
-						<?= $Page->getViewCount() ?> <?= $Page->getViewCount() === 1 ? 'view' : 'views' ?>
-					</p>
-				</div>
-			</div>
-		</footer>
-	</article>
+			</aside>
+		<?php endif; ?>
+	</div>
 </div>
 
-<?php if($MetaKeywords): ?>
-	<!-- SEO Keywords: <?= htmlspecialchars($MetaKeywords) ?> -->
+<?php if( $MetaKeywords ): ?>
+	<!-- SEO Keywords: <?= htmlspecialchars( $MetaKeywords ) ?> -->
 <?php endif; ?>
 
 <style>
 /* Page-specific styles */
-.page-content {
+
+/* Default template keeps a readable, centered measure. */
+.page-template-default .page-content {
 	max-width: 800px;
 	margin: 0 auto;
 }

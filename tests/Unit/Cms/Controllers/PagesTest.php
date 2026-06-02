@@ -94,6 +94,7 @@ class PagesTest extends TestCase
 		$mockPage->method( 'getMetaTitle' )->willReturn( 'Test Meta Title' );
 		$mockPage->method( 'getMetaDescription' )->willReturn( 'Test meta description' );
 		$mockPage->method( 'getMetaKeywords' )->willReturn( 'test, keywords' );
+		$mockPage->method( 'getTemplate' )->willReturn( 'default' );
 
 		$mockPageRepository = $this->createMock( IPageRepository::class );
 		$mockPageRepository->method( 'findBySlug' )->with( 'test-page' )->willReturn( $mockPage );
@@ -132,6 +133,51 @@ class PagesTest extends TestCase
 		$result = $controller->show( $request );
 
 		$this->assertEquals( '<html>Page content</html>', $result );
+	}
+
+	public function testShowPassesPageTemplateToView(): void
+	{
+		$mockPage = $this->createMock( Page::class );
+		$mockPage->method( 'getId' )->willReturn( 1 );
+		$mockPage->method( 'getTitle' )->willReturn( 'Landing Page' );
+		$mockPage->method( 'isPublished' )->willReturn( true );
+		$mockPage->method( 'getContent' )->willReturn( [ 'blocks' => [] ] );
+		$mockPage->method( 'getMetaTitle' )->willReturn( '' );
+		$mockPage->method( 'getMetaDescription' )->willReturn( '' );
+		$mockPage->method( 'getMetaKeywords' )->willReturn( '' );
+		$mockPage->method( 'getTemplate' )->willReturn( 'landing' );
+
+		$mockPageRepository = $this->createMock( IPageRepository::class );
+		$mockPageRepository->method( 'findBySlug' )->willReturn( $mockPage );
+		$mockPageRepository->method( 'incrementViewCount' );
+
+		$mockRenderer = $this->createMock( EditorJsRenderer::class );
+		$mockRenderer->method( 'render' )->willReturn( '<p>Content</p>' );
+
+		$mockSettingManager = Registry::getInstance()->get( 'Settings' );
+		$mockSessionManager = $this->createMock( \Neuron\Cms\Auth\SessionManager::class );
+
+		$controller = $this->getMockBuilder( Pages::class )
+			->setConstructorArgs( [ $this->_mockApp, $mockSettingManager, $mockSessionManager, $mockPageRepository, $mockRenderer ] )
+			->onlyMethods( [ 'renderHtml' ] )
+			->getMock();
+
+		$controller->expects( $this->once() )
+			->method( 'renderHtml' )
+			->with(
+				$this->anything(),
+				$this->callback( function( $data ) {
+					return isset( $data['Template'] ) && $data['Template'] === 'landing';
+				} ),
+				'show'
+			)
+			->willReturn( '<html>Landing</html>' );
+
+		$request = new Request();
+		$request->setRouteParameters( [ 'slug' => 'landing-page' ] );
+		$result = $controller->show( $request );
+
+		$this->assertEquals( '<html>Landing</html>', $result );
 	}
 
 	public function testShowThrowsNotFoundForNonexistentPage(): void
