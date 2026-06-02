@@ -223,7 +223,6 @@ class UpgradeCommand extends Command
 		// Check for key indicators
 		$indicators = [
 			'/resources/views/admin',
-			'/config/routes.yaml',
 			'/db/migrate'
 		];
 
@@ -233,6 +232,14 @@ class UpgradeCommand extends Command
 			{
 				return false;
 			}
+		}
+
+		// Routing config: current installs use config/routing.yaml.
+		// Older installs may still have config/routes.yaml, so accept either.
+		if( !file_exists( $this->_projectPath . '/config/routing.yaml' )
+			&& !file_exists( $this->_projectPath . '/config/routes.yaml' ) )
+		{
+			return false;
 		}
 
 		return true;
