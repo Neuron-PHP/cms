@@ -1,7 +1,12 @@
 <div class="container-fluid">
 	<div class="d-flex justify-content-between align-items-center mb-4">
 		<h2>Edit Page: <?= htmlspecialchars($page->getTitle()) ?></h2>
-		<a href="<?= route_path('admin_pages') ?>" class="btn btn-secondary">Back to Pages</a>
+		<div class="btn-group">
+			<a href="<?= route_path('admin_pages_history', ['id' => $page->getId()]) ?>" class="btn btn-outline-secondary">
+				<i class="bi bi-clock-history"></i> History
+			</a>
+			<a href="<?= route_path('admin_pages') ?>" class="btn btn-secondary">Back to Pages</a>
+		</div>
 	</div>
 
 	<form method="POST" action="<?= route_path('admin_pages_update', ['id' => $page->getId()]) ?>" id="page-form">

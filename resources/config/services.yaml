@@ -74,6 +74,9 @@ services:
   Neuron\Cms\Repositories\DatabasePasswordResetTokenRepository:
     type: autowire
 
+  Neuron\Cms\Repositories\DatabaseRevisionRepository:
+    type: autowire
+
 
   # ============================================================================
   # REPOSITORIES - Interface Bindings
@@ -114,6 +117,10 @@ services:
   Neuron\Cms\Repositories\IPasswordResetTokenRepository:
     type: alias
     target: Neuron\Cms\Repositories\DatabasePasswordResetTokenRepository
+
+  Neuron\Cms\Repositories\IRevisionRepository:
+    type: alias
+    target: Neuron\Cms\Repositories\DatabaseRevisionRepository
 
 
   # ============================================================================
@@ -312,6 +319,18 @@ services:
 
   Neuron\Cms\Services\Content\EditorJsRenderer:
     type: autowire
+
+
+  # ============================================================================
+  # REVISION SERVICES
+  # ============================================================================
+
+  Neuron\Cms\Services\Revision\RevisionService:
+    type: autowire
+
+  Neuron\Cms\Services\Revision\IRevisionService:
+    type: alias
+    target: Neuron\Cms\Services\Revision\RevisionService
 
 
   # ============================================================================
