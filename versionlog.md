@@ -1,4 +1,4 @@
-## 0.8.51
+## 0.8.51 2026-06-03
 * Fixed an issue with cloudinary uploads.
 
 ## 0.8.50 2026-06-03
