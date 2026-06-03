@@ -1,4 +1,5 @@
 ## 0.8.50
+* Added media-picker to the page editor.
 
 ## 0.8.49 2026-06-03
 * Fixed the page view button in the page manager.

@@ -185,6 +185,9 @@ function initializeEditor() {
 					config: {
 						endpoints: {
 							byFile: '/admin/upload/image'
+						},
+						additionalRequestHeaders: {
+							'X-CSRF-Token': '<?= htmlspecialchars( csrf_token() ) ?>'
 						}
 					}
 				},
