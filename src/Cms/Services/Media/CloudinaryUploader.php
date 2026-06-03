@@ -352,10 +352,14 @@ class CloudinaryUploader implements IMediaUploader
 	/**
 	 * Format Cloudinary result into standardized array
 	 *
-	 * @param array $result Cloudinary upload result
+	 * The Cloudinary SDK returns ApiResponse objects (which implement
+	 * ArrayAccess) from upload calls, while nested resource entries from
+	 * listing calls are plain arrays - accept both.
+	 *
+	 * @param array|\ArrayAccess $result Cloudinary upload/resource result
 	 * @return array Formatted result
 	 */
-	private function formatResult( array $result ): array
+	private function formatResult( array|\ArrayAccess $result ): array
 	{
 		return [
 			'url' => $result['secure_url'] ?? $result['url'] ?? '',
