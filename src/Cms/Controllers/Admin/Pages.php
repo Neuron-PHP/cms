@@ -65,6 +65,38 @@ class Pages extends Content
 	}
 
 	/**
+	 * Resolve the revision service.
+	 *
+	 * PHP-DI autowiring does not inject optional constructor parameters, so the
+	 * service is resolved lazily from the container when it was not supplied.
+	 *
+	 * @return IRevisionService|null
+	 */
+	private function getRevisionService(): ?IRevisionService
+	{
+		if( $this->_revisions instanceof IRevisionService )
+		{
+			return $this->_revisions;
+		}
+
+		try
+		{
+			$container = \Neuron\Patterns\Registry::getInstance()->get( \Neuron\Core\Registry\RegistryKeys::CONTAINER );
+
+			if( $container instanceof \Neuron\Patterns\Container\IContainer && $container->has( IRevisionService::class ) )
+			{
+				$this->_revisions = $container->get( IRevisionService::class );
+			}
+		}
+		catch( \Throwable $e )
+		{
+			// Best-effort: revision recording must never block content operations.
+		}
+
+		return $this->_revisions;
+	}
+
+	/**
 	 * List all pages
 	 * @param Request $request
 	 * @return string
@@ -153,7 +185,7 @@ class Pages extends Content
 				$this->redirect( 'admin_pages_create', [], [FlashMessageType::ERROR->value, 'Failed to create page. Please try again.'] );
 			}
 
-			$this->_revisions?->recordPage( $page, \Neuron\Cms\Models\Revision::ACTION_CREATED );
+				$this->getRevisionService()?->recordPage( $page, \Neuron\Cms\Models\Revision::ACTION_CREATED );
 
 			Log::info( "Page created successfully: ID {$page->getId()}, title: {$dto->title}, by user " . user_id() );
 			$this->redirect( 'admin_pages', [], [FlashMessageType::SUCCESS->value, 'Page created successfully'] );
@@ -255,7 +287,7 @@ class Pages extends Content
 
 			if( $success instanceof Page )
 			{
-				$this->_revisions?->recordPage( $success, \Neuron\Cms\Models\Revision::ACTION_UPDATED );
+				$this->getRevisionService()?->recordPage( $success, \Neuron\Cms\Models\Revision::ACTION_UPDATED );
 			}
 
 			Log::info( "Page updated successfully: Page {$pageId}, title: {$dto->title}, by user " . user_id() );
@@ -295,7 +327,8 @@ class Pages extends Content
 
 		$this->initializeCsrfToken();
 
-		$revisions = $this->_revisions ? $this->_revisions->listForPage( $pageId ) : [];
+		$service = $this->getRevisionService();
+		$revisions = $service ? $service->listForPage( $pageId ) : [];
 
 		return $this->view()
 			->title( 'Page History' )
@@ -336,7 +369,7 @@ class Pages extends Content
 			$this->redirect( 'admin_pages', [], [FlashMessageType::ERROR->value, 'Unauthorized to view this page'] );
 		}
 
-		$revision = $this->_revisions?->find( $revisionId );
+		$revision = $this->getRevisionService()?->find( $revisionId );
 
 		if( !$revision || $revision->getContentId() !== $pageId || $revision->getContentType() !== \Neuron\Cms\Models\Revision::TYPE_PAGE )
 		{
@@ -390,7 +423,7 @@ class Pages extends Content
 			$this->redirect( 'admin_pages', [], [FlashMessageType::ERROR->value, 'Unauthorized to edit this page'] );
 		}
 
-		$revision = $this->_revisions?->find( $revisionId );
+		$revision = $this->getRevisionService()?->find( $revisionId );
 
 		if( !$revision || $revision->getContentId() !== $pageId || $revision->getContentType() !== \Neuron\Cms\Models\Revision::TYPE_PAGE )
 		{
@@ -411,7 +444,7 @@ class Pages extends Content
 			$page->setStatus( $snapshot['status'] ?? $page->getStatus() );
 
 			$this->_pageRepository->update( $page );
-			$this->_revisions?->recordPage( $page, \Neuron\Cms\Models\Revision::ACTION_RESTORED );
+			$this->getRevisionService()?->recordPage( $page, \Neuron\Cms\Models\Revision::ACTION_RESTORED );
 
 			Log::info( "Page {$pageId} restored to revision {$revisionId} by user " . user_id() );
 			$this->redirect( 'admin_pages_edit', ['id' => $pageId], [FlashMessageType::SUCCESS->value, 'Page restored from revision'] );
