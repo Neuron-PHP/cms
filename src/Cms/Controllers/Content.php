@@ -365,18 +365,40 @@ class Content extends Base
 		{
 			$value = $request->post( $name, null );
 
-			if( $value !== null )
+			if( $value === null )
 			{
-				// Handle boolean fields - convert checkbox 'on' to true
-				if( $property->getType() === 'boolean' )
+				continue;
+			}
+
+			$type = $property->getType();
+
+			// Handle boolean fields - convert checkbox 'on' to true
+			if( $type === 'boolean' )
+			{
+				$dto->$name = ( $value === 'on' || $value === '1' || $value === 1 || $value === true );
+				continue;
+			}
+
+			// Numeric fields arrive from HTML forms as strings, but the integer
+			// and float type validators require real int/float values. Cast
+			// numeric input to its declared type so validation passes. An empty
+			// value for an optional numeric field is treated as "not provided"
+			// so it stays unset rather than failing or persisting as 0.
+			if( $type === 'integer' || $type === 'float' )
+			{
+				if( $value === '' )
 				{
-					$dto->$name = ( $value === 'on' || $value === '1' || $value === 1 || $value === true );
+					continue;
 				}
-				else
+
+				if( is_numeric( $value ) )
 				{
-					$dto->$name = $value;
+					$dto->$name = ( $type === 'integer' ) ? (int)$value : (float)$value;
+					continue;
 				}
 			}
+
+			$dto->$name = $value;
 		}
 	}
 

@@ -1,7 +1,12 @@
 <div class="container-fluid">
 	<div class="d-flex justify-content-between align-items-center mb-4">
 		<h2>Edit Post: <?= htmlspecialchars( $post->getTitle() ) ?></h2>
-		<a href="<?= route_path('admin_posts') ?>" class="btn btn-secondary">Back to Posts</a>
+		<div class="btn-group">
+			<a href="<?= route_path('admin_posts_history', ['id' => $post->getId()]) ?>" class="btn btn-outline-secondary">
+				<i class="bi bi-clock-history"></i> History
+			</a>
+			<a href="<?= route_path('admin_posts') ?>" class="btn btn-secondary">Back to Posts</a>
+		</div>
 	</div>
 
 	<div class="card">

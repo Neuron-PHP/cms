@@ -9,6 +9,7 @@ use Neuron\Cms\Models\Page;
 use Neuron\Cms\Repositories\IPageRepository;
 use Neuron\Cms\Services\Page\IPageCreator;
 use Neuron\Cms\Services\Page\IPageUpdater;
+use Neuron\Cms\Services\Revision\IRevisionService;
 use Neuron\Cms\Services\Auth\CsrfToken;
 use Neuron\Data\Settings\SettingManager;
 use Neuron\Mvc\IMvcApplication;
@@ -34,6 +35,7 @@ class Pages extends Content
 	private IPageRepository $_pageRepository;
 	private IPageCreator $_pageCreator;
 	private IPageUpdater $_pageUpdater;
+	private ?IRevisionService $_revisions;
 
 	/**
 	 * @param IMvcApplication $app
@@ -42,6 +44,7 @@ class Pages extends Content
 	 * @param IPageRepository $pageRepository
 	 * @param IPageCreator $pageCreator
 	 * @param IPageUpdater $pageUpdater
+	 * @param IRevisionService|null $revisions
 	 */
 	public function __construct(
 		IMvcApplication $app,
@@ -49,7 +52,8 @@ class Pages extends Content
 		SessionManager $sessionManager,
 		IPageRepository $pageRepository,
 		IPageCreator $pageCreator,
-		IPageUpdater $pageUpdater
+		IPageUpdater $pageUpdater,
+		?IRevisionService $revisions = null
 	)
 	{
 		parent::__construct( $app, $settings, $sessionManager );
@@ -57,6 +61,7 @@ class Pages extends Content
 		$this->_pageRepository = $pageRepository;
 		$this->_pageCreator = $pageCreator;
 		$this->_pageUpdater = $pageUpdater;
+		$this->_revisions = $revisions;
 	}
 
 	/**
@@ -147,6 +152,8 @@ class Pages extends Content
 				Log::error( "Page creation failed for user " . user_id() . ", title: {$dto->title}" );
 				$this->redirect( 'admin_pages_create', [], [FlashMessageType::ERROR->value, 'Failed to create page. Please try again.'] );
 			}
+
+			$this->_revisions?->recordPage( $page, \Neuron\Cms\Models\Revision::ACTION_CREATED );
 
 			Log::info( "Page created successfully: ID {$page->getId()}, title: {$dto->title}, by user " . user_id() );
 			$this->redirect( 'admin_pages', [], [FlashMessageType::SUCCESS->value, 'Page created successfully'] );
@@ -246,6 +253,11 @@ class Pages extends Content
 				$this->redirect( 'admin_pages_edit', ['id' => $pageId], [FlashMessageType::ERROR->value, 'Failed to update page. Please try again.'] );
 			}
 
+			if( $success instanceof Page )
+			{
+				$this->_revisions?->recordPage( $success, \Neuron\Cms\Models\Revision::ACTION_UPDATED );
+			}
+
 			Log::info( "Page updated successfully: Page {$pageId}, title: {$dto->title}, by user " . user_id() );
 			$this->redirect( 'admin_pages', [], [FlashMessageType::SUCCESS->value, 'Page updated successfully'] );
 		}
@@ -256,6 +268,158 @@ class Pages extends Content
 				'trace' => $e->getTraceAsString()
 			] );
 			$this->redirect( 'admin_pages_edit', ['id' => $pageId], [FlashMessageType::ERROR->value, $e->getMessage()] );
+		}
+	}
+
+	/**
+	 * List revision history for a page
+	 * @param Request $request
+	 * @return string
+	 * @throws \Exception
+	 */
+	#[Get('/pages/:id/history', name: 'admin_pages_history')]
+	public function history( Request $request ): string
+	{
+		$pageId = (int)$request->getRouteParameter( 'id' );
+		$page = $this->_pageRepository->findById( $pageId );
+
+		if( !$page )
+		{
+			$this->redirect( 'admin_pages', [], [FlashMessageType::ERROR->value, 'Page not found'] );
+		}
+
+		if( !is_admin() && !is_editor() && $page->getAuthorId() !== user_id() )
+		{
+			$this->redirect( 'admin_pages', [], [FlashMessageType::ERROR->value, 'Unauthorized to view this page'] );
+		}
+
+		$this->initializeCsrfToken();
+
+		$revisions = $this->_revisions ? $this->_revisions->listForPage( $pageId ) : [];
+
+		return $this->view()
+			->title( 'Page History' )
+			->description( 'Revision history' )
+			->withCurrentUser()
+			->withCsrfToken()
+			->with([
+				'contentTitle' => $page->getTitle(),
+				'contentId'    => $pageId,
+				'revisions'    => $revisions,
+				'routePrefix'  => 'admin_pages',
+				'backRoute'    => 'admin_pages_edit'
+			])
+			->render( 'history', 'admin' );
+	}
+
+	/**
+	 * View a single page revision
+	 * @param Request $request
+	 * @return string
+	 * @throws \Exception
+	 */
+	#[Get('/pages/:id/history/:revision', name: 'admin_pages_history_show')]
+	public function historyShow( Request $request ): string
+	{
+		$pageId = (int)$request->getRouteParameter( 'id' );
+		$revisionId = (int)$request->getRouteParameter( 'revision' );
+
+		$page = $this->_pageRepository->findById( $pageId );
+
+		if( !$page )
+		{
+			$this->redirect( 'admin_pages', [], [FlashMessageType::ERROR->value, 'Page not found'] );
+		}
+
+		if( !is_admin() && !is_editor() && $page->getAuthorId() !== user_id() )
+		{
+			$this->redirect( 'admin_pages', [], [FlashMessageType::ERROR->value, 'Unauthorized to view this page'] );
+		}
+
+		$revision = $this->_revisions?->find( $revisionId );
+
+		if( !$revision || $revision->getContentId() !== $pageId || $revision->getContentType() !== \Neuron\Cms\Models\Revision::TYPE_PAGE )
+		{
+			$this->redirect( 'admin_pages_history', ['id' => $pageId], [FlashMessageType::ERROR->value, 'Revision not found'] );
+		}
+
+		$this->initializeCsrfToken();
+
+		$snapshot = $revision->getSnapshotData();
+		$renderer = new \Neuron\Cms\Services\Content\EditorJsRenderer();
+		$contentHtml = $renderer->render( json_decode( (string)( $snapshot['content'] ?? '{"blocks":[]}' ), true ) ?? ['blocks' => []] );
+
+		return $this->view()
+			->title( 'View Revision' )
+			->description( 'Revision preview' )
+			->withCurrentUser()
+			->withCsrfToken()
+			->with([
+				'contentTitle' => $page->getTitle(),
+				'contentId'    => $pageId,
+				'revision'     => $revision,
+				'snapshot'     => $snapshot,
+				'contentHtml'  => $contentHtml,
+				'routePrefix'  => 'admin_pages',
+				'backRoute'    => 'admin_pages_edit'
+			])
+			->render( 'history-show', 'admin' );
+	}
+
+	/**
+	 * Restore a page to a previous revision
+	 * @param Request $request
+	 * @return never
+	 * @throws \Exception
+	 */
+	#[Post('/pages/:id/history/:revision/restore', name: 'admin_pages_history_restore', filters: ['csrf'])]
+	public function historyRestore( Request $request ): never
+	{
+		$pageId = (int)$request->getRouteParameter( 'id' );
+		$revisionId = (int)$request->getRouteParameter( 'revision' );
+
+		$page = $this->_pageRepository->findById( $pageId );
+
+		if( !$page )
+		{
+			$this->redirect( 'admin_pages', [], [FlashMessageType::ERROR->value, 'Page not found'] );
+		}
+
+		if( !is_admin() && !is_editor() && $page->getAuthorId() !== user_id() )
+		{
+			$this->redirect( 'admin_pages', [], [FlashMessageType::ERROR->value, 'Unauthorized to edit this page'] );
+		}
+
+		$revision = $this->_revisions?->find( $revisionId );
+
+		if( !$revision || $revision->getContentId() !== $pageId || $revision->getContentType() !== \Neuron\Cms\Models\Revision::TYPE_PAGE )
+		{
+			$this->redirect( 'admin_pages_history', ['id' => $pageId], [FlashMessageType::ERROR->value, 'Revision not found'] );
+		}
+
+		try
+		{
+			$snapshot = $revision->getSnapshotData();
+
+			$page->setTitle( $snapshot['title'] ?? $page->getTitle() );
+			$page->setSlug( $snapshot['slug'] ?? $page->getSlug() );
+			$page->setContent( (string)( $snapshot['content'] ?? $page->getContentRaw() ) );
+			$page->setTemplate( $snapshot['template'] ?? $page->getTemplate() );
+			$page->setMetaTitle( $snapshot['meta_title'] ?? null );
+			$page->setMetaDescription( $snapshot['meta_description'] ?? null );
+			$page->setMetaKeywords( $snapshot['meta_keywords'] ?? null );
+			$page->setStatus( $snapshot['status'] ?? $page->getStatus() );
+
+			$this->_pageRepository->update( $page );
+			$this->_revisions?->recordPage( $page, \Neuron\Cms\Models\Revision::ACTION_RESTORED );
+
+			Log::info( "Page {$pageId} restored to revision {$revisionId} by user " . user_id() );
+			$this->redirect( 'admin_pages_edit', ['id' => $pageId], [FlashMessageType::SUCCESS->value, 'Page restored from revision'] );
+		}
+		catch( \Exception $e )
+		{
+			Log::error( "Failed to restore page {$pageId} to revision {$revisionId}: {$e->getMessage()}" );
+			$this->redirect( 'admin_pages_history', ['id' => $pageId], [FlashMessageType::ERROR->value, 'Failed to restore revision: ' . $e->getMessage()] );
 		}
 	}
 
