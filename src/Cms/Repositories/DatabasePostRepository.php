@@ -182,7 +182,8 @@ class DatabasePostRepository implements IPostRepository
 	 */
 	public function all( ?string $status = null, int $limit = 0, int $offset = 0 ): array
 	{
-		$query = Post::query();
+		// Eager load author so listings can display the author name
+		$query = Post::query()->with( 'author' );
 
 		if( $status )
 		{
@@ -204,7 +205,8 @@ class DatabasePostRepository implements IPostRepository
 	 */
 	public function getByAuthor( int $authorId, ?string $status = null ): array
 	{
-		$query = Post::query()->where( 'author_id', $authorId );
+		// Eager load author so listings can display the author name
+		$query = Post::query()->with( 'author' )->where( 'author_id', $authorId );
 
 		if( $status )
 		{

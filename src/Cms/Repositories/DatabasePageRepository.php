@@ -115,7 +115,8 @@ class DatabasePageRepository implements IPageRepository
 	 */
 	public function all( ?string $status = null, int $limit = 0, int $offset = 0 ): array
 	{
-		$query = Page::query();
+		// Eager load author so listings can display the author name
+		$query = Page::with( 'author' );
 
 		if( $status )
 		{
@@ -153,7 +154,8 @@ class DatabasePageRepository implements IPageRepository
 	 */
 	public function getByAuthor( int $authorId, ?string $status = null ): array
 	{
-		$query = Page::query()->where( 'author_id', $authorId );
+		// Eager load author so listings can display the author name
+		$query = Page::with( 'author' )->where( 'author_id', $authorId );
 
 		if( $status )
 		{
