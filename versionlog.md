@@ -1,4 +1,4 @@
-## 0.8.49
+## 0.8.49 2026-06-03
 * Fixed the page view button in the page manager.
 
 ## 0.8.48 2026-06-02
