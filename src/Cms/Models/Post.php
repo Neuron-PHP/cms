@@ -229,6 +229,12 @@ class Post extends Model
 	 */
 	public function getAuthor(): ?User
 	{
+		// Check if author was eager loaded by ORM (BelongsTo stores under the foreign key name)
+		if( isset( $this->_loadedRelations['author_id'] ) )
+		{
+			return $this->_loadedRelations['author_id'];
+		}
+
 		return $this->_author;
 	}
 
@@ -238,6 +244,8 @@ class Post extends Model
 	public function setAuthor( ?User $author ): self
 	{
 		$this->_author = $author;
+		// Keep loaded relations in sync (BelongsTo uses the foreign key name as key)
+		$this->_loadedRelations['author_id'] = $author;
 		if( $author && $author->getId() )
 		{
 			$this->_authorId = $author->getId();
