@@ -111,7 +111,7 @@
 					<i class="bi bi-check-circle"></i> Update Page
 				</button>
 				<?php if($page->isPublished()): ?>
-					<a href="<?= route_path('page_show', ['slug' => $page->getSlug()]) ?>" class="btn btn-outline-secondary w-100 mb-2" target="_blank">
+					<a href="<?= route_path('page', ['slug' => $page->getSlug()]) ?>" class="btn btn-outline-secondary w-100 mb-2" target="_blank">
 						<i class="bi bi-eye"></i> View Page
 					</a>
 				<?php endif; ?>

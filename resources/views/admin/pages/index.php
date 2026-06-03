@@ -76,7 +76,7 @@
 												<i class="bi bi-pencil"></i> Edit
 											</a>
 											<?php if($page->isPublished()): ?>
-												<a href="<?= route_path('page_show', ['slug' => $page->getSlug()]) ?>"
+												<a href="<?= route_path('page', ['slug' => $page->getSlug()]) ?>"
 												   class="btn btn-outline-secondary"
 												   target="_blank"
 												   title="View">
