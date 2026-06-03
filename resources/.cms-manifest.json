@@ -11,7 +11,11 @@
     "20250117000000_create_post_categories_table.php",
     "20250118000000_create_post_tags_table.php",
     "20251119224525_add_content_raw_to_posts.php",
-    "20251205000000_add_two_factor_and_timezone_to_users.php"
+    "20251205000000_add_two_factor_and_timezone_to_users.php",
+    "20251221000000_create_event_categories_table.php",
+    "20251221000001_create_events_table.php",
+    "20251229000000_update_foreign_keys_to_set_null.php",
+    "20260603120000_create_content_revisions_table.php"
   ],
   "config_files": [
     "auth.yaml",

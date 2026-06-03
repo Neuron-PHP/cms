@@ -79,6 +79,38 @@ class Posts extends Content
 	}
 
 	/**
+	 * Resolve the revision service.
+	 *
+	 * PHP-DI autowiring does not inject optional constructor parameters, so the
+	 * service is resolved lazily from the container when it was not supplied.
+	 *
+	 * @return IRevisionService|null
+	 */
+	private function getRevisionService(): ?IRevisionService
+	{
+		if( $this->_revisions instanceof IRevisionService )
+		{
+			return $this->_revisions;
+		}
+
+		try
+		{
+			$container = \Neuron\Patterns\Registry::getInstance()->get( \Neuron\Core\Registry\RegistryKeys::CONTAINER );
+
+			if( $container instanceof \Neuron\Patterns\Container\IContainer && $container->has( IRevisionService::class ) )
+			{
+				$this->_revisions = $container->get( IRevisionService::class );
+			}
+		}
+		catch( \Throwable $e )
+		{
+			// Best-effort: revision recording must never block content operations.
+		}
+
+		return $this->_revisions;
+	}
+
+	/**
 	 * List all posts
 	 * @param Request $request
 	 * @return string
@@ -168,7 +200,7 @@ class Posts extends Content
 
 			if( $post instanceof Post )
 			{
-				$this->_revisions?->recordPost( $post, \Neuron\Cms\Models\Revision::ACTION_CREATED );
+				$this->getRevisionService()?->recordPost( $post, \Neuron\Cms\Models\Revision::ACTION_CREATED );
 			}
 
 			$this->redirect( 'admin_posts', [], [FlashMessageType::SUCCESS->value, 'Post created successfully'] );
@@ -265,7 +297,7 @@ class Posts extends Content
 
 			if( $post instanceof Post )
 			{
-				$this->_revisions?->recordPost( $post, \Neuron\Cms\Models\Revision::ACTION_UPDATED );
+				$this->getRevisionService()?->recordPost( $post, \Neuron\Cms\Models\Revision::ACTION_UPDATED );
 			}
 
 			$this->redirect( 'admin_posts', [], [FlashMessageType::SUCCESS->value, 'Post updated successfully'] );
@@ -300,7 +332,8 @@ class Posts extends Content
 
 		$this->initializeCsrfToken();
 
-		$revisions = $this->_revisions ? $this->_revisions->listForPost( $postId ) : [];
+		$service = $this->getRevisionService();
+		$revisions = $service ? $service->listForPost( $postId ) : [];
 
 		return $this->view()
 			->title( 'Post History' )
@@ -341,7 +374,7 @@ class Posts extends Content
 			$this->redirect( 'admin_posts', [], [FlashMessageType::ERROR->value, 'Unauthorized to view this post'] );
 		}
 
-		$revision = $this->_revisions?->find( $revisionId );
+		$revision = $this->getRevisionService()?->find( $revisionId );
 
 		if( !$revision || $revision->getContentId() !== $postId || $revision->getContentType() !== \Neuron\Cms\Models\Revision::TYPE_POST )
 		{
@@ -395,7 +428,7 @@ class Posts extends Content
 			$this->redirect( 'admin_posts', [], [FlashMessageType::ERROR->value, 'Unauthorized to edit this post'] );
 		}
 
-		$revision = $this->_revisions?->find( $revisionId );
+		$revision = $this->getRevisionService()?->find( $revisionId );
 
 		if( !$revision || $revision->getContentId() !== $postId || $revision->getContentType() !== \Neuron\Cms\Models\Revision::TYPE_POST )
 		{
@@ -414,7 +447,7 @@ class Posts extends Content
 			$post->setStatus( $snapshot['status'] ?? $post->getStatus() );
 
 			$this->_postRepository->update( $post );
-			$this->_revisions?->recordPost( $post, \Neuron\Cms\Models\Revision::ACTION_RESTORED );
+			$this->getRevisionService()?->recordPost( $post, \Neuron\Cms\Models\Revision::ACTION_RESTORED );
 
 			$this->redirect( 'admin_posts_edit', ['id' => $postId], [FlashMessageType::SUCCESS->value, 'Post restored from revision'] );
 		}
