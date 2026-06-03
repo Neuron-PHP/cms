@@ -126,11 +126,14 @@
 (function() {
 	let selectedMediaUrl = null;
 	let nextCursor = null;
-	let targetInputId = null;
+	// Target may be either a string (id of an input to populate) or a
+	// callback function that receives the selected/uploaded image URL.
+	let pickerTarget = null;
 
-	// Open media picker
-	window.openMediaPicker = function(inputId) {
-		targetInputId = inputId;
+	// Open media picker.
+	// @param {string|function} target Input id to populate, or a callback( url ).
+	window.openMediaPicker = function(target) {
+		pickerTarget = target;
 		selectedMediaUrl = null;
 		nextCursor = null;
 
@@ -262,23 +265,33 @@
 		}
 	});
 
+	// Apply the chosen URL to the configured target (input id or callback)
+	function applyPickedUrl(url) {
+		if (typeof pickerTarget === 'function') {
+			pickerTarget(url);
+			return;
+		}
+
+		const input = document.getElementById(pickerTarget);
+		if (input) {
+			input.value = url;
+
+			// Trigger change event for any listeners
+			input.dispatchEvent(new Event('change'));
+
+			// Update preview if it exists
+			const preview = document.getElementById(pickerTarget + '_preview');
+			if (preview) {
+				preview.src = url;
+				preview.classList.remove('d-none');
+			}
+		}
+	}
+
 	// Select button
 	document.getElementById('selectMediaBtn')?.addEventListener('click', function() {
-		if (selectedMediaUrl && targetInputId) {
-			const input = document.getElementById(targetInputId);
-			if (input) {
-				input.value = selectedMediaUrl;
-
-				// Trigger change event for any listeners
-				input.dispatchEvent(new Event('change'));
-
-				// Update preview if it exists
-				const preview = document.getElementById(targetInputId + '_preview');
-				if (preview) {
-					preview.src = selectedMediaUrl;
-					preview.classList.remove('d-none');
-				}
-			}
+		if (selectedMediaUrl && pickerTarget) {
+			applyPickedUrl(selectedMediaUrl);
 
 			// Close modal
 			bootstrap.Modal.getInstance(document.getElementById('mediaPickerModal')).hide();
@@ -326,11 +339,11 @@
 		// Disable button during upload
 		uploadBtn.disabled = true;
 
-		fetch('<?= route_path('admin_media_featured_upload') ?>', {
+		fetch('<?= route_path('admin_upload_featured_image') ?>', {
 			method: 'POST',
 			body: formData,
 			headers: {
-				'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || ''
+				'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]')?.content || ''
 			}
 		})
 		.then(response => response.json())
@@ -342,20 +355,9 @@
 				uploadSuccess.textContent = 'Image uploaded successfully!';
 				uploadSuccess.classList.remove('d-none');
 
-				// Set the URL in the target input
-				if (targetInputId) {
-					const input = document.getElementById(targetInputId);
-					if (input) {
-						input.value = data.data.url;
-						input.dispatchEvent(new Event('change'));
-
-						// Update preview
-						const preview = document.getElementById(targetInputId + '_preview');
-						if (preview) {
-							preview.src = data.data.url;
-							preview.classList.remove('d-none');
-						}
-					}
+				// Set the URL on the configured target (input id or callback)
+				if (pickerTarget) {
+					applyPickedUrl(data.data.url);
 				}
 
 				// Close modal after 1 second

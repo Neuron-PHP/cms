@@ -5,6 +5,7 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<title><?= htmlspecialchars($Title ?? 'Admin') ?></title>
 	<meta name="description" content="<?= htmlspecialchars($Description ?? '') ?>">
+	<meta name="csrf-token" content="<?= htmlspecialchars( csrf_token() ) ?>">
 
 	<link href="https://cdn.jsdelivr.net/npm/bootswatch@5.3.7/dist/<?= htmlspecialchars($theme) ?>/bootstrap.min.css" rel="stylesheet">
 	<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">

@@ -31,6 +31,11 @@
 
 						<div class="mb-3">
 							<label class="form-label">Content</label>
+							<div class="mb-2">
+								<button type="button" class="btn btn-sm btn-outline-secondary" onclick="insertLibraryImage()">
+									<i class="bi bi-images"></i> Insert image from Library
+								</button>
+							</div>
 							<div id="editorjs" style="border: 1px solid #ddd; border-radius: 0.25rem; padding: 20px; min-height: 400px; background: #fff;"></div>
 							<input type="hidden" name="content" id="content-json">
 							<small class="form-text text-muted">
@@ -138,6 +143,9 @@ const editor = new EditorJS({
 			config: {
 				endpoints: {
 					byFile: '/admin/upload/image'
+				},
+				additionalRequestHeaders: {
+					'X-CSRF-Token': '<?= htmlspecialchars( csrf_token() ) ?>'
 				}
 			}
 		},
@@ -207,4 +215,16 @@ document.getElementById('page-form').addEventListener('submit', async (e) => {
 		alert('Error preparing content. Please try again.');
 	}
 });
+
+// Insert an image chosen from the media library as an Editor.js image block
+window.insertLibraryImage = function() {
+	if (typeof window.openMediaPicker !== 'function') {
+		return;
+	}
+	window.openMediaPicker(function(url) {
+		editor.blocks.insert('image', { file: { url: url } });
+	});
+};
 </script>
+
+<?php include __DIR__ . '/../../partials/media-picker-modal.php'; ?>
