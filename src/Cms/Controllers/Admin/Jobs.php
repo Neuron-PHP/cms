@@ -81,14 +81,50 @@ class Jobs extends Content
 	 */
 	private function getSchedulePath(): ?string
 	{
-		$basePath = Registry::getInstance()->get( RegistryKeys::BASE_PATH );
+		$basePath = $this->resolveBasePath();
 
-		if( !$basePath )
+		if( $basePath === null || $basePath === '' )
 		{
 			return null;
 		}
 
-		return rtrim( (string)$basePath, '/' ) . '/config/schedule.yaml';
+		return rtrim( $basePath, '/' ) . '/config/schedule.yaml';
+	}
+
+	/**
+	 * Determine the application base path.
+	 *
+	 * Mirrors the resolution used by the scheduler so the admin view and the
+	 * CLI agree. The configured system.base_path is authoritative; the Registry
+	 * keys are fallbacks (the MVC application only populates the legacy key in a
+	 * web request, so RegistryKeys::BASE_PATH is often unset).
+	 *
+	 * @return string|null
+	 */
+	private function resolveBasePath(): ?string
+	{
+		$configured = $this->_settings->get( 'system', 'base_path' );
+
+		if( is_string( $configured ) && $configured !== '' )
+		{
+			return $configured;
+		}
+
+		$registry = Registry::getInstance();
+
+		foreach( [ RegistryKeys::BASE_PATH, RegistryKeys::BASE_PATH_LEGACY ] as $key )
+		{
+			$value = $registry->get( $key );
+
+			if( is_string( $value ) && $value !== '' )
+			{
+				return $value;
+			}
+		}
+
+		$cwd = getcwd();
+
+		return $cwd !== false ? $cwd : null;
 	}
 
 	/**
