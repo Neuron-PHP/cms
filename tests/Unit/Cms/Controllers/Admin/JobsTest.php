@@ -96,6 +96,69 @@ class JobsTest extends TestCase
 	}
 
 	/**
+	 * Regression: in a web request RegistryKeys::BASE_PATH is not populated
+	 * (only the legacy key is). The base path must resolve from the configured
+	 * system.base_path setting instead.
+	 *
+	 * @runInSeparateProcess
+	 * @preserveGlobalState disabled
+	 */
+	public function testResolvesBasePathFromSystemSettingWithoutRegistry(): void
+	{
+		// Configure system.base_path and place schedule.yaml under it.
+		$this->_settingManager->set( 'system', 'base_path', $this->_basePath );
+		file_put_contents(
+			$this->_basePath . '/config/schedule.yaml',
+			"schedule:\n  demo:\n    class: App\\Jobs\\DemoJob\n    cron: \"0 1 * * *\"\n"
+		);
+
+		// Deliberately do NOT set RegistryKeys::BASE_PATH.
+		Registry::getInstance()->set( RegistryKeys::BASE_PATH, null );
+
+		$controller = $this->getMockBuilder( Jobs::class )
+			->setConstructorArgs( [ $this->_mockApp, $this->mockSettingManager, $this->mockSessionManager ] )
+			->onlyMethods( [ 'view' ] )
+			->getMock();
+
+		$capturedJobs = null;
+		$capturedExists = false;
+
+		$mockViewContext = $this->getMockBuilder( ViewContext::class )
+			->disableOriginalConstructor()
+			->onlyMethods( [ 'title', 'description', 'withCurrentUser', 'withCsrfToken', 'with', 'render' ] )
+			->getMock();
+
+		$mockViewContext->method( 'title' )->willReturn( $mockViewContext );
+		$mockViewContext->method( 'description' )->willReturn( $mockViewContext );
+		$mockViewContext->method( 'withCurrentUser' )->willReturn( $mockViewContext );
+		$mockViewContext->method( 'withCsrfToken' )->willReturn( $mockViewContext );
+		$mockViewContext->method( 'with' )->willReturnCallback(
+			function( $data ) use ( $mockViewContext, &$capturedJobs, &$capturedExists )
+			{
+				if( is_array( $data ) && isset( $data['jobs'] ) )
+				{
+					$capturedJobs = $data['jobs'];
+				}
+				if( is_array( $data ) && array_key_exists( 'scheduleFileExists', $data ) )
+				{
+					$capturedExists = $data['scheduleFileExists'];
+				}
+				return $mockViewContext;
+			}
+		);
+		$mockViewContext->method( 'render' )->willReturn( '<html>Jobs</html>' );
+
+		$controller->method( 'view' )->willReturn( $mockViewContext );
+
+		$controller->index( new Request() );
+
+		$this->assertTrue( $capturedExists );
+		$this->assertIsArray( $capturedJobs );
+		$this->assertCount( 1, $capturedJobs );
+		$this->assertEquals( 'demo', $capturedJobs[0]['name'] );
+	}
+
+	/**
 	 * @runInSeparateProcess
 	 * @preserveGlobalState disabled
 	 */
