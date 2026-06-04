@@ -278,6 +278,23 @@ class UpgradeCommand extends Command
 			}
 		}
 
+		// Check for new view files (respecting view-related flags)
+		if( !$this->input->getOption( 'migrations-only' ) && !$this->input->getOption( 'skip-views' ) )
+		{
+			$newViews = $this->getNewViewFiles();
+
+			if( !empty( $newViews ) )
+			{
+				$hasUpdates = true;
+				$this->output->writeln( "New Views Available:" );
+
+				foreach( $newViews as $view )
+				{
+					$this->output->writeln( "  + resources/views/$view" );
+				}
+			}
+		}
+
 		// Check version difference
 		$installedVersion = $this->_installedManifest['version'] ?? '0';
 		$packageVersion = $this->_packageManifest['version'] ?? '0';
@@ -293,6 +310,70 @@ class UpgradeCommand extends Command
 		}
 
 		return $hasUpdates;
+	}
+
+	/**
+	 * Get list of package view files that are not yet present in the installation.
+	 *
+	 * @return array Relative view paths (e.g. "admin/jobs/index.php")
+	 */
+	private function getNewViewFiles(): array
+	{
+		$viewSource = $this->_componentPath . '/resources/views';
+		$viewDest   = $this->_projectPath . '/resources/views';
+
+		if( !is_dir( $viewSource ) )
+		{
+			return [];
+		}
+
+		return $this->findMissingViews( $viewSource, $viewDest, '' );
+	}
+
+	/**
+	 * Recursively collect view files present in the package but missing from
+	 * the installation.
+	 *
+	 * @param string $source Package view directory
+	 * @param string $dest Installation view directory
+	 * @param string $relative Relative path accumulated so far
+	 * @return array Relative view paths
+	 */
+	private function findMissingViews( string $source, string $dest, string $relative ): array
+	{
+		$items = scandir( $source );
+
+		if( $items === false )
+		{
+			return [];
+		}
+
+		$missing = [];
+
+		foreach( $items as $item )
+		{
+			if( $item === '.' || $item === '..' )
+			{
+				continue;
+			}
+
+			$sourcePath   = $source . '/' . $item;
+			$destPath     = $dest . '/' . $item;
+			$itemRelative = $relative === '' ? $item : $relative . '/' . $item;
+
+			if( is_dir( $sourcePath ) )
+			{
+				$missing = array_merge( $missing, $this->findMissingViews( $sourcePath, $destPath, $itemRelative ) );
+				continue;
+			}
+
+			if( !file_exists( $destPath ) )
+			{
+				$missing[] = $itemRelative;
+			}
+		}
+
+		return $missing;
 	}
 
 	/**
