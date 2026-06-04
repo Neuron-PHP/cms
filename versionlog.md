@@ -1,4 +1,8 @@
+## 0.8.57 2026-06-04
+* Added incremental view upgrades.
+
 ## 0.8.56 2026-06-04
+* Added jobs list to the admin dashboard.
 
 ## 0.8.55 2026-06-03
 

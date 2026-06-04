@@ -367,18 +367,106 @@ class UpgradeCommand extends Command
 	}
 
 	/**
-	 * Update view files (conservative - only critical updates)
+	 * Update view files.
+	 *
+	 * Copies only views that do not already exist in the installation. Existing
+	 * view files are never overwritten so user customizations are preserved.
 	 */
 	private function updateViews(): bool
 	{
-		// For now, just inform user that views may need manual updates
-		// In future versions, could implement smart view updates
+		$viewSource = $this->_componentPath . '/resources/views';
+		$viewDest   = $this->_projectPath . '/resources/views';
 
-		$this->output->writeln( "  ℹ️  View updates require manual review to preserve customizations" );
+		if( !is_dir( $viewSource ) )
+		{
+			$this->output->writeln( "  No package views found to copy" );
+			return true;
+		}
+
+		$copied = $this->copyNewViews( $viewSource, $viewDest );
+
+		if( $copied > 0 )
+		{
+			$this->output->writeln( "\n  Copied $copied new view file" . ( $copied !== 1 ? 's' : '' ) );
+		}
+		else
+		{
+			$this->output->writeln( "  No new view files to copy" );
+		}
+
+		$this->output->writeln( "  ℹ️  Existing views were left unchanged to preserve customizations" );
 		$this->output->writeln( "  Compare package views with your installation if needed" );
-		$this->output->writeln( "  Package views location: " . $this->_componentPath . "/resources/views/" );
+		$this->output->writeln( "  Package views location: " . $viewSource . "/" );
 
 		return true;
+	}
+
+	/**
+	 * Recursively copy view files that do not already exist in the destination.
+	 *
+	 * Existing files are skipped (never overwritten) to preserve user
+	 * customizations. Missing destination directories are created as needed.
+	 *
+	 * @param string $source Source directory
+	 * @param string $dest Destination directory
+	 * @return int Number of files copied
+	 */
+	private function copyNewViews( string $source, string $dest ): int
+	{
+		$items = scandir( $source );
+
+		if( $items === false )
+		{
+			return 0;
+		}
+
+		$copied = 0;
+
+		foreach( $items as $item )
+		{
+			if( $item === '.' || $item === '..' )
+			{
+				continue;
+			}
+
+			$sourcePath = $source . '/' . $item;
+			$destPath   = $dest . '/' . $item;
+
+			if( is_dir( $sourcePath ) )
+			{
+				$copied += $this->copyNewViews( $sourcePath, $destPath );
+				continue;
+			}
+
+			// Never overwrite an existing view - preserve customizations.
+			if( file_exists( $destPath ) )
+			{
+				continue;
+			}
+
+			$destDir = dirname( $destPath );
+
+			if( !is_dir( $destDir ) && !mkdir( $destDir, 0755, true ) && !is_dir( $destDir ) )
+			{
+				$this->output->error( "  ✗ Failed to create directory: $destDir" );
+				continue;
+			}
+
+			$relative = ltrim( str_replace( $this->_projectPath, '', $destPath ), '/' );
+
+			if( copy( $sourcePath, $destPath ) )
+			{
+				$this->output->writeln( "  ✓ Added: $relative" );
+				$this->_messages[] = "Added view: $relative";
+				$copied++;
+			}
+			else
+			{
+				$this->output->error( "  ✗ Failed to copy: $relative" );
+			}
+		}
+
+		return $copied;
 	}
 
 	/**
