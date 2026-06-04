@@ -1,4 +1,4 @@
-## 0.8.59
+## 0.8.59 2026-06-04
 * Added schedule scaffolding.
 
 
