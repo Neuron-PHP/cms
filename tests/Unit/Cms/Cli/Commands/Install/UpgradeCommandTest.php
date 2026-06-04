@@ -133,6 +133,39 @@ class UpgradeCommandTest extends TestCase
 		}
 	}
 
+	public function testScaffoldScheduleConfigCreatesWhenMissingAndPreservesExisting(): void
+	{
+		$base    = sys_get_temp_dir() . '/neuron_cms_schedule_' . uniqid();
+		$project = $base . '/project';
+		$package = $base . '/package';
+
+		$this->writeFile( $package . '/resources/config/schedule.yaml', "schedule:\n  demo:\n    class: X\n    cron: \"* * * * *\"\n" );
+		mkdir( $project . '/config', 0777, true );
+
+		try {
+			$reflection = new \ReflectionClass( $this->command );
+
+			$projectProp = $reflection->getProperty( '_projectPath' );
+			$projectProp->setValue( $this->command, $project );
+
+			$componentProp = $reflection->getProperty( '_componentPath' );
+			$componentProp->setValue( $this->command, $package );
+
+			$method = $reflection->getMethod( 'scaffoldScheduleConfig' );
+
+			// First run: file missing -> created
+			$this->assertTrue( $method->invoke( $this->command ) );
+			$this->assertFileExists( $project . '/config/schedule.yaml' );
+
+			// Customize, then run again -> not overwritten
+			file_put_contents( $project . '/config/schedule.yaml', 'CUSTOM' );
+			$this->assertTrue( $method->invoke( $this->command ) );
+			$this->assertEquals( 'CUSTOM', file_get_contents( $project . '/config/schedule.yaml' ) );
+		} finally {
+			$this->removeDirectory( $base );
+		}
+	}
+
 	private function writeFile( string $path, string $contents ): void
 	{
 		$dir = dirname( $path );

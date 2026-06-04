@@ -63,6 +63,44 @@ class InstallCommandTest extends TestCase
 		$this->assertIsBool( $result );
 	}
 
+	public function testCreateScheduleConfigCreatesWhenMissingAndPreservesExisting(): void
+	{
+		$base    = sys_get_temp_dir() . '/neuron_cms_install_schedule_' . uniqid();
+		$project = $base . '/project';
+		$package = $base . '/package';
+
+		mkdir( $project . '/config', 0777, true );
+		mkdir( $package . '/resources/config', 0777, true );
+		file_put_contents(
+			$package . '/resources/config/schedule.yaml',
+			"schedule:\n  demo:\n    class: X\n    cron: \"* * * * *\"\n"
+		);
+
+		try {
+			$reflection = new \ReflectionClass( $this->command );
+			$reflection->getProperty( '_projectPath' )->setValue( $this->command, $project );
+			$reflection->getProperty( '_componentPath' )->setValue( $this->command, $package );
+
+			$method = $reflection->getMethod( 'createScheduleConfig' );
+
+			$this->assertTrue( $method->invoke( $this->command ) );
+			$this->assertFileExists( $project . '/config/schedule.yaml' );
+
+			file_put_contents( $project . '/config/schedule.yaml', 'CUSTOM' );
+			$this->assertTrue( $method->invoke( $this->command ) );
+			$this->assertEquals( 'CUSTOM', file_get_contents( $project . '/config/schedule.yaml' ) );
+		} finally {
+			@unlink( $project . '/config/schedule.yaml' );
+			@unlink( $package . '/resources/config/schedule.yaml' );
+			@rmdir( $project . '/config' );
+			@rmdir( $project );
+			@rmdir( $package . '/resources/config' );
+			@rmdir( $package . '/resources' );
+			@rmdir( $package );
+			@rmdir( $base );
+		}
+	}
+
 	public function testConfigureSqliteCreatesValidConfig(): void
 	{
 		$this->testInput->addResponse( 'storage/database.sqlite3' ); // Database file path

@@ -118,6 +118,7 @@ class InstallCommand extends Command
 			'publishInitializers' => 'Publishing initializers...',
 			'createRouteConfig' => 'Creating route configuration...',
 			'createAuthConfig' => 'Creating auth configuration...',
+			'createScheduleConfig' => 'Creating scheduled jobs configuration...',
 			'createPublicFiles' => 'Creating public folder and copying static assets...',
 			'copyMigrations' => 'Copying database migrations...',
 		];
@@ -417,6 +418,36 @@ class InstallCommand extends Command
 
 			$this->output->error( "  Failed to create auth.yaml" );
 			return false;
+		}
+
+		return true;
+	}
+
+	/**
+	 * Create scheduled jobs configuration
+	 */
+	protected function createScheduleConfig(): bool
+	{
+		$scheduleFile = $this->_projectPath . '/config/schedule.yaml';
+		$resourceFile = $this->_componentPath . '/resources/config/schedule.yaml';
+
+		// If schedule.yaml doesn't exist, copy the default from resources
+		if( !file_exists( $scheduleFile ) && file_exists( $resourceFile ) )
+		{
+			if( copy( $resourceFile, $scheduleFile ) )
+			{
+				$this->_messages[] = "Created: config/schedule.yaml";
+				return true;
+			}
+
+			$this->output->error( "  Failed to create schedule.yaml" );
+			return false;
+		}
+
+		// If schedule.yaml exists, leave it untouched
+		if( file_exists( $scheduleFile ) )
+		{
+			$this->_messages[] = "✓ Schedule config exists: config/schedule.yaml";
 		}
 
 		return true;
