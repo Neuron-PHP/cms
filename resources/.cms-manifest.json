@@ -22,7 +22,8 @@
     "event-listeners.yaml",
     "neuron.yaml",
     "neuron.yaml.example",
-    "routes.yaml"
+    "routes.yaml",
+    "schedule.yaml"
   ],
   "view_directories": [
     "admin",

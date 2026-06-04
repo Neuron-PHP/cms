@@ -123,6 +123,9 @@ class UpgradeCommand extends Command
 		{
 			$this->output->writeln( "\n⚙️  Updating configuration examples..." );
 			$success = $success && $this->updateConfigExamples();
+
+			$this->output->writeln( "\n🕒 Scaffolding scheduled jobs configuration..." );
+			$success = $success && $this->scaffoldScheduleConfig();
 		}
 
 		if( !$success )
@@ -292,6 +295,15 @@ class UpgradeCommand extends Command
 				{
 					$this->output->writeln( "  + resources/views/$view" );
 				}
+			}
+
+			// A missing scheduled jobs config can be scaffolded
+			if( !file_exists( $this->_projectPath . '/config/schedule.yaml' )
+				&& file_exists( $this->_componentPath . '/resources/config/schedule.yaml' ) )
+			{
+				$hasUpdates = true;
+				$this->output->writeln( "Scheduled jobs config can be scaffolded:" );
+				$this->output->writeln( "  + config/schedule.yaml" );
 			}
 		}
 
@@ -548,6 +560,43 @@ class UpgradeCommand extends Command
 		}
 
 		return $copied;
+	}
+
+	/**
+	 * Scaffold the scheduled jobs configuration.
+	 *
+	 * Copies the default config/schedule.yaml when the installation does not
+	 * already have one. An existing schedule.yaml is never overwritten so user
+	 * customizations are preserved.
+	 *
+	 * @return bool
+	 */
+	private function scaffoldScheduleConfig(): bool
+	{
+		$scheduleFile = $this->_projectPath . '/config/schedule.yaml';
+		$resourceFile = $this->_componentPath . '/resources/config/schedule.yaml';
+
+		if( file_exists( $scheduleFile ) )
+		{
+			$this->output->writeln( "  ℹ️  schedule.yaml already exists; left unchanged" );
+			return true;
+		}
+
+		if( !file_exists( $resourceFile ) )
+		{
+			$this->output->writeln( "  No default schedule.yaml available to scaffold" );
+			return true;
+		}
+
+		if( copy( $resourceFile, $scheduleFile ) )
+		{
+			$this->output->writeln( "  ✓ Created: config/schedule.yaml" );
+			$this->_messages[] = "Created config/schedule.yaml";
+			return true;
+		}
+
+		$this->output->error( "  ✗ Failed to create config/schedule.yaml" );
+		return false;
 	}
 
 	/**
