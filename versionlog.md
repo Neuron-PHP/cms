@@ -1,4 +1,4 @@
-## 0.8.58
+## 0.8.58 2026-06-04
 
 ## 0.8.57 2026-06-04
 * Added incremental view upgrades.
