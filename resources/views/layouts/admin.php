@@ -55,6 +55,9 @@
 						</ul>
 					</li>
 					<li class="nav-item">
+						<a class="nav-link" href="<?= route_path('admin_jobs') ?>">Scheduled Jobs</a>
+					</li>
+					<li class="nav-item">
 						<a class="nav-link" href="<?= route_path('home') ?>">View Site</a>
 					</li>
 				</ul>
