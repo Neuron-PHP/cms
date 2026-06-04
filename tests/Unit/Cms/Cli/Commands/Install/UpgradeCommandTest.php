@@ -100,4 +100,79 @@ class UpgradeCommandTest extends TestCase
 		// This would require creating a full test environment with manifests
 		$this->markTestSkipped('Requires full CMS test environment setup');
 	}
+
+	public function testCopyNewViewsCopiesOnlyMissingFilesAndPreservesExisting(): void
+	{
+		$base   = sys_get_temp_dir() . '/neuron_cms_views_' . uniqid();
+		$source = $base . '/source';
+		$dest   = $base . '/dest';
+
+		// Source (package) views: one brand-new file, one that also exists in dest.
+		$this->writeFile( $source . '/admin/jobs/index.php', 'PACKAGE_JOBS' );
+		$this->writeFile( $source . '/layouts/admin.php', 'PACKAGE_LAYOUT' );
+
+		// Destination (installed) views: existing customized layout.
+		$this->writeFile( $dest . '/layouts/admin.php', 'CUSTOM_LAYOUT' );
+
+		try {
+			$reflection = new \ReflectionClass( $this->command );
+			$method = $reflection->getMethod( 'copyNewViews' );
+
+			$copied = $method->invoke( $this->command, $source, $dest );
+
+			$this->assertEquals( 1, $copied );
+
+			// New view was copied.
+			$this->assertFileExists( $dest . '/admin/jobs/index.php' );
+			$this->assertEquals( 'PACKAGE_JOBS', file_get_contents( $dest . '/admin/jobs/index.php' ) );
+
+			// Existing view was left untouched.
+			$this->assertEquals( 'CUSTOM_LAYOUT', file_get_contents( $dest . '/layouts/admin.php' ) );
+		} finally {
+			$this->removeDirectory( $base );
+		}
+	}
+
+	private function writeFile( string $path, string $contents ): void
+	{
+		$dir = dirname( $path );
+
+		if( !is_dir( $dir ) )
+		{
+			mkdir( $dir, 0777, true );
+		}
+
+		file_put_contents( $path, $contents );
+	}
+
+	private function removeDirectory( string $path ): void
+	{
+		if( !is_dir( $path ) )
+		{
+			return;
+		}
+
+		$items = scandir( $path );
+
+		foreach( $items as $item )
+		{
+			if( $item === '.' || $item === '..' )
+			{
+				continue;
+			}
+
+			$itemPath = $path . '/' . $item;
+
+			if( is_dir( $itemPath ) )
+			{
+				$this->removeDirectory( $itemPath );
+			}
+			else
+			{
+				unlink( $itemPath );
+			}
+		}
+
+		rmdir( $path );
+	}
 }
