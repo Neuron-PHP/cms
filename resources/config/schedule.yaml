@@ -1,0 +1,44 @@
+# Neuron CMS - Scheduled Jobs
+#
+# Jobs defined here are executed by the Neuron scheduler. Run the scheduler from
+# cron, e.g.:
+#
+#   * * * * * cd /path/to/site && vendor/bin/neuron jobs:schedule --poll >> storage/logs/scheduler.log 2>&1
+#
+# Each entry supports:
+#   class: fully-qualified job class (must implement Neuron\Jobs\IJob)
+#   cron:  standard 5-field cron expression
+#   args:  optional arguments passed to the job's run() method
+#   queue: optional queue name (dispatches to the queue instead of running inline)
+#
+# The jobs below are shipped with the CMS. Adjust the schedules, retention
+# values, or remove entries to suit your installation.
+
+schedule:
+  # Remove expired email verification and password reset tokens. Daily at 03:00.
+  cleanup_expired_tokens:
+    class: Neuron\Cms\Jobs\CleanupExpiredTokensJob
+    cron: "0 3 * * *"
+
+  # Delete log files older than the retention window. Daily at 02:00.
+  cleanup_logs:
+    class: Neuron\Cms\Jobs\CleanupLogsJob
+    cron: "0 2 * * *"
+    args:
+      max_age_days: 30
+
+  # Prune the content_revisions table. Weekly on Sunday at 01:00.
+  prune_content_revisions:
+    class: Neuron\Cms\Jobs\PruneContentRevisionsJob
+    cron: "0 1 * * 0"
+    args:
+      keep_per_content: 50
+      max_age_days: 365
+
+  # Remove old rows from the queue failed_jobs table (no-op if queue tables are
+  # not installed). Daily at 04:00.
+  prune_failed_jobs:
+    class: Neuron\Cms\Jobs\PruneFailedJobsJob
+    cron: "0 4 * * *"
+    args:
+      max_age_days: 30
