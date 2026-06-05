@@ -171,6 +171,38 @@ class DatabaseEventRepository implements IEventRepository
 	}
 
 	/**
+	 * Get the next available featured event
+	 */
+	public function getNextFeatured( string $status = 'published' ): ?Event
+	{
+		$stmt = $this->_pdo->prepare(
+			"SELECT * FROM events
+			WHERE featured = 1 AND status = ?
+				AND (
+					(end_date IS NOT NULL AND end_date >= ?)
+					OR (end_date IS NULL AND start_date >= ?)
+				)
+			ORDER BY start_date ASC
+			LIMIT 1"
+		);
+
+		$now = new DateTimeImmutable();
+		$nowFormatted = $now->format( 'Y-m-d H:i:s' );
+		$stmt->execute( [ $status, $nowFormatted, $nowFormatted ] );
+		$row = $stmt->fetch();
+
+		if( !$row )
+		{
+			return null;
+		}
+
+		$event = Event::fromArray( $row );
+		$this->loadRelations( $event );
+
+		return $event;
+	}
+
+	/**
 	 * Get events by date range
 	 */
 	public function getByDateRange( DateTimeImmutable $startDate, DateTimeImmutable $endDate, string $status = 'published' ): array
@@ -234,9 +266,9 @@ class DatabaseEventRepository implements IEventRepository
 		$stmt = $this->_pdo->prepare(
 			"INSERT INTO events (
 				title, slug, description, content_raw, location, start_date, end_date,
-				all_day, category_id, status, featured_image, organizer, contact_email,
+				all_day, category_id, status, featured, featured_image, organizer, contact_email,
 				contact_phone, created_by, view_count, created_at, updated_at
-			) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+			) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
 		);
 
 		$now = new DateTimeImmutable();
@@ -254,6 +286,7 @@ class DatabaseEventRepository implements IEventRepository
 			$event->isAllDay() ? 1 : 0,
 			$event->getCategoryId(),
 			$event->getStatus(),
+			$event->isFeatured() ? 1 : 0,
 			$event->getFeaturedImage(),
 			$event->getOrganizer(),
 			$event->getContactEmail(),
@@ -278,7 +311,7 @@ class DatabaseEventRepository implements IEventRepository
 			"UPDATE events SET
 				title = ?, slug = ?, description = ?, content_raw = ?, location = ?,
 				start_date = ?, end_date = ?, all_day = ?, category_id = ?, status = ?,
-				featured_image = ?, organizer = ?, contact_email = ?, contact_phone = ?,
+				featured = ?, featured_image = ?, organizer = ?, contact_email = ?, contact_phone = ?,
 				view_count = ?, updated_at = ?
 			WHERE id = ?"
 		);
@@ -297,6 +330,7 @@ class DatabaseEventRepository implements IEventRepository
 			$event->isAllDay() ? 1 : 0,
 			$event->getCategoryId(),
 			$event->getStatus(),
+			$event->isFeatured() ? 1 : 0,
 			$event->getFeaturedImage(),
 			$event->getOrganizer(),
 			$event->getContactEmail(),

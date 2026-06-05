@@ -46,6 +46,7 @@ class WidgetRenderer
 		{
 			'latest-posts' => $this->renderLatestPosts( $config ),
 			'calendar' => $this->renderCalendar( $config ),
+			'featured-event' => $this->renderFeaturedEvent( $config ),
 			default => $this->renderUnknownWidget( $widgetType )
 		};
 	}
@@ -133,6 +134,31 @@ class WidgetRenderer
 		}
 
 		$widget = new CalendarWidget( $this->_eventRepository, $this->_eventCategoryRepository );
+		return $widget->render( $config );
+	}
+
+	/**
+	 * Render featured event widget
+	 *
+	 * Renders the next available featured event. Takes no attributes.
+	 *
+	 * @param array<string, mixed> $config
+	 * @return string
+	 */
+	private function renderFeaturedEvent( array $config ): string
+	{
+		if( !$this->_eventRepository )
+		{
+			return "<!-- Featured event widget requires EventRepository -->";
+		}
+
+		// FeaturedEventWidget requires the concrete database repository - cast from interface
+		if( !($this->_eventRepository instanceof \Neuron\Cms\Repositories\DatabaseEventRepository) )
+		{
+			return "<!-- Featured event widget requires DatabaseEventRepository -->";
+		}
+
+		$widget = new FeaturedEventWidget( $this->_eventRepository );
 		return $widget->render( $config );
 	}
 

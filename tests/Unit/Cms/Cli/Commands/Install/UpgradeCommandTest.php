@@ -133,6 +133,34 @@ class UpgradeCommandTest extends TestCase
 		}
 	}
 
+	public function testCopyNewViewsForceOverwritesExistingFiles(): void
+	{
+		$base   = sys_get_temp_dir() . '/neuron_cms_views_force_' . uniqid();
+		$source = $base . '/source';
+		$dest   = $base . '/dest';
+
+		// Source (package) views: one brand-new file, one that also exists in dest.
+		$this->writeFile( $source . '/admin/jobs/index.php', 'PACKAGE_JOBS' );
+		$this->writeFile( $source . '/layouts/admin.php', 'PACKAGE_LAYOUT' );
+
+		// Destination (installed) views: existing customized layout.
+		$this->writeFile( $dest . '/layouts/admin.php', 'CUSTOM_LAYOUT' );
+
+		try {
+			$reflection = new \ReflectionClass( $this->command );
+			$method = $reflection->getMethod( 'copyNewViews' );
+
+			// Force overwrite: both files copied (new + existing).
+			$copied = $method->invoke( $this->command, $source, $dest, true );
+
+			$this->assertEquals( 2, $copied );
+			$this->assertEquals( 'PACKAGE_JOBS', file_get_contents( $dest . '/admin/jobs/index.php' ) );
+			$this->assertEquals( 'PACKAGE_LAYOUT', file_get_contents( $dest . '/layouts/admin.php' ) );
+		} finally {
+			$this->removeDirectory( $base );
+		}
+	}
+
 	public function testScaffoldScheduleConfigCreatesWhenMissingAndPreservesExisting(): void
 	{
 		$base    = sys_get_temp_dir() . '/neuron_cms_schedule_' . uniqid();

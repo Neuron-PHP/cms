@@ -63,6 +63,17 @@ interface IEventRepository
 	public function getPast( ?int $limit = null, string $status = 'published' ): array;
 
 	/**
+	 * Get the next available featured event.
+	 *
+	 * Returns the soonest featured event that has not yet ended (ongoing or
+	 * upcoming), or null when none is available.
+	 *
+	 * @param string $status Filter by status (default: 'published')
+	 * @return Event|null
+	 */
+	public function getNextFeatured( string $status = 'published' ): ?Event;
+
+	/**
 	 * Get events by date range
 	 *
 	 * @param DateTimeImmutable $startDate

@@ -136,4 +136,61 @@ class EventModelTest extends TestCase
 
 		$this->assertEquals( 999, $array['created_by'] );
 	}
+
+	public function test_featured_defaults_to_false(): void
+	{
+		$event = new Event();
+
+		$this->assertFalse( $event->isFeatured() );
+	}
+
+	public function test_set_featured_updates_flag(): void
+	{
+		$event = new Event();
+		$event->setFeatured( true );
+
+		$this->assertTrue( $event->isFeatured() );
+
+		$event->setFeatured( false );
+
+		$this->assertFalse( $event->isFeatured() );
+	}
+
+	public function test_to_array_includes_featured_flag(): void
+	{
+		$event = new Event();
+		$event->setTitle( 'Test Event' );
+		$event->setSlug( 'test-event' );
+		$event->setFeatured( true );
+
+		$array = $event->toArray();
+
+		$this->assertArrayHasKey( 'featured', $array );
+		$this->assertTrue( $array['featured'] );
+	}
+
+	public function test_from_array_reads_featured_flag(): void
+	{
+		$event = Event::fromArray( [
+			'title' => 'Test Event',
+			'slug' => 'test-event',
+			'start_date' => '2025-01-15 10:00:00',
+			'status' => 'published',
+			'featured' => 1,
+		] );
+
+		$this->assertTrue( $event->isFeatured() );
+	}
+
+	public function test_from_array_defaults_featured_to_false(): void
+	{
+		$event = Event::fromArray( [
+			'title' => 'Test Event',
+			'slug' => 'test-event',
+			'start_date' => '2025-01-15 10:00:00',
+			'status' => 'published',
+		] );
+
+		$this->assertFalse( $event->isFeatured() );
+	}
 }

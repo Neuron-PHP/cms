@@ -56,6 +56,11 @@ dto:
     required: true
     enum: ['draft', 'published']
 
+  featured:
+    type: boolean
+    required: false
+    default: false
+
   featured_image:
     type: string
     required: false

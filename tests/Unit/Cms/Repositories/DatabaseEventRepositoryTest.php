@@ -68,6 +68,7 @@ class DatabaseEventRepositoryTest extends TestCase
 				all_day BOOLEAN DEFAULT 0,
 				category_id INTEGER,
 				status VARCHAR(20) DEFAULT 'draft',
+				featured BOOLEAN DEFAULT 0,
 				featured_image VARCHAR(255),
 				organizer VARCHAR(255),
 				contact_email VARCHAR(255),
@@ -323,6 +324,110 @@ class DatabaseEventRepositoryTest extends TestCase
 		$this->assertCount( 2, $events );
 	}
 
+	public function test_get_next_featured_returns_soonest_upcoming_featured_event(): void
+	{
+		$userId = $this->createTestUser();
+
+		$future1 = ( new DateTimeImmutable( '+1 week' ) )->format( 'Y-m-d H:i:s' );
+		$future2 = ( new DateTimeImmutable( '+2 weeks' ) )->format( 'Y-m-d H:i:s' );
+
+		// Soonest featured event should be returned
+		$this->pdo->exec( "INSERT INTO events (title, slug, start_date, status, featured, created_by)
+			VALUES ('Featured Soon', 'featured-soon', '{$future1}', 'published', 1, {$userId})" );
+
+		$this->pdo->exec( "INSERT INTO events (title, slug, start_date, status, featured, created_by)
+			VALUES ('Featured Later', 'featured-later', '{$future2}', 'published', 1, {$userId})" );
+
+		$event = $this->repository->getNextFeatured();
+
+		$this->assertInstanceOf( Event::class, $event );
+		$this->assertEquals( 'Featured Soon', $event->getTitle() );
+		$this->assertTrue( $event->isFeatured() );
+	}
+
+	public function test_get_next_featured_ignores_non_featured_events(): void
+	{
+		$userId = $this->createTestUser();
+
+		$soon = ( new DateTimeImmutable( '+1 day' ) )->format( 'Y-m-d H:i:s' );
+		$later = ( new DateTimeImmutable( '+1 week' ) )->format( 'Y-m-d H:i:s' );
+
+		// Sooner event is not featured and must be skipped
+		$this->pdo->exec( "INSERT INTO events (title, slug, start_date, status, featured, created_by)
+			VALUES ('Not Featured', 'not-featured', '{$soon}', 'published', 0, {$userId})" );
+
+		$this->pdo->exec( "INSERT INTO events (title, slug, start_date, status, featured, created_by)
+			VALUES ('Featured', 'featured', '{$later}', 'published', 1, {$userId})" );
+
+		$event = $this->repository->getNextFeatured();
+
+		$this->assertInstanceOf( Event::class, $event );
+		$this->assertEquals( 'Featured', $event->getTitle() );
+	}
+
+	public function test_get_next_featured_ignores_draft_events(): void
+	{
+		$userId = $this->createTestUser();
+
+		$soon = ( new DateTimeImmutable( '+1 day' ) )->format( 'Y-m-d H:i:s' );
+		$later = ( new DateTimeImmutable( '+1 week' ) )->format( 'Y-m-d H:i:s' );
+
+		// Sooner featured event is a draft and must be skipped
+		$this->pdo->exec( "INSERT INTO events (title, slug, start_date, status, featured, created_by)
+			VALUES ('Draft Featured', 'draft-featured', '{$soon}', 'draft', 1, {$userId})" );
+
+		$this->pdo->exec( "INSERT INTO events (title, slug, start_date, status, featured, created_by)
+			VALUES ('Published Featured', 'published-featured', '{$later}', 'published', 1, {$userId})" );
+
+		$event = $this->repository->getNextFeatured();
+
+		$this->assertInstanceOf( Event::class, $event );
+		$this->assertEquals( 'Published Featured', $event->getTitle() );
+	}
+
+	public function test_get_next_featured_ignores_past_events(): void
+	{
+		$userId = $this->createTestUser();
+
+		// Featured but already ended
+		$this->pdo->exec( "INSERT INTO events (title, slug, start_date, end_date, status, featured, created_by)
+			VALUES ('Past Featured', 'past-featured', '2020-01-01 10:00:00', '2020-01-01 17:00:00', 'published', 1, {$userId})" );
+
+		$event = $this->repository->getNextFeatured();
+
+		$this->assertNull( $event );
+	}
+
+	public function test_get_next_featured_includes_ongoing_event(): void
+	{
+		$userId = $this->createTestUser();
+
+		$started = ( new DateTimeImmutable( '-1 hour' ) )->format( 'Y-m-d H:i:s' );
+		$ends = ( new DateTimeImmutable( '+1 hour' ) )->format( 'Y-m-d H:i:s' );
+
+		// Currently happening featured event (end_date in the future)
+		$this->pdo->exec( "INSERT INTO events (title, slug, start_date, end_date, status, featured, created_by)
+			VALUES ('Ongoing Featured', 'ongoing-featured', '{$started}', '{$ends}', 'published', 1, {$userId})" );
+
+		$event = $this->repository->getNextFeatured();
+
+		$this->assertInstanceOf( Event::class, $event );
+		$this->assertEquals( 'Ongoing Featured', $event->getTitle() );
+	}
+
+	public function test_get_next_featured_returns_null_when_none_available(): void
+	{
+		$userId = $this->createTestUser();
+
+		$future = ( new DateTimeImmutable( '+1 week' ) )->format( 'Y-m-d H:i:s' );
+		$this->pdo->exec( "INSERT INTO events (title, slug, start_date, status, featured, created_by)
+			VALUES ('Regular Event', 'regular-event', '{$future}', 'published', 0, {$userId})" );
+
+		$event = $this->repository->getNextFeatured();
+
+		$this->assertNull( $event );
+	}
+
 	public function test_get_by_date_range_returns_events_in_range(): void
 	{
 		$userId = $this->createTestUser();
@@ -417,6 +522,42 @@ class DatabaseEventRepositoryTest extends TestCase
 		$this->assertEquals( 'New Event', $row['title'] );
 		$this->assertEquals( 'new-event', $row['slug'] );
 		$this->assertEquals( 'Test Location', $row['location'] );
+	}
+
+	public function test_create_persists_featured_flag(): void
+	{
+		$userId = $this->createTestUser();
+
+		$event = new Event();
+		$event->setTitle( 'Featured Event' );
+		$event->setSlug( 'featured-event' );
+		$event->setStartDate( new DateTimeImmutable( '2025-06-15 10:00:00' ) );
+		$event->setStatus( Event::STATUS_PUBLISHED );
+		$event->setFeatured( true );
+		$event->setCreatedBy( $userId );
+
+		$result = $this->repository->create( $event );
+
+		$reloaded = $this->repository->findById( $result->getId() );
+		$this->assertTrue( $reloaded->isFeatured() );
+	}
+
+	public function test_update_persists_featured_flag(): void
+	{
+		$userId = $this->createTestUser();
+
+		$this->pdo->exec( "INSERT INTO events (title, slug, start_date, status, featured, created_by)
+			VALUES ('Toggle Featured', 'toggle-featured', '2025-06-15 10:00:00', 'published', 0, {$userId})" );
+		$id = (int)$this->pdo->lastInsertId();
+
+		$event = $this->repository->findById( $id );
+		$this->assertFalse( $event->isFeatured() );
+
+		$event->setFeatured( true );
+		$this->repository->update( $event );
+
+		$reloaded = $this->repository->findById( $id );
+		$this->assertTrue( $reloaded->isFeatured() );
 	}
 
 	public function test_create_sets_timestamps(): void

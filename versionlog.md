@@ -1,3 +1,8 @@
+## 0.8.61 2026-06-05
+* Added featured events.
+* Added the featured event widget.
+* Added configurable contact forms.
+
 ## 0.8.60 2026-06-04
 
 ## 0.8.59 2026-06-04
