@@ -5,7 +5,9 @@ namespace Neuron\Cms\Services\Widget;
 use Neuron\Cms\Repositories\IPostRepository;
 use Neuron\Cms\Repositories\IEventRepository;
 use Neuron\Cms\Repositories\IEventCategoryRepository;
+use Neuron\Cms\Services\Contact\ContactService;
 use Neuron\Cms\Models\Post;
+use Neuron\Data\Settings\SettingManager;
 
 /**
  * Renders built-in widgets.
@@ -21,16 +23,19 @@ class WidgetRenderer
 	private ?IPostRepository $_postRepository = null;
 	private ?IEventRepository $_eventRepository = null;
 	private ?IEventCategoryRepository $_eventCategoryRepository = null;
+	private ?SettingManager $_settings = null;
 
 	public function __construct(
 		?IPostRepository $postRepository = null,
 		?IEventRepository $eventRepository = null,
-		?IEventCategoryRepository $eventCategoryRepository = null
+		?IEventCategoryRepository $eventCategoryRepository = null,
+		?SettingManager $settings = null
 	)
 	{
 		$this->_postRepository = $postRepository;
 		$this->_eventRepository = $eventRepository;
 		$this->_eventCategoryRepository = $eventCategoryRepository;
+		$this->_settings = $settings;
 	}
 
 	/**
@@ -47,6 +52,7 @@ class WidgetRenderer
 			'latest-posts' => $this->renderLatestPosts( $config ),
 			'calendar' => $this->renderCalendar( $config ),
 			'featured-event' => $this->renderFeaturedEvent( $config ),
+			'contact' => $this->renderContact( $config ),
 			default => $this->renderUnknownWidget( $widgetType )
 		};
 	}
@@ -159,6 +165,29 @@ class WidgetRenderer
 		}
 
 		$widget = new FeaturedEventWidget( $this->_eventRepository );
+		return $widget->render( $config );
+	}
+
+	/**
+	 * Render contact form widget
+	 *
+	 * Attributes:
+	 * - form: Contact form key from config (default: configured default_form)
+	 * - title: Optional heading override
+	 * - button: Optional submit button label override
+	 *
+	 * @param array<string, mixed> $config
+	 * @return string
+	 */
+	private function renderContact( array $config ): string
+	{
+		if( !$this->_settings )
+		{
+			return "<!-- Contact widget requires SettingManager -->";
+		}
+
+		$widget = new ContactFormWidget( new ContactService( $this->_settings ) );
+
 		return $widget->render( $config );
 	}
 

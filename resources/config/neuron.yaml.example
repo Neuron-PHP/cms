@@ -196,3 +196,30 @@ maintenance:
   retry_after: 3600  # Retry-after value in seconds (1 hour)
   custom_view: null  # Path to custom maintenance view (optional)
   show_countdown: false  # Show countdown timer on maintenance page
+
+# Contact Form Configuration
+# Drives the built-in [contact form="key"] shortcode. Each form declares its own
+# recipient plus its own configurable field list, so adding a new form or
+# changing a field set is a config edit only - no code changes required.
+#
+# Field properties:
+#   name        input name (also the stored payload key)
+#   label       display label
+#   type        text | email | tel | textarea | select | checkbox
+#   required    true|false
+#   options     list of allowed values (select only)
+#   rules       optional: length: { min, max }, pattern: "/regex/"
+#   reply_to    true -> this field supplies the reply-to email address
+#   sender_name true -> this field supplies the reply-to display name
+contact:
+  default_form: general  # Form rendered by a bare [contact] shortcode
+  forms:
+    general:
+      to: "info@yourdomain.com"
+      subject: "Website Contact: General Inquiry"
+      label: "Contact Us"
+      button: "Send Message"
+      fields:
+        - { name: name,    label: "Your Name", type: text,     required: true, sender_name: true, rules: { length: { min: 2, max: 80 } } }
+        - { name: email,   label: "Email",     type: email,    required: true, reply_to: true }
+        - { name: message, label: "Message",   type: textarea, required: true, rules: { length: { min: 10, max: 4000 } } }
