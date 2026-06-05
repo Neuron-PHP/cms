@@ -51,6 +51,7 @@ class Creator implements IEventCreator
 		$allDay = $request->all_day ?? false;
 		$categoryId = $request->category_id ?? null;
 		$status = $request->status;
+		$featured = $request->featured ?? false;
 		$featuredImage = $request->featured_image ?? null;
 		$organizer = $request->organizer ?? null;
 		$contactEmail = $request->contact_email ?? null;
@@ -67,6 +68,7 @@ class Creator implements IEventCreator
 		$event->setEndDate( $endDate );
 		$event->setAllDay( $allDay );
 		$event->setStatus( $status );
+		$event->setFeatured( $featured );
 		$event->setFeaturedImage( $featuredImage );
 		$event->setOrganizer( $organizer );
 		$event->setContactEmail( $contactEmail );

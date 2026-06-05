@@ -45,6 +45,9 @@
 								<tr>
 									<td>
 										<strong><?= htmlspecialchars($event->getTitle()) ?></strong>
+										<?php if($event->isFeatured()): ?>
+											<span class="badge bg-warning text-dark" title="Featured event"><i class="bi bi-star-fill"></i> Featured</span>
+										<?php endif; ?>
 										<?php if($event->getDescription()): ?>
 											<br><small class="text-muted"><?= htmlspecialchars(substr($event->getDescription(), 0, 60)) ?><?= strlen($event->getDescription()) > 60 ? '...' : '' ?></small>
 										<?php endif; ?>

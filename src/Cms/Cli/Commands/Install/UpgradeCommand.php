@@ -51,6 +51,7 @@ class UpgradeCommand extends Command
 		$this->addOption( 'check', 'c', false, 'Check for available updates without applying' );
 		$this->addOption( 'migrations-only', 'm', false, 'Only copy new migrations' );
 		$this->addOption( 'skip-views', null, false, 'Skip updating view files' );
+		$this->addOption( 'force-views', null, false, 'Overwrite existing view files with package versions (destroys local view customizations)' );
 		$this->addOption( 'skip-migrations', null, false, 'Skip copying migrations' );
 		$this->addOption( 'run-migrations', 'r', false, 'Run migrations automatically after copying' );
 	}
@@ -83,10 +84,18 @@ class UpgradeCommand extends Command
 		// Check for updates
 		$hasUpdates = $this->checkForUpdates();
 
-		if( !$hasUpdates )
+		// --force-views always has work to do (it re-publishes package views).
+		$forceViews = (bool) $this->input->getOption( 'force-views' );
+
+		if( !$hasUpdates && !$forceViews )
 		{
 			$this->output->success( "✓ CMS is already up to date!" );
 			return 0;
+		}
+
+		if( $forceViews )
+		{
+			$this->output->writeln( "  ⚠️  --force-views: existing view files will be overwritten with package versions" );
 		}
 
 		// If --check flag, exit after displaying what would be updated
@@ -476,35 +485,44 @@ class UpgradeCommand extends Command
 			return true;
 		}
 
-		$copied = $this->copyNewViews( $viewSource, $viewDest );
+		$force  = (bool) $this->input->getOption( 'force-views' );
+		$copied = $this->copyNewViews( $viewSource, $viewDest, $force );
 
 		if( $copied > 0 )
 		{
-			$this->output->writeln( "\n  Copied $copied new view file" . ( $copied !== 1 ? 's' : '' ) );
+			$label = $force ? 'view file' : 'new view file';
+			$this->output->writeln( "\n  Copied $copied $label" . ( $copied !== 1 ? 's' : '' ) );
 		}
 		else
 		{
-			$this->output->writeln( "  No new view files to copy" );
+			$this->output->writeln( "  No " . ( $force ? '' : 'new ' ) . "view files to copy" );
 		}
 
-		$this->output->writeln( "  ℹ️  Existing views were left unchanged to preserve customizations" );
-		$this->output->writeln( "  Compare package views with your installation if needed" );
+		if( !$force )
+		{
+			$this->output->writeln( "  ℹ️  Existing views were left unchanged to preserve customizations" );
+			$this->output->writeln( "  Compare package views with your installation if needed" );
+		}
+
 		$this->output->writeln( "  Package views location: " . $viewSource . "/" );
 
 		return true;
 	}
 
 	/**
-	 * Recursively copy view files that do not already exist in the destination.
+	 * Recursively copy view files into the destination.
 	 *
-	 * Existing files are skipped (never overwritten) to preserve user
-	 * customizations. Missing destination directories are created as needed.
+	 * By default, existing files are skipped (never overwritten) to preserve
+	 * user customizations. When $force is true, existing files are overwritten
+	 * with the package versions. Missing destination directories are created as
+	 * needed.
 	 *
 	 * @param string $source Source directory
 	 * @param string $dest Destination directory
+	 * @param bool $force Overwrite existing files when true
 	 * @return int Number of files copied
 	 */
-	private function copyNewViews( string $source, string $dest ): int
+	private function copyNewViews( string $source, string $dest, bool $force = false ): int
 	{
 		$items = scandir( $source );
 
@@ -527,12 +545,14 @@ class UpgradeCommand extends Command
 
 			if( is_dir( $sourcePath ) )
 			{
-				$copied += $this->copyNewViews( $sourcePath, $destPath );
+				$copied += $this->copyNewViews( $sourcePath, $destPath, $force );
 				continue;
 			}
 
-			// Never overwrite an existing view - preserve customizations.
-			if( file_exists( $destPath ) )
+			$exists = file_exists( $destPath );
+
+			// Preserve customizations unless force overwrite is requested.
+			if( $exists && !$force )
 			{
 				continue;
 			}
@@ -549,8 +569,9 @@ class UpgradeCommand extends Command
 
 			if( copy( $sourcePath, $destPath ) )
 			{
-				$this->output->writeln( "  ✓ Added: $relative" );
-				$this->_messages[] = "Added view: $relative";
+				$verb = $exists ? 'Updated' : 'Added';
+				$this->output->writeln( "  ✓ $verb: $relative" );
+				$this->_messages[] = "$verb view: $relative";
 				$copied++;
 			}
 			else

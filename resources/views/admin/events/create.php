@@ -106,6 +106,16 @@
 						</div>
 
 						<div class="mb-3">
+							<div class="form-check">
+								<input class="form-check-input" type="checkbox" id="featured" name="featured" value="1">
+								<label class="form-check-label" for="featured">
+									Featured event
+								</label>
+							</div>
+							<small class="form-text text-muted">The next available featured event is shown by the <code>[featured-event]</code> shortcode.</small>
+						</div>
+
+						<div class="mb-3">
 							<label for="category_id" class="form-label">Category</label>
 							<?php if(empty($categories)): ?>
 								<p class="text-muted">

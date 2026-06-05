@@ -27,6 +27,7 @@ class Event extends Model
 	private bool $_allDay = false;
 	private ?int $_categoryId = null;
 	private string $_status = 'draft';
+	private bool $_featured = false;
 	private ?string $_featuredImage = null;
 	private ?string $_organizer = null;
 	private ?string $_contactEmail = null;
@@ -308,6 +309,23 @@ class Event extends Model
 	}
 
 	/**
+	 * Check if event is featured
+	 */
+	public function isFeatured(): bool
+	{
+		return $this->_featured;
+	}
+
+	/**
+	 * Set featured flag
+	 */
+	public function setFeatured( bool $featured ): self
+	{
+		$this->_featured = $featured;
+		return $this;
+	}
+
+	/**
 	 * Get featured image
 	 */
 	public function getFeaturedImage(): ?string
@@ -570,6 +588,7 @@ class Event extends Model
 		$event->setAllDay( (bool)($data['all_day'] ?? false) );
 		$event->setCategoryId( isset( $data['category_id'] ) ? (int)$data['category_id'] : null );
 		$event->setStatus( $data['status'] ?? self::STATUS_DRAFT );
+		$event->setFeatured( (bool)($data['featured'] ?? false) );
 		$event->setFeaturedImage( $data['featured_image'] ?? null );
 		$event->setOrganizer( $data['organizer'] ?? null );
 		$event->setContactEmail( $data['contact_email'] ?? null );
@@ -627,6 +646,7 @@ class Event extends Model
 			'all_day' => $this->_allDay,
 			'category_id' => $this->_categoryId,
 			'status' => $this->_status,
+			'featured' => $this->_featured,
 			'featured_image' => $this->_featuredImage,
 			'organizer' => $this->_organizer,
 			'contact_email' => $this->_contactEmail,
