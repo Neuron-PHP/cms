@@ -44,6 +44,8 @@
 							<li><hr class="dropdown-divider"></li>
 							<li><a class="dropdown-item" href="<?= route_path('admin_events') ?>"><i class="bi bi-calendar-event me-2"></i>Events</a></li>
 							<li><a class="dropdown-item" href="<?= route_path('admin_event_categories') ?>"><i class="bi bi-calendar3 me-2"></i>Event Categories</a></li>
+							<li><hr class="dropdown-divider"></li>
+							<li><a class="dropdown-item" href="<?= route_path('admin_contact_submissions') ?>"><i class="bi bi-envelope me-2"></i>Contact Submissions</a></li>
 						</ul>
 					</li>
 					<li class="nav-item dropdown">
