@@ -71,6 +71,9 @@ services:
   Neuron\Cms\Repositories\DatabaseEventCategoryRepository:
     type: autowire
 
+  Neuron\Cms\Repositories\DatabaseEventRegistrationRepository:
+    type: autowire
+
   Neuron\Cms\Repositories\DatabasePasswordResetTokenRepository:
     type: autowire
 
@@ -113,6 +116,10 @@ services:
   Neuron\Cms\Repositories\IEventCategoryRepository:
     type: alias
     target: Neuron\Cms\Repositories\DatabaseEventCategoryRepository
+
+  Neuron\Cms\Repositories\IEventRegistrationRepository:
+    type: alias
+    target: Neuron\Cms\Repositories\DatabaseEventRegistrationRepository
 
   Neuron\Cms\Repositories\IPasswordResetTokenRepository:
     type: alias
