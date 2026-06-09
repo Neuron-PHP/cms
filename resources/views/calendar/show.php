@@ -156,6 +156,18 @@
 					</div>
 				<?php endif; ?>
 
+				<!-- Event Registration -->
+				<?php if(!empty($registrationForm)): ?>
+					<div class="card mb-4">
+						<div class="card-header">
+							<h5 class="mb-0">Register for this event</h5>
+						</div>
+						<div class="card-body">
+							<?= $registrationForm ?>
+						</div>
+					</div>
+				<?php endif; ?>
+
 				<!-- Back to Calendar Link -->
 				<div class="text-center">
 					<a href="<?= route_path('calendar') ?>" class="btn btn-outline-primary">

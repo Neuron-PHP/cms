@@ -69,6 +69,9 @@ class DatabaseEventRepositoryTest extends TestCase
 				category_id INTEGER,
 				status VARCHAR(20) DEFAULT 'draft',
 				featured BOOLEAN DEFAULT 0,
+				registration_enabled BOOLEAN DEFAULT 0,
+				registration_visibility VARCHAR(20) DEFAULT 'public',
+				capacity INTEGER,
 				featured_image VARCHAR(255),
 				organizer VARCHAR(255),
 				contact_email VARCHAR(255),
@@ -145,6 +148,43 @@ class DatabaseEventRepositoryTest extends TestCase
 		$this->assertEquals( 'Event 2', $events[0]->getTitle() ); // Most recent first
 		$this->assertEquals( 'Event 3', $events[1]->getTitle() );
 		$this->assertEquals( 'Event 1', $events[2]->getTitle() );
+	}
+
+	public function test_get_upcoming_by_category_returns_future_published_events_in_category(): void
+	{
+		$userId     = $this->createTestUser();
+		$categoryId = $this->createTestCategory();
+		$otherCat   = $this->createTestCategory( 'Other Category' );
+
+		$future1 = ( new DateTimeImmutable( '+5 days' ) )->format( 'Y-m-d H:i:s' );
+		$future2 = ( new DateTimeImmutable( '+10 days' ) )->format( 'Y-m-d H:i:s' );
+		$future3 = ( new DateTimeImmutable( '+20 days' ) )->format( 'Y-m-d H:i:s' );
+		$future4 = ( new DateTimeImmutable( '+30 days' ) )->format( 'Y-m-d H:i:s' );
+		$past    = ( new DateTimeImmutable( '-5 days' ) )->format( 'Y-m-d H:i:s' );
+
+		$this->pdo->exec( "INSERT INTO events (title, slug, start_date, category_id, status, created_by)
+			VALUES ('Up 1', 'up-1', '{$future2}', {$categoryId}, 'published', {$userId})" );
+		$this->pdo->exec( "INSERT INTO events (title, slug, start_date, category_id, status, created_by)
+			VALUES ('Up 2', 'up-2', '{$future1}', {$categoryId}, 'published', {$userId})" );
+		$this->pdo->exec( "INSERT INTO events (title, slug, start_date, category_id, status, created_by)
+			VALUES ('Up 3', 'up-3', '{$future3}', {$categoryId}, 'published', {$userId})" );
+		$this->pdo->exec( "INSERT INTO events (title, slug, start_date, category_id, status, created_by)
+			VALUES ('Up 4', 'up-4', '{$future4}', {$categoryId}, 'published', {$userId})" );
+		// Excluded: past, draft, and other category
+		$this->pdo->exec( "INSERT INTO events (title, slug, start_date, category_id, status, created_by)
+			VALUES ('Past', 'past', '{$past}', {$categoryId}, 'published', {$userId})" );
+		$this->pdo->exec( "INSERT INTO events (title, slug, start_date, category_id, status, created_by)
+			VALUES ('Draft', 'draft', '{$future1}', {$categoryId}, 'draft', {$userId})" );
+		$this->pdo->exec( "INSERT INTO events (title, slug, start_date, category_id, status, created_by)
+			VALUES ('Other', 'other', '{$future1}', {$otherCat}, 'published', {$userId})" );
+
+		$events = $this->repository->getUpcomingByCategory( $categoryId, 3 );
+
+		$this->assertCount( 3, $events );
+		// Sorted ascending by start date.
+		$this->assertEquals( 'Up 2', $events[0]->getTitle() );
+		$this->assertEquals( 'Up 1', $events[1]->getTitle() );
+		$this->assertEquals( 'Up 3', $events[2]->getTitle() );
 	}
 
 	public function test_find_by_id_returns_event_when_found(): void

@@ -16,7 +16,11 @@
     "20251221000001_create_events_table.php",
     "20251229000000_update_foreign_keys_to_set_null.php",
     "20260603120000_create_content_revisions_table.php",
-    "20260605000000_create_contact_submissions_table.php"
+    "20260603130000_add_featured_to_events.php",
+    "20260605000000_create_contact_submissions_table.php",
+    "20260609120000_add_registration_to_events.php",
+    "20260609120001_create_event_registrations_table.php",
+    "20260609130000_add_capacity_to_events.php"
   ],
   "config_files": [
     "auth.yaml",

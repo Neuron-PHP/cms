@@ -186,6 +186,17 @@ email:
   # password: your-app-password
   # encryption: tls  # or 'ssl' for port 465
 
+# Event Registration Configuration
+# Controls the built-in [event-registration] shortcode and the registration
+# form shown on calendar event pages. Registration is enabled per-event in the
+# admin (with a public/private visibility toggle); these settings cover
+# notifications and messaging.
+events:
+  registration:
+    notify_email: ""            # Admin recipient for new-registration emails (falls back to email.from_address)
+    confirmation_enabled: false # Send a confirmation email to the registrant
+    success_message: "Thank you for registering. We look forward to seeing you!"
+
 # Maintenance Mode Configuration
 maintenance:
   default_message: "Site is currently under maintenance. We'll be back soon!"  # Default maintenance message

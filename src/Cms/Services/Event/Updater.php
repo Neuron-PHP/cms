@@ -49,6 +49,9 @@ class Updater implements IEventUpdater
 		$categoryId = $request->category_id ?? null;
 		$status = $request->status;
 		$featured = $request->featured ?? false;
+		$registrationEnabled = $request->registration_enabled ?? false;
+		$registrationVisibility = $request->registration_visibility ?? Event::VISIBILITY_PUBLIC;
+		$capacity = $request->capacity ?? null;
 		$featuredImage = $request->featured_image ?? null;
 		$organizer = $request->organizer ?? null;
 		$contactEmail = $request->contact_email ?? null;
@@ -91,6 +94,9 @@ class Updater implements IEventUpdater
 		$event->setCategoryId( $categoryId );
 		$event->setStatus( $status );
 		$event->setFeatured( $featured );
+		$event->setRegistrationEnabled( $registrationEnabled );
+		$event->setRegistrationVisibility( $registrationVisibility );
+		$event->setCapacity( $capacity !== null ? (int)$capacity : null );
 		$event->setFeaturedImage( $featuredImage );
 		$event->setOrganizer( $organizer );
 		$event->setContactEmail( $contactEmail );

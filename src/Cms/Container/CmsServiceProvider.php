@@ -11,6 +11,7 @@ use Neuron\Cms\Repositories\ICategoryRepository;
 use Neuron\Cms\Repositories\ITagRepository;
 use Neuron\Cms\Repositories\IEventRepository;
 use Neuron\Cms\Repositories\IEventCategoryRepository;
+use Neuron\Cms\Repositories\IEventRegistrationRepository;
 use Neuron\Cms\Repositories\IContactSubmissionRepository;
 use Neuron\Cms\Repositories\DatabaseUserRepository;
 use Neuron\Cms\Repositories\DatabasePostRepository;
@@ -19,6 +20,7 @@ use Neuron\Cms\Repositories\DatabaseCategoryRepository;
 use Neuron\Cms\Repositories\DatabaseTagRepository;
 use Neuron\Cms\Repositories\DatabaseEventRepository;
 use Neuron\Cms\Repositories\DatabaseEventCategoryRepository;
+use Neuron\Cms\Repositories\DatabaseEventRegistrationRepository;
 use Neuron\Cms\Repositories\DatabaseContactSubmissionRepository;
 use Neuron\Cms\Services\User\IUserCreator;
 use Neuron\Cms\Services\User\IUserUpdater;
@@ -79,6 +81,7 @@ class CmsServiceProvider implements IServiceProvider
 		$container->bind( ITagRepository::class, DatabaseTagRepository::class );
 		$container->bind( IEventRepository::class, DatabaseEventRepository::class );
 		$container->bind( IEventCategoryRepository::class, DatabaseEventCategoryRepository::class );
+		$container->bind( IEventRegistrationRepository::class, DatabaseEventRegistrationRepository::class );
 		$container->bind( IContactSubmissionRepository::class, DatabaseContactSubmissionRepository::class );
 	}
 
@@ -137,7 +140,8 @@ class CmsServiceProvider implements IServiceProvider
 				$c->get( IPostRepository::class ),
 				$c->get( IEventRepository::class ),
 				$c->get( IEventCategoryRepository::class ),
-				$c->get( SettingManager::class )
+				$c->get( SettingManager::class ),
+				$c->get( IEventRegistrationRepository::class )
 			);
 		});
 

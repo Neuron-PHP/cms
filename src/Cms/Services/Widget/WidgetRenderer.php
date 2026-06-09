@@ -5,6 +5,7 @@ namespace Neuron\Cms\Services\Widget;
 use Neuron\Cms\Repositories\IPostRepository;
 use Neuron\Cms\Repositories\IEventRepository;
 use Neuron\Cms\Repositories\IEventCategoryRepository;
+use Neuron\Cms\Repositories\IEventRegistrationRepository;
 use Neuron\Cms\Services\Contact\ContactService;
 use Neuron\Cms\Models\Post;
 use Neuron\Data\Settings\SettingManager;
@@ -23,19 +24,22 @@ class WidgetRenderer
 	private ?IPostRepository $_postRepository = null;
 	private ?IEventRepository $_eventRepository = null;
 	private ?IEventCategoryRepository $_eventCategoryRepository = null;
+	private ?IEventRegistrationRepository $_eventRegistrationRepository = null;
 	private ?SettingManager $_settings = null;
 
 	public function __construct(
 		?IPostRepository $postRepository = null,
 		?IEventRepository $eventRepository = null,
 		?IEventCategoryRepository $eventCategoryRepository = null,
-		?SettingManager $settings = null
+		?SettingManager $settings = null,
+		?IEventRegistrationRepository $eventRegistrationRepository = null
 	)
 	{
 		$this->_postRepository = $postRepository;
 		$this->_eventRepository = $eventRepository;
 		$this->_eventCategoryRepository = $eventCategoryRepository;
 		$this->_settings = $settings;
+		$this->_eventRegistrationRepository = $eventRegistrationRepository;
 	}
 
 	/**
@@ -52,6 +56,7 @@ class WidgetRenderer
 			'latest-posts' => $this->renderLatestPosts( $config ),
 			'calendar' => $this->renderCalendar( $config ),
 			'featured-event' => $this->renderFeaturedEvent( $config ),
+			'event-registration' => $this->renderEventRegistration( $config ),
 			'contact' => $this->renderContact( $config ),
 			default => $this->renderUnknownWidget( $widgetType )
 		};
@@ -165,6 +170,35 @@ class WidgetRenderer
 		}
 
 		$widget = new FeaturedEventWidget( $this->_eventRepository );
+		return $widget->render( $config );
+	}
+
+	/**
+	 * Render event registration widget
+	 *
+	 * Attributes:
+	 * - event: Event slug for single-event registration
+	 * - category: Event category slug to offer the next upcoming events of that type
+	 * - limit: Number of upcoming dates to offer in category mode (default: 3)
+	 * - title: Optional heading override
+	 * - button: Optional submit button label override
+	 *
+	 * @param array<string, mixed> $config
+	 * @return string
+	 */
+	private function renderEventRegistration( array $config ): string
+	{
+		if( !$this->_eventRepository || !$this->_eventCategoryRepository )
+		{
+			return "<!-- Event registration widget requires EventRepository and EventCategoryRepository -->";
+		}
+
+		$widget = new EventRegistrationWidget(
+			$this->_eventRepository,
+			$this->_eventCategoryRepository,
+			$this->_eventRegistrationRepository
+		);
+
 		return $widget->render( $config );
 	}
 

@@ -141,6 +141,33 @@ class DatabaseEventRepository implements IEventRepository
 	}
 
 	/**
+	 * Get upcoming events within a single category
+	 */
+	public function getUpcomingByCategory( int $categoryId, ?int $limit = 3, string $status = 'published' ): array
+	{
+		$sql = "SELECT * FROM events
+				WHERE category_id = ? AND start_date >= ? AND status = ?
+				ORDER BY start_date ASC";
+
+		if( $limit )
+		{
+			$sql .= " LIMIT " . (int)$limit;
+		}
+
+		$stmt = $this->_pdo->prepare( $sql );
+		$now = new DateTimeImmutable();
+		$stmt->execute( [ $categoryId, $now->format( 'Y-m-d H:i:s' ), $status ] );
+		$rows = $stmt->fetchAll();
+
+		return array_map( function( $row )
+		{
+			$event = Event::fromArray( $row );
+			$this->loadRelations( $event );
+			return $event;
+		}, $rows );
+	}
+
+	/**
 	 * Get past events
 	 */
 	public function getPast( ?int $limit = null, string $status = 'published' ): array
@@ -266,9 +293,10 @@ class DatabaseEventRepository implements IEventRepository
 		$stmt = $this->_pdo->prepare(
 			"INSERT INTO events (
 				title, slug, description, content_raw, location, start_date, end_date,
-				all_day, category_id, status, featured, featured_image, organizer, contact_email,
+				all_day, category_id, status, featured, registration_enabled, registration_visibility, capacity,
+				featured_image, organizer, contact_email,
 				contact_phone, created_by, view_count, created_at, updated_at
-			) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+			) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
 		);
 
 		$now = new DateTimeImmutable();
@@ -287,6 +315,9 @@ class DatabaseEventRepository implements IEventRepository
 			$event->getCategoryId(),
 			$event->getStatus(),
 			$event->isFeatured() ? 1 : 0,
+			$event->isRegistrationEnabled() ? 1 : 0,
+			$event->getRegistrationVisibility(),
+			$event->getCapacity(),
 			$event->getFeaturedImage(),
 			$event->getOrganizer(),
 			$event->getContactEmail(),
@@ -311,7 +342,8 @@ class DatabaseEventRepository implements IEventRepository
 			"UPDATE events SET
 				title = ?, slug = ?, description = ?, content_raw = ?, location = ?,
 				start_date = ?, end_date = ?, all_day = ?, category_id = ?, status = ?,
-				featured = ?, featured_image = ?, organizer = ?, contact_email = ?, contact_phone = ?,
+				featured = ?, registration_enabled = ?, registration_visibility = ?, capacity = ?,
+				featured_image = ?, organizer = ?, contact_email = ?, contact_phone = ?,
 				view_count = ?, updated_at = ?
 			WHERE id = ?"
 		);
@@ -331,6 +363,9 @@ class DatabaseEventRepository implements IEventRepository
 			$event->getCategoryId(),
 			$event->getStatus(),
 			$event->isFeatured() ? 1 : 0,
+			$event->isRegistrationEnabled() ? 1 : 0,
+			$event->getRegistrationVisibility(),
+			$event->getCapacity(),
 			$event->getFeaturedImage(),
 			$event->getOrganizer(),
 			$event->getContactEmail(),

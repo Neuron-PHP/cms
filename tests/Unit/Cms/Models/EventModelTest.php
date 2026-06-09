@@ -193,4 +193,67 @@ class EventModelTest extends TestCase
 
 		$this->assertFalse( $event->isFeatured() );
 	}
+
+	public function test_capacity_defaults_to_unlimited(): void
+	{
+		$event = new Event();
+
+		$this->assertNull( $event->getCapacity() );
+		$this->assertFalse( $event->hasCapacityLimit() );
+		$this->assertFalse( $event->isFull( 1000 ) );
+		$this->assertNull( $event->getRemainingCapacity( 5 ) );
+	}
+
+	public function test_set_capacity_normalizes_non_positive_to_unlimited(): void
+	{
+		$event = new Event();
+
+		$event->setCapacity( 0 );
+		$this->assertNull( $event->getCapacity() );
+
+		$event->setCapacity( -5 );
+		$this->assertNull( $event->getCapacity() );
+
+		$event->setCapacity( 10 );
+		$this->assertSame( 10, $event->getCapacity() );
+		$this->assertTrue( $event->hasCapacityLimit() );
+	}
+
+	public function test_is_full_and_remaining_capacity(): void
+	{
+		$event = new Event();
+		$event->setCapacity( 3 );
+
+		$this->assertFalse( $event->isFull( 2 ) );
+		$this->assertSame( 1, $event->getRemainingCapacity( 2 ) );
+
+		$this->assertTrue( $event->isFull( 3 ) );
+		$this->assertSame( 0, $event->getRemainingCapacity( 3 ) );
+
+		// Over-subscribed never goes negative.
+		$this->assertTrue( $event->isFull( 5 ) );
+		$this->assertSame( 0, $event->getRemainingCapacity( 5 ) );
+	}
+
+	public function test_to_array_and_from_array_round_trip_capacity(): void
+	{
+		$event = new Event();
+		$event->setTitle( 'Test Event' );
+		$event->setSlug( 'test-event' );
+		$event->setCapacity( 25 );
+
+		$array = $event->toArray();
+		$this->assertArrayHasKey( 'capacity', $array );
+		$this->assertSame( 25, $array['capacity'] );
+
+		$restored = Event::fromArray( [
+			'title' => 'Test Event',
+			'slug' => 'test-event',
+			'start_date' => '2025-01-15 10:00:00',
+			'status' => 'published',
+			'capacity' => 25,
+		] );
+
+		$this->assertSame( 25, $restored->getCapacity() );
+	}
 }
