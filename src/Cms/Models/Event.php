@@ -28,6 +28,9 @@ class Event extends Model
 	private ?int $_categoryId = null;
 	private string $_status = 'draft';
 	private bool $_featured = false;
+	private bool $_registrationEnabled = false;
+	private string $_registrationVisibility = 'public';
+	private ?int $_capacity = null;
 	private ?string $_featuredImage = null;
 	private ?string $_organizer = null;
 	private ?string $_contactEmail = null;
@@ -50,6 +53,12 @@ class Event extends Model
 	 */
 	public const STATUS_DRAFT = 'draft';
 	public const STATUS_PUBLISHED = 'published';
+
+	/**
+	 * Registration visibility constants
+	 */
+	public const VISIBILITY_PUBLIC = 'public';
+	public const VISIBILITY_PRIVATE = 'private';
 
 	public function __construct()
 	{
@@ -326,6 +335,102 @@ class Event extends Model
 	}
 
 	/**
+	 * Check if public registration is enabled for this event
+	 */
+	public function isRegistrationEnabled(): bool
+	{
+		return $this->_registrationEnabled;
+	}
+
+	/**
+	 * Set registration enabled flag
+	 */
+	public function setRegistrationEnabled( bool $registrationEnabled ): self
+	{
+		$this->_registrationEnabled = $registrationEnabled;
+		return $this;
+	}
+
+	/**
+	 * Get registration visibility ('public' or 'private')
+	 */
+	public function getRegistrationVisibility(): string
+	{
+		return $this->_registrationVisibility;
+	}
+
+	/**
+	 * Set registration visibility
+	 */
+	public function setRegistrationVisibility( string $visibility ): self
+	{
+		$this->_registrationVisibility = $visibility === self::VISIBILITY_PRIVATE
+			? self::VISIBILITY_PRIVATE
+			: self::VISIBILITY_PUBLIC;
+		return $this;
+	}
+
+	/**
+	 * Check if registration is restricted to logged-in members
+	 */
+	public function isPrivate(): bool
+	{
+		return $this->_registrationVisibility === self::VISIBILITY_PRIVATE;
+	}
+
+	/**
+	 * Get registration capacity (null/0 means unlimited)
+	 */
+	public function getCapacity(): ?int
+	{
+		return $this->_capacity;
+	}
+
+	/**
+	 * Set registration capacity. Values <= 0 are normalized to null (unlimited).
+	 */
+	public function setCapacity( ?int $capacity ): self
+	{
+		$this->_capacity = ( $capacity !== null && $capacity > 0 ) ? $capacity : null;
+		return $this;
+	}
+
+	/**
+	 * Whether this event caps the number of registrations
+	 */
+	public function hasCapacityLimit(): bool
+	{
+		return $this->_capacity !== null && $this->_capacity > 0;
+	}
+
+	/**
+	 * Whether the event is full given a current registration count.
+	 *
+	 * @param int $currentCount Number of active registrations
+	 * @return bool
+	 */
+	public function isFull( int $currentCount ): bool
+	{
+		return $this->hasCapacityLimit() && $currentCount >= $this->_capacity;
+	}
+
+	/**
+	 * Remaining registration spots, or null when unlimited.
+	 *
+	 * @param int $currentCount Number of active registrations
+	 * @return int|null
+	 */
+	public function getRemainingCapacity( int $currentCount ): ?int
+	{
+		if( !$this->hasCapacityLimit() )
+		{
+			return null;
+		}
+
+		return max( 0, $this->_capacity - $currentCount );
+	}
+
+	/**
 	 * Get featured image
 	 */
 	public function getFeaturedImage(): ?string
@@ -589,6 +694,9 @@ class Event extends Model
 		$event->setCategoryId( isset( $data['category_id'] ) ? (int)$data['category_id'] : null );
 		$event->setStatus( $data['status'] ?? self::STATUS_DRAFT );
 		$event->setFeatured( (bool)($data['featured'] ?? false) );
+		$event->setRegistrationEnabled( (bool)($data['registration_enabled'] ?? false) );
+		$event->setRegistrationVisibility( $data['registration_visibility'] ?? self::VISIBILITY_PUBLIC );
+		$event->setCapacity( isset( $data['capacity'] ) && $data['capacity'] !== null && $data['capacity'] !== '' ? (int)$data['capacity'] : null );
 		$event->setFeaturedImage( $data['featured_image'] ?? null );
 		$event->setOrganizer( $data['organizer'] ?? null );
 		$event->setContactEmail( $data['contact_email'] ?? null );
@@ -647,6 +755,9 @@ class Event extends Model
 			'category_id' => $this->_categoryId,
 			'status' => $this->_status,
 			'featured' => $this->_featured,
+			'registration_enabled' => $this->_registrationEnabled,
+			'registration_visibility' => $this->_registrationVisibility,
+			'capacity' => $this->_capacity,
 			'featured_image' => $this->_featuredImage,
 			'organizer' => $this->_organizer,
 			'contact_email' => $this->_contactEmail,

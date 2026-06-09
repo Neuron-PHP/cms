@@ -138,6 +138,38 @@
 
 				<div class="card mb-4">
 					<div class="card-header">
+						<h5 class="mb-0">Registration</h5>
+					</div>
+					<div class="card-body">
+						<div class="mb-3">
+							<div class="form-check">
+								<input class="form-check-input" type="checkbox" id="registration_enabled" name="registration_enabled" value="1" <?= $event->isRegistrationEnabled() ? 'checked' : '' ?>>
+								<label class="form-check-label" for="registration_enabled">
+									Enable registration
+								</label>
+							</div>
+							<small class="form-text text-muted">Show a registration form on this event and via the <code>[event-registration]</code> shortcode.</small>
+						</div>
+
+						<div class="mb-3">
+							<label for="registration_visibility" class="form-label">Visibility</label>
+							<select class="form-select" id="registration_visibility" name="registration_visibility">
+								<option value="public" <?= $event->getRegistrationVisibility() === 'private' ? '' : 'selected' ?>>Public (anyone can register)</option>
+								<option value="private" <?= $event->getRegistrationVisibility() === 'private' ? 'selected' : '' ?>>Private (members only)</option>
+							</select>
+							<small class="form-text text-muted">Private events require visitors to log in before registering.</small>
+						</div>
+
+						<div class="mb-3">
+							<label for="capacity" class="form-label">Capacity</label>
+							<input type="number" class="form-control" id="capacity" name="capacity" min="1" value="<?= $event->getCapacity() !== null ? (int)$event->getCapacity() : '' ?>" placeholder="Unlimited">
+							<small class="form-text text-muted">Maximum number of registrations. Leave blank for unlimited.</small>
+						</div>
+					</div>
+				</div>
+
+				<div class="card mb-4">
+					<div class="card-header">
 						<h5 class="mb-0">Featured Image</h5>
 					</div>
 					<div class="card-body">

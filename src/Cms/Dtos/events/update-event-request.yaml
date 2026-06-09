@@ -61,6 +61,21 @@ dto:
     required: false
     default: false
 
+  registration_enabled:
+    type: boolean
+    required: false
+    default: false
+
+  registration_visibility:
+    type: string
+    required: false
+    enum: ['public', 'private']
+    default: 'public'
+
+  capacity:
+    type: integer
+    required: false
+
   featured_image:
     type: string
     required: false

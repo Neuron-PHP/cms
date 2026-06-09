@@ -6,6 +6,7 @@ use Neuron\Cms\Controllers\Admin\Events;
 use Neuron\Core\Registry\RegistryKeys;
 use Neuron\Cms\Repositories\IEventRepository;
 use Neuron\Cms\Repositories\IEventCategoryRepository;
+use Neuron\Cms\Repositories\IEventRegistrationRepository;
 use Neuron\Cms\Services\Event\IEventCreator;
 use Neuron\Cms\Services\Event\IEventUpdater;
 use Neuron\Cms\Auth\SessionManager;
@@ -41,6 +42,7 @@ class EventsTest extends TestCase
 			->willReturnCallback( function( $class ) {
 				if( $class === IEventRepository::class ) return $this->createMock( IEventRepository::class );
 				if( $class === IEventCategoryRepository::class ) return $this->createMock( IEventCategoryRepository::class );
+				if( $class === IEventRegistrationRepository::class ) return $this->createMock( IEventRegistrationRepository::class );
 				if( $class === IEventCreator::class ) return $this->createMock( IEventCreator::class );
 				if( $class === IEventUpdater::class ) return $this->createMock( IEventUpdater::class );
 				if( $class === SessionManager::class ) return $this->createMock( SessionManager::class );
@@ -63,6 +65,7 @@ class EventsTest extends TestCase
 			$mockSessionManager,
 			$this->createMock( IEventRepository::class ),
 			$this->createMock( IEventCategoryRepository::class ),
+			$this->createMock( IEventRegistrationRepository::class ),
 			$this->createMock( IEventCreator::class ),
 			$this->createMock( IEventUpdater::class )
 		);

@@ -7,6 +7,7 @@ use Neuron\Cms\Enums\FlashMessageType;
 use Neuron\Cms\Controllers\Content;
 use Neuron\Cms\Repositories\IEventRepository;
 use Neuron\Cms\Repositories\IEventCategoryRepository;
+use Neuron\Cms\Repositories\IEventRegistrationRepository;
 use Neuron\Cms\Services\Event\IEventCreator;
 use Neuron\Cms\Services\Event\IEventUpdater;
 use Neuron\Cms\Services\Auth\CsrfToken;
@@ -32,6 +33,7 @@ class Events extends Content
 {
 	private IEventRepository $_eventRepository;
 	private IEventCategoryRepository $_categoryRepository;
+	private IEventRegistrationRepository $_registrationRepository;
 	private IEventCreator $_creator;
 	private IEventUpdater $_updater;
 
@@ -41,6 +43,7 @@ class Events extends Content
 	 * @param SessionManager $sessionManager
 	 * @param IEventRepository $eventRepository
 	 * @param IEventCategoryRepository $categoryRepository
+	 * @param IEventRegistrationRepository $registrationRepository
 	 * @param IEventCreator $creator
 	 * @param IEventUpdater $updater
 	 */
@@ -50,6 +53,7 @@ class Events extends Content
 		SessionManager $sessionManager,
 		IEventRepository $eventRepository,
 		IEventCategoryRepository $categoryRepository,
+		IEventRegistrationRepository $registrationRepository,
 		IEventCreator $creator,
 		IEventUpdater $updater
 	)
@@ -58,6 +62,7 @@ class Events extends Content
 
 		$this->_eventRepository = $eventRepository;
 		$this->_categoryRepository = $categoryRepository;
+		$this->_registrationRepository = $registrationRepository;
 		$this->_creator = $creator;
 		$this->_updater = $updater;
 	}
@@ -80,6 +85,16 @@ class Events extends Content
 			$events = $this->_eventRepository->getByCreator( user_id() );
 		}
 
+		// Registration counts keyed by event id (for the registrations column).
+		$registrationCounts = [];
+		foreach( $events as $event )
+		{
+			if( $event->isRegistrationEnabled() )
+			{
+				$registrationCounts[ $event->getId() ] = $this->_registrationRepository->countByEvent( $event->getId() );
+			}
+		}
+
 		$sessionManager = $this->getSessionManager();
 		return $this->view()
 			->title( 'Events' )
@@ -88,6 +103,7 @@ class Events extends Content
 			->withCsrfToken()
 			->with([
 				'events' => $events,
+				'registrationCounts' => $registrationCounts,
 				FlashMessageType::SUCCESS->viewKey() => $sessionManager->getFlash( FlashMessageType::SUCCESS->value ),
 				FlashMessageType::ERROR->viewKey() => $sessionManager->getFlash( FlashMessageType::ERROR->value )
 			])

@@ -35,6 +35,7 @@
 								<th>Location</th>
 								<th>Category</th>
 								<th>Status</th>
+								<th>Registrations</th>
 								<th>Creator</th>
 								<th>Views</th>
 								<th>Actions</th>
@@ -80,6 +81,30 @@
 										<span class="badge bg-<?= $event->getStatus() === 'published' ? 'success' : 'secondary' ?>">
 											<?= htmlspecialchars(ucfirst($event->getStatus()), ENT_QUOTES, 'UTF-8') ?>
 										</span>
+									</td>
+									<td>
+										<?php if($event->isRegistrationEnabled()): ?>
+											<?php $count = (int)($registrationCounts[$event->getId()] ?? 0); ?>
+											<a href="<?= route_path('admin_event_registrations') ?>?event=<?= (int)$event->getId() ?>"
+											   class="text-decoration-none"
+											   title="View registrations">
+												<?php if($event->hasCapacityLimit()): ?>
+													<span class="badge bg-<?= $event->isFull($count) ? 'danger' : 'info' ?> text-<?= $event->isFull($count) ? 'light' : 'dark' ?>">
+														<i class="bi bi-person-check"></i> <?= $count ?> / <?= (int)$event->getCapacity() ?>
+													</span>
+												<?php else: ?>
+													<span class="badge bg-info text-dark"><i class="bi bi-person-check"></i> <?= $count ?></span>
+												<?php endif; ?>
+											</a>
+											<?php if($event->isFull($count)): ?>
+												<span class="badge bg-danger" title="At capacity">Full</span>
+											<?php endif; ?>
+											<?php if($event->isPrivate()): ?>
+												<span class="badge bg-secondary" title="Members only">Private</span>
+											<?php endif; ?>
+										<?php else: ?>
+											<span class="text-muted">Off</span>
+										<?php endif; ?>
 									</td>
 									<td>
 										<?= $event->getCreator()

@@ -54,6 +54,16 @@ interface IEventRepository
 	public function getUpcoming( ?int $limit = null, string $status = 'published' ): array;
 
 	/**
+	 * Get upcoming events within a single category
+	 *
+	 * @param int $categoryId
+	 * @param int|null $limit Maximum number of events to return (default: 3)
+	 * @param string $status Filter by status (default: 'published')
+	 * @return Event[]
+	 */
+	public function getUpcomingByCategory( int $categoryId, ?int $limit = 3, string $status = 'published' ): array;
+
+	/**
 	 * Get past events
 	 *
 	 * @param int|null $limit Maximum number of events to return

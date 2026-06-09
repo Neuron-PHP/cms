@@ -105,6 +105,7 @@ class EventsControllerTest extends TestCase
 				$mockSessionManager,
 				$eventRepository,
 				$categoryRepository,
+				$this->createMock( \Neuron\Cms\Repositories\IEventRegistrationRepository::class ),
 				$creator,
 				$updater
 			])
@@ -172,6 +173,7 @@ class EventsControllerTest extends TestCase
 				$mockSessionManager,
 				$eventRepository,
 				$categoryRepository,
+				$this->createMock( \Neuron\Cms\Repositories\IEventRegistrationRepository::class ),
 				$creator,
 				$updater
 			])
@@ -230,6 +232,7 @@ class EventsControllerTest extends TestCase
 				$mockSessionManager,
 				$eventRepository,
 				$categoryRepository,
+				$this->createMock( \Neuron\Cms\Repositories\IEventRegistrationRepository::class ),
 				$creator,
 				$updater
 			])

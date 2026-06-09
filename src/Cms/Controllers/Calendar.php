@@ -5,6 +5,8 @@ namespace Neuron\Cms\Controllers;
 use Neuron\Cms\Auth\SessionManager;
 use Neuron\Cms\Repositories\IEventRepository;
 use Neuron\Cms\Repositories\IEventCategoryRepository;
+use Neuron\Cms\Repositories\IEventRegistrationRepository;
+use Neuron\Cms\Services\Widget\EventRegistrationWidget;
 use Neuron\Data\Settings\SettingManager;
 use Neuron\Mvc\IMvcApplication;
 use Neuron\Mvc\Requests\Request;
@@ -25,6 +27,7 @@ class Calendar extends Content
 {
 	private IEventRepository $_eventRepository;
 	private IEventCategoryRepository $_categoryRepository;
+	private ?IEventRegistrationRepository $_registrationRepository;
 
 	/**
 	 * @param IMvcApplication $app
@@ -32,6 +35,7 @@ class Calendar extends Content
 	 * @param SessionManager $sessionManager
 	 * @param IEventRepository $eventRepository
 	 * @param IEventCategoryRepository $categoryRepository
+	 * @param IEventRegistrationRepository|null $registrationRepository
 	 * @throws \Exception
 	 */
 	public function __construct(
@@ -39,13 +43,15 @@ class Calendar extends Content
 		SettingManager $settings,
 		SessionManager $sessionManager,
 		IEventRepository $eventRepository,
-		IEventCategoryRepository $categoryRepository
+		IEventCategoryRepository $categoryRepository,
+		?IEventRegistrationRepository $registrationRepository = null
 	)
 	{
 		parent::__construct( $app, $settings, $sessionManager );
 
 		$this->_eventRepository = $eventRepository;
 		$this->_categoryRepository = $categoryRepository;
+		$this->_registrationRepository = $registrationRepository;
 	}
 
 	/**
@@ -107,10 +113,25 @@ class Calendar extends Content
 		// Increment view count
 		$this->_eventRepository->incrementViewCount( $event );
 
+		// Render the registration form when registration is enabled for this event.
+		$registrationForm = '';
+		if( $event->isRegistrationEnabled() )
+		{
+			$widget = new EventRegistrationWidget(
+				$this->_eventRepository,
+				$this->_categoryRepository,
+				$this->_registrationRepository,
+				$this->getSessionManager()
+			);
+
+			$registrationForm = $widget->render( [ 'event' => $event->getSlug() ] );
+		}
+
 		$viewData = [
 			'Title' => $event->getTitle() . ' | ' . $this->getName(),
 			'Description' => $event->getDescription() ?? $event->getTitle(),
-			'event' => $event
+			'event' => $event,
+			'registrationForm' => $registrationForm
 		];
 
 		return $this->renderHtml(

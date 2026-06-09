@@ -1,3 +1,6 @@
+## 0.8.63 2026-06-09
+* Added event registration and related forms.
+
 ## 0.8.62 2026-06-05
 
 ## 0.8.61 2026-06-05

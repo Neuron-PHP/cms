@@ -154,6 +154,7 @@ class ShortcodeParser
 					'latest-posts' => $this->_widgetRenderer->render( 'latest-posts', $attrs ),
 					'calendar' => $this->_widgetRenderer->render( 'calendar', $attrs ),
 					'featured-event' => $this->_widgetRenderer->render( 'featured-event', $attrs ),
+					'event-registration' => $this->_widgetRenderer->render( 'event-registration', $attrs ),
 					'contact' => $this->_widgetRenderer->render( 'contact', $attrs ),
 					default => "<!-- Unknown shortcode: [{$shortcode}] -->"
 				};
@@ -179,6 +180,7 @@ class ShortcodeParser
 		return $shortcode === 'latest-posts'
 			|| $shortcode === 'calendar'
 			|| $shortcode === 'featured-event'
+			|| $shortcode === 'event-registration'
 			|| $shortcode === 'contact';
 	}
 }
