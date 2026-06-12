@@ -266,6 +266,123 @@ class Media extends Content
 	}
 
 	/**
+	 * Delete an image from the media library
+	 *
+	 * Handles POST /admin/media/delete
+	 * Removes the asset from Cloudinary by its public ID. The public ID is
+	 * validated against a safe character set and constrained to the configured
+	 * media folder so callers cannot delete assets outside the library.
+	 * Returns JSON: { success: true } or { success: false, error }.
+	 *
+	 * @param Request $request
+	 * @return string JSON response
+	 */
+	#[Post('/media/delete', name: 'admin_media_delete', filters: ['csrf'])]
+	public function deleteMedia( Request $request ): string
+	{
+		$publicId = trim( (string)( $request->post( 'public_id' ) ?? '' ) );
+
+		if( $publicId === '' )
+		{
+			return $this->renderJson(
+				HttpResponseStatus::BAD_REQUEST,
+				[
+					FlashMessageType::SUCCESS->value => false,
+					FlashMessageType::ERROR->value => 'No image was specified'
+				]
+			);
+		}
+
+		// Validate the public ID. Cloudinary public IDs are made up of folder
+		// segments and a name: letters, numbers, _, -, /, and . Fail closed on
+		// anything else to avoid passing crafted identifiers to the API.
+		if( !preg_match( '#^[A-Za-z0-9_\-/.]+$#', $publicId ) || str_contains( $publicId, '..' ) )
+		{
+			Log::warning( 'Invalid media public ID rejected for deletion', [
+				'public_id' => substr( $publicId, 0, 100 ),
+				'user_id' => user_id(),
+				'ip' => $_SERVER['REMOTE_ADDR'] ?? 'unknown'
+			] );
+
+			return $this->renderJson(
+				HttpResponseStatus::BAD_REQUEST,
+				[
+					FlashMessageType::SUCCESS->value => false,
+					FlashMessageType::ERROR->value => 'Invalid image identifier'
+				]
+			);
+		}
+
+		// Constrain deletion to the configured media folder so only library
+		// assets can be removed through this endpoint.
+		$folder = (string)( $this->_settings->get( 'cloudinary', 'folder' ) ?? 'neuron-cms/images' );
+		$folder = trim( $folder, '/' );
+
+		if( $folder !== '' && !str_starts_with( $publicId, $folder . '/' ) )
+		{
+			Log::warning( 'Media deletion outside configured folder rejected', [
+				'public_id' => substr( $publicId, 0, 100 ),
+				'folder' => $folder,
+				'user_id' => user_id(),
+				'ip' => $_SERVER['REMOTE_ADDR'] ?? 'unknown'
+			] );
+
+			return $this->renderJson(
+				HttpResponseStatus::FORBIDDEN,
+				[
+					FlashMessageType::SUCCESS->value => false,
+					FlashMessageType::ERROR->value => 'Image cannot be deleted'
+				]
+			);
+		}
+
+		try
+		{
+			$deleted = $this->_uploader->delete( $publicId );
+
+			if( !$deleted )
+			{
+				return $this->renderJson(
+					HttpResponseStatus::INTERNAL_SERVER_ERROR,
+					[
+						FlashMessageType::SUCCESS->value => false,
+						FlashMessageType::ERROR->value => 'Image could not be deleted'
+					]
+				);
+			}
+
+			Log::info( 'Media image deleted successfully', [
+				'user_id' => user_id(),
+				'public_id' => $publicId
+			] );
+
+			return $this->renderJson(
+				HttpResponseStatus::OK,
+				[
+					FlashMessageType::SUCCESS->value => true
+				]
+			);
+		}
+		catch( \Exception $e )
+		{
+			Log::error( 'Media image deletion failed', [
+				'user_id' => user_id(),
+				'public_id' => $publicId,
+				'exception' => $e,
+				'message' => $e->getMessage()
+			] );
+
+			return $this->renderJson(
+				HttpResponseStatus::INTERNAL_SERVER_ERROR,
+				[
+					FlashMessageType::SUCCESS->value => false,
+					FlashMessageType::ERROR->value => 'Delete failed. Please try again.'
+				]
+			);
+		}
+	}
+
+	/**
 	 * Shared image upload handler
 	 *
 	 * Validates the uploaded file, pushes it to Cloudinary and returns a
