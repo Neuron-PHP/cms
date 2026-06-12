@@ -2,7 +2,7 @@
 [![codecov](https://codecov.io/gh/Neuron-PHP/cms/branch/develop/graph/badge.svg)](https://codecov.io/gh/Neuron-PHP/cms)
 # Neuron-PHP CMS
 
-A modern, database-backed Content Management System for PHP 8.4+ built on the Neuron framework. Provides a complete blog platform with user authentication, admin panel, and content management.
+A modern, database-backed Content Management System for PHP 8.4+ built on the Neuron framework. Provides a complete content platform with a blog, CMS-managed pages, an events calendar with registration, contact forms, reusable content shortcodes/widgets, user authentication, and a full admin panel.
 
 ## Features
 
@@ -28,12 +28,55 @@ A modern, database-backed Content Management System for PHP 8.4+ built on the Ne
   - Draft and scheduled post support
   - View count tracking
 
+- **Pages**
+  - CMS-managed static pages served at `/pages/:slug`
+  - Editor.js block content with shortcode support
+  - Draft/published status and SEO-friendly slugs
+
+- **Events & Calendar**
+  - Calendar and event listings with event categories
+  - Public calendar at `/calendar` with month and category views
+  - Featured events surfaced anywhere via the `[featured-event]` shortcode (full card or image-only)
+  - Event registration (see below)
+
+- **Event Registration**
+  - Per-event registration forms via the `[event-registration]` shortcode (single event or "next upcoming dates" of a category)
+  - Public or private (members-only) events; private events prompt guests to log in
+  - Optional per-event capacity limit (full events hide the form and reject late submissions)
+  - Admin email notification on each registration, plus an optional confirmation email to the registrant
+  - Admin review screen listing/filtering registrations per event
+  - CSRF protection and honeypot spam protection
+
+- **Contact Forms**
+  - Drop-in contact form via the `[contact]` shortcode
+  - Persist-first submissions with admin email notification
+  - Admin review of submissions; CSRF + honeypot protection
+
+- **Shortcodes & Widgets**
+  - Reusable content widgets rendered in any page or post body
+  - Built in: `[latest-posts]`, `[calendar]`, `[featured-event]`, `[event-registration]`, `[contact]`
+
+- **Media Library**
+  - Upload and manage media through the admin panel
+  - MIME/type validation
+
+- **Content Revisions**
+  - Revision history for posts and pages
+
 - **Admin Panel**
   - Dashboard with statistics
-  - Post management (CRUD operations)
+  - Post and page management (CRUD operations)
   - Category and tag management
+  - Event, event category, and event-registration management
+  - Contact submission review
+  - Media library
   - User management
   - Profile management
+  - Background job monitoring
+
+- **Maintenance Mode**
+  - Toggle a site-wide maintenance page with IP allow-list and retry-after support
+  - Managed via CLI commands or configuration
 
 - **Email System**
   - Password reset emails
@@ -112,6 +155,23 @@ The installer will:
 
 That's it. The installer handles all setup automatically.
 
+### Upgrading
+
+After updating the package with Composer, run the upgrade command to copy any new migrations and resources into your installation:
+
+```bash
+composer update neuron-php/cms
+php neuron cms:upgrade
+```
+
+Useful flags:
+- `--check` - show available updates without applying them
+- `--migrations-only` - copy only new migration files
+- `--skip-views` - don't touch published views
+- `--run-migrations` - run database migrations automatically
+
+The upgrade command preserves your customizations (it won't overwrite views by default) and reports any version-specific notes or breaking changes.
+
 ## Project Structure
 
 After running `cms:install`, your project will have the following structure:
@@ -142,8 +202,13 @@ your-project/
 │   ├── migrate/            # Database migrations
 │   │   ├── *_create_users_table.php
 │   │   ├── *_create_posts_table.php
+│   │   ├── *_create_pages_table.php
 │   │   ├── *_create_categories_table.php
 │   │   ├── *_create_tags_table.php
+│   │   ├── *_create_events_table.php
+│   │   ├── *_create_event_categories_table.php
+│   │   ├── *_create_event_registrations_table.php
+│   │   ├── *_create_contact_submissions_table.php
 │   │   └── *_create_queue_tables.php
 │   └── seed/               # Database seeders
 │
@@ -155,13 +220,21 @@ your-project/
 │   └── views/
 │       ├── admin/         # Admin panel templates
 │       │   ├── categories/
-│       │   ├── dashboard/ # Dashboard views
-│       │   ├── posts/     # Post management
-│       │   ├── profile/     # Post management
+│       │   ├── dashboard/   # Dashboard views
+│       │   ├── posts/       # Post management
+│       │   ├── pages/       # Page management
+│       │   ├── events/      # Event management
+│       │   ├── event_categories/
+│       │   ├── event_registrations/
+│       │   ├── contact_submissions/
+│       │   ├── media/
+│       │   ├── profile/
 │       │   ├── tags/
 │       │   └── users/
 │       ├── auth/          # Login/password reset
 │       ├── blog/          # Public blog views
+│       ├── calendar/      # Public calendar/event views
+│       ├── pages/         # Public CMS page views
 │       ├── member/        # Member registration & dashboard
 │       │   ├── dashboard/
 │       │   ├── profile/
@@ -280,6 +353,53 @@ The CMS supports public member registration with email verification:
    - Access at `/member` (requires authentication)
    - Profile management at `/member/profile`
    - Role-based access separate from admin panel
+
+### Pages and Shortcodes
+
+Create CMS-managed pages in the admin panel (Pages → New Page); they're served at `/pages/:slug`. Page and post bodies support shortcodes that render dynamic widgets:
+
+| Shortcode | Renders |
+|-----------|---------|
+| `[latest-posts]` | The most recent blog posts |
+| `[calendar]` | An events calendar/list |
+| `[featured-event]` | The next available featured event (full card, or image-only) |
+| `[event-registration]` | A registration form for an event or event category |
+| `[contact]` | A contact form |
+
+Examples:
+
+```text
+[latest-posts limit="5"]
+[featured-event]
+[featured-event display="image"]
+[featured-event display="image" link="false"]
+[event-registration event="open-house-2026"]
+[event-registration category="workshops" limit="3"]
+[contact]
+```
+
+#### Featured event display modes
+
+The `[featured-event]` shortcode renders the next published featured event that
+hasn't ended yet. Use the `display` attribute to control the layout:
+
+| Attribute | Values | Default | Description |
+|-----------|--------|---------|-------------|
+| `display` | `card`, `image` | `card` | `card` renders the full event card (image, title, date, location, description, link). `image` renders only the event's featured image. |
+| `link` | `true`, `false` | `true` | When `display="image"`, whether the image links to the event page. |
+
+Image mode is handy for sponsored-event banners or cover-photo strips. If there
+is no featured event — or `display="image"` is used and the featured event has
+no image — the shortcode renders nothing visible (an HTML comment), so a
+surrounding template can safely fall back to its own placeholder.
+
+### Events and Registration
+
+1. Create events in the admin panel (Events → New Event), optionally assigning an event category.
+2. Mark an event as **featured** to surface it via `[featured-event]`, and/or enable **registration** on the event.
+3. For registration, choose visibility (public or members-only) and an optional **capacity** (leave blank for unlimited).
+4. Place an `[event-registration]` shortcode on a page/post (single event or the next upcoming dates of a category).
+5. Registrations are stored and reviewable under Admin → Event Registrations; the configured admin recipient is emailed for each new registration. See the [Events & Registration](#events--registration) configuration below.
 
 ### Customizing Views
 
@@ -419,7 +539,23 @@ The CMS provides these pre-configured routes via controller attributes:
   - `/blog/tag/:slug` - Tag listing
   - `/blog/rss` - RSS feed
 
-- **Admin panel**: `/admin/*` - Full admin interface with authentication
+- **Pages**:
+  - `/pages/:slug` - CMS-managed page
+
+- **Calendar & events**:
+  - `/calendar` - Calendar/event listing
+  - `/calendar/event/:slug` - Individual event
+  - `/calendar/category/:slug` - Events by category
+
+- **Event registration**:
+  - `/events/register` - Registration form submission (CSRF protected)
+  - `/events/register/token` - CSRF token endpoint for cached forms
+
+- **Contact**:
+  - `/contact` - Contact form
+  - `/contact/submit` - Contact form submission (CSRF protected)
+
+- **Admin panel**: `/admin/*` - Full admin interface with authentication (posts, pages, categories, tags, events, event categories, event registrations, contact submissions, media, users, jobs)
 
 - **Authentication**:
   - `/login` - Login form
@@ -455,6 +591,23 @@ email:
   test_mode: false               # optional - logs emails instead of sending
 ```
 
+### Events & Registration
+
+Event registration notifications are configured under the `events.registration` section of `config/neuron.yaml`:
+
+```yaml
+events:
+  registration:
+    notify_email: "registrations@example.com"  # admin recipient for new-registration emails
+                                                # (falls back to email.from_address when blank)
+    confirmation_enabled: false                 # also email a confirmation to the registrant
+    success_message: "Thank you for registering. We look forward to seeing you!"
+```
+
+- `notify_email` is who receives the "New Event Registration" email; the registrant's address is set as Reply-To.
+- If `notify_email` is blank, it falls back to `email.from_address`. If neither is set, no admin email is sent (a warning is logged).
+- Notifications require a working `email` configuration (and `test_mode: false`) to actually deliver.
+
 ### Rate Limiting
 
 The resend verification email endpoint is protected by rate limiting to prevent DOS attacks and spam. The default configuration is:
@@ -479,6 +632,27 @@ $throttle = new ResendVerificationThrottle(null, [
     'email_window' => 900       // 15 minutes
 ]);
 ```
+
+## CLI Commands
+
+The CMS registers the following `neuron` console commands:
+
+**Installation & upgrades**
+- `cms:install` - Scaffold a new CMS project (directories, views, config, migrations, admin user)
+- `cms:upgrade` - Copy new migrations/resources after a Composer update (see [Upgrading](#upgrading))
+
+**User management**
+- `cms:user:create` - Create a user account
+- `cms:user:list` - List user accounts
+- `cms:user:delete` - Delete a user account
+- `cms:user:reset-password` - Reset a user's password
+
+**Maintenance mode**
+- `cms:maintenance:enable` - Put the site into maintenance mode
+- `cms:maintenance:disable` - Take the site out of maintenance mode
+- `cms:maintenance:status` - Show current maintenance status
+
+Run any command with `php neuron <command>` (for example, `php neuron cms:user:create`).
 
 ## Dependencies
 

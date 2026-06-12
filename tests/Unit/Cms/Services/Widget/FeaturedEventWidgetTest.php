@@ -116,6 +116,71 @@ class FeaturedEventWidgetTest extends TestCase
 		$this->assertStringContainsString( '<img src="https://example.com/img.jpg"', $result );
 	}
 
+	public function testRenderImageModeReturnsOnlyLinkedImage(): void
+	{
+		$event = $this->createMock( \Neuron\Cms\Models\Event::class );
+		$event->method( 'getTitle' )->willReturn( 'Sponsored Gala' );
+		$event->method( 'getSlug' )->willReturn( 'sponsored-gala' );
+		$event->method( 'getFeaturedImage' )->willReturn( 'https://example.com/cover.jpg' );
+
+		$this->eventRepository->method( 'getNextFeatured' )->willReturn( $event );
+
+		$result = $this->widget->render( [ 'display' => 'image' ] );
+
+		$this->assertStringContainsString( '<img class="featured-event-image-only" src="https://example.com/cover.jpg"', $result );
+		$this->assertStringContainsString( 'href="/calendar/event/sponsored-gala"', $result );
+
+		// Image mode omits the card chrome.
+		$this->assertStringNotContainsString( 'featured-event-widget', $result );
+		$this->assertStringNotContainsString( 'featured-event-badge', $result );
+		$this->assertStringNotContainsString( 'View details', $result );
+	}
+
+	public function testRenderImageModeWithLinkFalseOmitsAnchor(): void
+	{
+		$event = $this->createMock( \Neuron\Cms\Models\Event::class );
+		$event->method( 'getTitle' )->willReturn( 'Sponsored Gala' );
+		$event->method( 'getSlug' )->willReturn( 'sponsored-gala' );
+		$event->method( 'getFeaturedImage' )->willReturn( 'https://example.com/cover.jpg' );
+
+		$this->eventRepository->method( 'getNextFeatured' )->willReturn( $event );
+
+		$result = $this->widget->render( [ 'display' => 'image', 'link' => false ] );
+
+		$this->assertStringContainsString( '<img class="featured-event-image-only"', $result );
+		$this->assertStringNotContainsString( '<a ', $result );
+	}
+
+	public function testRenderImageModeWithNoImageReturnsComment(): void
+	{
+		$event = $this->createMock( \Neuron\Cms\Models\Event::class );
+		$event->method( 'getTitle' )->willReturn( 'No Image Event' );
+		$event->method( 'getSlug' )->willReturn( 'no-image-event' );
+		$event->method( 'getFeaturedImage' )->willReturn( null );
+
+		$this->eventRepository->method( 'getNextFeatured' )->willReturn( $event );
+
+		$result = $this->widget->render( [ 'display' => 'image' ] );
+
+		$this->assertStringContainsString( '<!-- Featured event widget: featured event has no image -->', $result );
+		$this->assertStringNotContainsString( '<img', $result );
+	}
+
+	public function testRenderImageModeEscapesTitleInAlt(): void
+	{
+		$event = $this->createMock( \Neuron\Cms\Models\Event::class );
+		$event->method( 'getTitle' )->willReturn( '<script>alert("XSS")</script>' );
+		$event->method( 'getSlug' )->willReturn( 'safe-slug' );
+		$event->method( 'getFeaturedImage' )->willReturn( 'https://example.com/cover.jpg' );
+
+		$this->eventRepository->method( 'getNextFeatured' )->willReturn( $event );
+
+		$result = $this->widget->render( [ 'display' => 'image' ] );
+
+		$this->assertStringNotContainsString( '<script>', $result );
+		$this->assertStringContainsString( '&lt;script&gt;', $result );
+	}
+
 	public function testRenderEscapesHtmlInEventData(): void
 	{
 		$event = $this->createMock( \Neuron\Cms\Models\Event::class );
