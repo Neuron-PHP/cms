@@ -234,16 +234,48 @@ class Media extends Content
 	}
 
 	/**
-	 * Upload featured image
+	 * Upload an image to the media library
+	 *
+	 * Handles POST /admin/media/upload
+	 * Generic image upload used by the media library page and the media
+	 * picker modal. Returns JSON: { success, data } or { success, error }.
+	 *
+	 * @param Request $request
+	 * @return string JSON response
+	 */
+	#[Post('/media/upload', name: 'admin_media_upload', filters: ['csrf'])]
+	public function uploadMedia( Request $request ): string
+	{
+		return $this->handleImageUpload( 'Media library image' );
+	}
+
+	/**
+	 * Upload a post/event featured image
 	 *
 	 * Handles POST /admin/upload/featured-image
-	 * Returns JSON with upload result
+	 * Used by the post and event editors to upload the content's featured
+	 * (hero/thumbnail) image. Returns JSON: { success, data } or { success, error }.
 	 *
 	 * @param Request $request
 	 * @return string JSON response
 	 */
 	#[Post('/upload/featured-image', name: 'admin_upload_featured_image', filters: ['csrf'])]
 	public function uploadFeaturedImage( Request $request ): string
+	{
+		return $this->handleImageUpload( 'Featured image' );
+	}
+
+	/**
+	 * Shared image upload handler
+	 *
+	 * Validates the uploaded file, pushes it to Cloudinary and returns a
+	 * standard JSON envelope. Shared by every "upload an image" endpoint so
+	 * the validation, logging and response shape stay consistent.
+	 *
+	 * @param string $logLabel Human-readable label used in log messages
+	 * @return string JSON response
+	 */
+	private function handleImageUpload( string $logLabel ): string
 	{
 		try
 		{
@@ -264,7 +296,7 @@ class Media extends Content
 			// Validate file
 			if( !$this->_validator->validate( $file ) )
 			{
-				Log::warning( 'Featured image upload validation failed', [
+				Log::warning( $logLabel . ' upload validation failed', [
 					'user_id' => user_id(),
 					'filename' => $file['name'] ?? 'unknown',
 					FlashMessageType::ERROR->value => $this->_validator->getFirstError()
@@ -282,7 +314,7 @@ class Media extends Content
 			// Upload to Cloudinary
 			$result = $this->_uploader->upload( $file['tmp_name'] );
 
-			Log::info( 'Featured image uploaded successfully', [
+			Log::info( $logLabel . ' uploaded successfully', [
 				'user_id' => user_id(),
 				'filename' => $file['name'],
 				'public_id' => $result['public_id'],
@@ -303,7 +335,7 @@ class Media extends Content
 			// Safely retrieve filename with explicit isset check to prevent undefined index
 			$filename = isset( $_FILES['image']['name'] ) ? $_FILES['image']['name'] : 'unknown';
 
-			Log::error( 'Featured image upload failed', [
+			Log::error( $logLabel . ' upload failed', [
 				'user_id' => user_id(),
 				'filename' => $filename,
 				'exception' => $e,
