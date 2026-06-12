@@ -1,4 +1,4 @@
-## 0.8.66
+## 0.8.66 2026-06-12
 
 ## 0.8.65 2026-06-12
 * Added image only mode to featured event shortcodes.
