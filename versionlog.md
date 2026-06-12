@@ -1,7 +1,7 @@
 ## 0.8.65
+* Added image only mode to featured event shortcodes.
 
 ## 0.8.64 2026-06-09
-
 ## 0.8.63 2026-06-09
 * Added event registration and related forms.
 
