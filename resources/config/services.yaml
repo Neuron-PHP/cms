@@ -324,6 +324,25 @@ services:
   # CONTENT SERVICES
   # ============================================================================
 
+  # WidgetRenderer must be wired explicitly. Its constructor args are all
+  # optional (default null), so autowiring leaves the repositories null and the
+  # widgets disable themselves (e.g. the [featured-event] / [calendar] /
+  # [latest-posts] / [contact] shortcodes and the homepage featured-event image
+  # band render "requires <Repository>"). Provide the dependencies here.
+  Neuron\Cms\Services\Widget\WidgetRenderer:
+    type: create
+    constructor:
+      - '@Neuron\Cms\Repositories\DatabasePostRepository'
+      - '@Neuron\Cms\Repositories\DatabaseEventRepository'
+      - '@Neuron\Cms\Repositories\DatabaseEventCategoryRepository'
+      - '@Neuron\Data\Settings\SettingManager'
+      - '@Neuron\Cms\Repositories\DatabaseEventRegistrationRepository'
+
+  Neuron\Cms\Services\Content\ShortcodeParser:
+    type: create
+    constructor:
+      - '@Neuron\Cms\Services\Widget\WidgetRenderer'
+
   Neuron\Cms\Services\Content\EditorJsRenderer:
     type: autowire
 
