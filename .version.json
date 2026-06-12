@@ -2,6 +2,6 @@
   "strategy": "semver",
   "major": 0,
   "minor": 8,
-  "patch": 64,
+  "patch": 65,
   "build": 0
 }

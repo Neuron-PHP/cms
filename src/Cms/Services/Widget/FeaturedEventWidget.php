@@ -12,7 +12,12 @@ use Neuron\Cms\Repositories\DatabaseEventRepository;
  * that has not yet ended. If no featured event is available it renders nothing
  * visible (an HTML comment), so it is safe to place in any page or post.
  *
- * Usage: [featured-event]
+ * Display modes:
+ * - [featured-event]                       Full card (image, title, date, etc.)
+ * - [featured-event display="image"]       Just the featured image, linked to
+ *                                          the event. Useful for sponsored/event
+ *                                          banners (e.g. a cover-photo strip).
+ * - [featured-event display="image" link="false"]  Image only, no link.
  *
  * @package Neuron\Cms\Services\Widget
  */
@@ -48,6 +53,16 @@ class FeaturedEventWidget implements IWidget
 			return '<!-- Featured event widget: no featured event available -->';
 		}
 
+		$display = strtolower( (string)( $attrs['display'] ?? 'card' ) );
+
+		if( $display === 'image' )
+		{
+			$link = !isset( $attrs['link'] )
+				|| filter_var( $attrs['link'], FILTER_VALIDATE_BOOLEAN );
+
+			return $this->renderImage( $event, $link );
+		}
+
 		return $this->renderTemplate( $event );
 	}
 
@@ -66,7 +81,44 @@ class FeaturedEventWidget implements IWidget
 	 */
 	public function getAttributes(): array
 	{
-		return [];
+		return [
+			'display' => 'Layout to render: "card" (default, full details) or "image" (featured image only)',
+			'link'    => 'When display="image", whether the image links to the event page (default: true)',
+		];
+	}
+
+	/**
+	 * Render only the featured image for the event.
+	 *
+	 * Returns an HTML comment (renders nothing visible) when the featured event
+	 * has no image, so callers can safely fall back to their own placeholder.
+	 *
+	 * @param Event $event
+	 * @param bool  $link Wrap the image in a link to the event page
+	 * @return string
+	 */
+	private function renderImage( Event $event, bool $link = true ): string
+	{
+		$image = $event->getFeaturedImage();
+
+		if( !$image )
+		{
+			return '<!-- Featured event widget: featured event has no image -->';
+		}
+
+		$title = htmlspecialchars( $event->getTitle(), ENT_QUOTES, 'UTF-8' );
+		$src   = htmlspecialchars( $image, ENT_QUOTES, 'UTF-8' );
+
+		$img = '<img class="featured-event-image-only" src="' . $src . '" alt="' . $title . '">';
+
+		if( !$link )
+		{
+			return $img;
+		}
+
+		$slug = htmlspecialchars( $event->getSlug(), ENT_QUOTES, 'UTF-8' );
+
+		return '<a class="featured-event-image-link" href="/calendar/event/' . $slug . '">' . $img . '</a>';
 	}
 
 	/**
