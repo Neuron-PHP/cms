@@ -169,9 +169,42 @@ document.addEventListener('DOMContentLoaded', function() {
 				return;
 			}
 
-			const publicId = this.dataset.publicId;
-			// TODO: Implement delete API endpoint
-			alert('Delete functionality will be implemented in the next step.');
+			const button = this;
+			const publicId = button.dataset.publicId;
+			const card = button.closest('.col');
+			const originalHtml = button.innerHTML;
+
+			button.disabled = true;
+			button.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>';
+
+			const formData = new FormData();
+			formData.append('public_id', publicId);
+
+			fetch('<?= route_path('admin_media_delete') ?>', {
+				method: 'POST',
+				body: formData,
+				headers: {
+					'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || ''
+				}
+			})
+			.then(response => response.json())
+			.then(data => {
+				if (data.success) {
+					// Remove the image card from the grid
+					if (card) {
+						card.remove();
+					}
+				} else {
+					button.disabled = false;
+					button.innerHTML = originalHtml;
+					alert(data.error || 'Failed to delete image.');
+				}
+			})
+			.catch(error => {
+				button.disabled = false;
+				button.innerHTML = originalHtml;
+				alert('Failed to delete image: ' + error.message);
+			});
 		});
 	});
 

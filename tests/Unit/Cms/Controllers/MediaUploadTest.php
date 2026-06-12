@@ -431,4 +431,147 @@ class MediaUploadTest extends TestCase
 		$this->assertEquals( 'Upload failed. Please try again.', $json['error'] );
 	}
 
+	private function makeMediaController(): Media
+	{
+		$mockSettingManager = Registry::getInstance()->get( RegistryKeys::SETTINGS );
+		$mockSessionManager = $this->createMock( \Neuron\Cms\Auth\SessionManager::class );
+		$mockCloudinaryUploader = $this->createMock( CloudinaryUploader::class );
+		$mockMediaValidator = $this->createMock( MediaValidator::class );
+
+		return new Media( $this->_mockApp, $mockSettingManager, $mockSessionManager, $mockCloudinaryUploader, $mockMediaValidator );
+	}
+
+	private function requestWithPublicId( ?string $publicId ): Request
+	{
+		$request = $this->createMock( Request::class );
+		$request->method( 'post' )->willReturn( $publicId );
+
+		return $request;
+	}
+
+	private function injectUploader( Media $media, CloudinaryUploader $uploader ): void
+	{
+		$reflection = new \ReflectionClass( $media );
+		$uploaderProperty = $reflection->getProperty( '_uploader' );
+		$uploaderProperty->setValue( $media, $uploader );
+	}
+
+	public function testDeleteMediaReturnsErrorWhenNoPublicId(): void
+	{
+		$user = $this->createMock( User::class );
+		Registry::getInstance()->set( RegistryKeys::AUTH_USER, $user );
+
+		$media = $this->makeMediaController();
+		$result = $media->deleteMedia( $this->requestWithPublicId( '' ) );
+
+		$json = json_decode( $result, true );
+		$this->assertFalse( $json['success'] );
+		$this->assertEquals( 'No image was specified', $json['error'] );
+	}
+
+	public function testDeleteMediaRejectsInvalidPublicId(): void
+	{
+		$user = $this->createMock( User::class );
+		$user->method( 'getId' )->willReturn( 1 );
+		Registry::getInstance()->set( RegistryKeys::AUTH_USER, $user );
+
+		$media = $this->makeMediaController();
+
+		// Contains characters outside the allowed set
+		$result = $media->deleteMedia( $this->requestWithPublicId( 'test-folder/bad id$' ) );
+
+		$json = json_decode( $result, true );
+		$this->assertFalse( $json['success'] );
+		$this->assertEquals( 'Invalid image identifier', $json['error'] );
+	}
+
+	public function testDeleteMediaRejectsTraversalPublicId(): void
+	{
+		$user = $this->createMock( User::class );
+		$user->method( 'getId' )->willReturn( 1 );
+		Registry::getInstance()->set( RegistryKeys::AUTH_USER, $user );
+
+		$media = $this->makeMediaController();
+
+		$result = $media->deleteMedia( $this->requestWithPublicId( 'test-folder/../secret' ) );
+
+		$json = json_decode( $result, true );
+		$this->assertFalse( $json['success'] );
+		$this->assertEquals( 'Invalid image identifier', $json['error'] );
+	}
+
+	public function testDeleteMediaRejectsPublicIdOutsideConfiguredFolder(): void
+	{
+		$user = $this->createMock( User::class );
+		$user->method( 'getId' )->willReturn( 1 );
+		Registry::getInstance()->set( RegistryKeys::AUTH_USER, $user );
+
+		$media = $this->makeMediaController();
+
+		$result = $media->deleteMedia( $this->requestWithPublicId( 'other-folder/image' ) );
+
+		$json = json_decode( $result, true );
+		$this->assertFalse( $json['success'] );
+		$this->assertEquals( 'Image cannot be deleted', $json['error'] );
+	}
+
+	public function testDeleteMediaSuccessful(): void
+	{
+		$user = $this->createMock( User::class );
+		$user->method( 'getId' )->willReturn( 1 );
+		Registry::getInstance()->set( RegistryKeys::AUTH_USER, $user );
+
+		$media = $this->makeMediaController();
+
+		$uploaderMock = $this->createMock( CloudinaryUploader::class );
+		$uploaderMock->expects( $this->once() )
+			->method( 'delete' )
+			->with( 'test-folder/image' )
+			->willReturn( true );
+		$this->injectUploader( $media, $uploaderMock );
+
+		$result = $media->deleteMedia( $this->requestWithPublicId( 'test-folder/image' ) );
+
+		$json = json_decode( $result, true );
+		$this->assertTrue( $json['success'] );
+	}
+
+	public function testDeleteMediaReturnsErrorWhenUploaderReturnsFalse(): void
+	{
+		$user = $this->createMock( User::class );
+		$user->method( 'getId' )->willReturn( 1 );
+		Registry::getInstance()->set( RegistryKeys::AUTH_USER, $user );
+
+		$media = $this->makeMediaController();
+
+		$uploaderMock = $this->createMock( CloudinaryUploader::class );
+		$uploaderMock->method( 'delete' )->willReturn( false );
+		$this->injectUploader( $media, $uploaderMock );
+
+		$result = $media->deleteMedia( $this->requestWithPublicId( 'test-folder/image' ) );
+
+		$json = json_decode( $result, true );
+		$this->assertFalse( $json['success'] );
+		$this->assertEquals( 'Image could not be deleted', $json['error'] );
+	}
+
+	public function testDeleteMediaHandlesException(): void
+	{
+		$user = $this->createMock( User::class );
+		$user->method( 'getId' )->willReturn( 1 );
+		Registry::getInstance()->set( RegistryKeys::AUTH_USER, $user );
+
+		$media = $this->makeMediaController();
+
+		$uploaderMock = $this->createMock( CloudinaryUploader::class );
+		$uploaderMock->method( 'delete' )->willThrowException( new \Exception( 'Cloudinary error' ) );
+		$this->injectUploader( $media, $uploaderMock );
+
+		$result = $media->deleteMedia( $this->requestWithPublicId( 'test-folder/image' ) );
+
+		$json = json_decode( $result, true );
+		$this->assertFalse( $json['success'] );
+		$this->assertEquals( 'Delete failed. Please try again.', $json['error'] );
+	}
+
 }
