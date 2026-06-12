@@ -195,7 +195,7 @@ document.addEventListener('DOMContentLoaded', function() {
 		// Disable button during upload
 		uploadBtn.disabled = true;
 
-		fetch('<?= route_path('admin_media_featured_upload') ?>', {
+		fetch('<?= route_path('admin_media_upload') ?>', {
 			method: 'POST',
 			body: formData,
 			headers: {

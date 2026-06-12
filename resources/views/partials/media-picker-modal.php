@@ -339,7 +339,7 @@
 		// Disable button during upload
 		uploadBtn.disabled = true;
 
-		fetch('<?= route_path('admin_upload_featured_image') ?>', {
+		fetch('<?= route_path('admin_media_upload') ?>', {
 			method: 'POST',
 			body: formData,
 			headers: {
