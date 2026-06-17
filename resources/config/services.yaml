@@ -343,8 +343,15 @@ services:
     constructor:
       - '@Neuron\Cms\Services\Widget\WidgetRenderer'
 
+  # EditorJsRenderer must be wired explicitly too. Its $shortcodeParser arg is
+  # optional (default null) and autowiring does NOT fill optional constructor
+  # parameters, so without this the renderer is built with a null parser and
+  # any shortcodes in page/post content (e.g. [event-registration], [calendar])
+  # are emitted as raw text instead of being rendered.
   Neuron\Cms\Services\Content\EditorJsRenderer:
-    type: autowire
+    type: create
+    constructor:
+      - '@Neuron\Cms\Services\Content\ShortcodeParser'
 
 
   # ============================================================================

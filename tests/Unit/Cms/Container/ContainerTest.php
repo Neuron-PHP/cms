@@ -127,6 +127,33 @@ class ContainerTest extends TestCase
 	}
 
 	/**
+	 * Regression: the container-built EditorJsRenderer must receive a
+	 * ShortcodeParser so shortcodes in page/post content are rendered rather
+	 * than emitted as raw text. Autowiring does not fill the optional
+	 * $shortcodeParser constructor argument, so it is wired explicitly in
+	 * services.yaml. Without that wiring, [event-registration] (and other
+	 * shortcodes) leak through verbatim.
+	 */
+	public function testEditorJsRendererParsesShortcodes(): void
+	{
+		$container = Container::build( $this->_settings );
+
+		$renderer = $container->get( EditorJsRenderer::class );
+
+		$html = $renderer->render( [
+			'blocks' => [
+				[ 'type' => 'paragraph', 'data' => [ 'text' => '[event-registration]' ] ]
+			]
+		] );
+
+		$this->assertStringNotContainsString(
+			'[event-registration]',
+			$html,
+			'EditorJsRenderer left a shortcode unparsed - its ShortcodeParser is not wired.'
+		);
+	}
+
+	/**
 	 * Test that auth services can be resolved
 	 */
 	public function testAuthServicesCanBeResolved(): void
