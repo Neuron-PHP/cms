@@ -1,4 +1,4 @@
-## 0.8.70
+## 0.8.70 2026-06-18
 
 * Added external links to events.
 
