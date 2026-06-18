@@ -73,6 +73,7 @@ class DatabaseEventRepositoryTest extends TestCase
 				registration_visibility VARCHAR(20) DEFAULT 'public',
 				capacity INTEGER,
 				featured_image VARCHAR(255),
+				external_url VARCHAR(500),
 				organizer VARCHAR(255),
 				contact_email VARCHAR(255),
 				contact_phone VARCHAR(50),
@@ -598,6 +599,43 @@ class DatabaseEventRepositoryTest extends TestCase
 
 		$reloaded = $this->repository->findById( $id );
 		$this->assertTrue( $reloaded->isFeatured() );
+	}
+
+	public function test_create_persists_external_url(): void
+	{
+		$userId = $this->createTestUser();
+
+		$event = new Event();
+		$event->setTitle( 'External Event' );
+		$event->setSlug( 'external-event' );
+		$event->setStartDate( new DateTimeImmutable( '2025-06-15 10:00:00' ) );
+		$event->setStatus( Event::STATUS_PUBLISHED );
+		$event->setExternalUrl( 'https://example.com/event' );
+		$event->setCreatedBy( $userId );
+
+		$result = $this->repository->create( $event );
+
+		$reloaded = $this->repository->findById( $result->getId() );
+		$this->assertTrue( $reloaded->hasExternalUrl() );
+		$this->assertEquals( 'https://example.com/event', $reloaded->getExternalUrl() );
+	}
+
+	public function test_update_persists_external_url(): void
+	{
+		$userId = $this->createTestUser();
+
+		$this->pdo->exec( "INSERT INTO events (title, slug, start_date, status, created_by)
+			VALUES ('Set External', 'set-external', '2025-06-15 10:00:00', 'published', {$userId})" );
+		$id = (int)$this->pdo->lastInsertId();
+
+		$event = $this->repository->findById( $id );
+		$this->assertFalse( $event->hasExternalUrl() );
+
+		$event->setExternalUrl( 'https://example.com/managed' );
+		$this->repository->update( $event );
+
+		$reloaded = $this->repository->findById( $id );
+		$this->assertEquals( 'https://example.com/managed', $reloaded->getExternalUrl() );
 	}
 
 	public function test_create_sets_timestamps(): void

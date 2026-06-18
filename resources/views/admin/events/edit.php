@@ -72,6 +72,12 @@
 						</div>
 
 						<div class="mb-3">
+							<label for="external_url" class="form-label">External Link</label>
+							<input type="url" class="form-control" id="external_url" name="external_url" value="<?= htmlspecialchars($event->getExternalUrl() ?? '') ?>" placeholder="https://example.com/event">
+							<small class="form-text text-muted">If this event is managed on another platform, paste its full URL (including https://). When set, links to this event open the external site in a new tab.</small>
+						</div>
+
+						<div class="mb-3">
 							<label for="organizer" class="form-label">Organizer</label>
 							<input type="text" class="form-control" id="organizer" name="organizer" value="<?= htmlspecialchars($event->getOrganizer() ?? '') ?>" placeholder="e.g., Sarasota Teen Court">
 						</div>

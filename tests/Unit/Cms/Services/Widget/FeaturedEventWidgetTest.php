@@ -200,4 +200,51 @@ class FeaturedEventWidgetTest extends TestCase
 		$this->assertStringNotContainsString( '<img src=x', $result );
 		$this->assertStringContainsString( '&lt;script&gt;', $result );
 	}
+
+	public function testRenderCardLinksExternallyWhenExternalUrlSet(): void
+	{
+		$event = $this->createMock( \Neuron\Cms\Models\Event::class );
+		$event->method( 'getTitle' )->willReturn( 'Managed Elsewhere' );
+		$event->method( 'getSlug' )->willReturn( 'managed-elsewhere' );
+		$event->method( 'getStartDate' )->willReturn( new \DateTimeImmutable( '2030-01-15 18:30:00' ) );
+		$event->method( 'isAllDay' )->willReturn( false );
+		$event->method( 'getLocation' )->willReturn( null );
+		$event->method( 'getDescription' )->willReturn( null );
+		$event->method( 'getFeaturedImage' )->willReturn( 'https://example.com/cover.jpg' );
+		$event->method( 'hasExternalUrl' )->willReturn( true );
+		$event->method( 'getExternalUrl' )->willReturn( 'https://tickets.example.com/managed' );
+
+		$this->eventRepository->method( 'getNextFeatured' )->willReturn( $event );
+
+		$result = $this->widget->render( [] );
+
+		// Whole card opens the external site in a new tab.
+		$this->assertStringContainsString( 'href="https://tickets.example.com/managed"', $result );
+		$this->assertStringContainsString( 'target="_blank"', $result );
+		$this->assertStringContainsString( 'rel="noopener noreferrer"', $result );
+		$this->assertStringContainsString( 'featured-event-widget--external', $result );
+		$this->assertStringContainsString( 'Visit event site', $result );
+
+		// Internal event page is not used.
+		$this->assertStringNotContainsString( '/calendar/event/managed-elsewhere', $result );
+	}
+
+	public function testRenderImageModeLinksExternallyWhenExternalUrlSet(): void
+	{
+		$event = $this->createMock( \Neuron\Cms\Models\Event::class );
+		$event->method( 'getTitle' )->willReturn( 'Managed Elsewhere' );
+		$event->method( 'getSlug' )->willReturn( 'managed-elsewhere' );
+		$event->method( 'getFeaturedImage' )->willReturn( 'https://example.com/cover.jpg' );
+		$event->method( 'hasExternalUrl' )->willReturn( true );
+		$event->method( 'getExternalUrl' )->willReturn( 'https://tickets.example.com/managed' );
+
+		$this->eventRepository->method( 'getNextFeatured' )->willReturn( $event );
+
+		$result = $this->widget->render( [ 'display' => 'image' ] );
+
+		$this->assertStringContainsString( 'href="https://tickets.example.com/managed"', $result );
+		$this->assertStringContainsString( 'target="_blank"', $result );
+		$this->assertStringContainsString( 'rel="noopener noreferrer"', $result );
+		$this->assertStringNotContainsString( '/calendar/event/managed-elsewhere', $result );
+	}
 }

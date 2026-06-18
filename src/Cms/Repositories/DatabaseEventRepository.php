@@ -294,9 +294,9 @@ class DatabaseEventRepository implements IEventRepository
 			"INSERT INTO events (
 				title, slug, description, content_raw, location, start_date, end_date,
 				all_day, category_id, status, featured, registration_enabled, registration_visibility, capacity,
-				featured_image, organizer, contact_email,
+				featured_image, external_url, organizer, contact_email,
 				contact_phone, created_by, view_count, created_at, updated_at
-			) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+			) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
 		);
 
 		$now = new DateTimeImmutable();
@@ -319,6 +319,7 @@ class DatabaseEventRepository implements IEventRepository
 			$event->getRegistrationVisibility(),
 			$event->getCapacity(),
 			$event->getFeaturedImage(),
+			$event->getExternalUrl(),
 			$event->getOrganizer(),
 			$event->getContactEmail(),
 			$event->getContactPhone(),
@@ -343,7 +344,7 @@ class DatabaseEventRepository implements IEventRepository
 				title = ?, slug = ?, description = ?, content_raw = ?, location = ?,
 				start_date = ?, end_date = ?, all_day = ?, category_id = ?, status = ?,
 				featured = ?, registration_enabled = ?, registration_visibility = ?, capacity = ?,
-				featured_image = ?, organizer = ?, contact_email = ?, contact_phone = ?,
+				featured_image = ?, external_url = ?, organizer = ?, contact_email = ?, contact_phone = ?,
 				view_count = ?, updated_at = ?
 			WHERE id = ?"
 		);
@@ -367,6 +368,7 @@ class DatabaseEventRepository implements IEventRepository
 			$event->getRegistrationVisibility(),
 			$event->getCapacity(),
 			$event->getFeaturedImage(),
+			$event->getExternalUrl(),
 			$event->getOrganizer(),
 			$event->getContactEmail(),
 			$event->getContactPhone(),

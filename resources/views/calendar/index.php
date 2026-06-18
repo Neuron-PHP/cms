@@ -109,15 +109,24 @@
 										if(isset($eventsByDay[$currentDay])) {
 											foreach($eventsByDay[$currentDay] as $event) {
 												$categoryColor = $event->getCategory() ? $event->getCategory()->getColor() : '#6c757d';
+												if($event->hasExternalUrl()) {
+													$eventHref = htmlspecialchars($event->getExternalUrl());
+													$eventLinkAttrs = ' target="_blank" rel="noopener noreferrer"';
+													$eventExternal = ' &#8599;';
+												} else {
+													$eventHref = route_path('calendar_event', ['slug' => $event->getSlug()]);
+													$eventLinkAttrs = '';
+													$eventExternal = '';
+												}
 												echo '<div class="mb-1">';
-												echo '<a href="' . route_path('calendar_event', ['slug' => $event->getSlug()]) . '" ';
+												echo '<a href="' . $eventHref . '"' . $eventLinkAttrs . ' ';
 												echo 'class="badge text-decoration-none text-white d-block text-truncate" ';
 												echo 'style="background-color: ' . htmlspecialchars($categoryColor) . '" ';
 												echo 'title="' . htmlspecialchars($event->getTitle()) . '">';
 												if(!$event->isAllDay()) {
 													echo $event->getStartDate()->format('g:ia') . ' ';
 												}
-												echo htmlspecialchars($event->getTitle());
+												echo htmlspecialchars($event->getTitle()) . $eventExternal;
 												echo '</a>';
 												echo '</div>';
 											}
@@ -151,8 +160,10 @@
 					<?php else: ?>
 						<div class="list-group">
 							<?php foreach($events as $event): ?>
-								<a href="<?= route_path('calendar_event', ['slug' => $event->getSlug()]) ?>"
-								   class="list-group-item list-group-item-action">
+								<?php $eventIsExternal = $event->hasExternalUrl(); ?>
+								<a href="<?= $eventIsExternal ? htmlspecialchars($event->getExternalUrl()) : route_path('calendar_event', ['slug' => $event->getSlug()]) ?>"
+								   class="list-group-item list-group-item-action"
+								   <?= $eventIsExternal ? 'target="_blank" rel="noopener noreferrer"' : '' ?>>
 									<div class="d-flex w-100 justify-content-between align-items-start">
 										<div class="flex-grow-1">
 											<div class="d-flex align-items-center gap-2 mb-1">
@@ -162,7 +173,12 @@
 														<?= htmlspecialchars($event->getCategory()->getName()) ?>
 													</span>
 												<?php endif; ?>
-												<h5 class="mb-0"><?= htmlspecialchars($event->getTitle()) ?></h5>
+												<h5 class="mb-0">
+													<?= htmlspecialchars($event->getTitle()) ?>
+													<?php if($eventIsExternal): ?>
+														<i class="bi bi-box-arrow-up-right small text-muted" title="Opens external site in a new tab"></i>
+													<?php endif; ?>
+												</h5>
 											</div>
 
 											<div class="text-muted small mb-2">

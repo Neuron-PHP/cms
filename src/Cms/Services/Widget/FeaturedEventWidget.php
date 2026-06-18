@@ -116,9 +116,39 @@ class FeaturedEventWidget implements IWidget
 			return $img;
 		}
 
+		[ 'href' => $href, 'attrs' => $attrs, 'external' => $external ] = $this->resolveLink( $event );
+		$extraClass = $external ? ' featured-event-image-link--external' : '';
+
+		return '<a class="featured-event-image-link' . $extraClass . '" href="' . $href . '"' . $attrs . '>' . $img . '</a>';
+	}
+
+	/**
+	 * Resolve the link target for the event.
+	 *
+	 * When the event has an external URL it is preferred and opened in a new
+	 * tab; otherwise the internal event page is used.
+	 *
+	 * @param Event $event
+	 * @return array{href: string, attrs: string, external: bool}
+	 */
+	private function resolveLink( Event $event ): array
+	{
+		if( $event->hasExternalUrl() )
+		{
+			return [
+				'href'     => htmlspecialchars( $event->getExternalUrl(), ENT_QUOTES, 'UTF-8' ),
+				'attrs'    => ' target="_blank" rel="noopener noreferrer"',
+				'external' => true,
+			];
+		}
+
 		$slug = htmlspecialchars( $event->getSlug(), ENT_QUOTES, 'UTF-8' );
 
-		return '<a class="featured-event-image-link" href="/calendar/event/' . $slug . '">' . $img . '</a>';
+		return [
+			'href'     => '/calendar/event/' . $slug,
+			'attrs'    => '',
+			'external' => false,
+		];
 	}
 
 	/**
@@ -138,7 +168,13 @@ class FeaturedEventWidget implements IWidget
 			$startDate .= ' at ' . $event->getStartDate()->format( 'g:i A' );
 		}
 
-		$html = '<div class="featured-event-widget">';
+		[ 'href' => $href, 'attrs' => $attrs, 'external' => $external ] = $this->resolveLink( $event );
+
+		// The whole card is a single link. When the event is managed elsewhere it
+		// opens that site in a new tab; otherwise it goes to the internal page.
+		$widgetClass = 'featured-event-widget' . ( $external ? ' featured-event-widget--external' : '' );
+
+		$html = '<a class="' . $widgetClass . '" href="' . $href . '"' . $attrs . '>';
 
 		$image = $event->getFeaturedImage();
 		if( $image )
@@ -150,9 +186,11 @@ class FeaturedEventWidget implements IWidget
 
 		$html .= '<div class="featured-event-body">';
 		$html .= '<span class="featured-event-badge">Featured Event</span>';
-		$html .= '<h3 class="featured-event-title">';
-		$html .= '<a href="/calendar/event/' . $slug . '">' . $title . '</a>';
-		$html .= '</h3>';
+		if( $external )
+		{
+			$html .= '<span class="featured-event-external" aria-label="Opens external site in a new tab">External &#8599;</span>';
+		}
+		$html .= '<h3 class="featured-event-title">' . $title . '</h3>';
 		$html .= '<p class="featured-event-date">' . $startDate . '</p>';
 
 		$location = $event->getLocation();
@@ -167,9 +205,10 @@ class FeaturedEventWidget implements IWidget
 			$html .= '<p class="featured-event-description">' . htmlspecialchars( $description, ENT_QUOTES, 'UTF-8' ) . '</p>';
 		}
 
-		$html .= '<a href="/calendar/event/' . $slug . '" class="featured-event-link">View details</a>';
+		$linkLabel = $external ? 'Visit event site &#8599;' : 'View details';
+		$html .= '<span class="featured-event-link">' . $linkLabel . '</span>';
 		$html .= '</div>';
-		$html .= '</div>';
+		$html .= '</a>';
 
 		return $html;
 	}

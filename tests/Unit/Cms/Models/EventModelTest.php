@@ -256,4 +256,57 @@ class EventModelTest extends TestCase
 
 		$this->assertSame( 25, $restored->getCapacity() );
 	}
+
+	public function test_external_url_defaults_to_null(): void
+	{
+		$event = new Event();
+
+		$this->assertNull( $event->getExternalUrl() );
+		$this->assertFalse( $event->hasExternalUrl() );
+	}
+
+	public function test_set_external_url_normalizes_empty_string_to_null(): void
+	{
+		$event = new Event();
+		$event->setExternalUrl( '' );
+
+		$this->assertNull( $event->getExternalUrl() );
+		$this->assertFalse( $event->hasExternalUrl() );
+	}
+
+	public function test_set_external_url_stores_value(): void
+	{
+		$event = new Event();
+		$event->setExternalUrl( 'https://example.com/event' );
+
+		$this->assertEquals( 'https://example.com/event', $event->getExternalUrl() );
+		$this->assertTrue( $event->hasExternalUrl() );
+	}
+
+	public function test_to_array_includes_external_url(): void
+	{
+		$event = new Event();
+		$event->setTitle( 'Test Event' );
+		$event->setSlug( 'test-event' );
+		$event->setExternalUrl( 'https://example.com/event' );
+
+		$array = $event->toArray();
+
+		$this->assertArrayHasKey( 'external_url', $array );
+		$this->assertEquals( 'https://example.com/event', $array['external_url'] );
+	}
+
+	public function test_from_array_reads_external_url(): void
+	{
+		$event = Event::fromArray( [
+			'title' => 'Test Event',
+			'slug' => 'test-event',
+			'start_date' => '2025-01-15 10:00:00',
+			'status' => 'published',
+			'external_url' => 'https://example.com/event',
+		] );
+
+		$this->assertEquals( 'https://example.com/event', $event->getExternalUrl() );
+		$this->assertTrue( $event->hasExternalUrl() );
+	}
 }
