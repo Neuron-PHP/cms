@@ -20,7 +20,8 @@
     "20260605000000_create_contact_submissions_table.php",
     "20260609120000_add_registration_to_events.php",
     "20260609120001_create_event_registrations_table.php",
-    "20260609130000_add_capacity_to_events.php"
+    "20260609130000_add_capacity_to_events.php",
+    "20260618120000_add_external_url_to_events.php"
   ],
   "config_files": [
     "auth.yaml",
