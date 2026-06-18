@@ -1,3 +1,7 @@
+## 0.8.70 2026-06-18
+
+* Added external links to events.
+
 ## 0.8.69 2026-06-17
 
 ## 0.8.68 2026-06-12
@@ -7,7 +11,7 @@
 ## 0.8.66 2026-06-12
 
 ## 0.8.65 2026-06-12
-* Added image only mode to featured event shortcodes.
+* Added image-only mode to featured event shortcodes.
 
 ## 0.8.64 2026-06-09
 ## 0.8.63 2026-06-09

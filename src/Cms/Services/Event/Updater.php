@@ -53,6 +53,7 @@ class Updater implements IEventUpdater
 		$registrationVisibility = $request->registration_visibility ?? Event::VISIBILITY_PUBLIC;
 		$capacity = $request->capacity ?? null;
 		$featuredImage = $request->featured_image ?? null;
+		$externalUrl = $request->external_url ?? null;
 		$organizer = $request->organizer ?? null;
 		$contactEmail = $request->contact_email ?? null;
 		$contactPhone = $request->contact_phone ?? null;
@@ -98,6 +99,7 @@ class Updater implements IEventUpdater
 		$event->setRegistrationVisibility( $registrationVisibility );
 		$event->setCapacity( $capacity !== null ? (int)$capacity : null );
 		$event->setFeaturedImage( $featuredImage );
+		$event->setExternalUrl( $externalUrl );
 		$event->setOrganizer( $organizer );
 		$event->setContactEmail( $contactEmail );
 		$event->setContactPhone( $contactPhone );

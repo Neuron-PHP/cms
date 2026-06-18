@@ -57,6 +57,18 @@
 					<?php if($event->getDescription()): ?>
 						<p class="lead"><?= htmlspecialchars($event->getDescription()) ?></p>
 					<?php endif; ?>
+
+					<?php if($event->hasExternalUrl()): ?>
+						<div class="mb-3">
+							<a href="<?= htmlspecialchars($event->getExternalUrl()) ?>"
+							   class="btn btn-primary"
+							   target="_blank"
+							   rel="noopener noreferrer">
+								Visit Event Site <i class="bi bi-box-arrow-up-right"></i>
+							</a>
+							<small class="d-block text-muted mt-1">This event is managed on an external site and opens in a new tab.</small>
+						</div>
+					<?php endif; ?>
 				</header>
 
 				<!-- Event Content -->
@@ -122,7 +134,7 @@
 				<?php endif; ?>
 
 				<!-- Event Details Card -->
-				<?php if($event->getOrganizer() || $event->getContactEmail() || $event->getContactPhone()): ?>
+				<?php if($event->getOrganizer() || $event->getContactEmail() || $event->getContactPhone() || $event->hasExternalUrl()): ?>
 					<div class="card mb-4">
 						<div class="card-header">
 							<h5 class="mb-0">Event Details</h5>
@@ -132,6 +144,16 @@
 								<?php if($event->getOrganizer()): ?>
 									<dt class="col-sm-3">Organizer</dt>
 									<dd class="col-sm-9"><?= htmlspecialchars($event->getOrganizer()) ?></dd>
+								<?php endif; ?>
+
+								<?php if($event->hasExternalUrl()): ?>
+									<dt class="col-sm-3">Event Website</dt>
+									<dd class="col-sm-9">
+										<a href="<?= htmlspecialchars($event->getExternalUrl()) ?>" target="_blank" rel="noopener noreferrer">
+											<?= htmlspecialchars($event->getExternalUrl()) ?>
+											<i class="bi bi-box-arrow-up-right small"></i>
+										</a>
+									</dd>
 								<?php endif; ?>
 
 								<?php if($event->getContactEmail()): ?>

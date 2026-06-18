@@ -32,6 +32,7 @@ class Event extends Model
 	private string $_registrationVisibility = 'public';
 	private ?int $_capacity = null;
 	private ?string $_featuredImage = null;
+	private ?string $_externalUrl = null;
 	private ?string $_organizer = null;
 	private ?string $_contactEmail = null;
 	private ?string $_contactPhone = null;
@@ -448,6 +449,34 @@ class Event extends Model
 	}
 
 	/**
+	 * Get external URL
+	 *
+	 * When set, the event is managed on a different platform and should link
+	 * out to that service instead of the internal event page.
+	 */
+	public function getExternalUrl(): ?string
+	{
+		return $this->_externalUrl;
+	}
+
+	/**
+	 * Set external URL
+	 */
+	public function setExternalUrl( ?string $externalUrl ): self
+	{
+		$this->_externalUrl = ( $externalUrl !== null && $externalUrl !== '' ) ? $externalUrl : null;
+		return $this;
+	}
+
+	/**
+	 * Check if the event has an external URL
+	 */
+	public function hasExternalUrl(): bool
+	{
+		return $this->_externalUrl !== null && $this->_externalUrl !== '';
+	}
+
+	/**
 	 * Get organizer
 	 */
 	public function getOrganizer(): ?string
@@ -698,6 +727,7 @@ class Event extends Model
 		$event->setRegistrationVisibility( $data['registration_visibility'] ?? self::VISIBILITY_PUBLIC );
 		$event->setCapacity( isset( $data['capacity'] ) && $data['capacity'] !== null && $data['capacity'] !== '' ? (int)$data['capacity'] : null );
 		$event->setFeaturedImage( $data['featured_image'] ?? null );
+		$event->setExternalUrl( $data['external_url'] ?? null );
 		$event->setOrganizer( $data['organizer'] ?? null );
 		$event->setContactEmail( $data['contact_email'] ?? null );
 		$event->setContactPhone( $data['contact_phone'] ?? null );
@@ -759,6 +789,7 @@ class Event extends Model
 			'registration_visibility' => $this->_registrationVisibility,
 			'capacity' => $this->_capacity,
 			'featured_image' => $this->_featuredImage,
+			'external_url' => $this->_externalUrl,
 			'organizer' => $this->_organizer,
 			'contact_email' => $this->_contactEmail,
 			'contact_phone' => $this->_contactPhone,

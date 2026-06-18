@@ -46,11 +46,17 @@
 									     style="height: 200px; object-fit: cover;">
 								<?php endif; ?>
 
+								<?php $eventIsExternal = $event->hasExternalUrl(); ?>
+								<?php $eventHref = $eventIsExternal ? htmlspecialchars($event->getExternalUrl()) : route_path('calendar_event', ['slug' => $event->getSlug()]); ?>
 								<div class="card-body">
 									<h5 class="card-title">
-										<a href="<?= route_path('calendar_event', ['slug' => $event->getSlug()]) ?>"
-										   class="text-decoration-none text-dark">
+										<a href="<?= $eventHref ?>"
+										   class="text-decoration-none text-dark"
+										   <?= $eventIsExternal ? 'target="_blank" rel="noopener noreferrer"' : '' ?>>
 											<?= htmlspecialchars($event->getTitle()) ?>
+											<?php if($eventIsExternal): ?>
+												<i class="bi bi-box-arrow-up-right small text-muted" title="Opens external site in a new tab"></i>
+											<?php endif; ?>
 										</a>
 									</h5>
 
@@ -92,9 +98,14 @@
 								</div>
 
 								<div class="card-footer bg-white border-top-0">
-									<a href="<?= route_path('calendar_event', ['slug' => $event->getSlug()]) ?>"
-									   class="btn btn-sm btn-outline-primary">
-										View Details <i class="bi bi-arrow-right"></i>
+									<a href="<?= $eventHref ?>"
+									   class="btn btn-sm btn-outline-primary"
+									   <?= $eventIsExternal ? 'target="_blank" rel="noopener noreferrer"' : '' ?>>
+										<?php if($eventIsExternal): ?>
+											Visit Event Site <i class="bi bi-box-arrow-up-right"></i>
+										<?php else: ?>
+											View Details <i class="bi bi-arrow-right"></i>
+										<?php endif; ?>
 									</a>
 								</div>
 							</div>

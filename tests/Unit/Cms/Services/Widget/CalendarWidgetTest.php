@@ -342,6 +342,27 @@ class CalendarWidgetTest extends TestCase
 		$this->assertEquals( 2, substr_count( $result, '<li class="calendar-widget-item">' ) );
 	}
 
+	public function testRenderLinksExternallyWhenEventHasExternalUrl(): void
+	{
+		$event = $this->createMock( \Neuron\Cms\Models\Event::class );
+		$event->method( 'getTitle' )->willReturn( 'External Event' );
+		$event->method( 'getSlug' )->willReturn( 'external-event' );
+		$event->method( 'getStartDate' )->willReturn( new \DateTimeImmutable( '2030-01-15' ) );
+		$event->method( 'isAllDay' )->willReturn( true );
+		$event->method( 'getLocation' )->willReturn( null );
+		$event->method( 'hasExternalUrl' )->willReturn( true );
+		$event->method( 'getExternalUrl' )->willReturn( 'https://tickets.example.com/e' );
+
+		$this->eventRepository->method( 'getUpcoming' )->willReturn( [ $event ] );
+
+		$result = $this->widget->render( [] );
+
+		$this->assertStringContainsString( 'href="https://tickets.example.com/e"', $result );
+		$this->assertStringContainsString( 'target="_blank"', $result );
+		$this->assertStringContainsString( 'rel="noopener noreferrer"', $result );
+		$this->assertStringNotContainsString( '/calendar/event/external-event', $result );
+	}
+
 	public function testConstructorSetsPropertiesCorrectly(): void
 	{
 		$eventRepo = $this->createMock( DatabaseEventRepository::class );

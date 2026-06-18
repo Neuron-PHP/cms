@@ -130,11 +130,25 @@ class CalendarWidget implements IWidget
 			$location = $event->getLocation();
 			$locationHtml = $location ? '<span class="event-location">' . htmlspecialchars( $location, ENT_QUOTES, 'UTF-8' ) . '</span>' : '';
 
+			if( $event->hasExternalUrl() )
+			{
+				$href = htmlspecialchars( $event->getExternalUrl(), ENT_QUOTES, 'UTF-8' );
+				$linkAttrs = ' class="event-link event-link--external" target="_blank" rel="noopener noreferrer"';
+				$externalHtml = '<span class="event-external" aria-label="Opens external site in a new tab">&#8599;</span>';
+			}
+			else
+			{
+				$href = '/calendar/event/' . $slug;
+				$linkAttrs = ' class="event-link"';
+				$externalHtml = '';
+			}
+
 			$html .= '<li class="calendar-widget-item">';
-			$html .= '<a href="/calendar/event/' . $slug . '" class="event-link">';
+			$html .= '<a href="' . $href . '"' . $linkAttrs . '>';
 			$html .= '<span class="event-title">' . $title . '</span>';
 			$html .= '<span class="event-date">' . $startDate . '</span>';
 			$html .= $locationHtml;
+			$html .= $externalHtml;
 			$html .= '</a>';
 			$html .= '</li>';
 		}
