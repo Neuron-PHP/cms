@@ -52,6 +52,7 @@ class UpgradeCommand extends Command
 		$this->addOption( 'migrations-only', 'm', false, 'Only copy new migrations' );
 		$this->addOption( 'skip-views', null, false, 'Skip updating view files' );
 		$this->addOption( 'force-views', null, false, 'Overwrite existing view files with package versions (destroys local view customizations)' );
+		$this->addOption( 'prompt-views', null, false, 'Prompt before overwriting each view that is newer in the package and differs from the local copy' );
 		$this->addOption( 'skip-migrations', null, false, 'Skip copying migrations' );
 		$this->addOption( 'run-migrations', 'r', false, 'Run migrations automatically after copying' );
 	}
@@ -84,10 +85,12 @@ class UpgradeCommand extends Command
 		// Check for updates
 		$hasUpdates = $this->checkForUpdates();
 
-		// --force-views always has work to do (it re-publishes package views).
-		$forceViews = (bool) $this->input->getOption( 'force-views' );
+		// --force-views / --prompt-views always have potential work to do: they
+		// re-examine published views even when the manifest version is unchanged.
+		$forceViews  = (bool) $this->input->getOption( 'force-views' );
+		$promptViews = (bool) $this->input->getOption( 'prompt-views' );
 
-		if( !$hasUpdates && !$forceViews )
+		if( !$hasUpdates && !$forceViews && !$promptViews )
 		{
 			$this->output->success( "✓ CMS is already up to date!" );
 			return 0;
@@ -96,6 +99,10 @@ class UpgradeCommand extends Command
 		if( $forceViews )
 		{
 			$this->output->writeln( "  ⚠️  --force-views: existing view files will be overwritten with package versions" );
+		}
+		elseif( $promptViews )
+		{
+			$this->output->writeln( "  ℹ️  --prompt-views: you will be asked before overwriting each changed view" );
 		}
 
 		// If --check flag, exit after displaying what would be updated
@@ -486,6 +493,29 @@ class UpgradeCommand extends Command
 		}
 
 		$force  = (bool) $this->input->getOption( 'force-views' );
+		$prompt = (bool) $this->input->getOption( 'prompt-views' );
+
+		// Interactive merge: add new views, and ask per file for views that are
+		// newer in the package and differ from the local copy.
+		if( $prompt && !$force )
+		{
+			$copied = $this->copyViewsInteractive( $viewSource, $viewDest );
+
+			if( $copied > 0 )
+			{
+				$this->output->writeln( "\n  Copied $copied view file" . ( $copied !== 1 ? 's' : '' ) );
+			}
+			else
+			{
+				$this->output->writeln( "  No view files copied" );
+			}
+
+			$this->output->writeln( "  ℹ️  Unchanged and declined views were left as-is" );
+			$this->output->writeln( "  Package views location: " . $viewSource . "/" );
+
+			return true;
+		}
+
 		$copied = $this->copyNewViews( $viewSource, $viewDest, $force );
 
 		if( $copied > 0 )
@@ -581,6 +611,120 @@ class UpgradeCommand extends Command
 		}
 
 		return $copied;
+	}
+
+	/**
+	 * Recursively copy views, prompting before overwriting changed files.
+	 *
+	 * Missing views are added automatically. An existing view is only offered
+	 * for overwrite when the package copy is newer (by modification time) AND
+	 * its contents differ from the local copy, so identical or locally-newer
+	 * files are skipped without noise.
+	 *
+	 * @param string $source Source directory
+	 * @param string $dest Destination directory
+	 * @return int Number of files copied
+	 */
+	private function copyViewsInteractive( string $source, string $dest ): int
+	{
+		$items = scandir( $source );
+
+		if( $items === false )
+		{
+			return 0;
+		}
+
+		$copied = 0;
+
+		foreach( $items as $item )
+		{
+			if( $item === '.' || $item === '..' )
+			{
+				continue;
+			}
+
+			$sourcePath = $source . '/' . $item;
+			$destPath   = $dest . '/' . $item;
+
+			if( is_dir( $sourcePath ) )
+			{
+				$copied += $this->copyViewsInteractive( $sourcePath, $destPath );
+				continue;
+			}
+
+			$relative = ltrim( str_replace( $this->_projectPath, '', $destPath ), '/' );
+
+			// New view: add without prompting.
+			if( !file_exists( $destPath ) )
+			{
+				if( $this->copyViewFile( $sourcePath, $destPath ) )
+				{
+					$this->output->writeln( "  ✓ Added: $relative" );
+					$this->_messages[] = "Added view: $relative";
+					$copied++;
+				}
+
+				continue;
+			}
+
+			// Only consider views the package updated more recently.
+			if( filemtime( $sourcePath ) <= filemtime( $destPath ) )
+			{
+				continue;
+			}
+
+			// Skip when contents are identical despite the newer timestamp.
+			if( md5_file( $sourcePath ) === md5_file( $destPath ) )
+			{
+				continue;
+			}
+
+			$packageDate = date( 'Y-m-d H:i', (int) filemtime( $sourcePath ) );
+			$localDate   = date( 'Y-m-d H:i', (int) filemtime( $destPath ) );
+
+			$this->output->writeln( "  • $relative (package $packageDate is newer than local $localDate)" );
+
+			if( !$this->confirm( "    Overwrite this view?", false ) )
+			{
+				$this->output->writeln( "  – Skipped: $relative" );
+				continue;
+			}
+
+			if( $this->copyViewFile( $sourcePath, $destPath ) )
+			{
+				$this->output->writeln( "  ✓ Updated: $relative" );
+				$this->_messages[] = "Updated view: $relative";
+				$copied++;
+			}
+		}
+
+		return $copied;
+	}
+
+	/**
+	 * Copy a single view file, creating the destination directory as needed.
+	 *
+	 * @param string $source Source file
+	 * @param string $dest Destination file
+	 * @return bool
+	 */
+	private function copyViewFile( string $source, string $dest ): bool
+	{
+		$destDir = dirname( $dest );
+
+		if( !is_dir( $destDir ) && !mkdir( $destDir, 0755, true ) && !is_dir( $destDir ) )
+		{
+			$this->output->error( "  ✗ Failed to create directory: $destDir" );
+			return false;
+		}
+
+		if( !copy( $source, $dest ) )
+		{
+			$this->output->error( "  ✗ Failed to copy: $dest" );
+			return false;
+		}
+
+		return true;
 	}
 
 	/**

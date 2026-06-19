@@ -161,6 +161,77 @@ class UpgradeCommandTest extends TestCase
 		}
 	}
 
+	public function testCopyViewsInteractiveOnlyPromptsForNewerChangedViews(): void
+	{
+		$base   = sys_get_temp_dir() . '/neuron_cms_views_prompt_' . uniqid();
+		$source = $base . '/source';
+		$dest   = $base . '/dest';
+
+		$old = time() - 1000;
+		$mid = time() - 500;
+		$new = time();
+
+		// a_new: only in the package -> added automatically (no prompt).
+		$this->writeFile( $source . '/admin/a_new.php', 'PKG_A' );
+
+		// b_changed: differs and package is newer -> prompt (answered yes).
+		$this->writeFile( $dest . '/admin/b_changed.php', 'LOCAL_B' );
+		$this->writeFile( $source . '/admin/b_changed.php', 'PKG_B' );
+
+		// c_changed: differs and package is newer -> prompt (answered no).
+		$this->writeFile( $dest . '/admin/c_changed.php', 'LOCAL_C' );
+		$this->writeFile( $source . '/admin/c_changed.php', 'PKG_C' );
+
+		// d_same: identical contents though package is newer -> no prompt.
+		$this->writeFile( $dest . '/admin/d_same.php', 'SAME' );
+		$this->writeFile( $source . '/admin/d_same.php', 'SAME' );
+
+		// e_older: differs but package is older -> no prompt.
+		$this->writeFile( $dest . '/admin/e_older.php', 'LOCAL_E' );
+		$this->writeFile( $source . '/admin/e_older.php', 'PKG_E' );
+
+		// Local copies share a baseline mtime; package copies are newer except e.
+		touch( $dest . '/admin/b_changed.php', $old );
+		touch( $dest . '/admin/c_changed.php', $old );
+		touch( $dest . '/admin/d_same.php', $old );
+		touch( $dest . '/admin/e_older.php', $mid );
+
+		touch( $source . '/admin/b_changed.php', $new );
+		touch( $source . '/admin/c_changed.php', $new );
+		touch( $source . '/admin/d_same.php', $new );
+		touch( $source . '/admin/e_older.php', $old );
+
+		// Prompts occur in scandir (alphabetical) order: b then c.
+		$this->inputReader->addResponse( 'y' );
+		$this->inputReader->addResponse( 'n' );
+
+		try {
+			$reflection = new \ReflectionClass( $this->command );
+			$method = $reflection->getMethod( 'copyViewsInteractive' );
+
+			$copied = $method->invoke( $this->command, $source, $dest );
+
+			// Only the added view and the accepted overwrite were copied.
+			$this->assertEquals( 2, $copied );
+
+			// New view added.
+			$this->assertEquals( 'PKG_A', file_get_contents( $dest . '/admin/a_new.php' ) );
+
+			// Accepted overwrite applied; declined one preserved.
+			$this->assertEquals( 'PKG_B', file_get_contents( $dest . '/admin/b_changed.php' ) );
+			$this->assertEquals( 'LOCAL_C', file_get_contents( $dest . '/admin/c_changed.php' ) );
+
+			// Identical and older-package views untouched and never prompted.
+			$this->assertEquals( 'SAME', file_get_contents( $dest . '/admin/d_same.php' ) );
+			$this->assertEquals( 'LOCAL_E', file_get_contents( $dest . '/admin/e_older.php' ) );
+
+			// Exactly two prompts were shown (b and c).
+			$this->assertCount( 2, $this->inputReader->getPromptHistory() );
+		} finally {
+			$this->removeDirectory( $base );
+		}
+	}
+
 	public function testScaffoldScheduleConfigCreatesWhenMissingAndPreservesExisting(): void
 	{
 		$base    = sys_get_temp_dir() . '/neuron_cms_schedule_' . uniqid();
