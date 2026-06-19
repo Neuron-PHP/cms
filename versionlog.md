@@ -1,4 +1,4 @@
-## 0.8.72
+## 0.8.72 2026-06-19
 
 * Added repeating events.
 
