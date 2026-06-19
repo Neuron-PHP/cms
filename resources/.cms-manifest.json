@@ -21,31 +21,40 @@
     "20260609120000_add_registration_to_events.php",
     "20260609120001_create_event_registrations_table.php",
     "20260609130000_add_capacity_to_events.php",
-    "20260618120000_add_external_url_to_events.php"
+    "20260618120000_add_external_url_to_events.php",
+    "20260619140000_add_recurrence_to_events.php",
+    "20260619140001_create_event_recurrence_exceptions_table.php",
+    "20260619140002_add_occurrence_date_to_event_registrations.php"
   ],
   "config_files": [
     "auth.yaml",
     "event-listeners.yaml",
     "neuron.yaml",
     "neuron.yaml.example",
-    "routes.yaml",
-    "schedule.yaml"
+    "routing.yaml",
+    "schedule.yaml",
+    "services.yaml"
   ],
   "view_directories": [
     "admin",
     "auth",
     "blog",
+    "calendar",
     "contact",
     "content",
+    "email",
     "emails",
     "home",
     "http_codes",
     "layouts",
-    "member"
+    "member",
+    "pages",
+    "partials"
   ],
   "public_assets": [
-    "index.php",
-    ".htaccess"
+    ".htaccess",
+    "icon.png",
+    "index.php"
   ],
   "breaking_changes": [],
   "deprecations": [],

@@ -269,6 +269,12 @@ services:
   Neuron\Cms\Services\Event\Updater:
     type: autowire
 
+  Neuron\Cms\Services\Event\RecurrenceEditor:
+    type: autowire
+
+  Neuron\Cms\Services\Event\RecurrenceExpander:
+    type: autowire
+
 
   # ============================================================================
   # EVENT CATEGORY CRUD SERVICES

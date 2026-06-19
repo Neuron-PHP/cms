@@ -181,6 +181,10 @@ class Events extends Content
 
 		$this->initializeCsrfToken();
 
+		// An optional occurrence query param lets the form scope edits to a
+		// single occurrence of a recurring series.
+		$occurrenceDate = trim( (string)( $request->get( 'occurrence', '' ) ?? '' ) );
+
 		return $this->view()
 			->title( 'Edit Event' )
 			->description( 'Edit calendar event' )
@@ -188,7 +192,8 @@ class Events extends Content
 			->withCsrfToken()
 			->with([
 				'event' => $event,
-				'categories' => $this->_categoryRepository->all()
+				'categories' => $this->_categoryRepository->all(),
+				'occurrence_date' => $occurrenceDate
 			])
 			->render( 'edit', 'admin' );
 	}

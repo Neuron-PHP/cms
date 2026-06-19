@@ -7,6 +7,7 @@ use Neuron\Cms\Models\Event;
 use Neuron\Cms\Repositories\IEventRepository;
 use Neuron\Cms\Repositories\IEventCategoryRepository;
 use Neuron\Cms\Repositories\IEventRegistrationRepository;
+use DateTimeImmutable;
 
 /**
  * Event registration widget / shortcode.
@@ -127,19 +128,69 @@ class EventRegistrationWidget implements IWidget
 			return $this->loginPrompt();
 		}
 
-		if( $this->isFull( $event ) )
+		// Resolve the occurrence being registered for (recurring events only).
+		$occurrence = $this->resolveOccurrence( $event, $attrs['occurrence'] ?? null );
+
+		if( $this->isFull( $event, $occurrence ) )
 		{
 			return $this->fullPrompt();
 		}
+
+		$displayDate = $occurrence ?? $event->getStartDate();
 
 		$title  = $attrs['title'] ?? ( 'Register for ' . $event->getTitle() );
 		$button = $attrs['button'] ?? 'Register';
 
 		$select = '<input type="hidden" name="event_id" value="' . (int)$event->getId() . '">';
+
+		if( $occurrence !== null )
+		{
+			$select .= '<input type="hidden" name="occurrence_date" value="'
+				. $this->esc( $occurrence->format( 'Y-m-d H:i:s' ) ) . '">';
+		}
+
 		$summary = '<p class="text-muted mb-3"><i class="bi bi-calendar-event"></i> '
-			. $this->esc( $event->getStartDate()->format( 'l, F j, Y g:i A' ) ) . '</p>';
+			. $this->esc( $displayDate->format( 'l, F j, Y g:i A' ) ) . '</p>';
 
 		return $this->renderForm( (string)$title, (string)$button, $summary . $select );
+	}
+
+	/**
+	 * Resolve and validate an occurrence date for a recurring event.
+	 *
+	 * @param Event $event
+	 * @param mixed $occurrenceRaw
+	 * @return DateTimeImmutable|null
+	 */
+	private function resolveOccurrence( Event $event, mixed $occurrenceRaw ): ?DateTimeImmutable
+	{
+		if( !$event->isRecurring() )
+		{
+			return null;
+		}
+
+		$raw = trim( (string)( $occurrenceRaw ?? '' ) );
+
+		if( $raw === '' )
+		{
+			return $event->getStartDate();
+		}
+
+		try
+		{
+			$occurrence = new DateTimeImmutable( $raw );
+
+			if( \Neuron\Cms\Services\Event\RecurrenceRule::occursAt( (string)$event->getRrule(), $event->getStartDate(), $occurrence ) )
+			{
+				return $occurrence;
+			}
+		}
+		catch( \Throwable $e )
+		{
+			// Fall through to the series start.
+		}
+
+		return $event->getStartDate();
 	}
 
 	/**
@@ -171,7 +222,7 @@ class EventRegistrationWidget implements IWidget
 				return false;
 			}
 
-			if( $this->isFull( $event ) )
+			if( $this->isFull( $event, $event->getOccurrenceDate() ) )
 			{
 				return false;
 			}
@@ -190,7 +241,7 @@ class EventRegistrationWidget implements IWidget
 
 		$options = '<div class="mb-3">'
 			. '<label class="form-label" for="event_registration_event">Select a date <span class="text-danger">*</span></label>'
-			. '<select class="form-select" id="event_registration_event" name="event_id" required>';
+			. '<select class="form-select" id="event_registration_event" name="event_id" data-occurrence-select required>';
 
 		foreach( $events as $event )
 		{
@@ -201,12 +252,55 @@ class EventRegistrationWidget implements IWidget
 				$label = $event->getTitle() . ' - ' . $label;
 			}
 
-			$options .= '<option value="' . (int)$event->getId() . '">' . $this->esc( $label ) . '</option>';
+			// Recurring occurrences carry their occurrence start so the hidden
+			// occurrence_date field can be synced on selection.
+			$occurrenceAttr = $event->isOccurrence()
+				? ' data-occurrence="' . $this->esc( $event->getOccurrenceDate()->format( 'Y-m-d H:i:s' ) ) . '"'
+				: '';
+
+			$options .= '<option value="' . (int)$event->getId() . '"' . $occurrenceAttr . '>'
+				. $this->esc( $label ) . '</option>';
 		}
 
 		$options .= '</select></div>';
 
+		// Hidden field synced from the selected option's occurrence (if any).
+		$options .= '<input type="hidden" name="occurrence_date" value="" data-occurrence-input>';
+		$options .= $this->occurrenceSyncScript();
+
 		return $this->renderForm( (string)$title, (string)$button, $options );
+	}
+
+	/**
+	 * Inline script that mirrors the selected option's occurrence date into the
+	 * hidden occurrence_date input for category-mode forms.
+	 *
+	 * @return string
+	 */
+	private function occurrenceSyncScript(): string
+	{
+		return <<<'HTML'
+<script>
+(function() {
+	if( window.__eventRegistrationOccurrenceInit ) { return; }
+	window.__eventRegistrationOccurrenceInit = true;
+	document.addEventListener('DOMContentLoaded', function() {
+		document.querySelectorAll('select[data-occurrence-select]').forEach(function(select) {
+			var form = select.closest('form');
+			if( !form ) { return; }
+			var input = form.querySelector('input[data-occurrence-input]');
+			if( !input ) { return; }
+			var sync = function() {
+				var option = select.options[select.selectedIndex];
+				input.value = option ? ( option.getAttribute('data-occurrence') || '' ) : '';
+			};
+			select.addEventListener('change', sync);
+			sync();
+		});
+	});
+})();
+</script>
+HTML;
 	}
 
 	/**
@@ -281,14 +375,14 @@ class EventRegistrationWidget implements IWidget
 	 * @param Event $event
 	 * @return bool
 	 */
-	private function isFull( Event $event ): bool
+	private function isFull( Event $event, ?DateTimeImmutable $occurrence = null ): bool
 	{
 		if( !$event->hasCapacityLimit() || $this->_registrationRepository === null )
 		{
 			return false;
 		}
 
-		return $event->isFull( $this->_registrationRepository->countByEvent( $event->getId() ) );
+		return $event->isFull( $this->_registrationRepository->countByEvent( $event->getId(), $occurrence ) );
 	}
 
 	/**

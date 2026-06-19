@@ -22,6 +22,7 @@ class DatabaseEventRegistrationRepositoryTest extends TestCase
 			CREATE TABLE event_registrations (
 				id INTEGER PRIMARY KEY AUTOINCREMENT,
 				event_id INTEGER NOT NULL,
+				occurrence_date TIMESTAMP,
 				user_id INTEGER,
 				name VARCHAR(255) NOT NULL,
 				email VARCHAR(255) NOT NULL,
@@ -150,5 +151,52 @@ class DatabaseEventRegistrationRepositoryTest extends TestCase
 
 		$this->assertTrue( $this->repository->delete( $id ) );
 		$this->assertNull( $this->repository->findById( $id ) );
+	}
+
+	public function testOccurrenceDateIsPersisted(): void
+	{
+		$registration = $this->sample( 1, 'occ@example.com' );
+		$registration->setOccurrenceDate( new \DateTimeImmutable( '2026-01-12 09:00:00' ) );
+
+		$id = $this->repository->create( $registration )->getId();
+		$found = $this->repository->findById( $id );
+
+		$this->assertNotNull( $found->getOccurrenceDate() );
+		$this->assertSame( '2026-01-12 09:00:00', $found->getOccurrenceDate()->format( 'Y-m-d H:i:s' ) );
+	}
+
+	public function testCountByEventScopesToOccurrence(): void
+	{
+		$jan12 = new \DateTimeImmutable( '2026-01-12 09:00:00' );
+		$jan19 = new \DateTimeImmutable( '2026-01-19 09:00:00' );
+
+		$a = $this->sample( 1, 'a@example.com' );
+		$a->setOccurrenceDate( $jan12 );
+		$this->repository->create( $a );
+
+		$b = $this->sample( 1, 'b@example.com' );
+		$b->setOccurrenceDate( $jan12 );
+		$this->repository->create( $b );
+
+		$c = $this->sample( 1, 'c@example.com' );
+		$c->setOccurrenceDate( $jan19 );
+		$this->repository->create( $c );
+
+		$this->assertSame( 2, $this->repository->countByEvent( 1, $jan12 ) );
+		$this->assertSame( 1, $this->repository->countByEvent( 1, $jan19 ) );
+		$this->assertSame( 3, $this->repository->countByEvent( 1 ) );
+	}
+
+	public function testExistsForEmailScopesToOccurrence(): void
+	{
+		$jan12 = new \DateTimeImmutable( '2026-01-12 09:00:00' );
+		$jan19 = new \DateTimeImmutable( '2026-01-19 09:00:00' );
+
+		$registration = $this->sample( 1, 'dupe@example.com' );
+		$registration->setOccurrenceDate( $jan12 );
+		$this->repository->create( $registration );
+
+		$this->assertTrue( $this->repository->existsForEmail( 1, 'dupe@example.com', $jan12 ) );
+		$this->assertFalse( $this->repository->existsForEmail( 1, 'dupe@example.com', $jan19 ) );
 	}
 }

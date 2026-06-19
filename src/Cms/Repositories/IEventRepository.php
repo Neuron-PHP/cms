@@ -141,4 +141,47 @@ interface IEventRepository
 	 * @return void
 	 */
 	public function incrementViewCount( Event $event ): void;
+
+	/**
+	 * Exclude a single occurrence of a recurring master (cancel it).
+	 *
+	 * @param int $eventId Master event id
+	 * @param DateTimeImmutable $occurrenceDate Original occurrence start to exclude
+	 * @return void
+	 */
+	public function addException( int $eventId, DateTimeImmutable $occurrenceDate ): void;
+
+	/**
+	 * Remove a previously stored occurrence exclusion.
+	 *
+	 * @param int $eventId Master event id
+	 * @param DateTimeImmutable $occurrenceDate Original occurrence start
+	 * @return void
+	 */
+	public function removeException( int $eventId, DateTimeImmutable $occurrenceDate ): void;
+
+	/**
+	 * Get the excluded occurrence dates for a recurring master.
+	 *
+	 * @param int $eventId Master event id
+	 * @return DateTimeImmutable[]
+	 */
+	public function getExceptions( int $eventId ): array;
+
+	/**
+	 * Get the stored override rows for a recurring master.
+	 *
+	 * @param int $masterId Master event id
+	 * @return Event[]
+	 */
+	public function getOverrides( int $masterId ): array;
+
+	/**
+	 * Find the override row that replaces a specific occurrence, if any.
+	 *
+	 * @param int $masterId Master event id
+	 * @param DateTimeImmutable $recurrenceId Original occurrence start
+	 * @return Event|null
+	 */
+	public function findOverride( int $masterId, DateTimeImmutable $recurrenceId ): ?Event;
 }

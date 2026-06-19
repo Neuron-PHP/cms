@@ -16,6 +16,7 @@ class EventRegistration extends Model
 {
 	private ?int $_id = null;
 	private int $_eventId;
+	private ?DateTimeImmutable $_occurrenceDate = null;
 	private ?int $_userId = null;
 	private string $_name;
 	private string $_email;
@@ -74,6 +75,24 @@ class EventRegistration extends Model
 	public function setEventId( int $eventId ): self
 	{
 		$this->_eventId = $eventId;
+		return $this;
+	}
+
+	/**
+	 * Get the occurrence start this registration targets (null for
+	 * non-recurring events / the whole series).
+	 */
+	public function getOccurrenceDate(): ?DateTimeImmutable
+	{
+		return $this->_occurrenceDate;
+	}
+
+	/**
+	 * Set the occurrence start this registration targets.
+	 */
+	public function setOccurrenceDate( ?DateTimeImmutable $occurrenceDate ): self
+	{
+		$this->_occurrenceDate = $occurrenceDate;
 		return $this;
 	}
 
@@ -292,6 +311,16 @@ class EventRegistration extends Model
 		}
 
 		$registration->setEventId( (int)( $data['event_id'] ?? 0 ) );
+
+		if( isset( $data['occurrence_date'] ) && $data['occurrence_date'] )
+		{
+			$registration->setOccurrenceDate(
+				is_string( $data['occurrence_date'] )
+					? new DateTimeImmutable( $data['occurrence_date'] )
+					: $data['occurrence_date']
+			);
+		}
+
 		$registration->setUserId( isset( $data['user_id'] ) && $data['user_id'] !== null ? (int)$data['user_id'] : null );
 		$registration->setName( $data['name'] ?? '' );
 		$registration->setEmail( $data['email'] ?? '' );
@@ -330,6 +359,7 @@ class EventRegistration extends Model
 	{
 		$data = [
 			'event_id' => $this->_eventId,
+			'occurrence_date' => $this->_occurrenceDate?->format( 'Y-m-d H:i:s' ),
 			'user_id' => $this->_userId,
 			'name' => $this->_name,
 			'email' => $this->_email,

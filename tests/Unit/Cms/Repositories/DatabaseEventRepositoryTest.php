@@ -66,6 +66,10 @@ class DatabaseEventRepositoryTest extends TestCase
 				start_date TIMESTAMP NOT NULL,
 				end_date TIMESTAMP,
 				all_day BOOLEAN DEFAULT 0,
+				rrule TEXT,
+				recurrence_parent_id INTEGER,
+				recurrence_id TIMESTAMP,
+				recurrence_until TIMESTAMP,
 				category_id INTEGER,
 				status VARCHAR(20) DEFAULT 'draft',
 				featured BOOLEAN DEFAULT 0,
@@ -83,6 +87,17 @@ class DatabaseEventRepositoryTest extends TestCase
 				updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 				FOREIGN KEY (category_id) REFERENCES event_categories(id) ON DELETE SET NULL,
 				FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL
+			)
+		" );
+
+		// Create event_recurrence_exceptions table
+		$this->pdo->exec( "
+			CREATE TABLE event_recurrence_exceptions (
+				id INTEGER PRIMARY KEY AUTOINCREMENT,
+				event_id INTEGER NOT NULL,
+				occurrence_date TIMESTAMP NOT NULL,
+				created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+				UNIQUE(event_id, occurrence_date)
 			)
 		" );
 
@@ -819,5 +834,169 @@ class DatabaseEventRepositoryTest extends TestCase
 
 		$this->assertNull( $event->getCategory() );
 		$this->assertInstanceOf( User::class, $event->getCreator() );
+	}
+
+	// ---------------------------------------------------------------------
+	// Recurrence
+	// ---------------------------------------------------------------------
+
+	public function test_get_by_date_range_expands_recurring_master(): void
+	{
+		$userId = $this->createTestUser();
+
+		$this->pdo->exec( "INSERT INTO events (title, slug, start_date, end_date, all_day, rrule, status, created_by)
+			VALUES ('Weekly', 'weekly', '2026-01-05 09:00:00', '2026-01-05 10:00:00', 0, 'FREQ=WEEKLY', 'published', {$userId})" );
+
+		$events = $this->repository->getByDateRange(
+			new DateTimeImmutable( '2026-01-01 00:00:00' ),
+			new DateTimeImmutable( '2026-01-31 23:59:59' )
+		);
+
+		// Jan 5, 12, 19, 26
+		$this->assertCount( 4, $events );
+		foreach( $events as $event )
+		{
+			$this->assertTrue( $event->isOccurrence() );
+			$this->assertSame( 'Weekly', $event->getTitle() );
+		}
+	}
+
+	public function test_get_by_date_range_merges_standalone_and_recurring_sorted(): void
+	{
+		$userId = $this->createTestUser();
+
+		$this->pdo->exec( "INSERT INTO events (title, slug, start_date, end_date, rrule, status, created_by)
+			VALUES ('Weekly', 'weekly', '2026-01-05 09:00:00', '2026-01-05 10:00:00', 'FREQ=WEEKLY;COUNT=2', 'published', {$userId})" );
+		$this->pdo->exec( "INSERT INTO events (title, slug, start_date, status, created_by)
+			VALUES ('One Off', 'one-off', '2026-01-08 12:00:00', 'published', {$userId})" );
+
+		$events = $this->repository->getByDateRange(
+			new DateTimeImmutable( '2026-01-01 00:00:00' ),
+			new DateTimeImmutable( '2026-01-31 23:59:59' )
+		);
+
+		$starts = array_map( fn( $e ) => $e->getStartDate()->format( 'Y-m-d H:i' ), $events );
+		$this->assertSame( [ '2026-01-05 09:00', '2026-01-08 12:00', '2026-01-12 09:00' ], $starts );
+	}
+
+	public function test_get_by_date_range_skips_recurrence_exceptions(): void
+	{
+		$userId = $this->createTestUser();
+
+		$this->pdo->exec( "INSERT INTO events (title, slug, start_date, end_date, rrule, status, created_by)
+			VALUES ('Weekly', 'weekly', '2026-01-05 09:00:00', '2026-01-05 10:00:00', 'FREQ=WEEKLY', 'published', {$userId})" );
+		$masterId = (int)$this->pdo->lastInsertId();
+
+		$this->repository->addException( $masterId, new DateTimeImmutable( '2026-01-12 09:00:00' ) );
+
+		$events = $this->repository->getByDateRange(
+			new DateTimeImmutable( '2026-01-01 00:00:00' ),
+			new DateTimeImmutable( '2026-01-31 23:59:59' )
+		);
+
+		$starts = array_map( fn( $e ) => $e->getStartDate()->format( 'Y-m-d H:i:s' ), $events );
+		$this->assertNotContains( '2026-01-12 09:00:00', $starts );
+		$this->assertCount( 3, $events );
+	}
+
+	public function test_get_by_date_range_substitutes_override_row(): void
+	{
+		$userId = $this->createTestUser();
+
+		$this->pdo->exec( "INSERT INTO events (title, slug, start_date, end_date, rrule, status, created_by)
+			VALUES ('Weekly', 'weekly', '2026-01-05 09:00:00', '2026-01-05 10:00:00', 'FREQ=WEEKLY', 'published', {$userId})" );
+		$masterId = (int)$this->pdo->lastInsertId();
+
+		// Override the Jan 12 occurrence: moved to 14:00 with a new title.
+		$this->pdo->exec( "INSERT INTO events (title, slug, start_date, end_date, recurrence_parent_id, recurrence_id, status, created_by)
+			VALUES ('Moved', 'weekly-20260112', '2026-01-12 14:00:00', '2026-01-12 15:00:00', {$masterId}, '2026-01-12 09:00:00', 'published', {$userId})" );
+
+		$events = $this->repository->getByDateRange(
+			new DateTimeImmutable( '2026-01-01 00:00:00' ),
+			new DateTimeImmutable( '2026-01-31 23:59:59' )
+		);
+
+		$titles = array_map( fn( $e ) => $e->getTitle(), $events );
+		$starts = array_map( fn( $e ) => $e->getStartDate()->format( 'Y-m-d H:i:s' ), $events );
+
+		// Original 09:00 occurrence replaced by the 14:00 override row.
+		$this->assertNotContains( '2026-01-12 09:00:00', $starts );
+		$this->assertContains( '2026-01-12 14:00:00', $starts );
+		$this->assertContains( 'Moved', $titles );
+		$this->assertCount( 4, $events );
+	}
+
+	public function test_all_excludes_override_rows(): void
+	{
+		$userId = $this->createTestUser();
+
+		$this->pdo->exec( "INSERT INTO events (title, slug, start_date, rrule, status, created_by)
+			VALUES ('Weekly', 'weekly', '2026-01-05 09:00:00', 'FREQ=WEEKLY', 'published', {$userId})" );
+		$masterId = (int)$this->pdo->lastInsertId();
+
+		$this->pdo->exec( "INSERT INTO events (title, slug, start_date, recurrence_parent_id, recurrence_id, status, created_by)
+			VALUES ('Override', 'weekly-override', '2026-01-12 14:00:00', {$masterId}, '2026-01-12 09:00:00', 'published', {$userId})" );
+
+		$events = $this->repository->all();
+
+		$this->assertCount( 1, $events );
+		$this->assertSame( 'Weekly', $events[0]->getTitle() );
+	}
+
+	public function test_exception_add_and_remove(): void
+	{
+		$userId = $this->createTestUser();
+		$this->pdo->exec( "INSERT INTO events (title, slug, start_date, rrule, status, created_by)
+			VALUES ('Weekly', 'weekly', '2026-01-05 09:00:00', 'FREQ=WEEKLY', 'published', {$userId})" );
+		$masterId = (int)$this->pdo->lastInsertId();
+
+		$occurrence = new DateTimeImmutable( '2026-01-12 09:00:00' );
+		$this->repository->addException( $masterId, $occurrence );
+		$this->repository->addException( $masterId, $occurrence ); // idempotent
+
+		$this->assertCount( 1, $this->repository->getExceptions( $masterId ) );
+
+		$this->repository->removeException( $masterId, $occurrence );
+		$this->assertCount( 0, $this->repository->getExceptions( $masterId ) );
+	}
+
+	public function test_find_override_returns_matching_row(): void
+	{
+		$userId = $this->createTestUser();
+		$this->pdo->exec( "INSERT INTO events (title, slug, start_date, rrule, status, created_by)
+			VALUES ('Weekly', 'weekly', '2026-01-05 09:00:00', 'FREQ=WEEKLY', 'published', {$userId})" );
+		$masterId = (int)$this->pdo->lastInsertId();
+
+		$this->pdo->exec( "INSERT INTO events (title, slug, start_date, recurrence_parent_id, recurrence_id, status, created_by)
+			VALUES ('Override', 'weekly-override', '2026-01-12 14:00:00', {$masterId}, '2026-01-12 09:00:00', 'published', {$userId})" );
+
+		$override = $this->repository->findOverride( $masterId, new DateTimeImmutable( '2026-01-12 09:00:00' ) );
+		$this->assertNotNull( $override );
+		$this->assertSame( 'Override', $override->getTitle() );
+
+		$missing = $this->repository->findOverride( $masterId, new DateTimeImmutable( '2026-01-19 09:00:00' ) );
+		$this->assertNull( $missing );
+	}
+
+	public function test_create_and_find_persists_recurrence_fields(): void
+	{
+		$userId = $this->createTestUser();
+
+		$event = new Event();
+		$event->setTitle( 'Recurring' );
+		$event->setSlug( 'recurring' );
+		$event->setStartDate( new DateTimeImmutable( '2026-01-05 09:00:00' ) );
+		$event->setEndDate( new DateTimeImmutable( '2026-01-05 10:00:00' ) );
+		$event->setStatus( 'published' );
+		$event->setCreatedBy( $userId );
+		$event->setRrule( 'FREQ=WEEKLY;COUNT=4' );
+		$event->setRecurrenceUntil( new DateTimeImmutable( '2026-01-26 09:00:00' ) );
+
+		$saved = $this->repository->create( $event );
+		$found = $this->repository->findById( $saved->getId() );
+
+		$this->assertSame( 'FREQ=WEEKLY;COUNT=4', $found->getRrule() );
+		$this->assertTrue( $found->isRecurring() );
+		$this->assertSame( '2026-01-26 09:00:00', $found->getRecurrenceUntil()->format( 'Y-m-d H:i:s' ) );
 	}
 }

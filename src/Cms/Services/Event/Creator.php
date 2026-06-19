@@ -71,6 +71,7 @@ class Creator implements IEventCreator
 		$event->setStartDate( $startDate );
 		$event->setEndDate( $endDate );
 		$event->setAllDay( $allDay );
+		$this->applyRecurrence( $event, $request, $startDate );
 		$event->setStatus( $status );
 		$event->setFeatured( $featured );
 		$event->setRegistrationEnabled( $registrationEnabled );
@@ -101,6 +102,59 @@ class Creator implements IEventCreator
 		}
 
 		return $this->_eventRepository->create( $event );
+	}
+
+	/**
+	 * Compile recurrence fields from the DTO and apply them to the event.
+	 *
+	 * A raw `rrule` (when valid) takes precedence over the structured fields.
+	 * The cached recurrence_until is computed for bounded rules.
+	 *
+	 * @param Event $event
+	 * @param Dto $request
+	 * @param DateTimeImmutable $startDate Series start (DTSTART)
+	 * @return void
+	 */
+	private function applyRecurrence( Event $event, Dto $request, DateTimeImmutable $startDate ): void
+	{
+		$rrule = $this->resolveRrule( $request, $startDate );
+
+		$event->setRrule( $rrule );
+		$event->setRecurrenceUntil(
+			$rrule !== null ? RecurrenceRule::computeUntil( $rrule, $startDate ) : null
+		);
+	}
+
+	/**
+	 * Resolve a recurrence rule string from the DTO.
+	 *
+	 * @param Dto $request
+	 * @param DateTimeImmutable $startDate
+	 * @return string|null
+	 * @throws \RuntimeException when an explicit rule is invalid
+	 */
+	private function resolveRrule( Dto $request, DateTimeImmutable $startDate ): ?string
+	{
+		$raw = trim( (string)( $request->rrule ?? '' ) );
+
+		if( $raw !== '' )
+		{
+			if( !RecurrenceRule::isValid( $raw, $startDate ) )
+			{
+				throw new \RuntimeException( 'Invalid recurrence rule' );
+			}
+
+			return $raw;
+		}
+
+		return RecurrenceRule::compile( [
+			'freq'     => $request->repeat_freq ?? 'none',
+			'interval' => $request->repeat_interval ?? 1,
+			'byday'    => $request->repeat_byday ?? '',
+			'end'      => $request->repeat_end ?? 'never',
+			'until'    => $request->repeat_until ?? null,
+			'count'    => $request->repeat_count ?? null
+		] );
 	}
 
 	/**

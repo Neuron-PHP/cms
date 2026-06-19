@@ -3,6 +3,7 @@
 namespace Neuron\Cms\Repositories;
 
 use Neuron\Cms\Models\EventRegistration;
+use DateTimeImmutable;
 
 /**
  * Repository interface for EventRegistration entities.
@@ -36,22 +37,24 @@ interface IEventRegistrationRepository
 	public function getByEvent( int $eventId ): array;
 
 	/**
-	 * Count registrations for an event.
+	 * Count registrations for an event, optionally scoped to one occurrence.
 	 *
 	 * @param int $eventId
+	 * @param DateTimeImmutable|null $occurrenceDate Occurrence to scope to (recurring events)
 	 * @return int
 	 */
-	public function countByEvent( int $eventId ): int;
+	public function countByEvent( int $eventId, ?DateTimeImmutable $occurrenceDate = null ): int;
 
 	/**
 	 * Determine whether an email is already registered for an event
-	 * (active registrations only).
+	 * (active registrations only), optionally scoped to one occurrence.
 	 *
 	 * @param int $eventId
 	 * @param string $email
+	 * @param DateTimeImmutable|null $occurrenceDate Occurrence to scope to (recurring events)
 	 * @return bool
 	 */
-	public function existsForEmail( int $eventId, string $email ): bool;
+	public function existsForEmail( int $eventId, string $email, ?DateTimeImmutable $occurrenceDate = null ): bool;
 
 	/**
 	 * Return a page of registrations, newest first, optionally filtered by event.

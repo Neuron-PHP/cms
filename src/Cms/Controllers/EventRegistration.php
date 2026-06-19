@@ -130,7 +130,11 @@ class EventRegistration extends Content
 			$this->redirectBack( $this->eventUrl( $event ), [ self::FLASH_ERROR, $message ] );
 		}
 
-		if( $this->_repository->existsForEmail( $event->getId(), $email ) )
+		// For recurring events the registration targets a specific occurrence so
+		// capacity and duplicate-email checks are scoped per occurrence.
+		$occurrence = $this->resolveOccurrence( $event, $request );
+
+		if( $this->_repository->existsForEmail( $event->getId(), $email, $occurrence ) )
 		{
 			$this->redirectBack(
 				$this->eventUrl( $event ),
@@ -140,7 +144,7 @@ class EventRegistration extends Content
 
 		// Authoritative capacity check (the widget hides the form when full, but
 		// re-check here in case the event filled up between render and submit).
-		if( $event->hasCapacityLimit() && $event->isFull( $this->_repository->countByEvent( $event->getId() ) ) )
+		if( $event->hasCapacityLimit() && $event->isFull( $this->_repository->countByEvent( $event->getId(), $occurrence ) ) )
 		{
 			$this->redirectBack(
 				$this->eventUrl( $event ),
@@ -150,6 +154,7 @@ class EventRegistration extends Content
 
 		$registration = new EventRegistrationModel();
 		$registration->setEventId( $event->getId() );
+		$registration->setOccurrenceDate( $occurrence );
 		$registration->setUserId( $userId );
 		$registration->setName( $name );
 		$registration->setEmail( $email );
@@ -205,6 +210,48 @@ class EventRegistration extends Content
 		}
 
 		return $errors;
+	}
+
+	/**
+	 * Resolve the occurrence a registration targets.
+	 *
+	 * Returns null for non-recurring events. For recurring events the submitted
+	 * occurrence_date is validated against the rule; an invalid value falls back
+	 * to the series start.
+	 *
+	 * @param Event $event
+	 * @param Request $request
+	 * @return \DateTimeImmutable|null
+	 */
+	private function resolveOccurrence( Event $event, Request $request ): ?\DateTimeImmutable
+	{
+		if( !$event->isRecurring() )
+		{
+			return null;
+		}
+
+		$raw = trim( (string)( $request->post( 'occurrence_date', '' ) ?? '' ) );
+
+		if( $raw === '' )
+		{
+			return $event->getStartDate();
+		}
+
+		try
+		{
+			$occurrence = new \DateTimeImmutable( $raw );
+		}
+		catch( \Throwable $e )
+		{
+			return $event->getStartDate();
+		}
+
+		if( \Neuron\Cms\Services\Event\RecurrenceRule::occursAt( (string)$event->getRrule(), $event->getStartDate(), $occurrence ) )
+		{
+			return $occurrence;
+		}
+
+		return $event->getStartDate();
 	}
 
 	/**
