@@ -115,6 +115,9 @@
 													$eventExternal = ' &#8599;';
 												} else {
 													$eventHref = route_path('calendar_event', ['slug' => $event->getSlug()]);
+													if($event->isOccurrence()) {
+														$eventHref .= '?occurrence=' . rawurlencode($event->getOccurrenceDate()->format('Y-m-d H:i:s'));
+													}
 													$eventLinkAttrs = '';
 													$eventExternal = '';
 												}
@@ -160,8 +163,14 @@
 					<?php else: ?>
 						<div class="list-group">
 							<?php foreach($events as $event): ?>
-								<?php $eventIsExternal = $event->hasExternalUrl(); ?>
-								<a href="<?= $eventIsExternal ? htmlspecialchars($event->getExternalUrl()) : route_path('calendar_event', ['slug' => $event->getSlug()]) ?>"
+								<?php
+									$eventIsExternal = $event->hasExternalUrl();
+									$eventDetailHref = route_path('calendar_event', ['slug' => $event->getSlug()]);
+									if($event->isOccurrence()) {
+										$eventDetailHref .= '?occurrence=' . rawurlencode($event->getOccurrenceDate()->format('Y-m-d H:i:s'));
+									}
+								?>
+								<a href="<?= $eventIsExternal ? htmlspecialchars($event->getExternalUrl()) : $eventDetailHref ?>"
 								   class="list-group-item list-group-item-action"
 								   <?= $eventIsExternal ? 'target="_blank" rel="noopener noreferrer"' : '' ?>>
 									<div class="d-flex w-100 justify-content-between align-items-start">

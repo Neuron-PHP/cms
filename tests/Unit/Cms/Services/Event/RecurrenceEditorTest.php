@@ -1,0 +1,167 @@
+<?php
+
+namespace Tests\Unit\Cms\Services\Event;
+
+use Neuron\Cms\Models\Event;
+use Neuron\Cms\Repositories\IEventRepository;
+use Neuron\Cms\Repositories\IEventCategoryRepository;
+use Neuron\Cms\Services\Event\RecurrenceEditor;
+use Neuron\Dto\Factory;
+use Neuron\Dto\Dto;
+use PHPUnit\Framework\TestCase;
+use DateTimeImmutable;
+
+class RecurrenceEditorTest extends TestCase
+{
+	private function dto( array $values ): Dto
+	{
+		$factory = new Factory( __DIR__ . '/../../../../../src/Cms/Dtos/events/update-event-request.yaml' );
+		$dto = $factory->create();
+
+		foreach( $values as $key => $value )
+		{
+			$dto->$key = $value;
+		}
+
+		return $dto;
+	}
+
+	private function master(): Event
+	{
+		$master = new Event();
+		$master->setId( 10 );
+		$master->setTitle( 'Weekly' );
+		$master->setSlug( 'weekly' );
+		$master->setStartDate( new DateTimeImmutable( '2026-01-05 09:00:00' ) );
+		$master->setEndDate( new DateTimeImmutable( '2026-01-05 10:00:00' ) );
+		$master->setStatus( 'published' );
+		$master->setRrule( 'FREQ=WEEKLY' );
+		$master->setCreatedBy( 1 );
+
+		return $master;
+	}
+
+	public function testEditSingleCreatesOverrideRow(): void
+	{
+		$repo = $this->createMock( IEventRepository::class );
+		$categoryRepo = $this->createMock( IEventCategoryRepository::class );
+
+		$repo->method( 'findOverride' )->willReturn( null );
+		$repo->method( 'slugExists' )->willReturn( false );
+		$repo->expects( $this->once() )
+			->method( 'create' )
+			->willReturnArgument( 0 );
+		$repo->expects( $this->never() )->method( 'update' );
+
+		$editor = new RecurrenceEditor( $repo, $categoryRepo );
+
+		$override = $editor->editSingle( $this->master(), $this->dto( [
+			'id'              => 10,
+			'title'           => 'Moved Standup',
+			'start_date'      => '2026-01-12 14:00:00',
+			'end_date'        => '2026-01-12 15:00:00',
+			'status'          => 'published',
+			'occurrence_date' => '2026-01-12 09:00:00'
+		] ) );
+
+		$this->assertTrue( $override->isRecurrenceOverride() );
+		$this->assertSame( 10, $override->getRecurrenceParentId() );
+		$this->assertSame( '2026-01-12 09:00:00', $override->getRecurrenceId()->format( 'Y-m-d H:i:s' ) );
+		$this->assertSame( '2026-01-12 14:00:00', $override->getStartDate()->format( 'Y-m-d H:i:s' ) );
+		$this->assertNull( $override->getRrule() );
+		$this->assertSame( 'Moved Standup', $override->getTitle() );
+	}
+
+	public function testEditSingleUpdatesExistingOverride(): void
+	{
+		$existing = new Event();
+		$existing->setId( 55 );
+		$existing->setSlug( 'weekly-existing' );
+		$existing->setRecurrenceParentId( 10 );
+		$existing->setRecurrenceId( new DateTimeImmutable( '2026-01-12 09:00:00' ) );
+
+		$repo = $this->createMock( IEventRepository::class );
+		$categoryRepo = $this->createMock( IEventCategoryRepository::class );
+
+		$repo->method( 'findOverride' )->willReturn( $existing );
+		$repo->expects( $this->never() )->method( 'create' );
+		$repo->expects( $this->once() )
+			->method( 'update' )
+			->willReturnArgument( 0 );
+
+		$editor = new RecurrenceEditor( $repo, $categoryRepo );
+
+		$override = $editor->editSingle( $this->master(), $this->dto( [
+			'id'              => 10,
+			'title'           => 'Updated',
+			'start_date'      => '2026-01-12 16:00:00',
+			'status'          => 'published',
+			'occurrence_date' => '2026-01-12 09:00:00'
+		] ) );
+
+		$this->assertSame( 55, $override->getId() );
+		$this->assertSame( 'Updated', $override->getTitle() );
+		$this->assertSame( 'weekly-existing', $override->getSlug() );
+	}
+
+	public function testEditSingleRequiresOccurrenceDate(): void
+	{
+		$repo = $this->createMock( IEventRepository::class );
+		$categoryRepo = $this->createMock( IEventCategoryRepository::class );
+
+		$editor = new RecurrenceEditor( $repo, $categoryRepo );
+
+		$this->expectException( \RuntimeException::class );
+
+		$editor->editSingle( $this->master(), $this->dto( [
+			'id'         => 10,
+			'title'      => 'No occurrence',
+			'start_date' => '2026-01-12 14:00:00',
+			'status'     => 'published'
+		] ) );
+	}
+
+	public function testSplitFromOccurrenceBoundsMasterAndCreatesRemainder(): void
+	{
+		$master = $this->master();
+
+		$repo = $this->createMock( IEventRepository::class );
+		$categoryRepo = $this->createMock( IEventCategoryRepository::class );
+
+		$repo->method( 'slugExists' )->willReturn( false );
+
+		$created = null;
+		$repo->expects( $this->once() )
+			->method( 'update' )
+			->willReturnArgument( 0 );
+		$repo->expects( $this->once() )
+			->method( 'create' )
+			->willReturnCallback( function( Event $event ) use ( &$created )
+			{
+				$created = $event;
+				return $event;
+			} );
+
+		$editor = new RecurrenceEditor( $repo, $categoryRepo );
+
+		$remainder = $editor->splitFromOccurrence( $master, $this->dto( [
+			'id'              => 10,
+			'title'           => 'New Series',
+			'start_date'      => '2026-01-19 11:00:00',
+			'end_date'        => '2026-01-19 12:00:00',
+			'status'          => 'published',
+			'occurrence_date' => '2026-01-19 09:00:00'
+		] ) );
+
+		// Master is bounded to end before the split (last prior occurrence Jan 12).
+		$this->assertStringContainsString( 'UNTIL=20260112T090000Z', (string)$master->getRrule() );
+
+		// Remainder is a new master carrying the edits.
+		$this->assertSame( $created, $remainder );
+		$this->assertSame( 'New Series', $remainder->getTitle() );
+		$this->assertSame( '2026-01-19 11:00:00', $remainder->getStartDate()->format( 'Y-m-d H:i:s' ) );
+		$this->assertTrue( $remainder->isRecurring() );
+		$this->assertStringContainsString( 'FREQ=WEEKLY', (string)$remainder->getRrule() );
+		$this->assertNull( $remainder->getRecurrenceParentId() );
+	}
+}

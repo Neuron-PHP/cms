@@ -43,6 +43,45 @@ dto:
     required: false
     default: false
 
+  # Recurrence (RFC 5545). The structured fields below are compiled into an
+  # RRULE string; alternatively a raw rrule may be supplied directly.
+  repeat_freq:
+    type: string
+    required: false
+    enum: ['none', 'daily', 'weekly', 'monthly', 'yearly']
+    default: 'none'
+
+  repeat_interval:
+    type: integer
+    required: false
+    default: 1
+
+  repeat_byday:
+    type: string
+    required: false
+    length:
+      max: 50
+
+  repeat_end:
+    type: string
+    required: false
+    enum: ['never', 'until', 'count']
+    default: 'never'
+
+  repeat_until:
+    type: string
+    required: false
+
+  repeat_count:
+    type: integer
+    required: false
+
+  rrule:
+    type: string
+    required: false
+    length:
+      max: 500
+
   category_id:
     type: integer
     required: false

@@ -418,4 +418,87 @@ class CreatorTest extends TestCase
 
 		$this->assertNull( $capturedEvent->getCategoryId() );
 	}
+
+	public function test_create_compiles_recurrence_from_structured_fields(): void
+	{
+		$this->eventRepository->method( 'slugExists' )->willReturn( false );
+
+		$capturedEvent = null;
+		$this->eventRepository->expects( $this->once() )
+			->method( 'create' )
+			->willReturnCallback( function( Event $event ) use ( &$capturedEvent ) {
+				$capturedEvent = $event;
+				$event->setId( 1 );
+				return $event;
+			} );
+
+		$dto = $this->createDto(
+			title: 'Weekly Standup',
+			startDate: '2026-01-05 09:00:00',
+			createdBy: 5,
+			status: Event::STATUS_PUBLISHED
+		);
+		$dto->repeat_freq = 'weekly';
+		$dto->repeat_byday = 'MO,WE';
+		$dto->repeat_end = 'count';
+		$dto->repeat_count = 4;
+
+		$this->creator->create( $dto );
+
+		$this->assertSame( 'FREQ=WEEKLY;BYDAY=MO,WE;COUNT=4', $capturedEvent->getRrule() );
+		$this->assertTrue( $capturedEvent->isRecurring() );
+		$this->assertNotNull( $capturedEvent->getRecurrenceUntil() );
+	}
+
+	public function test_create_uses_raw_rrule_when_provided(): void
+	{
+		$this->eventRepository->method( 'slugExists' )->willReturn( false );
+
+		$capturedEvent = null;
+		$this->eventRepository->expects( $this->once() )
+			->method( 'create' )
+			->willReturnCallback( function( Event $event ) use ( &$capturedEvent ) {
+				$capturedEvent = $event;
+				$event->setId( 1 );
+				return $event;
+			} );
+
+		$dto = $this->createDto(
+			title: 'Daily',
+			startDate: '2026-01-05 09:00:00',
+			createdBy: 5,
+			status: Event::STATUS_PUBLISHED
+		);
+		$dto->rrule = 'FREQ=DAILY;INTERVAL=2';
+
+		$this->creator->create( $dto );
+
+		$this->assertSame( 'FREQ=DAILY;INTERVAL=2', $capturedEvent->getRrule() );
+	}
+
+	public function test_create_non_recurring_has_null_rrule(): void
+	{
+		$this->eventRepository->method( 'slugExists' )->willReturn( false );
+
+		$capturedEvent = null;
+		$this->eventRepository->expects( $this->once() )
+			->method( 'create' )
+			->willReturnCallback( function( Event $event ) use ( &$capturedEvent ) {
+				$capturedEvent = $event;
+				$event->setId( 1 );
+				return $event;
+			} );
+
+		$dto = $this->createDto(
+			title: 'One Off',
+			startDate: '2026-01-05 09:00:00',
+			createdBy: 5,
+			status: Event::STATUS_PUBLISHED
+		);
+
+		$this->creator->create( $dto );
+
+		$this->assertNull( $capturedEvent->getRrule() );
+		$this->assertFalse( $capturedEvent->isRecurring() );
+	}
 }

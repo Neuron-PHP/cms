@@ -38,8 +38,8 @@ class DatabaseEventRegistrationRepository implements IEventRegistrationRepositor
 	{
 		$stmt = $this->_pdo->prepare(
 			"INSERT INTO event_registrations (
-				event_id, user_id, name, email, notes, status, ip_address, user_agent, created_at, updated_at
-			) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+				event_id, occurrence_date, user_id, name, email, notes, status, ip_address, user_agent, created_at, updated_at
+			) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
 		);
 
 		$now = new DateTimeImmutable();
@@ -48,6 +48,7 @@ class DatabaseEventRegistrationRepository implements IEventRegistrationRepositor
 
 		$stmt->execute( [
 			$registration->getEventId(),
+			$registration->getOccurrenceDate()?->format( 'Y-m-d H:i:s' ),
 			$registration->getUserId(),
 			$registration->getName(),
 			$registration->getEmail(),
@@ -93,12 +94,23 @@ class DatabaseEventRegistrationRepository implements IEventRegistrationRepositor
 	/**
 	 * @inheritDoc
 	 */
-	public function countByEvent( int $eventId ): int
+	public function countByEvent( int $eventId, ?DateTimeImmutable $occurrenceDate = null ): int
 	{
-		$stmt = $this->_pdo->prepare(
-			"SELECT COUNT(*) FROM event_registrations WHERE event_id = ? AND status = ?"
-		);
-		$stmt->execute( [ $eventId, EventRegistration::STATUS_REGISTERED ] );
+		if( $occurrenceDate !== null )
+		{
+			$stmt = $this->_pdo->prepare(
+				"SELECT COUNT(*) FROM event_registrations
+				WHERE event_id = ? AND occurrence_date = ? AND status = ?"
+			);
+			$stmt->execute( [ $eventId, $occurrenceDate->format( 'Y-m-d H:i:s' ), EventRegistration::STATUS_REGISTERED ] );
+		}
+		else
+		{
+			$stmt = $this->_pdo->prepare(
+				"SELECT COUNT(*) FROM event_registrations WHERE event_id = ? AND status = ?"
+			);
+			$stmt->execute( [ $eventId, EventRegistration::STATUS_REGISTERED ] );
+		}
 
 		return (int)$stmt->fetchColumn();
 	}
@@ -106,12 +118,23 @@ class DatabaseEventRegistrationRepository implements IEventRegistrationRepositor
 	/**
 	 * @inheritDoc
 	 */
-	public function existsForEmail( int $eventId, string $email ): bool
+	public function existsForEmail( int $eventId, string $email, ?DateTimeImmutable $occurrenceDate = null ): bool
 	{
-		$stmt = $this->_pdo->prepare(
-			"SELECT COUNT(*) FROM event_registrations WHERE event_id = ? AND email = ? AND status = ?"
-		);
-		$stmt->execute( [ $eventId, $email, EventRegistration::STATUS_REGISTERED ] );
+		if( $occurrenceDate !== null )
+		{
+			$stmt = $this->_pdo->prepare(
+				"SELECT COUNT(*) FROM event_registrations
+				WHERE event_id = ? AND email = ? AND occurrence_date = ? AND status = ?"
+			);
+			$stmt->execute( [ $eventId, $email, $occurrenceDate->format( 'Y-m-d H:i:s' ), EventRegistration::STATUS_REGISTERED ] );
+		}
+		else
+		{
+			$stmt = $this->_pdo->prepare(
+				"SELECT COUNT(*) FROM event_registrations WHERE event_id = ? AND email = ? AND status = ?"
+			);
+			$stmt->execute( [ $eventId, $email, EventRegistration::STATUS_REGISTERED ] );
+		}
 
 		return $stmt->fetchColumn() > 0;
 	}

@@ -52,6 +52,13 @@
 								<?= htmlspecialchars($event->getLocation()) ?>
 							</div>
 						<?php endif; ?>
+
+						<?php if($event->getRrule()): ?>
+							<div>
+								<i class="bi bi-arrow-repeat"></i>
+								<span class="badge bg-primary">Recurring event</span>
+							</div>
+						<?php endif; ?>
 					</div>
 
 					<?php if($event->getDescription()): ?>

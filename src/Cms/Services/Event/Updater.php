@@ -17,14 +17,18 @@ class Updater implements IEventUpdater
 {
 	private IEventRepository $_eventRepository;
 	private IEventCategoryRepository $_categoryRepository;
+	private RecurrenceEditor $_recurrenceEditor;
 
 	public function __construct(
 		IEventRepository $eventRepository,
-		IEventCategoryRepository $categoryRepository
+		IEventCategoryRepository $categoryRepository,
+		?RecurrenceEditor $recurrenceEditor = null
 	)
 	{
 		$this->_eventRepository = $eventRepository;
 		$this->_categoryRepository = $categoryRepository;
+		$this->_recurrenceEditor = $recurrenceEditor
+			?? new RecurrenceEditor( $eventRepository, $categoryRepository );
 	}
 
 	/**
@@ -65,6 +69,21 @@ class Updater implements IEventUpdater
 			throw new \RuntimeException( "Event with ID {$id} not found" );
 		}
 
+		// Recurring events support scoped edits: a single occurrence (override
+		// row) or "this and following" (series split). The default scope edits
+		// the whole series (the master) in place.
+		$scope = $request->recurrence_edit_scope ?? 'all';
+
+		if( $event->isRecurring() && $scope === 'single' )
+		{
+			return $this->_recurrenceEditor->editSingle( $event, $request );
+		}
+
+		if( $event->isRecurring() && $scope === 'this_and_following' )
+		{
+			return $this->_recurrenceEditor->splitFromOccurrence( $event, $request );
+		}
+
 		// Check for duplicate slug (excluding current event)
 		if( $slug && $this->_eventRepository->slugExists( $slug, $event->getId() ) )
 		{
@@ -92,6 +111,7 @@ class Updater implements IEventUpdater
 		$event->setStartDate( $startDate );
 		$event->setEndDate( $endDate );
 		$event->setAllDay( $allDay );
+		$this->applyRecurrence( $event, $request, $startDate );
 		$event->setCategoryId( $categoryId );
 		$event->setStatus( $status );
 		$event->setFeatured( $featured );
@@ -105,5 +125,47 @@ class Updater implements IEventUpdater
 		$event->setContactPhone( $contactPhone );
 
 		return $this->_eventRepository->update( $event );
+	}
+
+	/**
+	 * Compile recurrence fields from the DTO and apply them to the master.
+	 *
+	 * A raw `rrule` (when valid) takes precedence over the structured fields.
+	 *
+	 * @param Event $event
+	 * @param Dto $request
+	 * @param DateTimeImmutable $startDate
+	 * @return void
+	 * @throws \RuntimeException when an explicit rule is invalid
+	 */
+	private function applyRecurrence( Event $event, Dto $request, DateTimeImmutable $startDate ): void
+	{
+		$raw = trim( (string)( $request->rrule ?? '' ) );
+
+		if( $raw !== '' )
+		{
+			if( !RecurrenceRule::isValid( $raw, $startDate ) )
+			{
+				throw new \RuntimeException( 'Invalid recurrence rule' );
+			}
+
+			$rrule = $raw;
+		}
+		else
+		{
+			$rrule = RecurrenceRule::compile( [
+				'freq'     => $request->repeat_freq ?? 'none',
+				'interval' => $request->repeat_interval ?? 1,
+				'byday'    => $request->repeat_byday ?? '',
+				'end'      => $request->repeat_end ?? 'never',
+				'until'    => $request->repeat_until ?? null,
+				'count'    => $request->repeat_count ?? null
+			] );
+		}
+
+		$event->setRrule( $rrule );
+		$event->setRecurrenceUntil(
+			$rrule !== null ? RecurrenceRule::computeUntil( $rrule, $startDate ) : null
+		);
 	}
 }

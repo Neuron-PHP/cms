@@ -25,6 +25,18 @@ class Event extends Model
 	private DateTimeImmutable $_startDate;
 	private ?DateTimeImmutable $_endDate = null;
 	private bool $_allDay = false;
+	private ?string $_rrule = null;
+	private ?int $_recurrenceParentId = null;
+	private ?DateTimeImmutable $_recurrenceId = null;
+	private ?DateTimeImmutable $_recurrenceUntil = null;
+
+	/**
+	 * Transient occurrence start for an expanded recurring occurrence.
+	 *
+	 * Not persisted: set by the recurrence expander so views and registration
+	 * can distinguish a single occurrence of a recurring series from the master.
+	 */
+	private ?DateTimeImmutable $_occurrenceDate = null;
 	private ?int $_categoryId = null;
 	private string $_status = 'draft';
 	private bool $_featured = false;
@@ -245,6 +257,126 @@ class Event extends Model
 	{
 		$this->_allDay = $allDay;
 		return $this;
+	}
+
+	/**
+	 * Get the recurrence rule (RFC 5545 RRULE without DTSTART), or null when
+	 * the event does not repeat.
+	 */
+	public function getRrule(): ?string
+	{
+		return $this->_rrule;
+	}
+
+	/**
+	 * Set the recurrence rule. Empty strings are normalized to null.
+	 */
+	public function setRrule( ?string $rrule ): self
+	{
+		$this->_rrule = ( $rrule !== null && trim( $rrule ) !== '' ) ? trim( $rrule ) : null;
+		return $this;
+	}
+
+	/**
+	 * Get the parent (master) event id for an override row, or null.
+	 */
+	public function getRecurrenceParentId(): ?int
+	{
+		return $this->_recurrenceParentId;
+	}
+
+	/**
+	 * Set the parent (master) event id for an override row.
+	 */
+	public function setRecurrenceParentId( ?int $parentId ): self
+	{
+		$this->_recurrenceParentId = $parentId;
+		return $this;
+	}
+
+	/**
+	 * Get the original occurrence start that an override row replaces, or null.
+	 */
+	public function getRecurrenceId(): ?DateTimeImmutable
+	{
+		return $this->_recurrenceId;
+	}
+
+	/**
+	 * Set the original occurrence start that an override row replaces.
+	 */
+	public function setRecurrenceId( ?DateTimeImmutable $recurrenceId ): self
+	{
+		$this->_recurrenceId = $recurrenceId;
+		return $this;
+	}
+
+	/**
+	 * Get the cached last occurrence date of a bounded rule (null = infinite).
+	 */
+	public function getRecurrenceUntil(): ?DateTimeImmutable
+	{
+		return $this->_recurrenceUntil;
+	}
+
+	/**
+	 * Set the cached last occurrence date of a bounded rule.
+	 */
+	public function setRecurrenceUntil( ?DateTimeImmutable $recurrenceUntil ): self
+	{
+		$this->_recurrenceUntil = $recurrenceUntil;
+		return $this;
+	}
+
+	/**
+	 * Get the transient occurrence start for an expanded occurrence, or null
+	 * when this is a stored row rather than a generated occurrence.
+	 */
+	public function getOccurrenceDate(): ?DateTimeImmutable
+	{
+		return $this->_occurrenceDate;
+	}
+
+	/**
+	 * Set the transient occurrence start for an expanded occurrence.
+	 */
+	public function setOccurrenceDate( ?DateTimeImmutable $occurrenceDate ): self
+	{
+		$this->_occurrenceDate = $occurrenceDate;
+		return $this;
+	}
+
+	/**
+	 * Whether this row is a recurring master (has a rule and is not an override).
+	 */
+	public function isRecurring(): bool
+	{
+		return $this->_rrule !== null && $this->_recurrenceParentId === null;
+	}
+
+	/**
+	 * Alias of isRecurring(): this row defines a recurring series.
+	 */
+	public function isRecurrenceMaster(): bool
+	{
+		return $this->isRecurring();
+	}
+
+	/**
+	 * Whether this row overrides a single occurrence of a master series.
+	 */
+	public function isRecurrenceOverride(): bool
+	{
+		return $this->_recurrenceParentId !== null;
+	}
+
+	/**
+	 * Whether this instance represents a generated occurrence (clone) of a
+	 * recurring series rather than the stored master row.
+	 */
+	public function isOccurrence(): bool
+	{
+		return $this->_occurrenceDate !== null;
 	}
 
 	/**
@@ -720,6 +852,36 @@ class Event extends Model
 		}
 
 		$event->setAllDay( (bool)($data['all_day'] ?? false) );
+
+		if( isset( $data['rrule'] ) )
+		{
+			$event->setRrule( $data['rrule'] !== null ? (string)$data['rrule'] : null );
+		}
+
+		$event->setRecurrenceParentId(
+			isset( $data['recurrence_parent_id'] ) && $data['recurrence_parent_id'] !== null
+				? (int)$data['recurrence_parent_id']
+				: null
+		);
+
+		if( isset( $data['recurrence_id'] ) && $data['recurrence_id'] )
+		{
+			$event->setRecurrenceId(
+				is_string( $data['recurrence_id'] )
+					? new DateTimeImmutable( $data['recurrence_id'] )
+					: $data['recurrence_id']
+			);
+		}
+
+		if( isset( $data['recurrence_until'] ) && $data['recurrence_until'] )
+		{
+			$event->setRecurrenceUntil(
+				is_string( $data['recurrence_until'] )
+					? new DateTimeImmutable( $data['recurrence_until'] )
+					: $data['recurrence_until']
+			);
+		}
+
 		$event->setCategoryId( isset( $data['category_id'] ) ? (int)$data['category_id'] : null );
 		$event->setStatus( $data['status'] ?? self::STATUS_DRAFT );
 		$event->setFeatured( (bool)($data['featured'] ?? false) );
@@ -782,6 +944,10 @@ class Event extends Model
 			'start_date' => isset( $this->_startDate ) ? $this->_startDate->format( 'Y-m-d H:i:s' ) : null,
 			'end_date' => $this->_endDate?->format( 'Y-m-d H:i:s' ),
 			'all_day' => $this->_allDay,
+			'rrule' => $this->_rrule,
+			'recurrence_parent_id' => $this->_recurrenceParentId,
+			'recurrence_id' => $this->_recurrenceId?->format( 'Y-m-d H:i:s' ),
+			'recurrence_until' => $this->_recurrenceUntil?->format( 'Y-m-d H:i:s' ),
 			'category_id' => $this->_categoryId,
 			'status' => $this->_status,
 			'featured' => $this->_featured,

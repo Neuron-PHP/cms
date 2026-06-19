@@ -7,6 +7,7 @@ use Neuron\Cms\Models\Event;
 use Neuron\Cms\Models\EventCategory;
 use Neuron\Cms\Repositories\IEventRepository;
 use Neuron\Cms\Repositories\IEventCategoryRepository;
+use Neuron\Cms\Services\Event\RecurrenceEditor;
 use Neuron\Dto\Factory;
 use Neuron\Dto\Dto;
 use PHPUnit\Framework\TestCase;
@@ -421,6 +422,65 @@ class UpdaterTest extends TestCase
 		$updater = new Updater( $eventRepository, $categoryRepository );
 
 		$this->assertInstanceOf( Updater::class, $updater );
+	}
+
+	public function test_update_delegates_single_scope_to_editor(): void
+	{
+		$event = new Event();
+		$event->setId( 10 );
+		$event->setStartDate( new DateTimeImmutable( '2026-01-05 09:00:00' ) );
+		$event->setRrule( 'FREQ=WEEKLY' );
+
+		$this->eventRepository->method( 'findById' )->with( 10 )->willReturn( $event );
+		$this->eventRepository->expects( $this->never() )->method( 'update' );
+
+		$editor = $this->createMock( RecurrenceEditor::class );
+		$editor->expects( $this->once() )
+			->method( 'editSingle' )
+			->willReturn( $event );
+		$editor->expects( $this->never() )->method( 'splitFromOccurrence' );
+
+		$updater = new Updater( $this->eventRepository, $this->categoryRepository, $editor );
+
+		$dto = $this->createDto(
+			id: 10,
+			title: 'Edited',
+			startDate: '2026-01-12 14:00:00',
+			status: Event::STATUS_PUBLISHED
+		);
+		$dto->recurrence_edit_scope = 'single';
+		$dto->occurrence_date = '2026-01-12 09:00:00';
+
+		$updater->update( $dto );
+	}
+
+	public function test_update_delegates_this_and_following_scope_to_editor(): void
+	{
+		$event = new Event();
+		$event->setId( 10 );
+		$event->setStartDate( new DateTimeImmutable( '2026-01-05 09:00:00' ) );
+		$event->setRrule( 'FREQ=WEEKLY' );
+
+		$this->eventRepository->method( 'findById' )->with( 10 )->willReturn( $event );
+
+		$editor = $this->createMock( RecurrenceEditor::class );
+		$editor->expects( $this->once() )
+			->method( 'splitFromOccurrence' )
+			->willReturn( $event );
+		$editor->expects( $this->never() )->method( 'editSingle' );
+
+		$updater = new Updater( $this->eventRepository, $this->categoryRepository, $editor );
+
+		$dto = $this->createDto(
+			id: 10,
+			title: 'Edited',
+			startDate: '2026-01-19 09:00:00',
+			status: Event::STATUS_PUBLISHED
+		);
+		$dto->recurrence_edit_scope = 'this_and_following';
+		$dto->occurrence_date = '2026-01-19 09:00:00';
+
+		$updater->update( $dto );
 	}
 
 	public function test_update_throws_exception_when_event_not_found(): void

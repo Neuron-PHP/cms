@@ -6,6 +6,9 @@ use Neuron\Cms\Auth\SessionManager;
 use Neuron\Cms\Repositories\IEventRepository;
 use Neuron\Cms\Repositories\IEventCategoryRepository;
 use Neuron\Cms\Repositories\IEventRegistrationRepository;
+use Neuron\Cms\Models\Event;
+use Neuron\Cms\Services\Event\RecurrenceExpander;
+use Neuron\Cms\Services\Event\RecurrenceRule;
 use Neuron\Cms\Services\Widget\EventRegistrationWidget;
 use Neuron\Data\Settings\SettingManager;
 use Neuron\Mvc\IMvcApplication;
@@ -110,6 +113,14 @@ class Calendar extends Content
 			throw new \RuntimeException( 'Event not found', 404 );
 		}
 
+		// Resolve a specific occurrence of a recurring series when requested.
+		$occurrence = $this->resolveOccurrence( $event, $request->get( 'occurrence' ) );
+
+		if( $occurrence !== null )
+		{
+			$event = $occurrence;
+		}
+
 		// Increment view count
 		$this->_eventRepository->incrementViewCount( $event );
 
@@ -124,7 +135,15 @@ class Calendar extends Content
 				$this->getSessionManager()
 			);
 
-			$registrationForm = $widget->render( [ 'event' => $event->getSlug() ] );
+			$widgetAttrs = [ 'event' => $event->getSlug() ];
+
+			if( $event->isOccurrence() )
+			{
+				$widgetAttrs['event'] = $slug;
+				$widgetAttrs['occurrence'] = $event->getOccurrenceDate()->format( 'Y-m-d H:i:s' );
+			}
+
+			$registrationForm = $widget->render( $widgetAttrs );
 		}
 
 		$viewData = [
@@ -140,6 +159,68 @@ class Calendar extends Content
 			'show',
 			'default'
 		);
+	}
+
+	/**
+	 * Resolve a specific occurrence of a recurring event for the detail page.
+	 *
+	 * Returns null when the event does not repeat, when no occurrence was
+	 * requested (show the series landing), or when the requested occurrence is
+	 * invalid or cancelled. A stored override row is preferred; otherwise the
+	 * occurrence is synthesised from the master.
+	 *
+	 * @param Event $event
+	 * @param mixed $occurrenceParam
+	 * @return Event|null
+	 */
+	private function resolveOccurrence( Event $event, mixed $occurrenceParam ): ?Event
+	{
+		if( !$event->isRecurring() )
+		{
+			return null;
+		}
+
+		$raw = trim( (string)( $occurrenceParam ?? '' ) );
+
+		if( $raw === '' )
+		{
+			return null;
+		}
+
+		try
+		{
+			$occurrence = new DateTimeImmutable( $raw );
+		}
+		catch( \Throwable $e )
+		{
+			return null;
+		}
+
+		// Prefer a stored override row (a modified single occurrence).
+		$override = $this->_eventRepository->findOverride( $event->getId(), $occurrence );
+		if( $override !== null && $override->isPublished() )
+		{
+			return $override;
+		}
+
+		if( !RecurrenceRule::occursAt( (string)$event->getRrule(), $event->getStartDate(), $occurrence ) )
+		{
+			return null;
+		}
+
+		// Skip cancelled occurrences.
+		$occurrenceKey = $occurrence->format( 'Y-m-d H:i:s' );
+		foreach( $this->_eventRepository->getExceptions( $event->getId() ) as $exception )
+		{
+			if( $exception->format( 'Y-m-d H:i:s' ) === $occurrenceKey )
+			{
+				return null;
+			}
+		}
+
+		$expander = new RecurrenceExpander();
+
+		return $expander->buildOccurrence( $event, $occurrence, $expander->duration( $event ) );
 	}
 
 	/**

@@ -49,6 +49,9 @@
 										<?php if($event->isFeatured()): ?>
 											<span class="badge bg-warning text-dark" title="Featured event"><i class="bi bi-star-fill"></i> Featured</span>
 										<?php endif; ?>
+										<?php if($event->isRecurring()): ?>
+											<span class="badge bg-primary" title="Recurring event"><i class="bi bi-arrow-repeat"></i> Recurring</span>
+										<?php endif; ?>
 										<?php if($event->getDescription()): ?>
 											<br><small class="text-muted"><?= htmlspecialchars(substr($event->getDescription(), 0, 60)) ?><?= strlen($event->getDescription()) > 60 ? '...' : '' ?></small>
 										<?php endif; ?>

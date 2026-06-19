@@ -64,6 +64,61 @@
 							</div>
 						</div>
 
+						<fieldset class="border rounded p-3 mb-3">
+							<legend class="float-none w-auto px-2 fs-6 text-muted">Repeat</legend>
+
+							<div class="mb-3">
+								<label for="repeat_freq" class="form-label">Repeats</label>
+								<select class="form-select" id="repeat_freq" name="repeat_freq" data-recurrence-freq>
+									<option value="none" selected>Does not repeat</option>
+									<option value="daily">Daily</option>
+									<option value="weekly">Weekly</option>
+									<option value="monthly">Monthly</option>
+									<option value="yearly">Yearly</option>
+								</select>
+							</div>
+
+							<div data-recurrence-options style="display: none;">
+								<div class="mb-3">
+									<label for="repeat_interval" class="form-label">Every</label>
+									<div class="input-group">
+										<input type="number" class="form-control" id="repeat_interval" name="repeat_interval" min="1" value="1">
+										<span class="input-group-text" data-recurrence-unit>day(s)</span>
+									</div>
+								</div>
+
+								<div class="mb-3" data-recurrence-byday-group style="display: none;">
+									<label class="form-label d-block">Repeat on</label>
+									<div class="btn-group flex-wrap" role="group" aria-label="Weekdays">
+										<?php foreach( [ 'MO' => 'Mon', 'TU' => 'Tue', 'WE' => 'Wed', 'TH' => 'Thu', 'FR' => 'Fri', 'SA' => 'Sat', 'SU' => 'Sun' ] as $code => $label ): ?>
+											<input type="checkbox" class="btn-check" id="byday_<?= $code ?>" value="<?= $code ?>" data-recurrence-byday autocomplete="off">
+											<label class="btn btn-outline-secondary btn-sm" for="byday_<?= $code ?>"><?= $label ?></label>
+										<?php endforeach; ?>
+									</div>
+									<input type="hidden" name="repeat_byday" id="repeat_byday" value="">
+								</div>
+
+								<div class="mb-3">
+									<label for="repeat_end" class="form-label">Ends</label>
+									<select class="form-select" id="repeat_end" name="repeat_end" data-recurrence-end>
+										<option value="never" selected>Never</option>
+										<option value="until">On date</option>
+										<option value="count">After number of occurrences</option>
+									</select>
+								</div>
+
+								<div class="mb-3" data-recurrence-until-group style="display: none;">
+									<label for="repeat_until" class="form-label">End date</label>
+									<input type="date" class="form-control" id="repeat_until" name="repeat_until">
+								</div>
+
+								<div class="mb-3" data-recurrence-count-group style="display: none;">
+									<label for="repeat_count" class="form-label">Number of occurrences</label>
+									<input type="number" class="form-control" id="repeat_count" name="repeat_count" min="1">
+								</div>
+							</div>
+						</fieldset>
+
 						<div class="mb-3">
 							<label for="location" class="form-label">Location</label>
 							<input type="text" class="form-control" id="location" name="location" placeholder="e.g., Main Auditorium, 123 Main St, Sarasota, FL">
@@ -383,4 +438,49 @@ document.getElementById('event-form').addEventListener('submit', async (e) => {
 		alert('Error preparing content. Please try again.');
 	}
 });
+</script>
+
+<script>
+// Recurrence controls: toggle option visibility and sync BYDAY selection.
+(function() {
+	var freq = document.querySelector('[data-recurrence-freq]');
+	if( !freq ) { return; }
+
+	var options = document.querySelector('[data-recurrence-options]');
+	var bydayGroup = document.querySelector('[data-recurrence-byday-group]');
+	var unit = document.querySelector('[data-recurrence-unit]');
+	var endSelect = document.querySelector('[data-recurrence-end]');
+	var untilGroup = document.querySelector('[data-recurrence-until-group]');
+	var countGroup = document.querySelector('[data-recurrence-count-group]');
+	var bydayInput = document.getElementById('repeat_byday');
+	var bydayChecks = document.querySelectorAll('[data-recurrence-byday]');
+
+	var units = { daily: 'day(s)', weekly: 'week(s)', monthly: 'month(s)', yearly: 'year(s)' };
+
+	function syncByday() {
+		if( !bydayInput ) { return; }
+		var selected = [];
+		bydayChecks.forEach(function(box) { if( box.checked ) { selected.push(box.value); } });
+		bydayInput.value = selected.join(',');
+	}
+
+	function refresh() {
+		var value = freq.value;
+		var repeats = value !== 'none';
+		if( options ) { options.style.display = repeats ? 'block' : 'none'; }
+		if( bydayGroup ) { bydayGroup.style.display = value === 'weekly' ? 'block' : 'none'; }
+		if( unit && units[value] ) { unit.textContent = units[value]; }
+		if( endSelect ) {
+			if( untilGroup ) { untilGroup.style.display = endSelect.value === 'until' ? 'block' : 'none'; }
+			if( countGroup ) { countGroup.style.display = endSelect.value === 'count' ? 'block' : 'none'; }
+		}
+	}
+
+	freq.addEventListener('change', refresh);
+	if( endSelect ) { endSelect.addEventListener('change', refresh); }
+	bydayChecks.forEach(function(box) { box.addEventListener('change', syncByday); });
+
+	refresh();
+	syncByday();
+})();
 </script>
