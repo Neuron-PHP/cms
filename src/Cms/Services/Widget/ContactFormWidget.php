@@ -154,7 +154,7 @@ class ContactFormWidget implements IWidget
 		{
 			return '<div class="form-check mb-3">'
 				. '<input type="checkbox" class="form-check-input" id="' . $this->esc( $id ) . '" name="' . $this->esc( $name ) . '" value="1"' . $reqAttr . '>'
-				. '<label class="form-check-label" for="' . $this->esc( $id ) . '">' . $this->esc( $label ) . $reqMark . '</label>'
+				. '<label class="form-check-label" for="' . $this->esc( $id ) . '">' . $this->labelWithLink( $label, $field ) . $reqMark . '</label>'
 				. '</div>';
 		}
 
@@ -169,7 +169,7 @@ class ContactFormWidget implements IWidget
 		}
 
 		$control = '<div class="mb-3">';
-		$control .= '<label class="form-label" for="' . $this->esc( $id ) . '">' . $this->esc( $label ) . $reqMark . '</label>';
+		$control .= '<label class="form-label" for="' . $this->esc( $id ) . '">' . $this->labelWithLink( $label, $field ) . $reqMark . '</label>';
 
 		switch( $type )
 		{
@@ -227,7 +227,7 @@ class ContactFormWidget implements IWidget
 		$groups = FieldOptions::groups( $field );
 
 		$html  = '<fieldset class="mb-3 contact-checkboxes">';
-		$html .= '<legend class="form-label fs-6">' . $this->esc( $label ) . $reqMark . '</legend>';
+		$html .= '<legend class="form-label fs-6">' . $this->labelWithLink( $label, $field ) . $reqMark . '</legend>';
 
 		foreach( $groups as $group )
 		{
@@ -274,7 +274,7 @@ class ContactFormWidget implements IWidget
 		$reqAttr = $required ? ' required' : '';
 
 		$html  = '<fieldset class="mb-3 contact-radios">';
-		$html .= '<legend class="form-label fs-6">' . $this->esc( $label ) . $reqMark . '</legend>';
+		$html .= '<legend class="form-label fs-6">' . $this->labelWithLink( $label, $field ) . $reqMark . '</legend>';
 
 		foreach( FieldOptions::groups( $field ) as $group )
 		{
@@ -380,6 +380,43 @@ HTML;
 		}
 
 		return $this->_sessionManager;
+	}
+
+	/**
+	 * Build a field's (escaped) label, optionally embedding a safe hyperlink.
+	 *
+	 * A field may declare a link via config:
+	 *
+	 *   link: { text: "Volunteer Agreement", url: "/pages/release-form" }
+	 *
+	 * Use the literal token "{link}" in the label to control placement; if the
+	 * token is absent the link is appended. Label text, link text and URL are
+	 * all escaped, so only this controlled anchor is ever injected as HTML.
+	 *
+	 * @param string $label
+	 * @param array $field
+	 * @return string
+	 */
+	private function labelWithLink( string $label, array $field ): string
+	{
+		$escaped = $this->esc( $label );
+		$link    = $field['link'] ?? null;
+
+		if( !is_array( $link ) || empty( $link['url'] ) )
+		{
+			return $escaped;
+		}
+
+		$url    = $this->esc( (string) $link['url'] );
+		$text   = $this->esc( (string) ( $link['text'] ?? $link['url'] ) );
+		$anchor = '<a href="' . $url . '" target="_blank" rel="noopener noreferrer">' . $text . '</a>';
+
+		if( str_contains( $escaped, '{link}' ) )
+		{
+			return str_replace( '{link}', $anchor, $escaped );
+		}
+
+		return $escaped . ' ' . $anchor;
 	}
 
 	/**
