@@ -7,6 +7,7 @@ use Neuron\Cms\Repositories\IEventRepository;
 use Neuron\Cms\Repositories\IEventCategoryRepository;
 use Neuron\Cms\Repositories\IEventRegistrationRepository;
 use Neuron\Cms\Services\Contact\ContactService;
+use Neuron\Cms\Services\Donation\DonationService;
 use Neuron\Cms\Models\Post;
 use Neuron\Data\Settings\SettingManager;
 
@@ -58,6 +59,7 @@ class WidgetRenderer
 			'featured-event' => $this->renderFeaturedEvent( $config ),
 			'event-registration' => $this->renderEventRegistration( $config ),
 			'contact' => $this->renderContact( $config ),
+			'donation' => $this->renderDonation( $config ),
 			default => $this->renderUnknownWidget( $widgetType )
 		};
 	}
@@ -221,6 +223,29 @@ class WidgetRenderer
 		}
 
 		$widget = new ContactFormWidget( new ContactService( $this->_settings ) );
+
+		return $widget->render( $config );
+	}
+
+	/**
+	 * Render donation form widget
+	 *
+	 * Attributes:
+	 * - form: Donation form key from config (default: configured default_form)
+	 * - title: Optional heading override
+	 * - button: Optional submit button label override
+	 *
+	 * @param array<string, mixed> $config
+	 * @return string
+	 */
+	private function renderDonation( array $config ): string
+	{
+		if( !$this->_settings )
+		{
+			return "<!-- Donation widget requires SettingManager -->";
+		}
+
+		$widget = new DonationWidget( new DonationService( $this->_settings ) );
 
 		return $widget->render( $config );
 	}

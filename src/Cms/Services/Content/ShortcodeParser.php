@@ -156,6 +156,7 @@ class ShortcodeParser
 					'featured-event' => $this->_widgetRenderer->render( 'featured-event', $attrs ),
 					'event-registration' => $this->_widgetRenderer->render( 'event-registration', $attrs ),
 					'contact' => $this->_widgetRenderer->render( 'contact', $attrs ),
+					'donation' => $this->_widgetRenderer->render( 'donation', $attrs ),
 					default => "<!-- Unknown shortcode: [{$shortcode}] -->"
 				};
 			}
@@ -181,6 +182,7 @@ class ShortcodeParser
 			|| $shortcode === 'calendar'
 			|| $shortcode === 'featured-event'
 			|| $shortcode === 'event-registration'
-			|| $shortcode === 'contact';
+			|| $shortcode === 'contact'
+			|| $shortcode === 'donation';
 	}
 }

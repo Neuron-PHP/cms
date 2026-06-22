@@ -47,6 +47,7 @@
 							<li><a class="dropdown-item" href="<?= route_path('admin_event_registrations') ?>"><i class="bi bi-person-check me-2"></i>Event Registrations</a></li>
 							<li><hr class="dropdown-divider"></li>
 							<li><a class="dropdown-item" href="<?= route_path('admin_contact_submissions') ?>"><i class="bi bi-envelope me-2"></i>Contact Submissions</a></li>
+							<li><a class="dropdown-item" href="<?= route_path('admin_donations') ?>"><i class="bi bi-cash-coin me-2"></i>Donations</a></li>
 						</ul>
 					</li>
 					<li class="nav-item dropdown">

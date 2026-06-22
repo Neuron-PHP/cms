@@ -83,6 +83,14 @@ services:
   Neuron\Cms\Repositories\DatabaseContactSubmissionRepository:
     type: autowire
 
+  Neuron\Cms\Repositories\DatabaseDonationRepository:
+    type: autowire
+
+  # Builds the optional payment gateway from the `payments` config section.
+  # Safe to autowire whether or not neuron-php/payments is installed.
+  Neuron\Cms\Services\Donation\PaymentGatewayFactory:
+    type: autowire
+
 
   # ============================================================================
   # REPOSITORIES - Interface Bindings
@@ -135,6 +143,10 @@ services:
   Neuron\Cms\Repositories\IContactSubmissionRepository:
     type: alias
     target: Neuron\Cms\Repositories\DatabaseContactSubmissionRepository
+
+  Neuron\Cms\Repositories\IDonationRepository:
+    type: alias
+    target: Neuron\Cms\Repositories\DatabaseDonationRepository
 
 
   # ============================================================================

@@ -29,6 +29,7 @@
         "phpunit/phpunit": "9.*",
         "mikey179/vfsstream": "^1.6",
         "neuron-php/scaffolding": "0.8.*",
+        "neuron-php/payments": "0.1.*",
         "phpstan/phpstan": "^1.10",
         "phpstan/extension-installer": "^1.3",
         "infection/infection": "^0.32.0",
@@ -36,6 +37,9 @@
         "codeception/module-phpbrowser": "^3.0",
         "codeception/module-asserts": "^3.2",
         "codeception/module-db": "^3.2"
+    },
+    "suggest": {
+        "neuron-php/payments": "Adds Stripe-backed donation/payment processing and enables the [donation] shortcode."
     },
     "autoload": {
         "psr-4": {
