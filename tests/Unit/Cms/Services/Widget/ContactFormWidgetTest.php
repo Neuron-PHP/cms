@@ -26,7 +26,18 @@ class ContactFormWidgetTest extends TestCase
 							[ 'name' => 'email', 'label' => 'Email', 'type' => 'email', 'required' => true ],
 							[ 'name' => 'county', 'label' => 'County', 'type' => 'select', 'required' => true, 'options' => [ 'Sarasota', 'Manatee' ] ],
 							[ 'name' => 'message', 'label' => 'Message', 'type' => 'textarea', 'required' => true ],
-							[ 'name' => 'subscribe', 'label' => 'Subscribe', 'type' => 'checkbox', 'required' => false ]
+							[ 'name' => 'subscribe', 'label' => 'Subscribe', 'type' => 'checkbox', 'required' => false ],
+							[
+								'name'   => 'opportunities',
+								'label'  => 'Opportunities',
+								'type'   => 'checkboxes',
+								'groups' => [
+									[ 'label' => 'Sessions', 'options' => [ [ 'value' => 'judge', 'label' => 'Judge' ], [ 'value' => 'jury', 'label' => 'Jury Monitor' ] ] ],
+									[ 'label' => 'Committee', 'options' => [ 'Fundraising' ] ]
+								]
+							],
+							[ 'name' => 'contact_pref', 'label' => 'Preferred Contact', 'type' => 'radio', 'required' => true, 'options' => [ 'Email', 'Phone' ] ],
+							[ 'name' => 'start_date', 'label' => 'Start Date', 'type' => 'date', 'required' => false ]
 						]
 					]
 				]
@@ -69,6 +80,34 @@ class ContactFormWidgetTest extends TestCase
 
 		$this->assertStringContainsString( '>Sarasota<', $html );
 		$this->assertStringContainsString( '>Manatee<', $html );
+	}
+
+	public function testCheckboxesRenderAsArrayInputsWithGroupLabels(): void
+	{
+		$html = $this->widget()->render( [] );
+
+		// Multi-select posts as an array.
+		$this->assertStringContainsString( 'name="opportunities[]"', $html );
+
+		// Group headings render.
+		$this->assertStringContainsString( '>Sessions<', $html );
+		$this->assertStringContainsString( '>Committee<', $html );
+
+		// Option values and labels render (explicit and string-shorthand).
+		$this->assertStringContainsString( 'value="judge"', $html );
+		$this->assertStringContainsString( '>Judge<', $html );
+		$this->assertStringContainsString( 'value="Fundraising"', $html );
+	}
+
+	public function testRadioAndDateFieldsRender(): void
+	{
+		$html = $this->widget()->render( [] );
+
+		$this->assertStringContainsString( 'type="radio"', $html );
+		$this->assertStringContainsString( 'name="contact_pref"', $html );
+		$this->assertStringContainsString( 'value="Email"', $html );
+		$this->assertStringContainsString( 'type="date"', $html );
+		$this->assertStringContainsString( 'name="start_date"', $html );
 	}
 
 	public function testTitleAndButtonCanBeOverriddenByAttributes(): void

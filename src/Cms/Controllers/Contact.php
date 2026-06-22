@@ -7,6 +7,7 @@ use Neuron\Cms\Repositories\IContactSubmissionRepository;
 use Neuron\Cms\Services\Auth\CsrfToken;
 use Neuron\Cms\Services\Contact\ContactFormValidator;
 use Neuron\Cms\Services\Contact\ContactService;
+use Neuron\Cms\Services\Contact\FieldOptions;
 use Neuron\Cms\Services\Widget\ContactFormWidget;
 use Neuron\Data\Settings\SettingManager;
 use Neuron\Log\Log;
@@ -197,10 +198,18 @@ class Contact extends Content
 				continue;
 			}
 
-			if( ( $field['type'] ?? 'text' ) === 'checkbox' )
+			$type = $field['type'] ?? 'text';
+
+			if( $type === 'checkbox' )
 			{
 				$raw = $request->post( $name, '' );
 				$values[ $name ] = ( $raw === 'on' || $raw === '1' || $raw === 1 || $raw === true ) ? '1' : '';
+				continue;
+			}
+
+			if( $type === 'checkboxes' || $type === 'multiselect' )
+			{
+				$values[ $name ] = $this->collectMultiValues( $field, $name, $request );
 				continue;
 			}
 
@@ -209,6 +218,47 @@ class Contact extends Content
 		}
 
 		return $values;
+	}
+
+	/**
+	 * Collect and sanitize the selected values for a multi-select field.
+	 *
+	 * Only values present in the field's configured option set are kept, so a
+	 * crafted request cannot inject arbitrary selections into storage/email.
+	 *
+	 * @param array $field
+	 * @param string $name
+	 * @param Request $request
+	 * @return array<int, string>
+	 */
+	private function collectMultiValues( array $field, string $name, Request $request ): array
+	{
+		$raw = $request->post( $name, [] );
+
+		if( !is_array( $raw ) )
+		{
+			$raw = ( $raw === '' || $raw === null ) ? [] : [ $raw ];
+		}
+
+		$allowed  = FieldOptions::allowedValues( $field );
+		$selected = [];
+
+		foreach( $raw as $value )
+		{
+			if( !is_scalar( $value ) )
+			{
+				continue;
+			}
+
+			$value = trim( (string) $value );
+
+			if( $value !== '' && in_array( $value, $allowed, true ) && !in_array( $value, $selected, true ) )
+			{
+				$selected[] = $value;
+			}
+		}
+
+		return $selected;
 	}
 
 	/**

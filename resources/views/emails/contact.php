@@ -48,7 +48,11 @@ $formLabel = $formLabel ?? 'Contact Form';
 					}
 					$label = $field['label'] ?? $name;
 					$value = $values[ $name ] ?? '';
-					if( !is_scalar( $value ) )
+					if( is_array( $value ) )
+					{
+						$value = implode( "\n", \Neuron\Cms\Services\Contact\FieldOptions::labelsFor( $field, $value ) );
+					}
+					elseif( !is_scalar( $value ) )
 					{
 						$value = json_encode( $value );
 					}
