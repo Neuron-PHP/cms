@@ -1,3 +1,5 @@
+## 0.8.75
+
 ## 0.8.74 2026-06-22
 
 * Added multi select fields to forms.
