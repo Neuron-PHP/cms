@@ -4,6 +4,7 @@ namespace Neuron\Cms\Services\Widget;
 
 use Neuron\Cms\Auth\SessionManager;
 use Neuron\Cms\Services\Contact\ContactService;
+use Neuron\Cms\Services\Contact\FieldOptions;
 
 /**
  * Contact form widget / shortcode.
@@ -157,6 +158,16 @@ class ContactFormWidget implements IWidget
 				. '</div>';
 		}
 
+		if( $type === 'checkboxes' )
+		{
+			return $this->renderCheckboxes( $field, $idSuffix, $name, $label, $reqMark );
+		}
+
+		if( $type === 'radio' )
+		{
+			return $this->renderRadios( $field, $idSuffix, $name, $label, $required, $reqMark );
+		}
+
 		$control = '<div class="mb-3">';
 		$control .= '<label class="form-label" for="' . $this->esc( $id ) . '">' . $this->esc( $label ) . $reqMark . '</label>';
 
@@ -182,9 +193,12 @@ class ContactFormWidget implements IWidget
 
 			case 'email':
 			case 'tel':
+			case 'date':
+			case 'number':
+			case 'url':
 			case 'text':
 			default:
-				$inputType = in_array( $type, [ 'email', 'tel' ], true ) ? $type : 'text';
+				$inputType = in_array( $type, [ 'email', 'tel', 'date', 'number', 'url' ], true ) ? $type : 'text';
 				$control .= '<input type="' . $this->esc( $inputType ) . '" class="form-control" id="' . $this->esc( $id ) . '" name="' . $this->esc( $name ) . '"' . $reqAttr . '>';
 				break;
 		}
@@ -192,6 +206,100 @@ class ContactFormWidget implements IWidget
 		$control .= '</div>';
 
 		return $control;
+	}
+
+	/**
+	 * Render a grouped/flat multi-select as a set of checkboxes.
+	 *
+	 * Values post as name[] so several selections arrive as an array. The
+	 * group-level required flag is enforced server-side (at least one box),
+	 * since a native HTML "required" on each box would force every option.
+	 *
+	 * @param array $field
+	 * @param string $idSuffix
+	 * @param string $name
+	 * @param string $label
+	 * @param string $reqMark
+	 * @return string
+	 */
+	private function renderCheckboxes( array $field, string $idSuffix, string $name, string $label, string $reqMark ): string
+	{
+		$groups = FieldOptions::groups( $field );
+
+		$html  = '<fieldset class="mb-3 contact-checkboxes">';
+		$html .= '<legend class="form-label fs-6">' . $this->esc( $label ) . $reqMark . '</legend>';
+
+		foreach( $groups as $group )
+		{
+			$groupLabel = $group['label'] ?? '';
+
+			if( $groupLabel !== '' )
+			{
+				$html .= '<div class="contact-checkbox-group-label fw-semibold mt-2 mb-1">' . $this->esc( (string) $groupLabel ) . '</div>';
+			}
+
+			foreach( $group['options'] as $option )
+			{
+				$value = $option['value'];
+				$id    = 'contact_' . $idSuffix . '_' . preg_replace( '/[^a-z0-9_]/i', '_', $name . '_' . $value );
+
+				$html .= '<div class="form-check">';
+				$html .= '<input type="checkbox" class="form-check-input" id="' . $this->esc( $id ) . '" name="' . $this->esc( $name ) . '[]" value="' . $this->esc( $value ) . '">';
+				$html .= '<label class="form-check-label" for="' . $this->esc( $id ) . '">' . $this->esc( $option['label'] ) . '</label>';
+				$html .= '</div>';
+			}
+		}
+
+		$html .= '</fieldset>';
+
+		return $html;
+	}
+
+	/**
+	 * Render a single-choice field as a set of radio buttons.
+	 *
+	 * Posts a single scalar value (name=field). Options may be flat or grouped
+	 * and are validated server-side against the configured option set.
+	 *
+	 * @param array $field
+	 * @param string $idSuffix
+	 * @param string $name
+	 * @param string $label
+	 * @param bool $required
+	 * @param string $reqMark
+	 * @return string
+	 */
+	private function renderRadios( array $field, string $idSuffix, string $name, string $label, bool $required, string $reqMark ): string
+	{
+		$reqAttr = $required ? ' required' : '';
+
+		$html  = '<fieldset class="mb-3 contact-radios">';
+		$html .= '<legend class="form-label fs-6">' . $this->esc( $label ) . $reqMark . '</legend>';
+
+		foreach( FieldOptions::groups( $field ) as $group )
+		{
+			$groupLabel = $group['label'] ?? '';
+
+			if( $groupLabel !== '' )
+			{
+				$html .= '<div class="contact-radio-group-label fw-semibold mt-2 mb-1">' . $this->esc( (string) $groupLabel ) . '</div>';
+			}
+
+			foreach( $group['options'] as $option )
+			{
+				$value = $option['value'];
+				$id    = 'contact_' . $idSuffix . '_' . preg_replace( '/[^a-z0-9_]/i', '_', $name . '_' . $value );
+
+				$html .= '<div class="form-check">';
+				$html .= '<input type="radio" class="form-check-input" id="' . $this->esc( $id ) . '" name="' . $this->esc( $name ) . '" value="' . $this->esc( $value ) . '"' . $reqAttr . '>';
+				$html .= '<label class="form-check-label" for="' . $this->esc( $id ) . '">' . $this->esc( $option['label'] ) . '</label>';
+				$html .= '</div>';
+			}
+		}
+
+		$html .= '</fieldset>';
+
+		return $html;
 	}
 
 	/**

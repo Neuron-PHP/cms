@@ -99,6 +99,33 @@ class ContactTest extends TestCase
 		$_POST = [];
 	}
 
+	public function testCollectValuesGathersAndFiltersMultiSelect(): void
+	{
+		$_POST = [
+			'opportunities' => [ 'judge', 'fundraising', 'mayor', 'judge' ]
+		];
+
+		$fields = [
+			[
+				'name'   => 'opportunities',
+				'type'   => 'checkboxes',
+				'groups' => [
+					[ 'label' => 'Sessions', 'options' => [ 'judge' ] ],
+					[ 'label' => 'Committee', 'options' => [ 'fundraising' ] ]
+				]
+			]
+		];
+
+		$method = new \ReflectionMethod( Contact::class, 'collectValues' );
+
+		$values = $method->invoke( $this->controller, $fields, new Request() );
+
+		// Only configured options survive; 'mayor' dropped and duplicates removed.
+		$this->assertSame( [ 'judge', 'fundraising' ], $values['opportunities'] );
+
+		$_POST = [];
+	}
+
 	public function testSuccessMessageDefaultAndOverride(): void
 	{
 		$method = new \ReflectionMethod( Contact::class, 'successMessage' );

@@ -80,6 +80,9 @@ services:
   Neuron\Cms\Repositories\DatabaseRevisionRepository:
     type: autowire
 
+  Neuron\Cms\Repositories\DatabaseContactSubmissionRepository:
+    type: autowire
+
 
   # ============================================================================
   # REPOSITORIES - Interface Bindings
@@ -128,6 +131,10 @@ services:
   Neuron\Cms\Repositories\IRevisionRepository:
     type: alias
     target: Neuron\Cms\Repositories\DatabaseRevisionRepository
+
+  Neuron\Cms\Repositories\IContactSubmissionRepository:
+    type: alias
+    target: Neuron\Cms\Repositories\DatabaseContactSubmissionRepository
 
 
   # ============================================================================

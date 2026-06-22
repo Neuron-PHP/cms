@@ -41,7 +41,35 @@ class ContactFormValidator
 
 			$label    = $field['label'] ?? $name;
 			$required = (bool) ( $field['required'] ?? false );
+			$type     = $field['type'] ?? 'text';
 			$raw      = $values[ $name ] ?? null;
+
+			if( $type === 'checkboxes' || $type === 'multiselect' )
+			{
+				$selected = is_array( $raw )
+					? $raw
+					: ( ( $raw === null || $raw === '' ) ? [] : [ $raw ] );
+
+				if( empty( $selected ) )
+				{
+					if( $required )
+					{
+						$errors[ $name ] = "{$label} is required.";
+					}
+
+					continue;
+				}
+
+				$error = $this->validateMultiple( $field, $label, $selected );
+
+				if( $error !== null )
+				{
+					$errors[ $name ] = $error;
+				}
+
+				continue;
+			}
+
 			$value    = is_string( $raw ) ? trim( $raw ) : $raw;
 			$isEmpty  = ( $value === null || $value === '' || $value === [] );
 
@@ -90,11 +118,11 @@ class ContactFormValidator
 			return "{$label} must be a valid phone number.";
 		}
 
-		if( $type === 'select' )
+		if( $type === 'select' || $type === 'radio' )
 		{
-			$options = $field['options'] ?? [];
+			$allowed = FieldOptions::allowedValues( $field );
 
-			if( !empty( $options ) && !new IsInSet( $options )->isValid( $value ) )
+			if( !empty( $allowed ) && !new IsInSet( $allowed )->isValid( $value ) )
 			{
 				return "{$label} is not a valid selection.";
 			}
@@ -114,6 +142,45 @@ class ContactFormValidator
 		if( isset( $rules['pattern'] ) && !new IsRegExPattern( $rules['pattern'] )->isValid( $value ) )
 		{
 			return "{$label} is not in the expected format.";
+		}
+
+		return null;
+	}
+
+	/**
+	 * Validate the selected values of a multi-select (checkboxes/multiselect)
+	 * field: every selection must belong to the configured option set, and an
+	 * optional count rule (rules.count.min/max) is enforced.
+	 *
+	 * @param array $field Field definition
+	 * @param string $label Display label
+	 * @param array $selected Selected values
+	 * @return string|null Error message, or null when valid
+	 */
+	private function validateMultiple( array $field, string $label, array $selected ): ?string
+	{
+		$allowed = FieldOptions::allowedValues( $field );
+
+		foreach( $selected as $value )
+		{
+			if( !is_scalar( $value ) || !in_array( (string) $value, $allowed, true ) )
+			{
+				return "{$label} contains an invalid selection.";
+			}
+		}
+
+		$rules = $field['rules'] ?? [];
+
+		if( isset( $rules['count'] ) )
+		{
+			$min   = (int) ( $rules['count']['min'] ?? 0 );
+			$max   = (int) ( $rules['count']['max'] ?? PHP_INT_MAX );
+			$count = count( $selected );
+
+			if( $count < $min || $count > $max )
+			{
+				return "Please select between {$min} and {$max} options for {$label}.";
+			}
 		}
 
 		return null;

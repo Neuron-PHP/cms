@@ -109,6 +109,67 @@ class ContactFormValidatorTest extends TestCase
 		$this->assertArrayHasKey( 'phone', $errors );
 	}
 
+	private function checkboxesField( bool $required = true ): array
+	{
+		return [
+			'name'     => 'opportunities',
+			'label'    => 'Opportunities',
+			'type'     => 'checkboxes',
+			'required' => $required,
+			'groups'   => [
+				[ 'label' => 'Sessions', 'options' => [ [ 'value' => 'judge', 'label' => 'Judge' ], [ 'value' => 'jury', 'label' => 'Jury Monitor' ] ] ],
+				[ 'label' => 'Committee', 'options' => [ 'Fundraising' ] ]
+			]
+		];
+	}
+
+	public function testCheckboxesRequiredWhenNoneSelected(): void
+	{
+		$errors = $this->validator->validate( [ $this->checkboxesField( true ) ], [ 'opportunities' => [] ] );
+
+		$this->assertArrayHasKey( 'opportunities', $errors );
+	}
+
+	public function testCheckboxesOptionalWhenNoneSelected(): void
+	{
+		$errors = $this->validator->validate( [ $this->checkboxesField( false ) ], [ 'opportunities' => [] ] );
+
+		$this->assertSame( [], $errors );
+	}
+
+	public function testCheckboxesAcceptValidSelections(): void
+	{
+		$errors = $this->validator->validate( [ $this->checkboxesField() ], [ 'opportunities' => [ 'judge', 'Fundraising' ] ] );
+
+		$this->assertSame( [], $errors );
+	}
+
+	public function testCheckboxesRejectValueOutsideOptionSet(): void
+	{
+		$errors = $this->validator->validate( [ $this->checkboxesField() ], [ 'opportunities' => [ 'judge', 'mayor' ] ] );
+
+		$this->assertArrayHasKey( 'opportunities', $errors );
+	}
+
+	public function testCheckboxesCountRuleIsEnforced(): void
+	{
+		$field = $this->checkboxesField();
+		$field['rules'] = [ 'count' => [ 'min' => 1, 'max' => 1 ] ];
+
+		$errors = $this->validator->validate( [ $field ], [ 'opportunities' => [ 'judge', 'jury' ] ] );
+
+		$this->assertArrayHasKey( 'opportunities', $errors );
+	}
+
+	public function testRadioValueMustBeInOptionSet(): void
+	{
+		$field = [ 'name' => 'pref', 'label' => 'Preference', 'type' => 'radio', 'required' => true, 'options' => [ 'Yes', 'No' ] ];
+
+		$this->assertSame( [], $this->validator->validate( [ $field ], [ 'pref' => 'Yes' ] ) );
+		$this->assertArrayHasKey( 'pref', $this->validator->validate( [ $field ], [ 'pref' => 'Maybe' ] ) );
+		$this->assertArrayHasKey( 'pref', $this->validator->validate( [ $field ], [ 'pref' => '' ] ) );
+	}
+
 	public function testPatternRuleIsEnforced(): void
 	{
 		$fields = [

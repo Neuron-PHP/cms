@@ -216,12 +216,26 @@ maintenance:
 # Field properties:
 #   name        input name (also the stored payload key)
 #   label       display label
-#   type        text | email | tel | textarea | select | checkbox
-#   required    true|false
-#   options     list of allowed values (select only)
-#   rules       optional: length: { min, max }, pattern: "/regex/"
+#   type        text | email | tel | textarea | select | checkbox | checkboxes | multiselect
+#   required    true|false (for checkboxes/multiselect: at least one selection)
+#   options     list of allowed values (select / checkboxes / multiselect)
+#               each option may be a plain string or { value, label }
+#   groups      checkboxes/multiselect only: list of { label, options } to
+#               render grouped choices (values must be unique across groups)
+#   rules       optional: length: { min, max }, pattern: "/regex/",
+#               count: { min, max } (checkboxes/multiselect selection count)
 #   reply_to    true -> this field supplies the reply-to email address
 #   sender_name true -> this field supplies the reply-to display name
+#
+# Example multi-select (grouped checkboxes):
+#   - name: opportunities
+#     label: "Volunteer opportunities"
+#     type: checkboxes
+#     groups:
+#       - label: "Sessions"
+#         options:
+#           - { value: judge, label: "Judge" }
+#           - { value: jury,  label: "Jury Monitor" }
 contact:
   default_form: general  # Form rendered by a bare [contact] shortcode
   forms:

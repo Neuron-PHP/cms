@@ -210,7 +210,17 @@ class ContactService
 
 			$label = $field['label'] ?? $name;
 			$value = $values[ $name ] ?? '';
-			$lines[] = $label . ': ' . ( is_scalar( $value ) ? (string) $value : json_encode( $value ) );
+
+			if( is_array( $value ) )
+			{
+				$value = implode( ', ', FieldOptions::labelsFor( $field, $value ) );
+			}
+			elseif( !is_scalar( $value ) )
+			{
+				$value = json_encode( $value );
+			}
+
+			$lines[] = $label . ': ' . $value;
 		}
 
 		return implode( "\n", $lines );

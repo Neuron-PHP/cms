@@ -1,13 +1,32 @@
 <?php
-$labelFor = static function( string $name ) use ( $fields ): string {
+$fieldFor = static function( string $name ) use ( $fields ): ?array {
 	foreach( ( $fields ?? [] ) as $field )
 	{
 		if( ( $field['name'] ?? null ) === $name )
 		{
-			return $field['label'] ?? $name;
+			return $field;
 		}
 	}
-	return $name;
+	return null;
+};
+
+$labelFor = static function( string $name ) use ( $fieldFor ): string {
+	$field = $fieldFor( $name );
+	return $field['label'] ?? $name;
+};
+
+$displayValue = static function( string $name, mixed $value ) use ( $fieldFor ): string {
+	if( is_array( $value ) )
+	{
+		$field  = $fieldFor( $name );
+		$labels = $field !== null
+			? \Neuron\Cms\Services\Contact\FieldOptions::labelsFor( $field, $value )
+			: array_map( 'strval', $value );
+
+		return implode( "\n", $labels );
+	}
+
+	return (string) $value;
 };
 
 // Order values by configured fields first, then any extra payload keys.
@@ -94,7 +113,7 @@ foreach( array_keys( $payload ?? [] ) as $key )
 						<dl class="row mb-0">
 							<?php foreach( $orderedKeys as $name ): ?>
 								<dt class="col-sm-3"><?= htmlspecialchars( $labelFor( $name ) ) ?></dt>
-								<dd class="col-sm-9" style="white-space: pre-wrap;"><?= htmlspecialchars( (string) ( $payload[ $name ] ?? '' ) ) ?></dd>
+								<dd class="col-sm-9" style="white-space: pre-wrap;"><?= htmlspecialchars( $displayValue( $name, $payload[ $name ] ?? '' ) ) ?></dd>
 							<?php endforeach; ?>
 						</dl>
 					<?php endif; ?>
