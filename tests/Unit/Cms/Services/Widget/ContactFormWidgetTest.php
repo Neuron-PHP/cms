@@ -37,7 +37,8 @@ class ContactFormWidgetTest extends TestCase
 								]
 							],
 							[ 'name' => 'contact_pref', 'label' => 'Preferred Contact', 'type' => 'radio', 'required' => true, 'options' => [ 'Email', 'Phone' ] ],
-							[ 'name' => 'start_date', 'label' => 'Start Date', 'type' => 'date', 'required' => false ]
+							[ 'name' => 'start_date', 'label' => 'Start Date', 'type' => 'date', 'required' => false ],
+							[ 'name' => 'agree', 'label' => 'I agree to the {link}', 'type' => 'checkbox', 'required' => true, 'link' => [ 'text' => 'Release Form', 'url' => '/pages/release-form' ] ]
 						]
 					]
 				]
@@ -108,6 +109,17 @@ class ContactFormWidgetTest extends TestCase
 		$this->assertStringContainsString( 'value="Email"', $html );
 		$this->assertStringContainsString( 'type="date"', $html );
 		$this->assertStringContainsString( 'name="start_date"', $html );
+	}
+
+	public function testCheckboxLabelEmbedsConfiguredLinkAtToken(): void
+	{
+		$html = $this->widget()->render( [] );
+
+		$this->assertStringContainsString( 'href="/pages/release-form"', $html );
+		$this->assertStringContainsString( 'target="_blank"', $html );
+		$this->assertStringContainsString( '>Release Form</a>', $html );
+		// The {link} token is replaced, not left as literal text.
+		$this->assertStringNotContainsString( '{link}', $html );
 	}
 
 	public function testTitleAndButtonCanBeOverriddenByAttributes(): void
