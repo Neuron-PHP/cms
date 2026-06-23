@@ -13,6 +13,10 @@ use Neuron\Cms\Repositories\IEventRepository;
 use Neuron\Cms\Repositories\IEventCategoryRepository;
 use Neuron\Cms\Repositories\IEventRegistrationRepository;
 use Neuron\Cms\Repositories\IContactSubmissionRepository;
+use Neuron\Cms\Repositories\IPaymentRepository;
+use Neuron\Cms\Repositories\ISubscriptionRepository;
+use Neuron\Cms\Repositories\IProductRepository;
+use Neuron\Cms\Repositories\IOrderItemRepository;
 use Neuron\Cms\Repositories\DatabaseUserRepository;
 use Neuron\Cms\Repositories\DatabasePostRepository;
 use Neuron\Cms\Repositories\DatabasePageRepository;
@@ -22,6 +26,10 @@ use Neuron\Cms\Repositories\DatabaseEventRepository;
 use Neuron\Cms\Repositories\DatabaseEventCategoryRepository;
 use Neuron\Cms\Repositories\DatabaseEventRegistrationRepository;
 use Neuron\Cms\Repositories\DatabaseContactSubmissionRepository;
+use Neuron\Cms\Repositories\DatabasePaymentRepository;
+use Neuron\Cms\Repositories\DatabaseSubscriptionRepository;
+use Neuron\Cms\Repositories\DatabaseProductRepository;
+use Neuron\Cms\Repositories\DatabaseOrderItemRepository;
 use Neuron\Cms\Services\User\IUserCreator;
 use Neuron\Cms\Services\User\IUserUpdater;
 use Neuron\Cms\Services\User\IUserDeleter;
@@ -83,6 +91,10 @@ class CmsServiceProvider implements IServiceProvider
 		$container->bind( IEventCategoryRepository::class, DatabaseEventCategoryRepository::class );
 		$container->bind( IEventRegistrationRepository::class, DatabaseEventRegistrationRepository::class );
 		$container->bind( IContactSubmissionRepository::class, DatabaseContactSubmissionRepository::class );
+		$container->bind( IPaymentRepository::class, DatabasePaymentRepository::class );
+		$container->bind( ISubscriptionRepository::class, DatabaseSubscriptionRepository::class );
+		$container->bind( IProductRepository::class, DatabaseProductRepository::class );
+		$container->bind( IOrderItemRepository::class, DatabaseOrderItemRepository::class );
 	}
 
 	/**
@@ -141,7 +153,8 @@ class CmsServiceProvider implements IServiceProvider
 				$c->get( IEventRepository::class ),
 				$c->get( IEventCategoryRepository::class ),
 				$c->get( SettingManager::class ),
-				$c->get( IEventRegistrationRepository::class )
+				$c->get( IEventRegistrationRepository::class ),
+				$c->get( IProductRepository::class )
 			);
 		});
 

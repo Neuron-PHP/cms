@@ -24,7 +24,11 @@
     "20260618120000_add_external_url_to_events.php",
     "20260619140000_add_recurrence_to_events.php",
     "20260619140001_create_event_recurrence_exceptions_table.php",
-    "20260619140002_add_occurrence_date_to_event_registrations.php"
+    "20260619140002_add_occurrence_date_to_event_registrations.php",
+    "20260622000000_create_payments_table.php",
+    "20260622000001_create_subscriptions_table.php",
+    "20260623000000_create_products_table.php",
+    "20260623000001_create_order_items_table.php"
   ],
   "config_files": [
     "auth.yaml",
@@ -42,6 +46,7 @@
     "calendar",
     "contact",
     "content",
+    "donations",
     "email",
     "emails",
     "home",
@@ -49,7 +54,9 @@
     "layouts",
     "member",
     "pages",
-    "partials"
+    "partials",
+    "payments",
+    "store"
   ],
   "public_assets": [
     ".htaccess",

@@ -156,6 +156,11 @@ class ShortcodeParser
 					'featured-event' => $this->_widgetRenderer->render( 'featured-event', $attrs ),
 					'event-registration' => $this->_widgetRenderer->render( 'event-registration', $attrs ),
 					'contact' => $this->_widgetRenderer->render( 'contact', $attrs ),
+					'payment' => $this->_widgetRenderer->render( 'payment', $attrs ),
+					'donation' => $this->_widgetRenderer->render( 'donation', $attrs ),
+					'products' => $this->_widgetRenderer->render( 'products', $attrs ),
+					'product' => $this->_widgetRenderer->render( 'product', $attrs ),
+					'cart' => $this->_widgetRenderer->render( 'cart', $attrs ),
 					default => "<!-- Unknown shortcode: [{$shortcode}] -->"
 				};
 			}
@@ -181,6 +186,11 @@ class ShortcodeParser
 			|| $shortcode === 'calendar'
 			|| $shortcode === 'featured-event'
 			|| $shortcode === 'event-registration'
-			|| $shortcode === 'contact';
+			|| $shortcode === 'contact'
+			|| $shortcode === 'payment'
+			|| $shortcode === 'donation'
+			|| $shortcode === 'products'
+			|| $shortcode === 'product'
+			|| $shortcode === 'cart';
 	}
 }

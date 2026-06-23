@@ -19,6 +19,7 @@
         "neuron-php/jobs": "0.2.*",
         "neuron-php/orm": "0.1.*",
         "neuron-php/dto": "0.0.*",
+        "neuron-php/payments": "0.3.*",
         "rlanvin/php-rrule": "^2.6",
         "phpmailer/phpmailer": "^6.9",
         "cloudinary/cloudinary_php": "^2.0",
@@ -36,6 +37,9 @@
         "codeception/module-phpbrowser": "^3.0",
         "codeception/module-asserts": "^3.2",
         "codeception/module-db": "^3.2"
+    },
+    "suggest": {
+        "neuron-php/payments": "Adds Stripe-backed donation/payment processing and enables the [donation] shortcode."
     },
     "autoload": {
         "psr-4": {

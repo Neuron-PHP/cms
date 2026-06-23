@@ -179,6 +179,30 @@ class ShortcodeParserTest extends TestCase
 		$this->assertTrue( $parser->hasShortcode( 'latest-posts' ) );
 	}
 
+	public function testHasShortcodeRecognizesStoreShortcodes(): void
+	{
+		$widgetRenderer = $this->createMock( WidgetRenderer::class );
+		$parser = new ShortcodeParser( $widgetRenderer );
+
+		$this->assertTrue( $parser->hasShortcode( 'products' ) );
+		$this->assertTrue( $parser->hasShortcode( 'product' ) );
+		$this->assertTrue( $parser->hasShortcode( 'cart' ) );
+	}
+
+	public function testParseStoreShortcodesDelegateToRenderer(): void
+	{
+		$widgetRenderer = $this->createMock( WidgetRenderer::class );
+		$widgetRenderer->method( 'render' )->willReturnCallback(
+			static fn( string $type ): string => '<div>' . $type . '</div>'
+		);
+
+		$parser = new ShortcodeParser( $widgetRenderer );
+
+		$this->assertStringContainsString( '<div>products</div>', $parser->parse( '[products]' ) );
+		$this->assertStringContainsString( '<div>product</div>', $parser->parse( '[product id="1"]' ) );
+		$this->assertStringContainsString( '<div>cart</div>', $parser->parse( '[cart]' ) );
+	}
+
 	public function testParseBuiltInShortcodeWithWidgetRenderer(): void
 	{
 		$widgetRenderer = $this->createMock( WidgetRenderer::class );
