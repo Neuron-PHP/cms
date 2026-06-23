@@ -83,12 +83,21 @@ services:
   Neuron\Cms\Repositories\DatabaseContactSubmissionRepository:
     type: autowire
 
-  Neuron\Cms\Repositories\DatabaseDonationRepository:
+  Neuron\Cms\Repositories\DatabasePaymentRepository:
+    type: autowire
+
+  Neuron\Cms\Repositories\DatabaseSubscriptionRepository:
+    type: autowire
+
+  Neuron\Cms\Repositories\DatabaseProductRepository:
+    type: autowire
+
+  Neuron\Cms\Repositories\DatabaseOrderItemRepository:
     type: autowire
 
   # Builds the optional payment gateway from the `payments` config section.
   # Safe to autowire whether or not neuron-php/payments is installed.
-  Neuron\Cms\Services\Donation\PaymentGatewayFactory:
+  Neuron\Cms\Services\Payment\PaymentGatewayFactory:
     type: autowire
 
 
@@ -144,9 +153,21 @@ services:
     type: alias
     target: Neuron\Cms\Repositories\DatabaseContactSubmissionRepository
 
-  Neuron\Cms\Repositories\IDonationRepository:
+  Neuron\Cms\Repositories\IPaymentRepository:
     type: alias
-    target: Neuron\Cms\Repositories\DatabaseDonationRepository
+    target: Neuron\Cms\Repositories\DatabasePaymentRepository
+
+  Neuron\Cms\Repositories\ISubscriptionRepository:
+    type: alias
+    target: Neuron\Cms\Repositories\DatabaseSubscriptionRepository
+
+  Neuron\Cms\Repositories\IProductRepository:
+    type: alias
+    target: Neuron\Cms\Repositories\DatabaseProductRepository
+
+  Neuron\Cms\Repositories\IOrderItemRepository:
+    type: alias
+    target: Neuron\Cms\Repositories\DatabaseOrderItemRepository
 
 
   # ============================================================================
@@ -362,6 +383,7 @@ services:
       - '@Neuron\Cms\Repositories\DatabaseEventCategoryRepository'
       - '@Neuron\Data\Settings\SettingManager'
       - '@Neuron\Cms\Repositories\DatabaseEventRegistrationRepository'
+      - '@Neuron\Cms\Repositories\DatabaseProductRepository'
 
   Neuron\Cms\Services\Content\ShortcodeParser:
     type: create

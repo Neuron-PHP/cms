@@ -6,8 +6,11 @@ use Neuron\Cms\Repositories\IPostRepository;
 use Neuron\Cms\Repositories\IEventRepository;
 use Neuron\Cms\Repositories\IEventCategoryRepository;
 use Neuron\Cms\Repositories\IEventRegistrationRepository;
+use Neuron\Cms\Repositories\IProductRepository;
 use Neuron\Cms\Services\Contact\ContactService;
-use Neuron\Cms\Services\Donation\DonationService;
+use Neuron\Cms\Services\Payment\PaymentService;
+use Neuron\Cms\Services\Store\CartService;
+use Neuron\Cms\Services\Store\StoreService;
 use Neuron\Cms\Models\Post;
 use Neuron\Data\Settings\SettingManager;
 
@@ -27,13 +30,15 @@ class WidgetRenderer
 	private ?IEventCategoryRepository $_eventCategoryRepository = null;
 	private ?IEventRegistrationRepository $_eventRegistrationRepository = null;
 	private ?SettingManager $_settings = null;
+	private ?IProductRepository $_productRepository = null;
 
 	public function __construct(
 		?IPostRepository $postRepository = null,
 		?IEventRepository $eventRepository = null,
 		?IEventCategoryRepository $eventCategoryRepository = null,
 		?SettingManager $settings = null,
-		?IEventRegistrationRepository $eventRegistrationRepository = null
+		?IEventRegistrationRepository $eventRegistrationRepository = null,
+		?IProductRepository $productRepository = null
 	)
 	{
 		$this->_postRepository = $postRepository;
@@ -41,6 +46,7 @@ class WidgetRenderer
 		$this->_eventCategoryRepository = $eventCategoryRepository;
 		$this->_settings = $settings;
 		$this->_eventRegistrationRepository = $eventRegistrationRepository;
+		$this->_productRepository = $productRepository;
 	}
 
 	/**
@@ -59,7 +65,10 @@ class WidgetRenderer
 			'featured-event' => $this->renderFeaturedEvent( $config ),
 			'event-registration' => $this->renderEventRegistration( $config ),
 			'contact' => $this->renderContact( $config ),
-			'donation' => $this->renderDonation( $config ),
+			'payment', 'donation' => $this->renderPayment( $config ),
+			'products' => $this->renderStore( 'products', $config ),
+			'product' => $this->renderStore( 'product', $config ),
+			'cart' => $this->renderStore( 'cart', $config ),
 			default => $this->renderUnknownWidget( $widgetType )
 		};
 	}
@@ -228,26 +237,58 @@ class WidgetRenderer
 	}
 
 	/**
-	 * Render donation form widget
+	 * Render payment / donation form widget
 	 *
 	 * Attributes:
-	 * - form: Donation form key from config (default: configured default_form)
+	 * - form: Payment form key from config (default: configured default_form)
 	 * - title: Optional heading override
 	 * - button: Optional submit button label override
 	 *
 	 * @param array<string, mixed> $config
 	 * @return string
 	 */
-	private function renderDonation( array $config ): string
+	private function renderPayment( array $config ): string
 	{
 		if( !$this->_settings )
 		{
-			return "<!-- Donation widget requires SettingManager -->";
+			return "<!-- Payment widget requires SettingManager -->";
 		}
 
-		$widget = new DonationWidget( new DonationService( $this->_settings ) );
+		$widget = new PaymentWidget( new PaymentService( $this->_settings ) );
 
 		return $widget->render( $config );
+	}
+
+	/**
+	 * Render a storefront widget ( products grid, single product, or cart link )
+	 *
+	 * Attributes ( products ): limit, title
+	 * Attributes ( product ): id or slug
+	 * Attributes ( cart ): label
+	 *
+	 * @param string $mode One of 'products', 'product', 'cart'
+	 * @param array<string, mixed> $config
+	 * @return string
+	 */
+	private function renderStore( string $mode, array $config ): string
+	{
+		if( !$this->_settings || !$this->_productRepository )
+		{
+			return "<!-- Store widget requires SettingManager and ProductRepository -->";
+		}
+
+		$widget = new StoreWidget(
+			$this->_productRepository,
+			new StoreService( $this->_settings ),
+			new CartService( $this->_productRepository )
+		);
+
+		return match( $mode )
+		{
+			'product' => $widget->renderProduct( $config ),
+			'cart'    => $widget->renderCart( $config ),
+			default   => $widget->renderProducts( $config )
+		};
 	}
 
 	/**

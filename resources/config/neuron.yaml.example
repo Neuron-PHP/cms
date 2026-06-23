@@ -249,36 +249,32 @@ contact:
         - { name: email,   label: "Email",     type: email,    required: true, reply_to: true }
         - { name: message, label: "Message",   type: textarea, required: true, rules: { length: { min: 10, max: 4000 } } }
 
-# Payments Gateway Configuration
-# Required only by sites that take payments/donations. Install the optional
-# package first:  composer require neuron-php/payments
+# Payments & Subscriptions Configuration
+# Required only by sites that take payments (donations, memberships, ...).
+# Install the optional package first:  composer require neuron-php/payments
 #
-# Keep the secret_key and webhook_secret in your encrypted secrets file
-# (secrets.yml.enc), NOT in this committed config. Only the provider/currency
-# are safe to keep here.
+# A single engine drives every payment form via the [payment form="key"]
+# shortcode ( [donation] is a friendly alias ). One-time payments and recurring
+# subscriptions are both supported; each renewal is recorded and the
+# subscription lifecycle ( renewals, cancellations, failed payments ) is driven
+# by a signed webhook at /payments/webhook.
 #
+# Keep secret_key and webhook_secret in your encrypted secrets file
+# (secrets.yml.enc), NOT in this committed config. Only provider/currency and
+# the non-secret form definitions are safe to keep here.
+#
+# Gateway keys:
 #   provider        stripe (only supported provider today)
 #   secret_key      Stripe secret API key (sk_live_... / sk_test_...)
 #   publishable_key Stripe publishable key (pk_...), if you need it client-side
-#   webhook_secret  Stripe signing secret for /donations/webhook (whsec_...)
+#   webhook_secret  Stripe signing secret for /payments/webhook (whsec_...)
 #   currency        ISO 4217 currency code (default: usd)
-payments:
-  provider: stripe
-  secret_key: ""
-  publishable_key: ""
-  webhook_secret: ""
-  currency: usd
-
-# Donation Form Configuration
-# Drives the built-in [donation form="key"] shortcode. A donation is a real
-# payment processed by the configured gateway via hosted Stripe Checkout, then
-# confirmed asynchronously by a signed webhook (/donations/webhook). Donor
-# contact fields reuse the same field definitions as the contact form.
 #
-# Per-form keys:
+# Form keys (under payments.forms):
+#   purpose             what the payment is for: donation (default), membership, ...
 #   label               heading shown above the form
 #   button              submit button label
-#   to                  internal email notified when a donation completes
+#   to                  internal email notified when a payment completes
 #   product_name        line-item label shown on the Stripe Checkout page
 #   success_message     thank-you message on the success page
 #   amounts             preset amount tiers in major units (e.g. dollars)
@@ -286,13 +282,23 @@ payments:
 #   min_amount          minimum accepted amount in major units
 #   frequencies         allowed cadences: one_time, monthly, quarterly,
 #                       semiannual, annual (omit/[] for one-time only)
-#   fields              donor fields (same schema as contact form fields)
-donations:
-  default_form: general          # Form rendered by a bare [donation] shortcode
-  success_url: "/donations/success"
-  cancel_url: "/donations/cancel"
+#   fields              payer fields (same schema as contact form fields)
+#
+# Backward compatibility: a legacy top-level `donations:` section (with the same
+# default_form/success_url/cancel_url/forms keys) is still read if `payments`
+# has no forms, so existing donation configs keep working.
+payments:
+  provider: stripe
+  secret_key: ""
+  publishable_key: ""
+  webhook_secret: ""
+  currency: usd
+  default_form: general          # Form rendered by a bare [payment]/[donation] shortcode
+  success_url: "/payments/success"
+  cancel_url: "/payments/cancel"
   forms:
     general:
+      purpose: donation
       label: "Make a Donation"
       button: "Donate"
       to: "info@yourdomain.com"
@@ -306,3 +312,31 @@ donations:
         - { name: name,  label: "Your Name", type: text,  required: true, sender_name: true, rules: { length: { min: 2, max: 80 } } }
         - { name: email, label: "Email",     type: email, required: true, reply_to: true }
         - { name: phone, label: "Phone",     type: tel,   required: false }
+
+# ---------------------------------------------------------------------------
+# Store / products ( optional )
+#
+# The catalog itself is managed in the admin ( Content > Products ), not here.
+# A cart purchase is recorded as a payment with purpose "order" and reuses the
+# same Stripe gateway, webhook ( /payments/webhook ), and admin as donations.
+# This section only configures the storefront return URLs and notifications.
+#
+#   title               heading for a bare [products] grid
+#   currency            ISO 4217 ( defaults to payments.currency )
+#   success_url         return URL after a completed order
+#   cancel_url          return URL when the buyer cancels
+#   notification_email  internal recipient for new-order notifications
+#   notification_subject / receipt_subject  optional email subject overrides
+#
+# Shortcodes:
+#   [products]                 grid of active products with add-to-cart
+#   [products limit="6"]       capped grid
+#   [product id="3"]           a single product card
+#   [product slug="t-shirt"]   a single product card by slug
+#   [cart]                     a cart link / summary button
+store:
+  title: "Shop"
+  currency: usd
+  success_url: "/store/success"
+  cancel_url: "/store/cancel"
+  notification_email: "orders@yourdomain.com"

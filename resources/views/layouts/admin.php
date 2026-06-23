@@ -47,7 +47,11 @@
 							<li><a class="dropdown-item" href="<?= route_path('admin_event_registrations') ?>"><i class="bi bi-person-check me-2"></i>Event Registrations</a></li>
 							<li><hr class="dropdown-divider"></li>
 							<li><a class="dropdown-item" href="<?= route_path('admin_contact_submissions') ?>"><i class="bi bi-envelope me-2"></i>Contact Submissions</a></li>
-							<li><a class="dropdown-item" href="<?= route_path('admin_donations') ?>"><i class="bi bi-cash-coin me-2"></i>Donations</a></li>
+							<li><a class="dropdown-item" href="<?= route_path('admin_payments') ?>"><i class="bi bi-cash-coin me-2"></i>Payments</a></li>
+							<li><a class="dropdown-item" href="<?= route_path('admin_subscriptions') ?>"><i class="bi bi-arrow-repeat me-2"></i>Subscriptions</a></li>
+							<li><hr class="dropdown-divider"></li>
+							<li><a class="dropdown-item" href="<?= route_path('admin_products') ?>"><i class="bi bi-box-seam me-2"></i>Products</a></li>
+							<li><a class="dropdown-item" href="<?= route_path('admin_orders') ?>"><i class="bi bi-bag-check me-2"></i>Orders</a></li>
 						</ul>
 					</li>
 					<li class="nav-item dropdown">
