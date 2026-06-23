@@ -56,6 +56,34 @@
 			</div>
 		</div>
 
+		<h6 class="text-muted mt-4 mb-2">Commerce</h6>
+		<div class="row g-3 mb-4">
+			<div class="col-12 col-sm-6 col-lg-3">
+				<a href="<?= route_path('admin_products') ?>" class="btn btn-outline-success w-100 py-3">
+					<i class="bi bi-box-seam d-block mb-2" style="font-size: 1.5rem;"></i>
+					Products
+				</a>
+			</div>
+			<div class="col-12 col-sm-6 col-lg-3">
+				<a href="<?= route_path('admin_orders') ?>" class="btn btn-outline-success w-100 py-3">
+					<i class="bi bi-bag-check d-block mb-2" style="font-size: 1.5rem;"></i>
+					Orders
+				</a>
+			</div>
+			<div class="col-12 col-sm-6 col-lg-3">
+				<a href="<?= route_path('admin_payments') ?>" class="btn btn-outline-success w-100 py-3">
+					<i class="bi bi-cash-coin d-block mb-2" style="font-size: 1.5rem;"></i>
+					Payments
+				</a>
+			</div>
+			<div class="col-12 col-sm-6 col-lg-3">
+				<a href="<?= route_path('admin_subscriptions') ?>" class="btn btn-outline-success w-100 py-3">
+					<i class="bi bi-arrow-repeat d-block mb-2" style="font-size: 1.5rem;"></i>
+					Subscriptions
+				</a>
+			</div>
+		</div>
+
 		<h6 class="text-muted mt-4 mb-2">Users & Settings</h6>
 		<div class="row g-3 mb-4">
 			<div class="col-12 col-sm-6 col-lg-3">

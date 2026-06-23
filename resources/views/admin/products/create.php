@@ -26,3 +26,5 @@
 		</div>
 	</div>
 </div>
+
+<?php include __DIR__ . '/../../partials/media-picker-modal.php'; ?>
