@@ -4,9 +4,10 @@
  *
  * Expects $product ( array|null ).
  */
-$product = $product ?? null;
-$price   = $product !== null ? number_format( ( (int) ( $product['price_cents'] ?? 0 ) ) / 100, 2, '.', '' ) : '';
-$active  = $product === null ? true : ( (int) ( $product['active'] ?? 0 ) === 1 );
+$product  = $product ?? null;
+$price    = $product !== null ? number_format( ( (int) ( $product['price_cents'] ?? 0 ) ) / 100, 2, '.', '' ) : '';
+$active   = $product === null ? true : ( (int) ( $product['active'] ?? 0 ) === 1 );
+$imageUrl = (string) ( $product['image_url'] ?? '' );
 ?>
 <div class="mb-3">
 	<label for="name" class="form-label">Name <span class="text-danger">*</span></label>
@@ -34,10 +35,26 @@ $active  = $product === null ? true : ( (int) ( $product['active'] ?? 0 ) === 1 
 </div>
 
 <div class="mb-3">
-	<label for="image_url" class="form-label">Image URL</label>
-	<input type="text" class="form-control" id="image_url" name="image_url" value="<?= htmlspecialchars( (string) ( $product['image_url'] ?? '' ) ) ?>" placeholder="https://...">
-	<div class="form-text">Paste a media URL or external image link.</div>
+	<label for="image_url" class="form-label">Image</label>
+	<div class="input-group">
+		<input type="text" class="form-control" id="image_url" name="image_url" value="<?= htmlspecialchars( $imageUrl ) ?>" placeholder="Enter URL or browse from media library">
+		<button type="button" class="btn btn-outline-secondary" onclick="openMediaPicker('image_url')">
+			<i class="bi bi-images"></i> Browse
+		</button>
+	</div>
+	<div class="mt-2">
+		<img id="image_url_preview" class="img-thumbnail <?= $imageUrl === '' ? 'd-none' : '' ?>" style="max-width: 300px;" src="<?= htmlspecialchars( $imageUrl ) ?>" alt="Product image preview">
+	</div>
+	<div class="form-text">Pick from the media library, upload a new image, or paste a URL.</div>
 </div>
+<script>
+document.getElementById('image_url').addEventListener('change', function() {
+	const preview = document.getElementById('image_url_preview');
+	const url = this.value.trim();
+	if( url ) { preview.src = url; preview.classList.remove('d-none'); }
+	else { preview.classList.add('d-none'); }
+});
+</script>
 
 <div class="mb-3">
 	<label for="description" class="form-label">Description</label>
