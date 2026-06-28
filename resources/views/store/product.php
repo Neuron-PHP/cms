@@ -7,11 +7,28 @@ $money = static function( $cents, $currency ): string {
 	return $symbol . number_format( ( (int) $cents ) / 100, 2 ) . ( $symbol === '' ? ' ' . strtoupper( $currency ) : '' );
 };
 
-$p = $Product ?? [];
+$p          = $Product ?? [];
+$cartCount  = (int) ( $Cart['count'] ?? 0 );
 ?>
 <section class="py-4">
 	<div class="container">
-		<nav class="mb-3"><a href="/store" class="text-decoration-none">&larr; Back to shop</a></nav>
+		<nav class="mb-3 d-flex justify-content-between align-items-center">
+			<span>
+				<a href="#" onclick="if(history.length>1){history.back();return false;}" class="text-decoration-none">&larr; Back</a>
+				<a href="/store" class="text-decoration-none ms-3">Continue shopping</a>
+			</span>
+			<a href="/cart" class="btn btn-outline-primary btn-sm">
+				<i class="bi bi-cart3"></i> Cart
+				<span class="badge bg-primary"><?= $cartCount ?></span>
+			</a>
+		</nav>
+
+		<?php if( !empty( $Success ) ): ?>
+			<div class="alert alert-success"><?= htmlspecialchars( (string) $Success ) ?></div>
+		<?php endif; ?>
+		<?php if( !empty( $Error ) ): ?>
+			<div class="alert alert-danger"><?= htmlspecialchars( (string) $Error ) ?></div>
+		<?php endif; ?>
 
 		<div class="row g-4">
 			<?php if( !empty( $p['image_url'] ) ): ?>

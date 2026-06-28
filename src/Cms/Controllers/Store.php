@@ -92,6 +92,21 @@ class Store extends Content
 	}
 
 	/**
+	 * Live cart summary for the floating cart button ( JSON ).
+	 */
+	#[Get('/cart/count', name: 'cart_count')]
+	public function countJson( Request $request ): string
+	{
+		$cart = $this->_cart->resolve();
+
+		return $this->renderJson( HttpResponseStatus::OK, [
+			'count'       => (int) $cart['count'],
+			'total_cents' => (int) $cart['total_cents'],
+			'currency'    => (string) $cart['currency']
+		] );
+	}
+
+	/**
 	 * Catalog listing of active products.
 	 */
 	#[Get('/store', name: 'store_index')]
@@ -125,6 +140,8 @@ class Store extends Content
 	{
 		$this->initializeCsrfToken();
 
+		[ $success, $error ] = $this->consumeFlash();
+
 		$slug    = (string) $request->getRouteParameter( 'slug' );
 		$product = $this->_products->findBySlug( $slug );
 
@@ -148,7 +165,9 @@ class Store extends Content
 				'Title'       => $this->getName() . ' | ' . ( $product['name'] ?? 'Product' ),
 				'Description' => substr( strip_tags( (string) ( $product['description'] ?? '' ) ), 0, 160 ),
 				'Product'     => $product,
-				'Cart'        => $this->_cart->resolve()
+				'Cart'        => $this->_cart->resolve(),
+				'Success'     => $success,
+				'Error'       => $error
 			],
 			'product',
 			'default'
@@ -197,7 +216,20 @@ class Store extends Content
 
 		$this->_cart->add( $productId, $quantity > 0 ? $quantity : 1 );
 
-		$this->redirectToUrl( '/cart', [ 'success', 'Added to your cart.' ] );
+		// Stay on the page the buyer added from ( an embedded shortcode page, the
+		// catalog, or a product detail page ); the floating cart button reflects
+		// the new count and provides the path to checkout. Falls back to the cart
+		// page when no referer is available.
+		//
+		// Only flash when returning to a store-owned page ( /store, /cart ), since
+		// arbitrary CMS pages that host the shortcode never read flashes and would
+		// otherwise leave the message to surface stale on a later store visit.
+		$referer = (string) ( $_SERVER['HTTP_REFERER'] ?? '' );
+		$flash   = preg_match( '#/(store|cart)(/|$|\?|\#)#', $referer ) === 1
+			? [ 'success', 'Added to your cart.' ]
+			: null;
+
+		$this->redirectBack( '/cart', $flash );
 	}
 
 	/**
