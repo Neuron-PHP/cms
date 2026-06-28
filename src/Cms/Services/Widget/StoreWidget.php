@@ -218,8 +218,13 @@ class StoreWidget
 	}
 
 	/**
-	 * Inline script ( once per page ) that fetches a fresh CSRF token and injects
-	 * it into every store form, keeping cached markup valid.
+	 * Inline script ( once per page ) that powers the embedded storefront:
+	 *
+	 *   1. Fetches a fresh CSRF token and injects it into every store form, so the
+	 *      add-to-cart buttons keep working even on cached pages.
+	 *   2. Renders a floating cart button ( bottom-right ) whenever the cart has
+	 *      items, giving a persistent path to checkout from any page that hosts a
+	 *      store shortcode. The button links to /cart and shows the live count.
 	 *
 	 * @return string
 	 */
@@ -230,7 +235,8 @@ class StoreWidget
 (function() {
 	if( window.__storeFormTokenInit ) { return; }
 	window.__storeFormTokenInit = true;
-	document.addEventListener('DOMContentLoaded', function() {
+
+	function fillTokens() {
 		fetch('/store/token', { headers: { 'Accept': 'application/json' }, credentials: 'same-origin' })
 			.then(function(r) { return r.json(); })
 			.then(function(data) {
@@ -240,6 +246,39 @@ class StoreWidget
 				});
 			})
 			.catch(function() {});
+	}
+
+	function buildCartButton() {
+		if( document.getElementById('neuron-cart-fab') ) { return; }
+		var fab = document.createElement('a');
+		fab.id = 'neuron-cart-fab';
+		fab.href = '/cart';
+		fab.className = 'btn btn-primary rounded-pill shadow position-fixed';
+		fab.style.cssText = 'right:1.25rem;bottom:1.25rem;z-index:1050;padding:.65rem 1.1rem;display:none;';
+		fab.setAttribute('aria-label', 'View cart');
+		fab.innerHTML = '<i class="bi bi-cart3"></i> <span class="ms-1">Cart</span>'
+			+ ' <span id="neuron-cart-fab-count" class="badge bg-light text-dark ms-1">0</span>';
+		document.body.appendChild(fab);
+	}
+
+	function refreshCart() {
+		fetch('/cart/count', { headers: { 'Accept': 'application/json' }, credentials: 'same-origin' })
+			.then(function(r) { return r.json(); })
+			.then(function(data) {
+				var fab = document.getElementById('neuron-cart-fab');
+				if( !fab || !data ) { return; }
+				var count = parseInt(data.count, 10) || 0;
+				var label = document.getElementById('neuron-cart-fab-count');
+				if( label ) { label.textContent = count; }
+				fab.style.display = count > 0 ? 'inline-block' : 'none';
+			})
+			.catch(function() {});
+	}
+
+	document.addEventListener('DOMContentLoaded', function() {
+		fillTokens();
+		buildCartButton();
+		refreshCart();
 	});
 })();
 </script>

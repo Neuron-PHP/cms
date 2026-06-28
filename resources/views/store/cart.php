@@ -65,7 +65,10 @@ $currency = $cart['currency'] ?? 'usd';
 						</tfoot>
 					</table>
 				</div>
-				<button type="submit" class="btn btn-outline-secondary"><i class="bi bi-arrow-clockwise"></i> Update cart</button>
+				<div class="d-flex gap-2">
+					<button type="submit" class="btn btn-outline-secondary"><i class="bi bi-arrow-clockwise"></i> Update cart</button>
+					<a href="/store" class="btn btn-link" onclick="if(history.length>1){history.back();return false;}"><i class="bi bi-arrow-left"></i> Continue shopping</a>
+				</div>
 			</form>
 
 			<?php foreach( $items as $item ): ?>
