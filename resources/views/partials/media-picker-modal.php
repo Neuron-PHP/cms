@@ -321,6 +321,30 @@
 	const uploadError = document.getElementById('mediaPickerUploadError');
 	const uploadSuccess = document.getElementById('mediaPickerUploadSuccess');
 
+	// CSRF tokens are single-use, so fetch a fresh one for every upload rather
+	// than reuse the (possibly already-consumed) token from the page meta tag.
+	function freshCsrfToken() {
+		return fetch('<?= route_path('admin_csrf_token') ?>', {
+			headers: { 'Accept': 'application/json' },
+			credentials: 'same-origin'
+		})
+		.then(r => r.json())
+		.then(d => (d && d.token) ? d.token : '')
+		.catch(() => document.querySelector('meta[name="csrf-token"]')?.content || '');
+	}
+
+	// Read a response as JSON, surfacing a clear message when the server returns
+	// non-JSON (e.g. an expired session or a rejected CSRF token redirect).
+	function parseJsonResponse(response) {
+		return response.text().then(text => {
+			try {
+				return JSON.parse(text);
+			} catch (e) {
+				throw new Error('Your session may have expired. Please refresh the page and try again.');
+			}
+		});
+	}
+
 	uploadBtn?.addEventListener('click', function() {
 		if (!imageFile.files.length) {
 			uploadError.textContent = 'Please select a file';
@@ -339,14 +363,14 @@
 		// Disable button during upload
 		uploadBtn.disabled = true;
 
-		fetch('<?= route_path('admin_media_upload') ?>', {
+		freshCsrfToken().then(token => fetch('<?= route_path('admin_media_upload') ?>', {
 			method: 'POST',
 			body: formData,
 			headers: {
-				'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]')?.content || ''
+				'X-CSRF-Token': token
 			}
-		})
-		.then(response => response.json())
+		}))
+		.then(parseJsonResponse)
 		.then(data => {
 			uploadProgress.classList.add('d-none');
 			uploadBtn.disabled = false;

@@ -89,7 +89,8 @@ class Pages extends Content
 				'Title' => $pageTitle,
 				'Description' => $page->getMetaDescription() ?: $this->getDescription(),
 				'MetaKeywords' => $page->getMetaKeywords(),
-				'Template' => $page->getTemplate()
+				'Template' => $page->getTemplate(),
+				'ShowDates' => $this->_settings->get( 'pages', 'show_dates' ) ?? true
 			],
 			'show'
 		);

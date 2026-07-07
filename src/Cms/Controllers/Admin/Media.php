@@ -5,6 +5,7 @@ namespace Neuron\Cms\Controllers\Admin;
 use Neuron\Cms\Auth\SessionManager;
 use Neuron\Cms\Enums\FlashMessageType;
 use Neuron\Cms\Controllers\Content;
+use Neuron\Cms\Services\Auth\CsrfToken;
 use Neuron\Cms\Services\Media\CloudinaryUploader;
 use Neuron\Cms\Services\Media\MediaValidator;
 use Neuron\Data\Settings\SettingManager;
@@ -140,6 +141,25 @@ class Media extends Content
 				])
 				->render( 'index', 'admin' );
 		}
+	}
+
+	/**
+	 * Issue a fresh CSRF token for AJAX media actions.
+	 *
+	 * CSRF tokens are single-use ( consumed on validation ), so AJAX flows that
+	 * stay on the page — the media picker modal and the library's upload / delete
+	 * buttons — must request a fresh token before each request rather than reuse
+	 * the one rendered into the page <meta> tag.
+	 *
+	 * @param Request $request
+	 * @return string JSON response { token }
+	 */
+	#[Get('/csrf-token', name: 'admin_csrf_token')]
+	public function csrfToken( Request $request ): string
+	{
+		$csrf = new CsrfToken( $this->getSessionManager() );
+
+		return $this->renderJson( HttpResponseStatus::OK, [ 'token' => $csrf->getToken() ] );
 	}
 
 	/**

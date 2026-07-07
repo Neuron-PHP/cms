@@ -146,6 +146,30 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+	// CSRF tokens are single-use, so fetch a fresh one for every AJAX action
+	// rather than reuse the (possibly already-consumed) page meta token.
+	function freshCsrfToken() {
+		return fetch('<?= route_path('admin_csrf_token') ?>', {
+			headers: { 'Accept': 'application/json' },
+			credentials: 'same-origin'
+		})
+		.then(r => r.json())
+		.then(d => (d && d.token) ? d.token : '')
+		.catch(() => document.querySelector('meta[name="csrf-token"]')?.content || '');
+	}
+
+	// Read a response as JSON, surfacing a clear message when the server returns
+	// non-JSON (e.g. an expired session or a rejected CSRF token redirect).
+	function parseJsonResponse(response) {
+		return response.text().then(text => {
+			try {
+				return JSON.parse(text);
+			} catch (e) {
+				throw new Error('Your session may have expired. Please refresh the page and try again.');
+			}
+		});
+	}
+
 	// Copy URL functionality
 	document.querySelectorAll('.copy-url-btn').forEach(btn => {
 		btn.addEventListener('click', function() {
@@ -180,14 +204,14 @@ document.addEventListener('DOMContentLoaded', function() {
 			const formData = new FormData();
 			formData.append('public_id', publicId);
 
-			fetch('<?= route_path('admin_media_delete') ?>', {
+			freshCsrfToken().then(token => fetch('<?= route_path('admin_media_delete') ?>', {
 				method: 'POST',
 				body: formData,
 				headers: {
-					'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || ''
+					'X-CSRF-TOKEN': token
 				}
-			})
-			.then(response => response.json())
+			}))
+			.then(parseJsonResponse)
 			.then(data => {
 				if (data.success) {
 					// Remove the image card from the grid
@@ -228,14 +252,14 @@ document.addEventListener('DOMContentLoaded', function() {
 		// Disable button during upload
 		uploadBtn.disabled = true;
 
-		fetch('<?= route_path('admin_media_upload') ?>', {
+		freshCsrfToken().then(token => fetch('<?= route_path('admin_media_upload') ?>', {
 			method: 'POST',
 			body: formData,
 			headers: {
-				'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || ''
+				'X-CSRF-TOKEN': token
 			}
-		})
-		.then(response => response.json())
+		}))
+		.then(parseJsonResponse)
 		.then(data => {
 			uploadProgress.classList.add('d-none');
 			uploadBtn.disabled = false;

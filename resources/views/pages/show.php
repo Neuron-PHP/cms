@@ -10,8 +10,12 @@
  *
  * Falls back to the page model's template when no Template var is provided
  * (keeps the view self-contained regardless of the calling controller).
+ *
+ * $ShowDates (pages.show_dates setting) controls whether the published/updated
+ * dates are rendered; defaults to true when the controller doesn't provide it.
  */
 $template = $Template ?? ( isset( $Page ) ? $Page->getTemplate() : 'default' );
+$showDates = $ShowDates ?? true;
 
 $isLanding   = ( $template === 'landing' );
 $isFullWidth = ( $template === 'full-width' );
@@ -28,7 +32,7 @@ $contentColClass = $isSidebar ? 'col-lg-8' : 'col-12';
 					<header class="page-header mb-5">
 						<h1 class="display-4 mb-3"><?= htmlspecialchars( $Page->getTitle() ) ?></h1>
 
-						<?php if( $Page->getPublishedAt() ): ?>
+						<?php if( $showDates && $Page->getPublishedAt() ): ?>
 							<div class="text-muted mb-3">
 								<small>
 									<i class="bi bi-calendar3"></i>
@@ -37,7 +41,7 @@ $contentColClass = $isSidebar ? 'col-lg-8' : 'col-12';
 							</div>
 						<?php endif; ?>
 
-						<?php if( $Page->getUpdatedAt() ): ?>
+						<?php if( $showDates && $Page->getUpdatedAt() ): ?>
 							<div class="text-muted mb-3">
 								<small>
 									<i class="bi bi-clock"></i>
@@ -83,13 +87,13 @@ $contentColClass = $isSidebar ? 'col-lg-8' : 'col-12';
 					<div class="card-body">
 						<h2 class="h6 text-uppercase text-muted mb-3">Page Info</h2>
 						<ul class="list-unstyled small mb-0">
-							<?php if( $Page->getPublishedAt() ): ?>
+							<?php if( $showDates && $Page->getPublishedAt() ): ?>
 								<li class="mb-2">
 									<i class="bi bi-calendar3 me-1"></i>
 									Published <?= $Page->getPublishedAt()->format( 'F j, Y' ) ?>
 								</li>
 							<?php endif; ?>
-							<?php if( $Page->getUpdatedAt() ): ?>
+							<?php if( $showDates && $Page->getUpdatedAt() ): ?>
 								<li class="mb-2">
 									<i class="bi bi-clock me-1"></i>
 									Updated <?= $Page->getUpdatedAt()->format( 'F j, Y' ) ?>

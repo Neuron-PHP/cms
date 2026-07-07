@@ -46,6 +46,11 @@ theme:
   # Guest theme (for public website and login/registration pages)
   guest: sandstone
 
+# Pages Configuration
+pages:
+  # Display "Published on" / "Last updated" dates on public pages
+  show_dates: true
+
 # Security Configuration
 security:
   # Content Security Policy (CSP)

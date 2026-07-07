@@ -79,6 +79,11 @@ theme:
   # Recommended: sandstone, flatly, cosmo, litera, lumen, minty
   guest: sandstone
 
+# Pages Configuration
+# Controls the public page display
+pages:
+  show_dates: true  # Display "Published on" / "Last updated" dates on public pages
+
 # Cloudinary Configuration
 # Sign up for free at: https://cloudinary.com
 # Get credentials from: https://console.cloudinary.com/settings/general
