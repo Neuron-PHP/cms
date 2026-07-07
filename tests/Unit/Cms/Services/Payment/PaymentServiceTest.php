@@ -104,6 +104,38 @@ class PaymentServiceTest extends TestCase
 		$this->assertSame( 'Alice', $payer['name'] );
 	}
 
+	public function testResolvePayerJoinsSplitNameFields(): void
+	{
+		$service = $this->service( $this->paymentsConfig() );
+
+		$fields = [
+			[ 'name' => 'first_name', 'type' => 'text', 'sender_name' => true ],
+			[ 'name' => 'last_name', 'type' => 'text', 'sender_name' => true ],
+			[ 'name' => 'email', 'type' => 'email', 'reply_to' => true ]
+		];
+
+		$values = [ 'first_name' => 'Jane', 'last_name' => 'Doe', 'email' => 'jane@example.com' ];
+
+		$payer = $service->resolvePayer( $fields, $values );
+
+		$this->assertSame( 'jane@example.com', $payer['email'] );
+		$this->assertSame( 'Jane Doe', $payer['name'] );
+	}
+
+	public function testResolvePayerSkipsEmptySplitNameParts(): void
+	{
+		$service = $this->service( $this->paymentsConfig() );
+
+		$fields = [
+			[ 'name' => 'first_name', 'type' => 'text', 'sender_name' => true ],
+			[ 'name' => 'last_name', 'type' => 'text', 'sender_name' => true ]
+		];
+
+		$payer = $service->resolvePayer( $fields, [ 'first_name' => 'Jane', 'last_name' => '' ] );
+
+		$this->assertSame( 'Jane', $payer['name'] );
+	}
+
 	public function testLegacyDonationsSectionIsStillRead(): void
 	{
 		$service = $this->service( [

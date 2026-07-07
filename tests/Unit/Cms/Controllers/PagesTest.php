@@ -180,6 +180,100 @@ class PagesTest extends TestCase
 		$this->assertEquals( '<html>Landing</html>', $result );
 	}
 
+	public function testShowDatesDefaultsToTrueWhenSettingNotSet(): void
+	{
+		$mockPage = $this->createMock( Page::class );
+		$mockPage->method( 'getId' )->willReturn( 1 );
+		$mockPage->method( 'getTitle' )->willReturn( 'Test Page' );
+		$mockPage->method( 'isPublished' )->willReturn( true );
+		$mockPage->method( 'getContent' )->willReturn( [ 'blocks' => [] ] );
+		$mockPage->method( 'getMetaTitle' )->willReturn( '' );
+		$mockPage->method( 'getMetaDescription' )->willReturn( '' );
+		$mockPage->method( 'getMetaKeywords' )->willReturn( '' );
+		$mockPage->method( 'getTemplate' )->willReturn( 'default' );
+
+		$mockPageRepository = $this->createMock( IPageRepository::class );
+		$mockPageRepository->method( 'findBySlug' )->willReturn( $mockPage );
+		$mockPageRepository->method( 'incrementViewCount' );
+
+		$mockRenderer = $this->createMock( EditorJsRenderer::class );
+		$mockRenderer->method( 'render' )->willReturn( '<p>Content</p>' );
+
+		$mockSettingManager = Registry::getInstance()->get( 'Settings' );
+		$mockSessionManager = $this->createMock( \Neuron\Cms\Auth\SessionManager::class );
+
+		$controller = $this->getMockBuilder( Pages::class )
+			->setConstructorArgs( [ $this->_mockApp, $mockSettingManager, $mockSessionManager, $mockPageRepository, $mockRenderer ] )
+			->onlyMethods( [ 'renderHtml' ] )
+			->getMock();
+
+		$controller->expects( $this->once() )
+			->method( 'renderHtml' )
+			->with(
+				$this->anything(),
+				$this->callback( function( $data ) {
+					return isset( $data['ShowDates'] ) && $data['ShowDates'] === true;
+				} ),
+				'show'
+			)
+			->willReturn( '<html>Page</html>' );
+
+		$request = new Request();
+		$request->setRouteParameters( [ 'slug' => 'test-page' ] );
+		$controller->show( $request );
+	}
+
+	public function testShowDatesDisabledBySetting(): void
+	{
+		$settings = new Memory();
+		$settings->set( 'site', 'name', 'Test Site' );
+		$settings->set( 'site', 'title', 'Test Title' );
+		$settings->set( 'site', 'description', 'Test Description' );
+		$settings->set( 'site', 'url', 'http://test.com' );
+		$settings->set( 'paths', 'version_file', $this->_versionFilePath );
+		$settings->set( 'pages', 'show_dates', false );
+		$settingManager = new SettingManager( $settings );
+
+		$mockPage = $this->createMock( Page::class );
+		$mockPage->method( 'getId' )->willReturn( 1 );
+		$mockPage->method( 'getTitle' )->willReturn( 'Test Page' );
+		$mockPage->method( 'isPublished' )->willReturn( true );
+		$mockPage->method( 'getContent' )->willReturn( [ 'blocks' => [] ] );
+		$mockPage->method( 'getMetaTitle' )->willReturn( '' );
+		$mockPage->method( 'getMetaDescription' )->willReturn( '' );
+		$mockPage->method( 'getMetaKeywords' )->willReturn( '' );
+		$mockPage->method( 'getTemplate' )->willReturn( 'default' );
+
+		$mockPageRepository = $this->createMock( IPageRepository::class );
+		$mockPageRepository->method( 'findBySlug' )->willReturn( $mockPage );
+		$mockPageRepository->method( 'incrementViewCount' );
+
+		$mockRenderer = $this->createMock( EditorJsRenderer::class );
+		$mockRenderer->method( 'render' )->willReturn( '<p>Content</p>' );
+
+		$mockSessionManager = $this->createMock( \Neuron\Cms\Auth\SessionManager::class );
+
+		$controller = $this->getMockBuilder( Pages::class )
+			->setConstructorArgs( [ $this->_mockApp, $settingManager, $mockSessionManager, $mockPageRepository, $mockRenderer ] )
+			->onlyMethods( [ 'renderHtml' ] )
+			->getMock();
+
+		$controller->expects( $this->once() )
+			->method( 'renderHtml' )
+			->with(
+				$this->anything(),
+				$this->callback( function( $data ) {
+					return isset( $data['ShowDates'] ) && $data['ShowDates'] === false;
+				} ),
+				'show'
+			)
+			->willReturn( '<html>Page</html>' );
+
+		$request = new Request();
+		$request->setRouteParameters( [ 'slug' => 'test-page' ] );
+		$controller->show( $request );
+	}
+
 	public function testShowThrowsNotFoundForNonexistentPage(): void
 	{
 		$mockPageRepository = $this->createMock( IPageRepository::class );

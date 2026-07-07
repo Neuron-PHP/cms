@@ -231,8 +231,8 @@ class PaymentService
 	 */
 	public function resolvePayer( array $fieldDefs, array $values ): array
 	{
-		$email = null;
-		$name  = null;
+		$email      = null;
+		$nameParts  = [];
 
 		foreach( $fieldDefs as $field )
 		{
@@ -250,11 +250,16 @@ class PaymentService
 				$email = $value;
 			}
 
-			if( !empty( $field['sender_name'] ) && $name === null )
+			// Collect every field flagged as part of the payer's name ( e.g. a
+			// split first / last name ) in declaration order so the full name is
+			// captured, not just the first field.
+			if( !empty( $field['sender_name'] ) && is_scalar( $value ) && trim( (string) $value ) !== '' )
 			{
-				$name = $value;
+				$nameParts[] = trim( (string) $value );
 			}
 		}
+
+		$name = $nameParts !== [] ? implode( ' ', $nameParts ) : null;
 
 		$email ??= ( $values['email'] ?? null );
 		$name  ??= ( $values['name'] ?? null );
