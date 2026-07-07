@@ -1,4 +1,4 @@
-## 0.8.79
+## 0.8.79 2026-07-07
 * Dynamic cart button display.
 * Added toggle for page create/updated at dispaly.
 
