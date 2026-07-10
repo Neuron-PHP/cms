@@ -7,7 +7,7 @@
 
 ## 0.8.78 2026-06-28
 
-* Added more cart links and nagivgation.
+* Added more cart links and navigation.
 
 ## 0.8.77 2026-06-23
 
