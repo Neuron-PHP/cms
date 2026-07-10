@@ -50,6 +50,10 @@ theme:
 pages:
   # Display "Published on" / "Last updated" dates on public pages
   show_dates: true
+  # Display the "By <author>" byline on public pages
+  show_author: true
+  # Display the view counter on public pages
+  show_view_count: true
 
 # Security Configuration
 security:

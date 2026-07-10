@@ -1,13 +1,13 @@
 ## 0.8.80
+* Added toggle for author and page count.
 
 ## 0.8.79 2026-07-07
 * Dynamic cart button display.
-* Added toggle for page create/updated at dispaly.
+* Added toggle for page create/updated at display.
 
 ## 0.8.78 2026-06-28
 
 * Added more cart links and nagivgation.
-
 
 ## 0.8.77 2026-06-23
 
