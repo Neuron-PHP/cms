@@ -1,4 +1,4 @@
-## 0.8.80
+## 0.8.80 2026-07-10
 * Added toggle for author and page count.
 
 ## 0.8.79 2026-07-07
