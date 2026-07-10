@@ -83,6 +83,8 @@ theme:
 # Controls the public page display
 pages:
   show_dates: true  # Display "Published on" / "Last updated" dates on public pages
+  show_author: true  # Display the "By <author>" byline on public pages
+  show_view_count: true  # Display the view counter on public pages
 
 # Cloudinary Configuration
 # Sign up for free at: https://cloudinary.com

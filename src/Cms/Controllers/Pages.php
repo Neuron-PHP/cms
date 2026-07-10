@@ -90,7 +90,9 @@ class Pages extends Content
 				'Description' => $page->getMetaDescription() ?: $this->getDescription(),
 				'MetaKeywords' => $page->getMetaKeywords(),
 				'Template' => $page->getTemplate(),
-				'ShowDates' => $this->_settings->get( 'pages', 'show_dates' ) ?? true
+				'ShowDates' => $this->_settings->get( 'pages', 'show_dates' ) ?? true,
+				'ShowAuthor' => $this->_settings->get( 'pages', 'show_author' ) ?? true,
+				'ShowViewCount' => $this->_settings->get( 'pages', 'show_view_count' ) ?? true
 			],
 			'show'
 		);

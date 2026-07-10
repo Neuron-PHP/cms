@@ -180,7 +180,7 @@ class PagesTest extends TestCase
 		$this->assertEquals( '<html>Landing</html>', $result );
 	}
 
-	public function testShowDatesDefaultsToTrueWhenSettingNotSet(): void
+	public function testDisplayTogglesDefaultToTrueWhenSettingsNotSet(): void
 	{
 		$mockPage = $this->createMock( Page::class );
 		$mockPage->method( 'getId' )->willReturn( 1 );
@@ -212,7 +212,9 @@ class PagesTest extends TestCase
 			->with(
 				$this->anything(),
 				$this->callback( function( $data ) {
-					return isset( $data['ShowDates'] ) && $data['ShowDates'] === true;
+					return $data['ShowDates'] === true &&
+					       $data['ShowAuthor'] === true &&
+					       $data['ShowViewCount'] === true;
 				} ),
 				'show'
 			)
@@ -223,7 +225,7 @@ class PagesTest extends TestCase
 		$controller->show( $request );
 	}
 
-	public function testShowDatesDisabledBySetting(): void
+	public function testDisplayTogglesDisabledBySettings(): void
 	{
 		$settings = new Memory();
 		$settings->set( 'site', 'name', 'Test Site' );
@@ -232,6 +234,8 @@ class PagesTest extends TestCase
 		$settings->set( 'site', 'url', 'http://test.com' );
 		$settings->set( 'paths', 'version_file', $this->_versionFilePath );
 		$settings->set( 'pages', 'show_dates', false );
+		$settings->set( 'pages', 'show_author', false );
+		$settings->set( 'pages', 'show_view_count', false );
 		$settingManager = new SettingManager( $settings );
 
 		$mockPage = $this->createMock( Page::class );
@@ -263,7 +267,9 @@ class PagesTest extends TestCase
 			->with(
 				$this->anything(),
 				$this->callback( function( $data ) {
-					return isset( $data['ShowDates'] ) && $data['ShowDates'] === false;
+					return $data['ShowDates'] === false &&
+					       $data['ShowAuthor'] === false &&
+					       $data['ShowViewCount'] === false;
 				} ),
 				'show'
 			)

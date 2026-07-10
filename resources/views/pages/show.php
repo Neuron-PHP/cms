@@ -11,11 +11,15 @@
  * Falls back to the page model's template when no Template var is provided
  * (keeps the view self-contained regardless of the calling controller).
  *
- * $ShowDates (pages.show_dates setting) controls whether the published/updated
- * dates are rendered; defaults to true when the controller doesn't provide it.
+ * $ShowDates, $ShowAuthor and $ShowViewCount (pages.show_dates / show_author /
+ * show_view_count settings) control whether the published/updated dates, the
+ * author byline and the view counter are rendered; each defaults to true when
+ * the controller doesn't provide it.
  */
 $template = $Template ?? ( isset( $Page ) ? $Page->getTemplate() : 'default' );
-$showDates = $ShowDates ?? true;
+$showDates     = $ShowDates ?? true;
+$showAuthor    = $ShowAuthor ?? true;
+$showViewCount = $ShowViewCount ?? true;
 
 $isLanding   = ( $template === 'landing' );
 $isFullWidth = ( $template === 'full-width' );
@@ -58,30 +62,39 @@ $contentColClass = $isSidebar ? 'col-lg-8' : 'col-12';
 					<?= $ContentHtml ?>
 				</div>
 
-				<?php if( !$isLanding && !$isSidebar ): ?>
+				<?php if( !$isLanding && !$isSidebar && ( ( $showAuthor && $Page->getAuthor() ) || $showViewCount ) ): ?>
 					<footer class="page-footer mt-5 pt-4 border-top">
 						<div class="row">
 							<div class="col-md-6">
-								<?php if( $Page->getAuthor() ): ?>
+								<?php if( $showAuthor && $Page->getAuthor() ): ?>
 									<p class="text-muted small mb-0">
 										<i class="bi bi-person"></i>
 										By <?= htmlspecialchars( $Page->getAuthor()->getUsername() ) ?>
 									</p>
 								<?php endif; ?>
 							</div>
-							<div class="col-md-6 text-md-end">
-								<p class="text-muted small mb-0">
-									<i class="bi bi-eye"></i>
-									<?= $Page->getViewCount() ?> <?= $Page->getViewCount() === 1 ? 'view' : 'views' ?>
-								</p>
-							</div>
+							<?php if( $showViewCount ): ?>
+								<div class="col-md-6 text-md-end">
+									<p class="text-muted small mb-0">
+										<i class="bi bi-eye"></i>
+										<?= $Page->getViewCount() ?> <?= $Page->getViewCount() === 1 ? 'view' : 'views' ?>
+									</p>
+								</div>
+							<?php endif; ?>
 						</div>
 					</footer>
 				<?php endif; ?>
 			</article>
 		</div>
 
-		<?php if( $isSidebar ): ?>
+		<?php
+		$sidebarHasInfo = $isSidebar && (
+			( $showDates && ( $Page->getPublishedAt() || $Page->getUpdatedAt() ) )
+			|| ( $showAuthor && $Page->getAuthor() )
+			|| $showViewCount
+		);
+		?>
+		<?php if( $sidebarHasInfo ): ?>
 			<aside class="col-lg-4">
 				<div class="card border-0 shadow-sm">
 					<div class="card-body">
@@ -99,16 +112,18 @@ $contentColClass = $isSidebar ? 'col-lg-8' : 'col-12';
 									Updated <?= $Page->getUpdatedAt()->format( 'F j, Y' ) ?>
 								</li>
 							<?php endif; ?>
-							<?php if( $Page->getAuthor() ): ?>
+							<?php if( $showAuthor && $Page->getAuthor() ): ?>
 								<li class="mb-2">
 									<i class="bi bi-person me-1"></i>
 									By <?= htmlspecialchars( $Page->getAuthor()->getUsername() ) ?>
 								</li>
 							<?php endif; ?>
-							<li class="mb-0">
-								<i class="bi bi-eye me-1"></i>
-								<?= $Page->getViewCount() ?> <?= $Page->getViewCount() === 1 ? 'view' : 'views' ?>
-							</li>
+							<?php if( $showViewCount ): ?>
+								<li class="mb-0">
+									<i class="bi bi-eye me-1"></i>
+									<?= $Page->getViewCount() ?> <?= $Page->getViewCount() === 1 ? 'view' : 'views' ?>
+								</li>
+							<?php endif; ?>
 						</ul>
 					</div>
 				</div>
