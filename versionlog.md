@@ -1,4 +1,4 @@
-## 0.8.81
+## 0.8.81 2026-07-14
 * Added email test command.
 * Updated the dashboard with the contacts link.
 
