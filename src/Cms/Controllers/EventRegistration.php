@@ -35,7 +35,7 @@ class EventRegistration extends Content
 	/**
 	 * Honeypot field name; matches EventRegistrationWidget.
 	 */
-	private const HONEYPOT_FIELD = 'company_website';
+	private const HONEYPOT_FIELD = 'form_extra_field';
 
 	/**
 	 * Flash keys consumed by EventRegistrationWidget.

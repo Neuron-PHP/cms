@@ -50,6 +50,12 @@ class Provider
 			'Neuron\\Cms\\Cli\\Commands\\User\\ResetPasswordCommand'
 		);
 
+		// Email commands
+		$registry->register(
+			'cms:email:test',
+			'Neuron\\Cms\\Cli\\Commands\\Email\\TestCommand'
+		);
+
 		// Maintenance mode commands
 		$registry->register(
 			'cms:maintenance:enable',

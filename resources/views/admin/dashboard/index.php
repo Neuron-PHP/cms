@@ -107,6 +107,60 @@
 		</div>
 
 		<hr>
+
+		<div class="d-flex justify-content-between align-items-center mb-3">
+			<h5 class="mb-0">Recent Contact Submissions</h5>
+			<a href="<?= route_path('admin_contact_submissions') ?>" class="btn btn-sm btn-outline-primary">
+				View All<?= !empty( $TotalSubmissions ) ? ' (' . (int) $TotalSubmissions . ')' : '' ?>
+			</a>
+		</div>
+
+		<?php if( empty( $RecentSubmissions ) ): ?>
+			<p class="text-muted mb-4">No contact submissions yet.</p>
+		<?php else: ?>
+			<div class="table-responsive mb-4">
+				<table class="table table-hover align-middle mb-0">
+					<thead>
+						<tr>
+							<th>Form</th>
+							<th>From</th>
+							<th>Delivered</th>
+							<th>Received</th>
+							<th width="60"></th>
+						</tr>
+					</thead>
+					<tbody>
+						<?php foreach( $RecentSubmissions as $s ): ?>
+							<tr>
+								<td><span class="badge bg-secondary"><?= htmlspecialchars( (string) ( $s['form_key'] ?? '' ) ) ?></span></td>
+								<td>
+									<?php if( !empty( $s['reply_to_email'] ) ): ?>
+										<?= htmlspecialchars( trim( ( $s['reply_to_name'] ?? '' ) . ' <' . $s['reply_to_email'] . '>' ) ) ?>
+									<?php else: ?>
+										<span class="text-muted">-</span>
+									<?php endif; ?>
+								</td>
+								<td>
+									<?php if( !empty( $s['delivered'] ) ): ?>
+										<span class="badge bg-success">Delivered</span>
+									<?php else: ?>
+										<span class="badge bg-warning text-dark">Pending</span>
+									<?php endif; ?>
+								</td>
+								<td><?= htmlspecialchars( (string) ( $s['created_at'] ?? '' ) ) ?></td>
+								<td>
+									<a href="<?= route_path('admin_contact_submission_show', ['id' => $s['id']]) ?>" class="btn btn-sm btn-outline-primary" title="View">
+										<i class="bi bi-eye"></i>
+									</a>
+								</td>
+							</tr>
+						<?php endforeach; ?>
+					</tbody>
+				</table>
+			</div>
+		<?php endif; ?>
+
+		<hr>
 		<?php if($User->getLastLoginAt()): ?>
 			<p class="mb-0"><strong>Last Login:</strong> <?= format_user_datetime($User->getLastLoginAt(), 'F j, Y g:i A') ?></p>
 		<?php endif; ?>

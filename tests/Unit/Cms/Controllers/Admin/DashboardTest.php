@@ -3,6 +3,7 @@
 namespace Tests\Cms\Controllers\Admin;
 
 use Neuron\Cms\Controllers\Admin\Dashboard;
+use Neuron\Cms\Repositories\IContactSubmissionRepository;
 use Neuron\Data\Settings\Source\Memory;
 use Neuron\Data\Settings\SettingManager;
 use Neuron\Mvc\IMvcApplication;
@@ -109,5 +110,96 @@ class DashboardTest extends TestCase
 		$result = $controller->index( $request );
 
 		$this->assertEquals( '<html>Dashboard</html>', $result );
+	}
+
+	/**
+	 * @runInSeparateProcess
+	 * @preserveGlobalState disabled
+	 */
+	public function testIndexPassesRecentContactSubmissionsToView(): void
+	{
+		$submissions = [
+			[ 'id' => 2, 'form_key' => 'general', 'reply_to_email' => 'a@example.com', 'delivered' => 1, 'created_at' => '2026-07-14 12:00:00' ],
+			[ 'id' => 1, 'form_key' => 'volunteer', 'reply_to_email' => 'b@example.com', 'delivered' => 0, 'created_at' => '2026-07-13 09:00:00' ]
+		];
+
+		$repository = $this->createMock( IContactSubmissionRepository::class );
+		$repository->expects( $this->once() )
+			->method( 'paginate' )
+			->with( 1, 5 )
+			->willReturn( [ 'items' => $submissions, 'total' => 12, 'page' => 1, 'per_page' => 5, 'pages' => 3 ] );
+
+		$controller = $this->getMockBuilder( Dashboard::class )
+			->setConstructorArgs( [ $this->_mockApp, $this->mockSettingManager, $this->mockSessionManager, $repository ] )
+			->onlyMethods( [ 'view' ] )
+			->getMock();
+
+		$captured = [];
+
+		$mockViewContext = $this->getMockBuilder( ViewContext::class )
+			->disableOriginalConstructor()
+			->onlyMethods( [ 'title', 'description', 'withCurrentUser', 'withCsrfToken', 'with', 'render' ] )
+			->getMock();
+
+		$mockViewContext->method( 'title' )->willReturn( $mockViewContext );
+		$mockViewContext->method( 'description' )->willReturn( $mockViewContext );
+		$mockViewContext->method( 'withCurrentUser' )->willReturn( $mockViewContext );
+		$mockViewContext->method( 'withCsrfToken' )->willReturn( $mockViewContext );
+		$mockViewContext->method( 'with' )->willReturnCallback(
+			function( $key, $value = null ) use ( &$captured, $mockViewContext ) {
+				$captured[ $key ] = $value;
+				return $mockViewContext;
+			}
+		);
+		$mockViewContext->method( 'render' )->willReturn( '<html>Dashboard</html>' );
+
+		$controller->method( 'view' )->willReturn( $mockViewContext );
+
+		$controller->index( new Request() );
+
+		$this->assertSame( $submissions, $captured['RecentSubmissions'] );
+		$this->assertSame( 12, $captured['TotalSubmissions'] );
+	}
+
+	/**
+	 * @runInSeparateProcess
+	 * @preserveGlobalState disabled
+	 */
+	public function testIndexRendersWhenSubmissionRepositoryFails(): void
+	{
+		$repository = $this->createMock( IContactSubmissionRepository::class );
+		$repository->method( 'paginate' )->willThrowException( new \Exception( 'db down' ) );
+
+		$controller = $this->getMockBuilder( Dashboard::class )
+			->setConstructorArgs( [ $this->_mockApp, $this->mockSettingManager, $this->mockSessionManager, $repository ] )
+			->onlyMethods( [ 'view' ] )
+			->getMock();
+
+		$captured = [];
+
+		$mockViewContext = $this->getMockBuilder( ViewContext::class )
+			->disableOriginalConstructor()
+			->onlyMethods( [ 'title', 'description', 'withCurrentUser', 'withCsrfToken', 'with', 'render' ] )
+			->getMock();
+
+		$mockViewContext->method( 'title' )->willReturn( $mockViewContext );
+		$mockViewContext->method( 'description' )->willReturn( $mockViewContext );
+		$mockViewContext->method( 'withCurrentUser' )->willReturn( $mockViewContext );
+		$mockViewContext->method( 'withCsrfToken' )->willReturn( $mockViewContext );
+		$mockViewContext->method( 'with' )->willReturnCallback(
+			function( $key, $value = null ) use ( &$captured, $mockViewContext ) {
+				$captured[ $key ] = $value;
+				return $mockViewContext;
+			}
+		);
+		$mockViewContext->method( 'render' )->willReturn( '<html>Dashboard</html>' );
+
+		$controller->method( 'view' )->willReturn( $mockViewContext );
+
+		$result = $controller->index( new Request() );
+
+		$this->assertEquals( '<html>Dashboard</html>', $result );
+		$this->assertSame( [], $captured['RecentSubmissions'] );
+		$this->assertSame( 0, $captured['TotalSubmissions'] );
 	}
 }
