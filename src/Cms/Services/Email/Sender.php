@@ -3,6 +3,7 @@
 namespace Neuron\Cms\Services\Email;
 
 use PHPMailer\PHPMailer\PHPMailer;
+use PHPMailer\PHPMailer\SMTP;
 use PHPMailer\PHPMailer\Exception as PHPMailerException;
 use Neuron\Data\Settings\SettingManager;
 use Neuron\Log\Log;
@@ -27,6 +28,7 @@ class Sender
 	private array $_attachments = [];
 	private ?string $_replyTo = null;
 	private ?string $_replyToName = null;
+	private array $_smtpTranscript = [];
 
 	public function __construct( ?SettingManager $settings = null, string $basePath = '' )
 	{
@@ -143,6 +145,8 @@ class Sender
 			return $this->logEmail();
 		}
 
+		$this->_smtpTranscript = [];
+
 		try
 		{
 			$mail = $this->createMailer();
@@ -192,9 +196,40 @@ class Sender
 		}
 		catch( PHPMailerException $exception )
 		{
-			Log::error( "Email send failed: " . $exception->getMessage() );
+			$message = "Email send failed: " . $exception->getMessage();
+
+			$diagnostic = $this->getSmtpDiagnostic();
+			if( $diagnostic )
+			{
+				$message .= " [{$diagnostic}]";
+			}
+
+			Log::error( $message );
 			return false;
 		}
+	}
+
+	/**
+	 * Extract the SMTP server's last error response from the session
+	 * transcript so failures are logged with the real cause (e.g.
+	 * "525 5.7.1 Unauthorized IP address") instead of only PHPMailer's
+	 * generic message. PHPMailer clears its error state when it QUITs
+	 * after a failure, so the transcript is the only reliable source.
+	 */
+	private function getSmtpDiagnostic(): string
+	{
+		$lastError = '';
+
+		foreach( $this->_smtpTranscript as $line )
+		{
+			// Match SMTP 4xx/5xx error responses from the server
+			if( preg_match( '/SERVER -> CLIENT: ([45]\d{2}[ -][^\r\n]*)/', $line, $matches ) )
+			{
+				$lastError = trim( $matches[ 1 ] );
+			}
+		}
+
+		return $lastError ? "server said: {$lastError}" : '';
 	}
 
 	/**
@@ -218,6 +253,15 @@ class Sender
 		if( $driver === 'smtp' )
 		{
 			$mail->isSMTP();
+
+			// Capture the SMTP session transcript (in memory only) so that
+			// failures can be logged with the server's actual error response.
+			$mail->SMTPDebug = SMTP::DEBUG_SERVER;
+			$mail->Debugoutput = function( string $str ): void
+			{
+				$this->_smtpTranscript[] = $str;
+			};
+
 			$mail->Host = $host;
 			$mail->Port = $port;
 			$mail->SMTPAuth = !empty( $username );

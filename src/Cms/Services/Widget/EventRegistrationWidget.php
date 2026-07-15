@@ -337,7 +337,10 @@ HTML;
 
 		// Honeypot: hidden from humans; bots that fill it are rejected.
 		$html .= '<div style="position:absolute;left:-5000px;height:0;overflow:hidden;" aria-hidden="true">';
-		$html .= '<label>Company<input type="text" name="company_website" tabindex="-1" autocomplete="off"></label>';
+		// Name and label are deliberately meaningless: autofill/password managers
+		// classify fields by name and label text, and will fill recognizable ones
+		// (e.g. "company", "website") even inside hidden containers.
+		$html .= '<label>Leave this field empty<input type="text" name="form_extra_field" tabindex="-1" autocomplete="off"></label>';
 		$html .= '</div>';
 
 		$html .= $eventSelection;

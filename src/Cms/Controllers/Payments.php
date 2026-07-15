@@ -43,7 +43,7 @@ use Neuron\Routing\Attributes\Post;
  */
 class Payments extends Content
 {
-	private const HONEYPOT_FIELD = 'company_website';
+	private const HONEYPOT_FIELD = 'form_extra_field';
 
 	private IPaymentRepository $_repository;
 	private ISubscriptionRepository $_subscriptions;

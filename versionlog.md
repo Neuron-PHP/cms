@@ -1,4 +1,6 @@
 ## 0.8.81
+* Added email test command.
+* Updated the dashboard with the contacts link.
 
 ## 0.8.80 2026-07-10
 * Added toggle for author and page count.

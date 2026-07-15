@@ -66,7 +66,7 @@ class ContactFormWidgetTest extends TestCase
 		$this->assertStringContainsString( 'action="/contact/submit"', $html );
 		$this->assertStringContainsString( 'name="form" value="general"', $html );
 		$this->assertStringContainsString( 'name="csrf_token"', $html );
-		$this->assertStringContainsString( 'company_website', $html ); // honeypot
+		$this->assertStringContainsString( 'form_extra_field', $html ); // honeypot
 		$this->assertStringContainsString( 'name="name"', $html );
 		$this->assertStringContainsString( 'name="email"', $html );
 		$this->assertStringContainsString( '<textarea', $html );

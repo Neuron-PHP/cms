@@ -34,7 +34,7 @@ class Contact extends Content
 	/**
 	 * Honeypot field name; matches ContactFormWidget.
 	 */
-	private const HONEYPOT_FIELD = 'company_website';
+	private const HONEYPOT_FIELD = 'form_extra_field';
 
 	/**
 	 * @param IMvcApplication $app
