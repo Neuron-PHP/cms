@@ -502,4 +502,50 @@ class UpdaterTest extends TestCase
 
 		$this->updater->update( $dto );
 	}
+
+	public function test_cancel_occurrence_delegates_to_editor(): void
+	{
+		$event = new Event();
+		$event->setId( 10 );
+		$event->setStartDate( new DateTimeImmutable( '2026-01-05 09:00:00' ) );
+		$event->setRrule( 'FREQ=WEEKLY' );
+
+		$this->eventRepository->method( 'findById' )->with( 10 )->willReturn( $event );
+
+		$editor = $this->createMock( RecurrenceEditor::class );
+		$editor->expects( $this->once() )
+			->method( 'cancelOccurrence' )
+			->with(
+				$event,
+				$this->callback(
+					fn( DateTimeImmutable $date ) => $date->format( 'Y-m-d H:i:s' ) === '2026-01-12 09:00:00'
+				)
+			);
+
+		$updater = new Updater( $this->eventRepository, $this->categoryRepository, $editor );
+		$updater->cancelOccurrence( 10, '2026-01-12 09:00:00' );
+	}
+
+	public function test_cancel_occurrence_combines_date_only_with_master_time(): void
+	{
+		$event = new Event();
+		$event->setId( 10 );
+		$event->setStartDate( new DateTimeImmutable( '2026-01-05 18:30:00' ) );
+		$event->setRrule( 'FREQ=WEEKLY;INTERVAL=2;BYDAY=WE' );
+
+		$this->eventRepository->method( 'findById' )->with( 10 )->willReturn( $event );
+
+		$editor = $this->createMock( RecurrenceEditor::class );
+		$editor->expects( $this->once() )
+			->method( 'cancelOccurrence' )
+			->with(
+				$event,
+				$this->callback(
+					fn( DateTimeImmutable $date ) => $date->format( 'Y-m-d H:i:s' ) === '2026-03-11 18:30:00'
+				)
+			);
+
+		$updater = new Updater( $this->eventRepository, $this->categoryRepository, $editor );
+		$updater->cancelOccurrence( 10, '2026-03-11' );
+	}
 }

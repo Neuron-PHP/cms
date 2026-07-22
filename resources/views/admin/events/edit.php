@@ -26,12 +26,69 @@
 	}
 	$rCount = $rParts['COUNT'] ?? '';
 	$isRecurring = $event->isRecurring();
+	$hasOccurrence = !empty( $occurrence_date );
+	$occurrenceLabel = '';
+	if( $hasOccurrence )
+	{
+		try { $occurrenceLabel = ( new DateTimeImmutable( $occurrence_date ) )->format( 'l, F j, Y g:i A' ); }
+		catch( \Throwable $e ) { $occurrenceLabel = $occurrence_date; }
+	}
 ?>
 <div class="container-fluid">
 	<div class="d-flex justify-content-between align-items-center mb-4">
 		<h2>Edit Event: <?= htmlspecialchars($event->getTitle()) ?></h2>
 		<a href="<?= route_path('admin_events') ?>" class="btn btn-secondary">Back to Events</a>
 	</div>
+
+	<?php if( $isRecurring ): ?>
+		<div class="card border-danger mb-4">
+			<div class="card-header bg-danger text-white">
+				<h5 class="mb-0"><i class="bi bi-calendar-x"></i> Cancel Occurrence</h5>
+			</div>
+			<div class="card-body">
+				<?php if( $hasOccurrence ): ?>
+					<p class="mb-3">
+						Cancel only the occurrence on
+						<strong><?= htmlspecialchars( $occurrenceLabel ) ?></strong>.
+						The rest of the series stays on the calendar.
+					</p>
+					<form method="POST"
+						  action="<?= route_path('admin_events_cancel_occurrence', ['id' => $event->getId()]) ?>"
+						  onsubmit="return confirm('Cancel this occurrence? It will no longer appear on the calendar. The rest of the series is unchanged.');">
+						<?= csrf_field() ?>
+						<input type="hidden" name="occurrence_date" value="<?= htmlspecialchars( $occurrence_date ) ?>">
+						<button type="submit" class="btn btn-danger">
+							<i class="bi bi-calendar-x"></i> Cancel This Occurrence
+						</button>
+					</form>
+				<?php else: ?>
+					<p class="mb-3">
+						Remove one date from this series without deleting the whole event.
+						The date is combined with the series start time.
+					</p>
+					<form method="POST"
+						  action="<?= route_path('admin_events_cancel_occurrence', ['id' => $event->getId()]) ?>"
+						  class="row g-2 align-items-end"
+						  onsubmit="return confirm('Cancel this occurrence? It will no longer appear on the calendar. The rest of the series is unchanged.');">
+						<?= csrf_field() ?>
+						<div class="col-md-4">
+							<label for="cancel_occurrence_date" class="form-label">Occurrence date</label>
+							<input type="date"
+								   class="form-control"
+								   id="cancel_occurrence_date"
+								   name="occurrence_date"
+								   required>
+						</div>
+						<div class="col-md-auto">
+							<button type="submit" class="btn btn-danger">
+								<i class="bi bi-calendar-x"></i> Cancel Occurrence
+							</button>
+						</div>
+					</form>
+				<?php endif; ?>
+			</div>
+		</div>
+	<?php endif; ?>
 
 	<form method="POST" action="<?= route_path('admin_events_update', ['id' => $event->getId()]) ?>" id="event-form">
 		<input type="hidden" name="_method" value="PUT">

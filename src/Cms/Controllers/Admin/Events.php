@@ -160,6 +160,44 @@ class Events extends Content
 	}
 
 	/**
+	 * Duplicate an event and redirect to the edit form for the copy.
+	 */
+	#[Post('/events/:id/duplicate', name: 'admin_events_duplicate', filters: ['csrf'])]
+	public function duplicate( Request $request ): never
+	{
+		$eventId = (int)$request->getRouteParameter( 'id' );
+		$event = $this->_eventRepository->findById( $eventId );
+
+		if( !$event )
+		{
+			$this->redirect( 'admin_events', [], [FlashMessageType::ERROR->value, 'Event not found'] );
+		}
+
+		if( !is_admin() && !is_editor() && $event->getCreatedBy() !== user_id() )
+		{
+			$this->redirect( 'admin_events', [], [FlashMessageType::ERROR->value, 'Unauthorized to duplicate this event'] );
+		}
+
+		try
+		{
+			$copy = $this->_creator->duplicate( $event, user_id() );
+			$this->redirect(
+				'admin_events_edit',
+				[ 'id' => $copy->getId() ],
+				[ FlashMessageType::SUCCESS->value, 'Event duplicated. Update the details below, then publish when ready.' ]
+			);
+		}
+		catch( \Exception $e )
+		{
+			$this->redirect(
+				'admin_events',
+				[],
+				[ FlashMessageType::ERROR->value, 'Failed to duplicate event: ' . $e->getMessage() ]
+			);
+		}
+	}
+
+	/**
 	 * Show edit event form
 	 */
 	#[Get('/events/:id/edit', name: 'admin_events_edit')]
@@ -266,12 +304,64 @@ class Events extends Content
 
 		try
 		{
-			$this->_eventRepository->delete( $eventId );
+			$this->_eventRepository->delete( $event );
 			$this->redirect( 'admin_events', [], [FlashMessageType::SUCCESS->value, 'Event deleted successfully'] );
 		}
 		catch( \Exception $e )
 		{
 			$this->redirect( 'admin_events', [], [FlashMessageType::ERROR->value, 'Failed to delete event: ' . $e->getMessage()] );
+		}
+	}
+
+	/**
+	 * Cancel a single occurrence of a recurring series.
+	 *
+	 * Does not delete the series — the date is excluded via an exception so it
+	 * no longer appears on the public calendar.
+	 */
+	#[Post('/events/:id/cancel-occurrence', name: 'admin_events_cancel_occurrence', filters: ['csrf'])]
+	public function cancelOccurrence( Request $request ): never
+	{
+		$eventId = (int)$request->getRouteParameter( 'id' );
+		$event = $this->_eventRepository->findById( $eventId );
+
+		if( !$event )
+		{
+			$this->redirect( 'admin_events', [], [FlashMessageType::ERROR->value, 'Event not found'] );
+		}
+
+		if( !is_admin() && !is_editor() && $event->getCreatedBy() !== user_id() )
+		{
+			$this->redirect( 'admin_events', [], [FlashMessageType::ERROR->value, 'Unauthorized to edit this event'] );
+		}
+
+		$occurrenceDate = trim( (string)( $request->post( 'occurrence_date', '' ) ?? '' ) );
+
+		if( $occurrenceDate === '' )
+		{
+			$this->redirect(
+				'admin_events_edit',
+				[ 'id' => $eventId ],
+				[ FlashMessageType::ERROR->value, 'Choose an occurrence date to cancel.' ]
+			);
+		}
+
+		try
+		{
+			$this->_updater->cancelOccurrence( $eventId, $occurrenceDate );
+			$this->redirect(
+				'admin_events_edit',
+				[ 'id' => $eventId ],
+				[ FlashMessageType::SUCCESS->value, 'Occurrence cancelled. It will no longer appear on the calendar.' ]
+			);
+		}
+		catch( \Exception $e )
+		{
+			$this->redirect(
+				'admin_events_edit',
+				[ 'id' => $eventId ],
+				[ FlashMessageType::ERROR->value, 'Failed to cancel occurrence: ' . $e->getMessage() ]
+			);
 		}
 	}
 }

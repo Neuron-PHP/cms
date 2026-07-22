@@ -1,4 +1,6 @@
 ## 0.8.82
+* Added event duplication.
+* Added one off cancellation for recurring events.
 
 ## 0.8.81 2026-07-14
 * Added email test command.

@@ -18,6 +18,9 @@ use DateTimeImmutable;
  *   - this_and_following  split the series: bound the master before the
  *                         occurrence and create a new master for the remainder
  *
+ * Occurrences can also be cancelled (excluded via EXDATE-style exceptions)
+ * without deleting the series.
+ *
  * @package Neuron\Cms\Services\Event
  */
 class RecurrenceEditor
@@ -131,6 +134,47 @@ class RecurrenceEditor
 		);
 
 		return $this->_eventRepository->create( $remainder );
+	}
+
+	/**
+	 * Cancel a single occurrence of a recurring series.
+	 *
+	 * Writes an exception so the date no longer appears on the public calendar.
+	 * If a single-occurrence override row exists for that date, it is deleted.
+	 *
+	 * @param Event $master The recurring master
+	 * @param DateTimeImmutable $occurrence Original occurrence start to exclude
+	 * @return void
+	 * @throws \RuntimeException when the event is not a recurring master or the
+	 *                           date is not an occurrence of the series
+	 */
+	public function cancelOccurrence( Event $master, DateTimeImmutable $occurrence ): void
+	{
+		if( !$master->isRecurring() || $master->isRecurrenceOverride() )
+		{
+			throw new \RuntimeException( 'Only a recurring series can cancel an individual occurrence' );
+		}
+
+		$masterId = $master->getId();
+
+		if( $masterId === null )
+		{
+			throw new \RuntimeException( 'Event must be saved before cancelling an occurrence' );
+		}
+
+		if( !RecurrenceRule::occursAt( (string)$master->getRrule(), $master->getStartDate(), $occurrence ) )
+		{
+			throw new \RuntimeException( 'That date is not an occurrence of this series' );
+		}
+
+		$this->_eventRepository->addException( $masterId, $occurrence );
+
+		$override = $this->_eventRepository->findOverride( $masterId, $occurrence );
+
+		if( $override !== null )
+		{
+			$this->_eventRepository->delete( $override );
+		}
 	}
 
 	/**

@@ -105,6 +105,66 @@ class Creator implements IEventCreator
 	}
 
 	/**
+	 * Duplicate an existing event as a new draft.
+	 *
+	 * Copies content and scheduling details, assigns a unique slug, clears
+	 * view counts and recurrence-override linkage, and sets status to draft
+	 * so the copy can be reviewed before publishing.
+	 *
+	 * @param Event $source
+	 * @param int $createdBy
+	 * @return Event
+	 */
+	public function duplicate( Event $source, int $createdBy ): Event
+	{
+		$copy = new Event();
+		$copy->setTitle( $source->getTitle() . ' (Copy)' );
+		$copy->setSlug(
+			$this->_slugGenerator->generateUnique(
+				$source->getSlug() . '-copy',
+				fn( string $slug ) => $this->_eventRepository->slugExists( $slug ),
+				'event'
+			)
+		);
+		$copy->setDescription( $source->getDescription() );
+		$copy->setContent( $source->getContentRaw() );
+		$copy->setLocation( $source->getLocation() );
+		$copy->setStartDate( $source->getStartDate() );
+		$copy->setEndDate( $source->getEndDate() );
+		$copy->setAllDay( $source->isAllDay() );
+		$copy->setCategoryId( $source->getCategoryId() );
+		$copy->setStatus( Event::STATUS_DRAFT );
+		$copy->setFeatured( $source->isFeatured() );
+		$copy->setRegistrationEnabled( $source->isRegistrationEnabled() );
+		$copy->setRegistrationVisibility( $source->getRegistrationVisibility() );
+		$copy->setCapacity( $source->getCapacity() );
+		$copy->setFeaturedImage( $source->getFeaturedImage() );
+		$copy->setExternalUrl( $source->getExternalUrl() );
+		$copy->setOrganizer( $source->getOrganizer() );
+		$copy->setContactEmail( $source->getContactEmail() );
+		$copy->setContactPhone( $source->getContactPhone() );
+		$copy->setCreatedBy( $createdBy );
+		$copy->setViewCount( 0 );
+
+		// Always create a standalone event — do not keep override linkage.
+		$copy->setRecurrenceParentId( null );
+		$copy->setRecurrenceId( null );
+
+		if( $source->isRecurrenceOverride() )
+		{
+			$copy->setRrule( null );
+			$copy->setRecurrenceUntil( null );
+		}
+		else
+		{
+			$copy->setRrule( $source->getRrule() );
+			$copy->setRecurrenceUntil( $source->getRecurrenceUntil() );
+		}
+
+		return $this->_eventRepository->create( $copy );
+	}
+
+	/**
 	 * Compile recurrence fields from the DTO and apply them to the event.
 	 *
 	 * A raw `rrule` (when valid) takes precedence over the structured fields.

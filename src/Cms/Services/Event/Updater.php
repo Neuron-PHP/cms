@@ -128,6 +128,64 @@ class Updater implements IEventUpdater
 	}
 
 	/**
+	 * Cancel a single occurrence of a recurring series.
+	 *
+	 * Accepts a full datetime or a date-only string (Y-m-d). Date-only values
+	 * are combined with the master's start time so the exclusion matches the
+	 * RRULE occurrence key.
+	 *
+	 * @param int $eventId
+	 * @param string $occurrenceDate
+	 * @return void
+	 * @throws \RuntimeException
+	 */
+	public function cancelOccurrence( int $eventId, string $occurrenceDate ): void
+	{
+		$event = $this->_eventRepository->findById( $eventId );
+
+		if( !$event )
+		{
+			throw new \RuntimeException( "Event with ID {$eventId} not found" );
+		}
+
+		$occurrence = $this->resolveOccurrenceDate( $event, $occurrenceDate );
+
+		$this->_recurrenceEditor->cancelOccurrence( $event, $occurrence );
+	}
+
+	/**
+	 * Parse an occurrence date, combining date-only values with the master time.
+	 *
+	 * @param Event $event
+	 * @param string $raw
+	 * @return DateTimeImmutable
+	 * @throws \RuntimeException
+	 */
+	private function resolveOccurrenceDate( Event $event, string $raw ): DateTimeImmutable
+	{
+		$value = trim( $raw );
+
+		if( $value === '' )
+		{
+			throw new \RuntimeException( 'An occurrence date is required to cancel an occurrence' );
+		}
+
+		if( preg_match( '/^\d{4}-\d{2}-\d{2}$/', $value ) === 1 )
+		{
+			$value .= ' ' . $event->getStartDate()->format( 'H:i:s' );
+		}
+
+		try
+		{
+			return new DateTimeImmutable( $value );
+		}
+		catch( \Throwable $e )
+		{
+			throw new \RuntimeException( 'Invalid occurrence date' );
+		}
+	}
+
+	/**
 	 * Compile recurrence fields from the DTO and apply them to the master.
 	 *
 	 * A raw `rrule` (when valid) takes precedence over the structured fields.
