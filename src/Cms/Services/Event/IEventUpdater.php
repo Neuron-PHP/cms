@@ -19,4 +19,13 @@ interface IEventUpdater
 	 * @return Event
 	 */
 	public function update( Dto $request ): Event;
+
+	/**
+	 * Cancel a single occurrence of a recurring series.
+	 *
+	 * @param int $eventId Master event id
+	 * @param string $occurrenceDate Occurrence start (datetime or Y-m-d)
+	 * @return void
+	 */
+	public function cancelOccurrence( int $eventId, string $occurrenceDate ): void;
 }

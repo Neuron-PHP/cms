@@ -131,6 +131,14 @@
 												</a>
 											<?php endif; ?>
 											<form method="POST"
+												  action="<?= route_path('admin_events_duplicate', ['id' => $event->getId()]) ?>"
+												  style="display:inline;">
+												<?= csrf_field() ?>
+												<button type="submit" class="btn btn-outline-secondary" title="Duplicate">
+													<i class="bi bi-copy"></i> Duplicate
+												</button>
+											</form>
+											<form method="POST"
 												  action="<?= route_path('admin_events_destroy', ['id' => $event->getId()]) ?>"
 												  style="display:inline;"
 												  onsubmit="return confirm('Are you sure you want to delete this event? This action cannot be undone.')">

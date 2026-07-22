@@ -501,4 +501,91 @@ class CreatorTest extends TestCase
 		$this->assertNull( $capturedEvent->getRrule() );
 		$this->assertFalse( $capturedEvent->isRecurring() );
 	}
+
+	public function test_duplicate_creates_draft_copy_with_unique_slug(): void
+	{
+		$source = new Event();
+		$source->setId( 10 );
+		$source->setTitle( 'SRQ Court Night' );
+		$source->setSlug( 'srq-court-night' );
+		$source->setDescription( 'Peer jury' );
+		$source->setContent( '{"blocks":[{"type":"paragraph"}]}' );
+		$source->setLocation( 'Sarasota' );
+		$source->setStartDate( new DateTimeImmutable( '2026-01-14 18:00:00' ) );
+		$source->setEndDate( new DateTimeImmutable( '2026-01-14 20:00:00' ) );
+		$source->setAllDay( false );
+		$source->setRrule( 'FREQ=WEEKLY;INTERVAL=2;BYDAY=WE' );
+		$source->setRecurrenceUntil( new DateTimeImmutable( '2026-12-16 18:00:00' ) );
+		$source->setCategoryId( 3 );
+		$source->setStatus( Event::STATUS_PUBLISHED );
+		$source->setFeatured( true );
+		$source->setRegistrationEnabled( true );
+		$source->setRegistrationVisibility( Event::VISIBILITY_PUBLIC );
+		$source->setCapacity( 40 );
+		$source->setOrganizer( 'Teen Court' );
+		$source->setCreatedBy( 1 );
+		$source->setViewCount( 99 );
+
+		$this->eventRepository->method( 'slugExists' )
+			->willReturnCallback( fn( string $slug ) => $slug === 'srq-court-night-copy' );
+
+		$capturedEvent = null;
+		$this->eventRepository->expects( $this->once() )
+			->method( 'create' )
+			->willReturnCallback( function( Event $event ) use ( &$capturedEvent ) {
+				$capturedEvent = $event;
+				$event->setId( 11 );
+				return $event;
+			} );
+
+		$copy = $this->creator->duplicate( $source, 7 );
+
+		$this->assertSame( 11, $copy->getId() );
+		$this->assertSame( 'SRQ Court Night (Copy)', $capturedEvent->getTitle() );
+		$this->assertSame( 'srq-court-night-copy-2', $capturedEvent->getSlug() );
+		$this->assertSame( Event::STATUS_DRAFT, $capturedEvent->getStatus() );
+		$this->assertSame( 0, $capturedEvent->getViewCount() );
+		$this->assertSame( 7, $capturedEvent->getCreatedBy() );
+		$this->assertSame( 'Peer jury', $capturedEvent->getDescription() );
+		$this->assertSame( 'Sarasota', $capturedEvent->getLocation() );
+		$this->assertSame( 'FREQ=WEEKLY;INTERVAL=2;BYDAY=WE', $capturedEvent->getRrule() );
+		$this->assertSame( 3, $capturedEvent->getCategoryId() );
+		$this->assertTrue( $capturedEvent->isFeatured() );
+		$this->assertTrue( $capturedEvent->isRegistrationEnabled() );
+		$this->assertSame( 40, $capturedEvent->getCapacity() );
+		$this->assertNull( $capturedEvent->getRecurrenceParentId() );
+		$this->assertNull( $capturedEvent->getRecurrenceId() );
+	}
+
+	public function test_duplicate_clears_override_linkage(): void
+	{
+		$source = new Event();
+		$source->setId( 20 );
+		$source->setTitle( 'Moved Night' );
+		$source->setSlug( 'moved-night' );
+		$source->setStartDate( new DateTimeImmutable( '2026-03-11 18:00:00' ) );
+		$source->setStatus( Event::STATUS_PUBLISHED );
+		$source->setRecurrenceParentId( 10 );
+		$source->setRecurrenceId( new DateTimeImmutable( '2026-03-11 18:00:00' ) );
+		$source->setRrule( null );
+		$source->setCreatedBy( 1 );
+
+		$this->eventRepository->method( 'slugExists' )->willReturn( false );
+
+		$capturedEvent = null;
+		$this->eventRepository->expects( $this->once() )
+			->method( 'create' )
+			->willReturnCallback( function( Event $event ) use ( &$capturedEvent ) {
+				$capturedEvent = $event;
+				$event->setId( 21 );
+				return $event;
+			} );
+
+		$this->creator->duplicate( $source, 2 );
+
+		$this->assertNull( $capturedEvent->getRecurrenceParentId() );
+		$this->assertNull( $capturedEvent->getRecurrenceId() );
+		$this->assertNull( $capturedEvent->getRrule() );
+		$this->assertSame( Event::STATUS_DRAFT, $capturedEvent->getStatus() );
+	}
 }

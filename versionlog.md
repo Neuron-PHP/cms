@@ -1,3 +1,7 @@
+## 0.8.82 2026-07-22
+* Added event duplication.
+* Added one off cancellation for recurring events.
+
 ## 0.8.81 2026-07-14
 * Added email test command.
 * Updated the dashboard with the contacts link.

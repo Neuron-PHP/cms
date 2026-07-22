@@ -164,4 +164,76 @@ class RecurrenceEditorTest extends TestCase
 		$this->assertStringContainsString( 'FREQ=WEEKLY', (string)$remainder->getRrule() );
 		$this->assertNull( $remainder->getRecurrenceParentId() );
 	}
+
+	public function testCancelOccurrenceAddsException(): void
+	{
+		$occurrence = new DateTimeImmutable( '2026-01-12 09:00:00' );
+
+		$repo = $this->createMock( IEventRepository::class );
+		$categoryRepo = $this->createMock( IEventCategoryRepository::class );
+
+		$repo->expects( $this->once() )
+			->method( 'addException' )
+			->with( 10, $this->callback(
+				fn( DateTimeImmutable $date ) => $date->format( 'Y-m-d H:i:s' ) === '2026-01-12 09:00:00'
+			) );
+		$repo->method( 'findOverride' )->willReturn( null );
+		$repo->expects( $this->never() )->method( 'delete' );
+
+		$editor = new RecurrenceEditor( $repo, $categoryRepo );
+		$editor->cancelOccurrence( $this->master(), $occurrence );
+	}
+
+	public function testCancelOccurrenceDeletesOverrideWhenPresent(): void
+	{
+		$occurrence = new DateTimeImmutable( '2026-01-12 09:00:00' );
+
+		$override = new Event();
+		$override->setId( 77 );
+		$override->setRecurrenceParentId( 10 );
+		$override->setRecurrenceId( $occurrence );
+
+		$repo = $this->createMock( IEventRepository::class );
+		$categoryRepo = $this->createMock( IEventCategoryRepository::class );
+
+		$repo->expects( $this->once() )->method( 'addException' );
+		$repo->method( 'findOverride' )->willReturn( $override );
+		$repo->expects( $this->once() )->method( 'delete' )->with( $override );
+
+		$editor = new RecurrenceEditor( $repo, $categoryRepo );
+		$editor->cancelOccurrence( $this->master(), $occurrence );
+	}
+
+	public function testCancelOccurrenceRejectsNonSeriesDate(): void
+	{
+		$repo = $this->createMock( IEventRepository::class );
+		$categoryRepo = $this->createMock( IEventCategoryRepository::class );
+
+		$repo->expects( $this->never() )->method( 'addException' );
+
+		$editor = new RecurrenceEditor( $repo, $categoryRepo );
+
+		$this->expectException( \RuntimeException::class );
+		$this->expectExceptionMessage( 'not an occurrence' );
+
+		$editor->cancelOccurrence(
+			$this->master(),
+			new DateTimeImmutable( '2026-01-13 09:00:00' )
+		);
+	}
+
+	public function testCancelOccurrenceRejectsNonRecurringEvent(): void
+	{
+		$event = $this->master();
+		$event->setRrule( null );
+
+		$repo = $this->createMock( IEventRepository::class );
+		$categoryRepo = $this->createMock( IEventCategoryRepository::class );
+
+		$editor = new RecurrenceEditor( $repo, $categoryRepo );
+
+		$this->expectException( \RuntimeException::class );
+
+		$editor->cancelOccurrence( $event, new DateTimeImmutable( '2026-01-12 09:00:00' ) );
+	}
 }
