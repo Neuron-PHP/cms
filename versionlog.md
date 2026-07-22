@@ -1,3 +1,5 @@
+## 0.8.83
+
 ## 0.8.82 2026-07-22
 * Added event duplication.
 * Added one off cancellation for recurring events.
