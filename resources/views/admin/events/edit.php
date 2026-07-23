@@ -16,7 +16,28 @@
 
 	$rFreq = strtolower( $rParts['FREQ'] ?? 'none' );
 	$rInterval = max( 1, (int)( $rParts['INTERVAL'] ?? 1 ) );
-	$bydaySelected = isset( $rParts['BYDAY'] ) && $rParts['BYDAY'] !== '' ? explode( ',', $rParts['BYDAY'] ) : [];
+	$bydaySelected = [];
+	$monthlyMode = 'day';
+	$monthOrdinal = '1';
+	$monthWeekday = 'SA';
+	if( isset( $rParts['BYDAY'] ) && $rParts['BYDAY'] !== '' )
+	{
+		$bydayTokens = explode( ',', $rParts['BYDAY'] );
+		if( $rFreq === 'monthly' )
+		{
+			$monthlyMode = 'weekday';
+			$firstToken = strtoupper( trim( (string)$bydayTokens[0] ) );
+			if( preg_match( '/^(-?[1-4])(MO|TU|WE|TH|FR|SA|SU)$/', $firstToken, $bydayMatch ) === 1 )
+			{
+				$monthOrdinal = $bydayMatch[1];
+				$monthWeekday = $bydayMatch[2];
+			}
+		}
+		else
+		{
+			$bydaySelected = $bydayTokens;
+		}
+	}
 	$rEnd = isset( $rParts['UNTIL'] ) ? 'until' : ( isset( $rParts['COUNT'] ) ? 'count' : 'never' );
 	$rUntil = '';
 	if( isset( $rParts['UNTIL'] ) )
@@ -26,13 +47,8 @@
 	}
 	$rCount = $rParts['COUNT'] ?? '';
 	$isRecurring = $event->isRecurring();
-	$hasOccurrence = !empty( $occurrence_date );
-	$occurrenceLabel = '';
-	if( $hasOccurrence )
-	{
-		try { $occurrenceLabel = ( new DateTimeImmutable( $occurrence_date ) )->format( 'l, F j, Y g:i A' ); }
-		catch( \Throwable $e ) { $occurrenceLabel = $occurrence_date; }
-	}
+	$seriesOccurrences = $series_occurrences ?? [];
+	$selectedOccurrence = !empty( $occurrence_date ) ? (string)$occurrence_date : '';
 ?>
 <div class="container-fluid">
 	<div class="d-flex justify-content-between align-items-center mb-4">
@@ -41,50 +57,87 @@
 	</div>
 
 	<?php if( $isRecurring ): ?>
-		<div class="card border-danger mb-4">
-			<div class="card-header bg-danger text-white">
-				<h5 class="mb-0"><i class="bi bi-calendar-x"></i> Cancel Occurrence</h5>
+		<div class="card mb-4">
+			<div class="card-header d-flex justify-content-between align-items-center">
+				<h5 class="mb-0"><i class="bi bi-calendar-week"></i> Series Occurrences</h5>
+				<small class="text-muted">Cancel or restore individual dates in this series</small>
 			</div>
-			<div class="card-body">
-				<?php if( $hasOccurrence ): ?>
-					<p class="mb-3">
-						Cancel only the occurrence on
-						<strong><?= htmlspecialchars( $occurrenceLabel ) ?></strong>.
-						The rest of the series stays on the calendar.
-					</p>
-					<form method="POST"
-						  action="<?= route_path('admin_events_cancel_occurrence', ['id' => $event->getId()]) ?>"
-						  onsubmit="return confirm('Cancel this occurrence? It will no longer appear on the calendar. The rest of the series is unchanged.');">
-						<?= csrf_field() ?>
-						<input type="hidden" name="occurrence_date" value="<?= htmlspecialchars( $occurrence_date ) ?>">
-						<button type="submit" class="btn btn-danger">
-							<i class="bi bi-calendar-x"></i> Cancel This Occurrence
-						</button>
-					</form>
+			<div class="card-body p-0">
+				<?php if( empty( $seriesOccurrences ) ): ?>
+					<p class="text-muted mb-0 p-3">No upcoming occurrences found for this series.</p>
 				<?php else: ?>
-					<p class="mb-3">
-						Remove one date from this series without deleting the whole event.
-						The date is combined with the series start time.
+					<div class="table-responsive" style="max-height: 22rem;">
+						<table class="table table-hover align-middle mb-0">
+							<thead class="table-light sticky-top">
+								<tr>
+									<th scope="col">Date</th>
+									<th scope="col">Status</th>
+									<th scope="col" class="text-end">Action</th>
+								</tr>
+							</thead>
+							<tbody>
+								<?php foreach( $seriesOccurrences as $row ): ?>
+									<?php
+										/** @var DateTimeImmutable $occ */
+										$occ = $row['occurrence'];
+										$isCancelled = !empty( $row['cancelled'] );
+										$value = (string)$row['value'];
+										$isSelected = $selectedOccurrence !== '' && (
+											$value === $selectedOccurrence
+											|| str_starts_with( $value, $selectedOccurrence )
+											|| str_starts_with( $selectedOccurrence, substr( $value, 0, 10 ) )
+										);
+										$label = $event->isAllDay()
+											? $occ->format( 'l, F j, Y' )
+											: $occ->format( 'l, F j, Y · g:i A' );
+									?>
+									<tr class="<?= $isCancelled ? 'table-secondary' : ( $isSelected ? 'table-warning' : '' ) ?>">
+										<td>
+											<?= htmlspecialchars( $label ) ?>
+											<?php if( $isSelected ): ?>
+												<span class="badge text-bg-warning ms-1">Selected</span>
+											<?php endif; ?>
+										</td>
+										<td>
+											<?php if( $isCancelled ): ?>
+												<span class="badge text-bg-secondary">Cancelled</span>
+											<?php else: ?>
+												<span class="badge text-bg-success">Scheduled</span>
+											<?php endif; ?>
+										</td>
+										<td class="text-end">
+											<?php if( $isCancelled ): ?>
+												<form method="POST"
+													  action="<?= route_path('admin_events_restore_occurrence', ['id' => $event->getId()]) ?>"
+													  class="d-inline">
+													<?= csrf_field() ?>
+													<input type="hidden" name="occurrence_date" value="<?= htmlspecialchars( $value ) ?>">
+													<button type="submit" class="btn btn-sm btn-outline-primary">
+														<i class="bi bi-arrow-counterclockwise"></i> Restore
+													</button>
+												</form>
+											<?php else: ?>
+												<form method="POST"
+													  action="<?= route_path('admin_events_cancel_occurrence', ['id' => $event->getId()]) ?>"
+													  class="d-inline"
+													  onsubmit="return confirm('Cancel <?= htmlspecialchars( $label, ENT_QUOTES ) ?>? It will no longer appear on the calendar.');">
+													<?= csrf_field() ?>
+													<input type="hidden" name="occurrence_date" value="<?= htmlspecialchars( $value ) ?>">
+													<button type="submit" class="btn btn-sm btn-outline-danger">
+														<i class="bi bi-calendar-x"></i> Cancel
+													</button>
+												</form>
+											<?php endif; ?>
+										</td>
+									</tr>
+								<?php endforeach; ?>
+							</tbody>
+						</table>
+					</div>
+					<p class="small text-muted mb-0 px-3 py-2 border-top">
+						Showing the next <?= count( $seriesOccurrences ) ?> date<?= count( $seriesOccurrences ) === 1 ? '' : 's' ?> in this series.
+						Only dates that belong to the repeat rule are listed.
 					</p>
-					<form method="POST"
-						  action="<?= route_path('admin_events_cancel_occurrence', ['id' => $event->getId()]) ?>"
-						  class="row g-2 align-items-end"
-						  onsubmit="return confirm('Cancel this occurrence? It will no longer appear on the calendar. The rest of the series is unchanged.');">
-						<?= csrf_field() ?>
-						<div class="col-md-4">
-							<label for="cancel_occurrence_date" class="form-label">Occurrence date</label>
-							<input type="date"
-								   class="form-control"
-								   id="cancel_occurrence_date"
-								   name="occurrence_date"
-								   required>
-						</div>
-						<div class="col-md-auto">
-							<button type="submit" class="btn btn-danger">
-								<i class="bi bi-calendar-x"></i> Cancel Occurrence
-							</button>
-						</div>
-					</form>
 				<?php endif; ?>
 			</div>
 		</div>
@@ -194,6 +247,34 @@
 										<?php endforeach; ?>
 									</div>
 									<input type="hidden" name="repeat_byday" id="repeat_byday" value="<?= htmlspecialchars(implode(',', $bydaySelected)) ?>">
+								</div>
+
+								<div class="mb-3" data-recurrence-monthly-group style="display: <?= $rFreq === 'monthly' ? 'block' : 'none' ?>;">
+									<label for="repeat_monthly_mode" class="form-label">Monthly on</label>
+									<select class="form-select" id="repeat_monthly_mode" name="repeat_monthly_mode" data-recurrence-monthly-mode>
+										<option value="day" <?= $monthlyMode === 'day' ? 'selected' : '' ?>>Same calendar day each month</option>
+										<option value="weekday" <?= $monthlyMode === 'weekday' ? 'selected' : '' ?>>A specific weekday each month</option>
+									</select>
+									<small class="form-text text-muted">Example: first Saturday of every month</small>
+
+									<div class="row g-2 mt-2" data-recurrence-monthly-weekday style="display: <?= $monthlyMode === 'weekday' ? 'flex' : 'none' ?>;">
+										<div class="col-sm-6">
+											<label for="repeat_month_ordinal" class="form-label">Which</label>
+											<select class="form-select" id="repeat_month_ordinal" name="repeat_month_ordinal">
+												<?php foreach( [ '1' => 'First', '2' => 'Second', '3' => 'Third', '4' => 'Fourth', '-1' => 'Last' ] as $value => $label ): ?>
+													<option value="<?= $value ?>" <?= (string)$monthOrdinal === (string)$value ? 'selected' : '' ?>><?= $label ?></option>
+												<?php endforeach; ?>
+											</select>
+										</div>
+										<div class="col-sm-6">
+											<label for="repeat_month_weekday" class="form-label">Weekday</label>
+											<select class="form-select" id="repeat_month_weekday" name="repeat_month_weekday">
+												<?php foreach( [ 'MO' => 'Monday', 'TU' => 'Tuesday', 'WE' => 'Wednesday', 'TH' => 'Thursday', 'FR' => 'Friday', 'SA' => 'Saturday', 'SU' => 'Sunday' ] as $code => $label ): ?>
+													<option value="<?= $code ?>" <?= $monthWeekday === $code ? 'selected' : '' ?>><?= $label ?></option>
+												<?php endforeach; ?>
+											</select>
+										</div>
+									</div>
 								</div>
 
 								<div class="mb-3">
@@ -564,6 +645,9 @@ document.getElementById('event-form').addEventListener('submit', async (e) => {
 
 	var options = document.querySelector('[data-recurrence-options]');
 	var bydayGroup = document.querySelector('[data-recurrence-byday-group]');
+	var monthlyGroup = document.querySelector('[data-recurrence-monthly-group]');
+	var monthlyMode = document.querySelector('[data-recurrence-monthly-mode]');
+	var monthlyWeekday = document.querySelector('[data-recurrence-monthly-weekday]');
 	var unit = document.querySelector('[data-recurrence-unit]');
 	var endSelect = document.querySelector('[data-recurrence-end]');
 	var untilGroup = document.querySelector('[data-recurrence-until-group]');
@@ -580,6 +664,15 @@ document.getElementById('event-form').addEventListener('submit', async (e) => {
 		bydayInput.value = selected.join(',');
 	}
 
+	function refreshMonthly() {
+		var isMonthly = freq.value === 'monthly';
+		if( monthlyGroup ) { monthlyGroup.style.display = isMonthly ? 'block' : 'none'; }
+		if( monthlyWeekday ) {
+			var showWeekday = isMonthly && monthlyMode && monthlyMode.value === 'weekday';
+			monthlyWeekday.style.display = showWeekday ? 'flex' : 'none';
+		}
+	}
+
 	function refresh() {
 		var value = freq.value;
 		var repeats = value !== 'none';
@@ -590,9 +683,11 @@ document.getElementById('event-form').addEventListener('submit', async (e) => {
 			if( untilGroup ) { untilGroup.style.display = endSelect.value === 'until' ? 'block' : 'none'; }
 			if( countGroup ) { countGroup.style.display = endSelect.value === 'count' ? 'block' : 'none'; }
 		}
+		refreshMonthly();
 	}
 
 	freq.addEventListener('change', refresh);
+	if( monthlyMode ) { monthlyMode.addEventListener('change', refreshMonthly); }
 	if( endSelect ) { endSelect.addEventListener('change', refresh); }
 	bydayChecks.forEach(function(box) { box.addEventListener('change', syncByday); });
 

@@ -137,6 +137,73 @@ class RecurrenceEditor
 	}
 
 	/**
+	 * List upcoming occurrences in a series for admin management.
+	 *
+	 * Each row is a real RRULE occurrence (not a free-form date), with a flag
+	 * indicating whether it has already been cancelled.
+	 *
+	 * @param Event $master The recurring master
+	 * @param int $limit Maximum rows to return
+	 * @return array<int, array{occurrence: DateTimeImmutable, cancelled: bool, value: string}>
+	 */
+	public function listOccurrences( Event $master, int $limit = 40 ): array
+	{
+		if( !$master->isRecurring() || $master->isRecurrenceOverride() || $master->getId() === null )
+		{
+			return [];
+		}
+
+		$limit = max( 1, $limit );
+		$rangeStart = new DateTimeImmutable( 'today' );
+		if( $master->getStartDate() > $rangeStart )
+		{
+			$rangeStart = $master->getStartDate();
+		}
+
+		$rangeEnd = $master->getRecurrenceUntil();
+		if( $rangeEnd === null || $rangeEnd < $rangeStart )
+		{
+			$rangeEnd = $rangeStart->add( new \DateInterval( 'P18M' ) );
+		}
+
+		try
+		{
+			$rule = RecurrenceRule::create( (string)$master->getRrule(), $master->getStartDate() );
+		}
+		catch( \Throwable $e )
+		{
+			return [];
+		}
+
+		$cancelled = [];
+		foreach( $this->_eventRepository->getExceptions( $master->getId() ) as $exception )
+		{
+			$cancelled[ $exception->format( 'Y-m-d H:i:s' ) ] = true;
+		}
+
+		$rows = [];
+
+		foreach( $rule->getOccurrencesBetween( $rangeStart, $rangeEnd ) as $occurrence )
+		{
+			$start = DateTimeImmutable::createFromInterface( $occurrence );
+			$value = $start->format( 'Y-m-d H:i:s' );
+
+			$rows[] = [
+				'occurrence' => $start,
+				'cancelled'  => isset( $cancelled[ $value ] ),
+				'value'      => $value
+			];
+
+			if( count( $rows ) >= $limit )
+			{
+				break;
+			}
+		}
+
+		return $rows;
+	}
+
+	/**
 	 * Cancel a single occurrence of a recurring series.
 	 *
 	 * Writes an exception so the date no longer appears on the public calendar.
@@ -178,6 +245,36 @@ class RecurrenceEditor
 	}
 
 	/**
+	 * Restore a previously cancelled occurrence.
+	 *
+	 * @param Event $master The recurring master
+	 * @param DateTimeImmutable $occurrence Original occurrence start to restore
+	 * @return void
+	 * @throws \RuntimeException
+	 */
+	public function restoreOccurrence( Event $master, DateTimeImmutable $occurrence ): void
+	{
+		if( !$master->isRecurring() || $master->isRecurrenceOverride() )
+		{
+			throw new \RuntimeException( 'Only a recurring series can restore an individual occurrence' );
+		}
+
+		$masterId = $master->getId();
+
+		if( $masterId === null )
+		{
+			throw new \RuntimeException( 'Event must be saved before restoring an occurrence' );
+		}
+
+		if( !RecurrenceRule::occursAt( (string)$master->getRrule(), $master->getStartDate(), $occurrence ) )
+		{
+			throw new \RuntimeException( 'That date is not an occurrence of this series' );
+		}
+
+		$this->_eventRepository->removeException( $masterId, $occurrence );
+	}
+
+	/**
 	 * Resolve the rule for the going-forward series. Prefers a fresh rule
 	 * compiled from the DTO's repeat fields; otherwise reuses the original
 	 * pattern with any end-condition stripped.
@@ -196,12 +293,15 @@ class RecurrenceEditor
 		}
 
 		$compiled = RecurrenceRule::compile( [
-			'freq'     => $request->repeat_freq ?? 'none',
-			'interval' => $request->repeat_interval ?? 1,
-			'byday'    => $request->repeat_byday ?? '',
-			'end'      => $request->repeat_end ?? 'never',
-			'until'    => $request->repeat_until ?? null,
-			'count'    => $request->repeat_count ?? null
+			'freq'           => $request->repeat_freq ?? 'none',
+			'interval'       => $request->repeat_interval ?? 1,
+			'byday'          => $request->repeat_byday ?? '',
+			'monthly_mode'   => $request->repeat_monthly_mode ?? 'day',
+			'month_ordinal'  => $request->repeat_month_ordinal ?? null,
+			'month_weekday'  => $request->repeat_month_weekday ?? null,
+			'end'            => $request->repeat_end ?? 'never',
+			'until'          => $request->repeat_until ?? null,
+			'count'          => $request->repeat_count ?? null
 		] );
 
 		if( $compiled !== null )

@@ -1,4 +1,5 @@
 ## 0.8.83
+* Added nth occurrence support for recurring events.
 
 ## 0.8.82 2026-07-22
 * Added event duplication.

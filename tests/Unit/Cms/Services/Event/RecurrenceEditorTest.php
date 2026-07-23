@@ -236,4 +236,62 @@ class RecurrenceEditorTest extends TestCase
 
 		$editor->cancelOccurrence( $event, new DateTimeImmutable( '2026-01-12 09:00:00' ) );
 	}
+
+	public function testListOccurrencesReturnsSeriesDatesWithCancelledFlags(): void
+	{
+		// Anchor to an upcoming Monday so the "from today" window is deterministic.
+		$start = new DateTimeImmutable( 'monday this week' );
+		if( $start < new DateTimeImmutable( 'today' ) )
+		{
+			$start = $start->modify( '+1 week' );
+		}
+		$start = $start->setTime( 9, 0, 0 );
+		$cancelledDate = $start->modify( '+1 week' );
+
+		$master = $this->master();
+		$master->setStartDate( $start );
+		$master->setRrule( 'FREQ=WEEKLY;BYDAY=MO' );
+		$master->setRecurrenceUntil( $start->modify( '+4 weeks' ) );
+
+		$repo = $this->createMock( IEventRepository::class );
+		$categoryRepo = $this->createMock( IEventCategoryRepository::class );
+
+		$repo->method( 'getExceptions' )->with( 10 )->willReturn( [ $cancelledDate ] );
+
+		$editor = new RecurrenceEditor( $repo, $categoryRepo );
+		$rows = $editor->listOccurrences( $master, 10 );
+
+		$this->assertNotEmpty( $rows );
+		$this->assertSame( $start->format( 'Y-m-d H:i:s' ), $rows[0]['value'] );
+		$this->assertFalse( $rows[0]['cancelled'] );
+
+		$cancelled = array_values( array_filter(
+			$rows,
+			fn( array $row ) => $row['value'] === $cancelledDate->format( 'Y-m-d H:i:s' )
+		) );
+		$this->assertCount( 1, $cancelled );
+		$this->assertTrue( $cancelled[0]['cancelled'] );
+
+		foreach( $rows as $row )
+		{
+			$this->assertSame( 'Monday', $row['occurrence']->format( 'l' ) );
+		}
+	}
+
+	public function testRestoreOccurrenceRemovesException(): void
+	{
+		$occurrence = new DateTimeImmutable( '2026-01-12 09:00:00' );
+
+		$repo = $this->createMock( IEventRepository::class );
+		$categoryRepo = $this->createMock( IEventCategoryRepository::class );
+
+		$repo->expects( $this->once() )
+			->method( 'removeException' )
+			->with( 10, $this->callback(
+				fn( DateTimeImmutable $date ) => $date->format( 'Y-m-d H:i:s' ) === '2026-01-12 09:00:00'
+			) );
+
+		$editor = new RecurrenceEditor( $repo, $categoryRepo );
+		$editor->restoreOccurrence( $this->master(), $occurrence );
+	}
 }

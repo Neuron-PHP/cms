@@ -208,12 +208,15 @@ class Creator implements IEventCreator
 		}
 
 		return RecurrenceRule::compile( [
-			'freq'     => $request->repeat_freq ?? 'none',
-			'interval' => $request->repeat_interval ?? 1,
-			'byday'    => $request->repeat_byday ?? '',
-			'end'      => $request->repeat_end ?? 'never',
-			'until'    => $request->repeat_until ?? null,
-			'count'    => $request->repeat_count ?? null
+			'freq'           => $request->repeat_freq ?? 'none',
+			'interval'       => $request->repeat_interval ?? 1,
+			'byday'          => $request->repeat_byday ?? '',
+			'monthly_mode'   => $request->repeat_monthly_mode ?? 'day',
+			'month_ordinal'  => $request->repeat_month_ordinal ?? null,
+			'month_weekday'  => $request->repeat_month_weekday ?? null,
+			'end'            => $request->repeat_end ?? 'never',
+			'until'          => $request->repeat_until ?? null,
+			'count'          => $request->repeat_count ?? null
 		] );
 	}
 

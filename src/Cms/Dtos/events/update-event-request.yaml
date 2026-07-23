@@ -65,6 +65,22 @@ dto:
     length:
       max: 50
 
+  repeat_monthly_mode:
+    type: string
+    required: false
+    enum: ['day', 'weekday']
+    default: 'day'
+
+  repeat_month_ordinal:
+    type: string
+    required: false
+    enum: ['1', '2', '3', '4', '-1']
+
+  repeat_month_weekday:
+    type: string
+    required: false
+    enum: ['MO', 'TU', 'WE', 'TH', 'FR', 'SA', 'SU']
+
   repeat_end:
     type: string
     required: false
