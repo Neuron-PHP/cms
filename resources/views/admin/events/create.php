@@ -98,6 +98,36 @@
 									<input type="hidden" name="repeat_byday" id="repeat_byday" value="">
 								</div>
 
+								<div class="mb-3" data-recurrence-monthly-group style="display: none;">
+									<label for="repeat_monthly_mode" class="form-label">Monthly on</label>
+									<select class="form-select" id="repeat_monthly_mode" name="repeat_monthly_mode" data-recurrence-monthly-mode>
+										<option value="day" selected>Same calendar day each month</option>
+										<option value="weekday">A specific weekday each month</option>
+									</select>
+									<small class="form-text text-muted">Example: first Saturday of every month</small>
+
+									<div class="row g-2 mt-2" data-recurrence-monthly-weekday style="display: none;">
+										<div class="col-sm-6">
+											<label for="repeat_month_ordinal" class="form-label">Which</label>
+											<select class="form-select" id="repeat_month_ordinal" name="repeat_month_ordinal">
+												<option value="1" selected>First</option>
+												<option value="2">Second</option>
+												<option value="3">Third</option>
+												<option value="4">Fourth</option>
+												<option value="-1">Last</option>
+											</select>
+										</div>
+										<div class="col-sm-6">
+											<label for="repeat_month_weekday" class="form-label">Weekday</label>
+											<select class="form-select" id="repeat_month_weekday" name="repeat_month_weekday">
+												<?php foreach( [ 'MO' => 'Monday', 'TU' => 'Tuesday', 'WE' => 'Wednesday', 'TH' => 'Thursday', 'FR' => 'Friday', 'SA' => 'Saturday', 'SU' => 'Sunday' ] as $code => $label ): ?>
+													<option value="<?= $code ?>" <?= $code === 'SA' ? 'selected' : '' ?>><?= $label ?></option>
+												<?php endforeach; ?>
+											</select>
+										</div>
+									</div>
+								</div>
+
 								<div class="mb-3">
 									<label for="repeat_end" class="form-label">Ends</label>
 									<select class="form-select" id="repeat_end" name="repeat_end" data-recurrence-end>
@@ -448,6 +478,9 @@ document.getElementById('event-form').addEventListener('submit', async (e) => {
 
 	var options = document.querySelector('[data-recurrence-options]');
 	var bydayGroup = document.querySelector('[data-recurrence-byday-group]');
+	var monthlyGroup = document.querySelector('[data-recurrence-monthly-group]');
+	var monthlyMode = document.querySelector('[data-recurrence-monthly-mode]');
+	var monthlyWeekday = document.querySelector('[data-recurrence-monthly-weekday]');
 	var unit = document.querySelector('[data-recurrence-unit]');
 	var endSelect = document.querySelector('[data-recurrence-end]');
 	var untilGroup = document.querySelector('[data-recurrence-until-group]');
@@ -464,6 +497,15 @@ document.getElementById('event-form').addEventListener('submit', async (e) => {
 		bydayInput.value = selected.join(',');
 	}
 
+	function refreshMonthly() {
+		var isMonthly = freq.value === 'monthly';
+		if( monthlyGroup ) { monthlyGroup.style.display = isMonthly ? 'block' : 'none'; }
+		if( monthlyWeekday ) {
+			var showWeekday = isMonthly && monthlyMode && monthlyMode.value === 'weekday';
+			monthlyWeekday.style.display = showWeekday ? 'flex' : 'none';
+		}
+	}
+
 	function refresh() {
 		var value = freq.value;
 		var repeats = value !== 'none';
@@ -474,9 +516,11 @@ document.getElementById('event-form').addEventListener('submit', async (e) => {
 			if( untilGroup ) { untilGroup.style.display = endSelect.value === 'until' ? 'block' : 'none'; }
 			if( countGroup ) { countGroup.style.display = endSelect.value === 'count' ? 'block' : 'none'; }
 		}
+		refreshMonthly();
 	}
 
 	freq.addEventListener('change', refresh);
+	if( monthlyMode ) { monthlyMode.addEventListener('change', refreshMonthly); }
 	if( endSelect ) { endSelect.addEventListener('change', refresh); }
 	bydayChecks.forEach(function(box) { box.addEventListener('change', syncByday); });
 

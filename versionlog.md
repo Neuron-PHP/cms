@@ -1,3 +1,6 @@
+## 0.8.83 2026-07-23
+* Added nth occurrence support for recurring events.
+
 ## 0.8.82 2026-07-22
 * Added event duplication.
 * Added one off cancellation for recurring events.

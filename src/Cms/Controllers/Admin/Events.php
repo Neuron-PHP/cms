@@ -223,6 +223,10 @@ class Events extends Content
 		// single occurrence of a recurring series.
 		$occurrenceDate = trim( (string)( $request->get( 'occurrence', '' ) ?? '' ) );
 
+		$seriesOccurrences = $event->isRecurring()
+			? $this->_updater->listOccurrences( (int)$event->getId() )
+			: [];
+
 		return $this->view()
 			->title( 'Edit Event' )
 			->description( 'Edit calendar event' )
@@ -231,7 +235,8 @@ class Events extends Content
 			->with([
 				'event' => $event,
 				'categories' => $this->_categoryRepository->all(),
-				'occurrence_date' => $occurrenceDate
+				'occurrence_date' => $occurrenceDate,
+				'series_occurrences' => $seriesOccurrences
 			])
 			->render( 'edit', 'admin' );
 	}
@@ -361,6 +366,55 @@ class Events extends Content
 				'admin_events_edit',
 				[ 'id' => $eventId ],
 				[ FlashMessageType::ERROR->value, 'Failed to cancel occurrence: ' . $e->getMessage() ]
+			);
+		}
+	}
+
+	/**
+	 * Restore a previously cancelled occurrence of a recurring series.
+	 */
+	#[Post('/events/:id/restore-occurrence', name: 'admin_events_restore_occurrence', filters: ['csrf'])]
+	public function restoreOccurrence( Request $request ): never
+	{
+		$eventId = (int)$request->getRouteParameter( 'id' );
+		$event = $this->_eventRepository->findById( $eventId );
+
+		if( !$event )
+		{
+			$this->redirect( 'admin_events', [], [FlashMessageType::ERROR->value, 'Event not found'] );
+		}
+
+		if( !is_admin() && !is_editor() && $event->getCreatedBy() !== user_id() )
+		{
+			$this->redirect( 'admin_events', [], [FlashMessageType::ERROR->value, 'Unauthorized to edit this event'] );
+		}
+
+		$occurrenceDate = trim( (string)( $request->post( 'occurrence_date', '' ) ?? '' ) );
+
+		if( $occurrenceDate === '' )
+		{
+			$this->redirect(
+				'admin_events_edit',
+				[ 'id' => $eventId ],
+				[ FlashMessageType::ERROR->value, 'Choose an occurrence date to restore.' ]
+			);
+		}
+
+		try
+		{
+			$this->_updater->restoreOccurrence( $eventId, $occurrenceDate );
+			$this->redirect(
+				'admin_events_edit',
+				[ 'id' => $eventId ],
+				[ FlashMessageType::SUCCESS->value, 'Occurrence restored to the calendar.' ]
+			);
+		}
+		catch( \Exception $e )
+		{
+			$this->redirect(
+				'admin_events_edit',
+				[ 'id' => $eventId ],
+				[ FlashMessageType::ERROR->value, 'Failed to restore occurrence: ' . $e->getMessage() ]
 			);
 		}
 	}

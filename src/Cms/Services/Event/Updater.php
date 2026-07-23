@@ -154,6 +154,47 @@ class Updater implements IEventUpdater
 	}
 
 	/**
+	 * Restore a previously cancelled occurrence.
+	 *
+	 * @param int $eventId
+	 * @param string $occurrenceDate
+	 * @return void
+	 * @throws \RuntimeException
+	 */
+	public function restoreOccurrence( int $eventId, string $occurrenceDate ): void
+	{
+		$event = $this->_eventRepository->findById( $eventId );
+
+		if( !$event )
+		{
+			throw new \RuntimeException( "Event with ID {$eventId} not found" );
+		}
+
+		$occurrence = $this->resolveOccurrenceDate( $event, $occurrenceDate );
+
+		$this->_recurrenceEditor->restoreOccurrence( $event, $occurrence );
+	}
+
+	/**
+	 * List upcoming series occurrences for admin management.
+	 *
+	 * @param int $eventId
+	 * @param int $limit
+	 * @return array<int, array{occurrence: DateTimeImmutable, cancelled: bool, value: string}>
+	 */
+	public function listOccurrences( int $eventId, int $limit = 40 ): array
+	{
+		$event = $this->_eventRepository->findById( $eventId );
+
+		if( !$event )
+		{
+			return [];
+		}
+
+		return $this->_recurrenceEditor->listOccurrences( $event, $limit );
+	}
+
+	/**
 	 * Parse an occurrence date, combining date-only values with the master time.
 	 *
 	 * @param Event $event
@@ -167,7 +208,7 @@ class Updater implements IEventUpdater
 
 		if( $value === '' )
 		{
-			throw new \RuntimeException( 'An occurrence date is required to cancel an occurrence' );
+			throw new \RuntimeException( 'An occurrence date is required' );
 		}
 
 		if( preg_match( '/^\d{4}-\d{2}-\d{2}$/', $value ) === 1 )
@@ -212,12 +253,15 @@ class Updater implements IEventUpdater
 		else
 		{
 			$rrule = RecurrenceRule::compile( [
-				'freq'     => $request->repeat_freq ?? 'none',
-				'interval' => $request->repeat_interval ?? 1,
-				'byday'    => $request->repeat_byday ?? '',
-				'end'      => $request->repeat_end ?? 'never',
-				'until'    => $request->repeat_until ?? null,
-				'count'    => $request->repeat_count ?? null
+				'freq'           => $request->repeat_freq ?? 'none',
+				'interval'       => $request->repeat_interval ?? 1,
+				'byday'          => $request->repeat_byday ?? '',
+				'monthly_mode'   => $request->repeat_monthly_mode ?? 'day',
+				'month_ordinal'  => $request->repeat_month_ordinal ?? null,
+				'month_weekday'  => $request->repeat_month_weekday ?? null,
+				'end'            => $request->repeat_end ?? 'never',
+				'until'          => $request->repeat_until ?? null,
+				'count'          => $request->repeat_count ?? null
 			] );
 		}
 

@@ -98,12 +98,17 @@ class RecurrenceRule
 	 * Returns null when the event does not repeat (frequency 'none' or empty).
 	 *
 	 * Recognised keys:
-	 *   freq      one of none|daily|weekly|monthly|yearly
-	 *   interval  positive integer (default 1)
-	 *   byday     comma-separated weekday tokens (e.g. "MO,WE,FR")
-	 *   end       one of never|until|count
-	 *   until     end date (Y-m-d or any parseable date) when end = until
-	 *   count     occurrence count when end = count
+	 *   freq           one of none|daily|weekly|monthly|yearly
+	 *   interval       positive integer (default 1)
+	 *   byday          comma-separated weekday tokens (e.g. "MO,WE,FR")
+	 *                  or a monthly ordinal token (e.g. "1SA", "-1FR")
+	 *   monthly_mode   for monthly: "day" (same calendar day) or "weekday"
+	 *                  (nth weekday, e.g. first Saturday)
+	 *   month_ordinal  1|2|3|4|-1 when monthly_mode = weekday
+	 *   month_weekday  MO|TU|WE|TH|FR|SA|SU when monthly_mode = weekday
+	 *   end            one of never|until|count
+	 *   until          end date (Y-m-d or any parseable date) when end = until
+	 *   count          occurrence count when end = count
 	 *
 	 * @param array<string, mixed> $parts
 	 * @return string|null
@@ -131,6 +136,14 @@ class RecurrenceRule
 			if( $byday !== '' )
 			{
 				$segments[] = 'BYDAY=' . $byday;
+			}
+		}
+		elseif( $freq === 'monthly' )
+		{
+			$monthlyByDay = self::resolveMonthlyByDay( $parts );
+			if( $monthlyByDay !== '' )
+			{
+				$segments[] = 'BYDAY=' . $monthlyByDay;
 			}
 		}
 
@@ -233,6 +246,80 @@ class RecurrenceRule
 		}
 
 		return $segments;
+	}
+
+	/**
+	 * Resolve a monthly BYDAY token for "nth weekday of the month" rules.
+	 *
+	 * Prefers month_ordinal + month_weekday when monthly_mode is weekday;
+	 * otherwise accepts an ordinal token in byday (e.g. "1SA").
+	 *
+	 * @param array<string, mixed> $parts
+	 * @return string Empty when the month should use the calendar day instead
+	 */
+	private static function resolveMonthlyByDay( array $parts ): string
+	{
+		$mode = strtolower( trim( (string)( $parts['monthly_mode'] ?? '' ) ) );
+
+		if( $mode === 'day' )
+		{
+			return '';
+		}
+
+		if( $mode === 'weekday' )
+		{
+			$ordinal = trim( (string)( $parts['month_ordinal'] ?? '' ) );
+			$weekday = strtoupper( trim( (string)( $parts['month_weekday'] ?? '' ) ) );
+
+			if( $ordinal !== '' && $weekday !== '' )
+			{
+				return self::normalizeMonthlyByDay( $ordinal . $weekday );
+			}
+
+			return self::normalizeMonthlyByDay( $parts['byday'] ?? '' );
+		}
+
+		// Mode omitted: infer weekday mode from an ordinal BYDAY token.
+		return self::normalizeMonthlyByDay( $parts['byday'] ?? '' );
+	}
+
+	/**
+	 * Normalise monthly ordinal BYDAY tokens (e.g. 1SA, -1FR).
+	 *
+	 * @param mixed $byday
+	 * @return string
+	 */
+	private static function normalizeMonthlyByDay( mixed $byday ): string
+	{
+		if( is_array( $byday ) )
+		{
+			$tokens = $byday;
+		}
+		else
+		{
+			$tokens = explode( ',', (string)$byday );
+		}
+
+		$valid = [];
+
+		foreach( $tokens as $token )
+		{
+			$token = strtoupper( trim( (string)$token ) );
+
+			if( preg_match( '/^(-?[1-4])(' . implode( '|', self::WEEKDAYS ) . ')$/', $token, $matches ) !== 1 )
+			{
+				continue;
+			}
+
+			$normalised = $matches[1] . $matches[2];
+
+			if( !in_array( $normalised, $valid, true ) )
+			{
+				$valid[] = $normalised;
+			}
+		}
+
+		return implode( ',', $valid );
 	}
 
 	/**

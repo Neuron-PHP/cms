@@ -32,6 +32,72 @@ class RecurrenceRuleTest extends TestCase
 		$this->assertSame( 'FREQ=WEEKLY;BYDAY=MO,WE,FR', $rrule );
 	}
 
+	public function testCompileMonthlySameCalendarDay(): void
+	{
+		$rrule = RecurrenceRule::compile( [
+			'freq'         => 'monthly',
+			'monthly_mode' => 'day'
+		] );
+
+		$this->assertSame( 'FREQ=MONTHLY', $rrule );
+	}
+
+	public function testCompileMonthlyFirstSaturday(): void
+	{
+		$rrule = RecurrenceRule::compile( [
+			'freq'           => 'monthly',
+			'monthly_mode'   => 'weekday',
+			'month_ordinal'  => '1',
+			'month_weekday'  => 'SA'
+		] );
+
+		$this->assertSame( 'FREQ=MONTHLY;BYDAY=1SA', $rrule );
+	}
+
+	public function testCompileMonthlyLastFriday(): void
+	{
+		$rrule = RecurrenceRule::compile( [
+			'freq'           => 'monthly',
+			'monthly_mode'   => 'weekday',
+			'month_ordinal'  => '-1',
+			'month_weekday'  => 'FR'
+		] );
+
+		$this->assertSame( 'FREQ=MONTHLY;BYDAY=-1FR', $rrule );
+	}
+
+	public function testCompileMonthlyInfersWeekdayFromOrdinalByDay(): void
+	{
+		$rrule = RecurrenceRule::compile( [
+			'freq'  => 'monthly',
+			'byday' => '1SA'
+		] );
+
+		$this->assertSame( 'FREQ=MONTHLY;BYDAY=1SA', $rrule );
+	}
+
+	public function testMonthlyFirstSaturdayOccurrences(): void
+	{
+		$start = new DateTimeImmutable( '2026-01-03 10:00:00' );
+		$rule = RecurrenceRule::create( 'FREQ=MONTHLY;BYDAY=1SA', $start );
+		$dates = $rule->getOccurrencesBetween(
+			new DateTimeImmutable( '2026-01-01' ),
+			new DateTimeImmutable( '2026-04-30' )
+		);
+
+		$formatted = array_map(
+			fn( $date ) => DateTimeImmutable::createFromInterface( $date )->format( 'Y-m-d l' ),
+			array_values( $dates )
+		);
+
+		$this->assertSame( [
+			'2026-01-03 Saturday',
+			'2026-02-07 Saturday',
+			'2026-03-07 Saturday',
+			'2026-04-04 Saturday'
+		], $formatted );
+	}
+
 	public function testCompileWithCount(): void
 	{
 		$rrule = RecurrenceRule::compile( [ 'freq' => 'weekly', 'end' => 'count', 'count' => 5 ] );
