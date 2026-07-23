@@ -1,4 +1,4 @@
-## 0.8.83
+## 0.8.83 2026-07-23
 * Added nth occurrence support for recurring events.
 
 ## 0.8.82 2026-07-22
