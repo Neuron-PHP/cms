@@ -2,6 +2,11 @@
 	<div class="d-flex justify-content-between align-items-center mb-4">
 		<h2>Edit Post: <?= htmlspecialchars( $post->getTitle() ) ?></h2>
 		<div class="btn-group">
+			<?php if( $post->isPublished() ): ?>
+				<a href="<?= route_path('blog_post', ['slug' => $post->getSlug()]) ?>" class="btn btn-outline-secondary" target="_blank">View</a>
+			<?php else: ?>
+				<a href="<?= route_path('admin_posts_preview', ['id' => $post->getId()]) ?>" class="btn btn-outline-secondary" target="_blank">Preview</a>
+			<?php endif; ?>
 			<a href="<?= route_path('admin_posts_history', ['id' => $post->getId()]) ?>" class="btn btn-outline-secondary">
 				<i class="bi bi-clock-history"></i> History
 			</a>

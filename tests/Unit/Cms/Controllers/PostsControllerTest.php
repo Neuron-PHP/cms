@@ -12,6 +12,7 @@ use Neuron\Cms\Repositories\DatabaseTagRepository;
 use Neuron\Cms\Services\Post\Creator;
 use Neuron\Cms\Services\Post\Updater;
 use Neuron\Cms\Services\Post\Deleter;
+use Neuron\Cms\Services\Content\EditorJsRenderer;
 use Neuron\Cms\Auth\SessionManager;
 use Neuron\Data\Settings\SettingManager;
 use Neuron\Mvc\IMvcApplication;
@@ -113,7 +114,8 @@ class PostsControllerTest extends TestCase
 				$tagRepository,
 				$creator,
 				$updater,
-				$deleter
+				$deleter,
+				new EditorJsRenderer()
 			])
 			->onlyMethods( ['view'] )
 			->getMock();
@@ -185,7 +187,8 @@ class PostsControllerTest extends TestCase
 				$tagRepository,
 				$creator,
 				$updater,
-				$deleter
+				$deleter,
+				new EditorJsRenderer()
 			])
 			->onlyMethods( ['view'] )
 			->getMock();
@@ -247,7 +250,8 @@ class PostsControllerTest extends TestCase
 				$tagRepository,
 				$creator,
 				$updater,
-				$deleter
+				$deleter,
+				new EditorJsRenderer()
 			])
 			->onlyMethods( ['view'] )
 			->getMock();
@@ -303,7 +307,8 @@ class PostsControllerTest extends TestCase
 			$tagRepository,
 			$creator,
 			$updater,
-			$deleter
+			$deleter,
+			new EditorJsRenderer()
 		);
 
 		$request = $this->createMock( Request::class );
