@@ -402,6 +402,28 @@ class DatabasePostRepositoryTest extends TestCase
 		$this->assertCount( 3, $posts );
 	}
 
+	public function testAllEagerLoadsCategoriesAndTags(): void
+	{
+		$category = $this->createCategory( 'Tech', 'tech' );
+		$tag = $this->createTag( 'PHP', 'php' );
+
+		$post = $this->createTestPost( 'Post 1', 'post-1' );
+		$post->addCategory( $category );
+		$post->addTag( $tag );
+		$this->_Repository->update( $post );
+
+		// Listing views (e.g. the public /blog index, homepage "latest
+		// posts") render each post's categories/tags without a separate
+		// lookup, so all() must eager-load them the same way
+		// findById()/findBySlug() already do.
+		$posts = $this->_Repository->all();
+
+		$this->assertCount( 1, $posts[0]->getCategories() );
+		$this->assertEquals( 'Tech', $posts[0]->getCategories()[0]->getName() );
+		$this->assertCount( 1, $posts[0]->getTags() );
+		$this->assertEquals( 'PHP', $posts[0]->getTags()[0]->getName() );
+	}
+
 	public function testCanGetAllPostsWithStatus(): void
 	{
 		$this->createTestPost( 'Draft 1', 'draft-1', Post::STATUS_DRAFT );
@@ -440,6 +462,26 @@ class DatabasePostRepositoryTest extends TestCase
 		$this->assertCount( 1, $author2Posts );
 	}
 
+	public function testGetByAuthorEagerLoadsCategoriesAndTags(): void
+	{
+		$category = $this->createCategory( 'Tech', 'tech' );
+		$tag = $this->createTag( 'PHP', 'php' );
+
+		$post = $this->createTestPost( 'Author 1 Post 1', 'a1-p1', Post::STATUS_PUBLISHED, 1 );
+		$post->addCategory( $category );
+		$post->addTag( $tag );
+		$this->_Repository->update( $post );
+
+		// The public /blog/author/:username page renders each post's
+		// categories/tags without a separate lookup.
+		$posts = $this->_Repository->getByAuthor( 1 );
+
+		$this->assertCount( 1, $posts[0]->getCategories() );
+		$this->assertEquals( 'Tech', $posts[0]->getCategories()[0]->getName() );
+		$this->assertCount( 1, $posts[0]->getTags() );
+		$this->assertEquals( 'PHP', $posts[0]->getTags()[0]->getName() );
+	}
+
 	public function testCanGetPostsByAuthorWithStatus(): void
 	{
 		$this->createTestPost( 'Draft', 'draft', Post::STATUS_DRAFT, 1 );
@@ -455,9 +497,11 @@ class DatabasePostRepositoryTest extends TestCase
 	public function testCanGetPostsByCategory(): void
 	{
 		$category = $this->createCategory( 'Tech', 'tech' );
+		$tag = $this->createTag( 'PHP', 'php' );
 
 		$post1 = $this->createTestPost( 'Post 1', 'post-1' );
 		$post1->addCategory( $category );
+		$post1->addTag( $tag );
 		$this->_Repository->update( $post1 );
 
 		$post2 = $this->createTestPost( 'Post 2', 'post-2' );
@@ -466,13 +510,23 @@ class DatabasePostRepositoryTest extends TestCase
 
 		$this->assertCount( 1, $categoryPosts );
 		$this->assertEquals( 'Post 1', $categoryPosts[0]->getTitle() );
+
+		// Listing views (e.g. the public /blog/category/:slug page) render
+		// each post's categories/tags without a separate lookup, so getByCategory()
+		// must eager-load them the same way findById()/findBySlug() already do.
+		$this->assertCount( 1, $categoryPosts[0]->getCategories() );
+		$this->assertEquals( 'Tech', $categoryPosts[0]->getCategories()[0]->getName() );
+		$this->assertCount( 1, $categoryPosts[0]->getTags() );
+		$this->assertEquals( 'PHP', $categoryPosts[0]->getTags()[0]->getName() );
 	}
 
 	public function testCanGetPostsByTag(): void
 	{
+		$category = $this->createCategory( 'Tech', 'tech' );
 		$tag = $this->createTag( 'PHP', 'php' );
 
 		$post1 = $this->createTestPost( 'Post 1', 'post-1' );
+		$post1->addCategory( $category );
 		$post1->addTag( $tag );
 		$this->_Repository->update( $post1 );
 
@@ -482,6 +536,14 @@ class DatabasePostRepositoryTest extends TestCase
 
 		$this->assertCount( 1, $taggedPosts );
 		$this->assertEquals( 'Post 1', $taggedPosts[0]->getTitle() );
+
+		// Listing views (e.g. the public /blog/tag/:slug page) render each
+		// post's categories/tags without a separate lookup, so getByTag()
+		// must eager-load them the same way findById()/findBySlug() already do.
+		$this->assertCount( 1, $taggedPosts[0]->getCategories() );
+		$this->assertEquals( 'Tech', $taggedPosts[0]->getCategories()[0]->getName() );
+		$this->assertCount( 1, $taggedPosts[0]->getTags() );
+		$this->assertEquals( 'PHP', $taggedPosts[0]->getTags()[0]->getName() );
 	}
 
 	public function testCanGetPublishedPosts(): void

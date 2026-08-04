@@ -1,4 +1,5 @@
 ## 0.8.84
+* Blog tags are now lazy loaded.
 
 ## 0.8.83 2026-07-23
 * Added nth occurrence support for recurring events.

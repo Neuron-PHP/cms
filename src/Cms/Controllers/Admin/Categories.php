@@ -71,7 +71,7 @@ class Categories extends Content
 			->description( 'Manage blog categories' )
 			->withCurrentUser()
 			->withCsrfToken()
-			->with( 'CategoriesWithCount', $this->_categoryRepository->allWithPostCount() )
+			->with( 'categories', $this->_categoryRepository->allWithPostCount() )
 			->render( 'index', 'admin' );
 	}
 

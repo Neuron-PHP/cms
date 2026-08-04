@@ -182,8 +182,9 @@ class DatabasePostRepository implements IPostRepository
 	 */
 	public function all( ?string $status = null, int $limit = 0, int $offset = 0 ): array
 	{
-		// Eager load author so listings can display the author name
-		$query = Post::query()->with( 'author' );
+		// Eager load author, categories and tags so listings can display
+		// them without a separate query per post
+		$query = Post::query()->with( ['author', 'categories', 'tags'] );
 
 		if( $status )
 		{
@@ -205,8 +206,9 @@ class DatabasePostRepository implements IPostRepository
 	 */
 	public function getByAuthor( int $authorId, ?string $status = null ): array
 	{
-		// Eager load author so listings can display the author name
-		$query = Post::query()->with( 'author' )->where( 'author_id', $authorId );
+		// Eager load author, categories and tags so listings can display
+		// them without a separate query per post
+		$query = Post::query()->with( ['author', 'categories', 'tags'] )->where( 'author_id', $authorId );
 
 		if( $status )
 		{
@@ -221,9 +223,11 @@ class DatabasePostRepository implements IPostRepository
 	 */
 	public function getByCategory( int $categoryId, ?string $status = null ): array
 	{
-		// Use ORM JOIN support instead of raw SQL
+		// Use ORM JOIN support instead of raw SQL. Eager load categories and
+		// tags so listings can display them without a separate query per post.
 		$query = Post::query()
 			->select( ['posts.*'] )
+			->with( ['categories', 'tags'] )
 			->join( 'post_categories', 'posts.id', '=', 'post_categories.post_id' )
 			->where( 'post_categories.category_id', $categoryId );
 
@@ -240,9 +244,11 @@ class DatabasePostRepository implements IPostRepository
 	 */
 	public function getByTag( int $tagId, ?string $status = null ): array
 	{
-		// Use ORM JOIN support instead of raw SQL
+		// Use ORM JOIN support instead of raw SQL. Eager load categories and
+		// tags so listings can display them without a separate query per post.
 		$query = Post::query()
 			->select( ['posts.*'] )
+			->with( ['categories', 'tags'] )
 			->join( 'post_tags', 'posts.id', '=', 'post_tags.post_id' )
 			->where( 'post_tags.tag_id', $tagId );
 
