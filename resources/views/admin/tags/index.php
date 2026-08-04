@@ -18,12 +18,16 @@
 				</thead>
 				<tbody>
 					<?php if( isset( $tags ) && !empty( $tags ) ): ?>
-						<?php foreach( $tags as $tag ): ?>
+						<?php foreach( $tags as $tagWithCount ): ?>
+							<?php
+							$tag = $tagWithCount['tag'];
+							$postCount = $tagWithCount['post_count'];
+							?>
 							<tr>
 								<td><?= $tag->getId() ?></td>
 								<td><?= htmlspecialchars( $tag->getName() ) ?></td>
 								<td><?= htmlspecialchars( $tag->getSlug() ) ?></td>
-								<td><?= $tag->getPostCount() ?? 0 ?></td>
+								<td><?= $postCount ?></td>
 								<td>
 									<a href="<?= route_path('blog_tag', ['slug' => $tag->getSlug()]) ?>" class="btn btn-sm btn-outline-secondary" target="_blank">View</a>
 									<a href="<?= route_path('admin_tags_edit', ['id' => $tag->getId()]) ?>" class="btn btn-sm btn-outline-primary">Edit</a>

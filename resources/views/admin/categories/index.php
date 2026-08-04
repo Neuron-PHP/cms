@@ -19,13 +19,17 @@
 				</thead>
 				<tbody>
 					<?php if( isset( $categories ) && !empty( $categories ) ): ?>
-						<?php foreach( $categories as $category ): ?>
+						<?php foreach( $categories as $categoryWithCount ): ?>
+							<?php
+							$category = $categoryWithCount['category'];
+							$postCount = $categoryWithCount['post_count'];
+							?>
 							<tr>
 								<td><?= $category->getId() ?></td>
 								<td><?= htmlspecialchars( $category->getName() ) ?></td>
 								<td><?= htmlspecialchars( $category->getSlug() ) ?></td>
 								<td><?= htmlspecialchars( substr( $category->getDescription() ?? '', 0, 50 ) ) ?><?= strlen( $category->getDescription() ?? '' ) > 50 ? '...' : '' ?></td>
-								<td><?= $category->getPostCount() ?? 0 ?></td>
+								<td><?= $postCount ?></td>
 								<td>
 									<a href="<?= route_path('blog_category', ['slug' => $category->getSlug()]) ?>" class="btn btn-sm btn-outline-secondary" target="_blank">View</a>
 									<a href="<?= route_path('admin_categories_edit', ['id' => $category->getId()]) ?>" class="btn btn-sm btn-outline-primary">Edit</a>
