@@ -15,6 +15,8 @@ use Neuron\Cms\Services\Post\IPostDeleter;
 use Neuron\Cms\Services\Revision\IRevisionService;
 use Neuron\Cms\Services\Tag\Resolver as TagResolver;
 use Neuron\Cms\Services\Auth\CsrfToken;
+use Neuron\Cms\Services\Content\EditorJsRenderer;
+use Neuron\Core\Exceptions\NotFound;
 use Neuron\Data\Settings\SettingManager;
 use Neuron\Mvc\IMvcApplication;
 use Neuron\Mvc\Requests\Request;
@@ -40,6 +42,7 @@ class Posts extends Content
 	private IPostCreator $_postCreator;
 	private IPostUpdater $_postUpdater;
 	private IPostDeleter $_postDeleter;
+	private EditorJsRenderer $_renderer;
 	private ?IRevisionService $_revisions;
 
 	/**
@@ -52,6 +55,7 @@ class Posts extends Content
 	 * @param IPostCreator $postCreator
 	 * @param IPostUpdater $postUpdater
 	 * @param IPostDeleter $postDeleter
+	 * @param EditorJsRenderer $renderer
 	 * @param IRevisionService|null $revisions
 	 */
 	public function __construct(
@@ -64,6 +68,7 @@ class Posts extends Content
 		IPostCreator $postCreator,
 		IPostUpdater $postUpdater,
 		IPostDeleter $postDeleter,
+		EditorJsRenderer $renderer,
 		?IRevisionService $revisions = null
 	)
 	{
@@ -75,6 +80,7 @@ class Posts extends Content
 		$this->_postCreator = $postCreator;
 		$this->_postUpdater = $postUpdater;
 		$this->_postDeleter = $postDeleter;
+		$this->_renderer = $renderer;
 		$this->_revisions = $revisions;
 	}
 
@@ -246,6 +252,50 @@ class Posts extends Content
 				'categories' => $this->_categoryRepository->all()
 			])
 			->render( 'edit', 'admin' );
+	}
+
+	/**
+	 * Preview a post regardless of status (draft/scheduled posts 404 on the
+	 * public blog show route, since Blog::show() only serves published
+	 * posts). Auth-gated via this controller's RouteGroup filter, so it's
+	 * safe to bypass the published check here.
+	 *
+	 * @param Request $request
+	 * @return string
+	 * @throws NotFound
+	 */
+	#[Get('/posts/:id/preview', name: 'admin_posts_preview')]
+	public function preview( Request $request ): string
+	{
+		$postId = (int)$request->getRouteParameter( 'id' );
+		$post = $this->_postRepository->findById( $postId );
+
+		if( !$post )
+		{
+			throw new NotFound( 'Post not found' );
+		}
+
+		// Check permissions - same rule as edit()
+		if( !is_admin() && !is_editor() && $post->getAuthorId() !== user_id() )
+		{
+			throw new \RuntimeException( 'Unauthorized to preview this post' );
+		}
+
+		$content = $post->getContent();
+		$renderedContent = $this->_renderer?->render( $content ) ?? ( is_array( $content ) ? json_encode( $content ) : $content );
+
+		if( empty( trim( $renderedContent ) ) && !empty( $post->getBody() ) )
+		{
+			$renderedContent = '<p>' . htmlspecialchars( $post->getBody() ) . '</p>';
+		}
+
+		return $this->view()
+			->title( 'Preview: ' . $post->getTitle() )
+			->with([
+				'Post' => $post,
+				'renderedContent' => $renderedContent,
+			])
+			->render( 'preview', 'default' );
 	}
 
 	/**

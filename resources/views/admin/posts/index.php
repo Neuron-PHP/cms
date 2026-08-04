@@ -29,7 +29,11 @@
 								<td><?= $post->getViewCount() ?></td>
 								<td><?= format_user_datetime( $post->getCreatedAt() ) ?></td>
 								<td>
-									<a href="<?= route_path('blog_post', ['slug' => $post->getSlug()]) ?>" class="btn btn-sm btn-outline-secondary" target="_blank">View</a>
+									<?php if( $post->isPublished() ): ?>
+										<a href="<?= route_path('blog_post', ['slug' => $post->getSlug()]) ?>" class="btn btn-sm btn-outline-secondary" target="_blank">View</a>
+									<?php else: ?>
+										<a href="<?= route_path('admin_posts_preview', ['id' => $post->getId()]) ?>" class="btn btn-sm btn-outline-secondary" target="_blank">Preview</a>
+									<?php endif; ?>
 									<a href="<?= route_path('admin_posts_edit', ['id' => $post->getId()]) ?>" class="btn btn-sm btn-outline-primary">Edit</a>
 									<form method="POST" action="<?= route_path('admin_posts_destroy', ['id' => $post->getId()]) ?>" class="d-inline">
 										<input type="hidden" name="_method" value="DELETE">

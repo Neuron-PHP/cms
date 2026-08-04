@@ -9,6 +9,7 @@ use Neuron\Cms\Repositories\ITagRepository;
 use Neuron\Cms\Services\Post\IPostCreator;
 use Neuron\Cms\Services\Post\IPostUpdater;
 use Neuron\Cms\Services\Post\IPostDeleter;
+use Neuron\Cms\Services\Content\EditorJsRenderer;
 use Neuron\Cms\Auth\SessionManager;
 use Neuron\Data\Settings\SettingManager;
 use Neuron\Mvc\IMvcApplication;
@@ -78,7 +79,8 @@ class PostsTest extends TestCase
 			$this->createMock( ITagRepository::class ),
 			$this->createMock( IPostCreator::class ),
 			$this->createMock( IPostUpdater::class ),
-			$this->createMock( IPostDeleter::class )
+			$this->createMock( IPostDeleter::class ),
+			new EditorJsRenderer()
 		);
 
 		$this->assertInstanceOf( Posts::class, $controller );
@@ -107,7 +109,8 @@ class PostsTest extends TestCase
 			null,
 			null,
 			null,
-			null
+			null,
+			new EditorJsRenderer()
 		);
 	}
 }
