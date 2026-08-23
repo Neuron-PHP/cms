@@ -2,7 +2,10 @@
 
 namespace Neuron\Cms\Controllers;
 
+use Neuron\Application\CrossCutting\Event;
 use Neuron\Cms\Auth\SessionManager;
+use Neuron\Cms\Events\PaymentCompletedEvent;
+use Neuron\Cms\Events\PaymentFailedEvent;
 use Neuron\Cms\Repositories\IOrderItemRepository;
 use Neuron\Cms\Repositories\IPaymentRepository;
 use Neuron\Cms\Repositories\ISubscriptionRepository;
@@ -358,7 +361,11 @@ class Payments extends Content
 			$this->openSubscription( $payment, $subscriptionId, $gateway );
 		}
 
-		$this->sendNotifications( $this->_repository->findById( $paymentId ) ?? $payment );
+		$completed = $this->_repository->findById( $paymentId ) ?? $payment;
+
+		Event::emit( new PaymentCompletedEvent( $completed, false ) );
+
+		$this->sendNotifications( $completed );
 
 		return $this->plain( HttpResponseStatus::OK, 'ok' );
 	}
@@ -428,6 +435,7 @@ class Payments extends Content
 
 		if( $renewal !== null )
 		{
+			Event::emit( new PaymentCompletedEvent( $renewal, true ) );
 			$this->sendNotifications( $renewal, true );
 		}
 
@@ -499,11 +507,16 @@ class Payments extends Content
 	private function handleInvoicePaymentFailed( object $event ): string
 	{
 		$subscriptionId = $event->subscriptionId();
+		$payment        = $subscriptionId !== null
+			? $this->_repository->findBySubscriptionId( $subscriptionId )
+			: null;
 
 		if( $subscriptionId !== null )
 		{
 			$this->_subscriptions->updateState( $subscriptionId, [ 'status' => 'past_due' ] );
 		}
+
+		Event::emit( new PaymentFailedEvent( $payment, $subscriptionId ) );
 
 		return $this->plain( HttpResponseStatus::OK, 'ok' );
 	}

@@ -2,13 +2,19 @@
 
 namespace Tests\Unit\Cms\Controllers;
 
+use Neuron\Application\CrossCutting\Event;
 use Neuron\Cms\Auth\SessionManager;
 use Neuron\Cms\Controllers\Content;
 use Neuron\Cms\Controllers\Payments;
+use Neuron\Cms\Events\PaymentCompletedEvent;
+use Neuron\Cms\Events\PaymentFailedEvent;
 use Neuron\Cms\Repositories\DatabasePaymentRepository;
 use Neuron\Cms\Repositories\DatabaseSubscriptionRepository;
 use Neuron\Cms\Repositories\IPaymentRepository;
 use Neuron\Cms\Repositories\ISubscriptionRepository;
+use Neuron\Events\Broadcasters\Generic;
+use Neuron\Events\IEvent;
+use Neuron\Events\IListener;
 use Neuron\Cms\Services\Payment\PaymentService;
 use Neuron\Cms\Services\Payment\PaymentGatewayFactory;
 use Neuron\Data\Settings\SettingManager;
@@ -26,6 +32,27 @@ use PDO;
 
 class PaymentsTest extends TestCase
 {
+	protected function setUp(): void
+	{
+		parent::setUp();
+
+		Event::invalidate();
+		PaymentEventCapture::$events = [];
+		Event::registerBroadcaster( new Generic() );
+		Event::registerListeners( [
+			PaymentCompletedEvent::class => [ PaymentEventCapture::class ],
+			PaymentFailedEvent::class    => [ PaymentEventCapture::class ]
+		] );
+	}
+
+	protected function tearDown(): void
+	{
+		Event::invalidate();
+		PaymentEventCapture::$events = [];
+
+		parent::tearDown();
+	}
+
 	private function settings(): SettingManager
 	{
 		return new SettingManager( new Memory( [
@@ -305,6 +332,11 @@ class PaymentsTest extends TestCase
 		$this->assertNotNull( $subscription );
 		$this->assertSame( 'active', $subscription['status'] );
 		$this->assertSame( 2500, (int) $subscription['amount_cents'] );
+
+		$this->assertCount( 1, PaymentEventCapture::$events );
+		$this->assertInstanceOf( PaymentCompletedEvent::class, PaymentEventCapture::$events[0] );
+		$this->assertFalse( PaymentEventCapture::$events[0]->isRenewal );
+		$this->assertSame( $paymentId, (int) PaymentEventCapture::$events[0]->payment['id'] );
 	}
 
 	public function testInvoicePaidRenewalRecordsNewCharge(): void
@@ -343,9 +375,15 @@ class PaymentsTest extends TestCase
 		$this->assertSame( 'completed', $renewal['status'] );
 		$this->assertSame( 'sub_1', $renewal['subscription_id'] );
 
+		$this->assertCount( 1, PaymentEventCapture::$events );
+		$this->assertInstanceOf( PaymentCompletedEvent::class, PaymentEventCapture::$events[0] );
+		$this->assertTrue( PaymentEventCapture::$events[0]->isRenewal );
+		$this->assertSame( (int) $renewal['id'], (int) PaymentEventCapture::$events[0]->payment['id'] );
+
 		// Idempotency: replaying the same invoice does not create a duplicate.
 		$method->invoke( $controller, $event, $this->stubGateway() );
 		$this->assertSame( 2, $payments->paginate( 1, 25, null, null, null )['total'] );
+		$this->assertCount( 1, PaymentEventCapture::$events );
 	}
 
 	public function testInvoicePaidInitialChargeIsIgnored(): void
@@ -387,5 +425,50 @@ class PaymentsTest extends TestCase
 		$subscription = $subs->findByGatewayId( 'sub_1' );
 		$this->assertSame( 'canceled', $subscription['status'] );
 		$this->assertNotEmpty( $subscription['canceled_at'] );
+	}
+
+	public function testInvoicePaymentFailedEmitsPaymentFailedEvent(): void
+	{
+		$pdo      = $this->pdo();
+		$payments = $this->repoFrom( DatabasePaymentRepository::class, $pdo );
+		$subs     = $this->repoFrom( DatabaseSubscriptionRepository::class, $pdo );
+
+		$payments->create( [
+			'purpose' => 'donation', 'form_key' => 'general', 'provider' => 'stripe', 'type' => 'recurring',
+			'subscription_id' => 'sub_1', 'amount_cents' => 2500, 'currency' => 'usd', 'frequency' => 'monthly',
+			'status' => 'completed', 'payer_email' => '', 'payload' => '{}'
+		] );
+		$subs->create( [
+			'purpose' => 'donation', 'form_key' => 'general', 'provider' => 'stripe', 'subscription_id' => 'sub_1',
+			'status' => 'active', 'frequency' => 'monthly', 'amount_cents' => 2500, 'currency' => 'usd', 'payload' => '{}'
+		] );
+
+		$controller = $this->makeController( $payments, $subs );
+
+		$event = new WebhookEvent( WebhookEvent::INVOICE_PAYMENT_FAILED, [
+			'subscription' => 'sub_1'
+		] );
+
+		$method = new \ReflectionMethod( Payments::class, 'handleInvoicePaymentFailed' );
+		$method->invoke( $controller, $event );
+
+		$subscription = $subs->findByGatewayId( 'sub_1' );
+		$this->assertSame( 'past_due', $subscription['status'] );
+
+		$this->assertCount( 1, PaymentEventCapture::$events );
+		$this->assertInstanceOf( PaymentFailedEvent::class, PaymentEventCapture::$events[0] );
+		$this->assertSame( 'sub_1', PaymentEventCapture::$events[0]->subscriptionId );
+		$this->assertSame( 'sub_1', PaymentEventCapture::$events[0]->payment['subscription_id'] ?? null );
+	}
+}
+
+class PaymentEventCapture implements IListener
+{
+	/** @var IEvent[] */
+	public static array $events = [];
+
+	public function event( $event ): void
+	{
+		self::$events[] = $event;
 	}
 }

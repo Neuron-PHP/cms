@@ -1,4 +1,5 @@
 ## 0.8.86
+* Added events for payments.
 
 ## 0.8.85 2026-08-04
 
