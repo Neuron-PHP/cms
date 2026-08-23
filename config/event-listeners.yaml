@@ -33,3 +33,9 @@ events:
   category.deleted:
     class: 'Neuron\Cms\Events\CategoryDeletedEvent'
     listeners: []
+  payment.completed:
+    class: 'Neuron\Cms\Events\PaymentCompletedEvent'
+    listeners: []
+  payment.failed:
+    class: 'Neuron\Cms\Events\PaymentFailedEvent'
+    listeners: []

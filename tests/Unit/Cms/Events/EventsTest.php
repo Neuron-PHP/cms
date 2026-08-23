@@ -11,6 +11,8 @@ use Neuron\Cms\Events\PostDeletedEvent;
 use Neuron\Cms\Events\CategoryCreatedEvent;
 use Neuron\Cms\Events\CategoryUpdatedEvent;
 use Neuron\Cms\Events\CategoryDeletedEvent;
+use Neuron\Cms\Events\PaymentCompletedEvent;
+use Neuron\Cms\Events\PaymentFailedEvent;
 use Neuron\Cms\Models\User;
 use Neuron\Cms\Models\Post;
 use Neuron\Cms\Models\Category;
@@ -118,5 +120,46 @@ class EventsTest extends TestCase
 
 		$this->assertEquals( 'category.deleted', $event->getName() );
 		$this->assertEquals( 7, $event->categoryId );
+	}
+
+	public function testPaymentCompletedEvent(): void
+	{
+		$payment = [ 'id' => 11, 'amount_cents' => 2500, 'purpose' => 'donation' ];
+
+		$event = new PaymentCompletedEvent( $payment, false );
+
+		$this->assertEquals( 'payment.completed', $event->getName() );
+		$this->assertSame( $payment, $event->payment );
+		$this->assertFalse( $event->isRenewal );
+	}
+
+	public function testPaymentCompletedEventRenewal(): void
+	{
+		$payment = [ 'id' => 12, 'amount_cents' => 2500, 'purpose' => 'membership' ];
+
+		$event = new PaymentCompletedEvent( $payment, true );
+
+		$this->assertEquals( 'payment.completed', $event->getName() );
+		$this->assertTrue( $event->isRenewal );
+	}
+
+	public function testPaymentFailedEvent(): void
+	{
+		$payment = [ 'id' => 13, 'subscription_id' => 'sub_1' ];
+
+		$event = new PaymentFailedEvent( $payment, 'sub_1' );
+
+		$this->assertEquals( 'payment.failed', $event->getName() );
+		$this->assertSame( $payment, $event->payment );
+		$this->assertEquals( 'sub_1', $event->subscriptionId );
+	}
+
+	public function testPaymentFailedEventWithoutPayment(): void
+	{
+		$event = new PaymentFailedEvent( null, null );
+
+		$this->assertEquals( 'payment.failed', $event->getName() );
+		$this->assertNull( $event->payment );
+		$this->assertNull( $event->subscriptionId );
 	}
 }
