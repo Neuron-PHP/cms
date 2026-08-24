@@ -1,3 +1,5 @@
+## 0.8.88
+
 ## 0.8.87 2026-08-23
 * Added scheduled payment report.
 
