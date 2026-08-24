@@ -56,6 +56,11 @@ class Provider
 			'Neuron\\Cms\\Cli\\Commands\\Email\\TestCommand'
 		);
 
+		$registry->register(
+			'cms:payments:report',
+			'Neuron\\Cms\\Cli\\Commands\\Payments\\ReportCommand'
+		);
+
 		// Maintenance mode commands
 		$registry->register(
 			'cms:maintenance:enable',

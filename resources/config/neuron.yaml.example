@@ -291,6 +291,13 @@ contact:
 #                       semiannual, annual (omit/[] for one-time only)
 #   fields              payer fields (same schema as contact form fields)
 #
+# Monthly report (optional):
+#   monthly_report.enabled  true to email a summary of completed payments
+#   monthly_report.to       recipient address (required when enabled)
+#   monthly_report.subject  optional subject override
+#   The CMS ships MonthlyPaymentReportJob on the 1st at 08:00. The job
+#   no-ops when this block is missing, disabled, or has no recipient.
+#
 # Backward compatibility: a legacy top-level `donations:` section (with the same
 # default_form/success_url/cancel_url/forms keys) is still read if `payments`
 # has no forms, so existing donation configs keep working.
@@ -319,6 +326,11 @@ payments:
         - { name: name,  label: "Your Name", type: text,  required: true, sender_name: true, rules: { length: { min: 2, max: 80 } } }
         - { name: email, label: "Email",     type: email, required: true, reply_to: true }
         - { name: phone, label: "Phone",     type: tel,   required: false }
+
+  # monthly_report:
+  #   enabled: true
+  #   to: "finance@yourdomain.com"
+  #   subject: "Monthly Payment Report"
 
 # ---------------------------------------------------------------------------
 # Store / products ( optional )

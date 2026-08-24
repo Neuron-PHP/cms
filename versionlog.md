@@ -1,3 +1,6 @@
+## 0.8.87 2026-08-23
+* Added scheduled payment report.
+
 ## 0.8.86 2026-08-23
 * Added events for payments.
 

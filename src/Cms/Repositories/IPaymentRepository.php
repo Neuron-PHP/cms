@@ -107,4 +107,13 @@ interface IPaymentRepository
 	 * @return array<int, string>
 	 */
 	public function formKeys(): array;
+
+	/**
+	 * Completed payments whose completed_at falls in [ $from, $to ).
+	 *
+	 * @param string $from Inclusive lower bound (Y-m-d H:i:s)
+	 * @param string $to Exclusive upper bound (Y-m-d H:i:s)
+	 * @return array<int, array<string, mixed>>
+	 */
+	public function findCompletedBetween( string $from, string $to ): array;
 }
