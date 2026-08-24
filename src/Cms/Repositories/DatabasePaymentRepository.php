@@ -251,4 +251,26 @@ class DatabasePaymentRepository implements IPaymentRepository
 
 		return $stmt->fetchAll( PDO::FETCH_COLUMN ) ?: [];
 	}
+
+	/**
+	 * @inheritDoc
+	 */
+	public function findCompletedBetween( string $from, string $to ): array
+	{
+		$stmt = $this->_pdo->prepare(
+			'SELECT * FROM payments'
+			. ' WHERE status = :status'
+			. ' AND completed_at >= :from'
+			. ' AND completed_at < :to'
+			. ' ORDER BY completed_at ASC, id ASC'
+		);
+
+		$stmt->execute( [
+			':status' => 'completed',
+			':from'   => $from,
+			':to'     => $to
+		] );
+
+		return $stmt->fetchAll( PDO::FETCH_ASSOC ) ?: [];
+	}
 }

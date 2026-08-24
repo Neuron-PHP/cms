@@ -42,3 +42,10 @@ schedule:
     cron: "0 4 * * *"
     args:
       max_age_days: 30
+
+  # Email the previous calendar month's completed payments. Skips unless
+  # payments.monthly_report.enabled is true and a recipient is configured.
+  monthly_payment_report:
+    class: Neuron\Cms\Jobs\MonthlyPaymentReportJob
+    cron: "0 8 1 * *"
+    queue: emails

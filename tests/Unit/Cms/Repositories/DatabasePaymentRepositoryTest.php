@@ -183,4 +183,70 @@ class DatabasePaymentRepositoryTest extends TestCase
 
 		$this->assertSame( [ 'general', 'membership' ], $keys );
 	}
+
+	public function testFindCompletedBetweenIncludesOnlyCompletedInRange(): void
+	{
+		$inRange = $this->repository->create( $this->sampleRow( [
+			'status'       => 'completed',
+			'completed_at' => '2026-07-15 10:00:00',
+			'payer_name'   => 'In Range'
+		] ) );
+
+		$this->repository->create( $this->sampleRow( [
+			'status'       => 'pending',
+			'completed_at' => '2026-07-16 10:00:00',
+			'payer_name'   => 'Pending'
+		] ) );
+
+		$this->repository->create( $this->sampleRow( [
+			'status'       => 'failed',
+			'completed_at' => '2026-07-16 11:00:00',
+			'payer_name'   => 'Failed'
+		] ) );
+
+		$this->repository->create( $this->sampleRow( [
+			'status'       => 'refunded',
+			'completed_at' => '2026-07-16 12:00:00',
+			'payer_name'   => 'Refunded'
+		] ) );
+
+		$this->repository->create( $this->sampleRow( [
+			'status'       => 'completed',
+			'completed_at' => '2026-06-30 23:59:59',
+			'payer_name'   => 'Before'
+		] ) );
+
+		$this->repository->create( $this->sampleRow( [
+			'status'       => 'completed',
+			'completed_at' => '2026-08-01 00:00:00',
+			'payer_name'   => 'After'
+		] ) );
+
+		$later = $this->repository->create( $this->sampleRow( [
+			'status'       => 'completed',
+			'completed_at' => '2026-07-20 09:00:00',
+			'payer_name'   => 'Later'
+		] ) );
+
+		$rows = $this->repository->findCompletedBetween( '2026-07-01 00:00:00', '2026-08-01 00:00:00' );
+
+		$this->assertCount( 2, $rows );
+		$this->assertSame( $inRange, (int) $rows[0]['id'] );
+		$this->assertSame( $later, (int) $rows[1]['id'] );
+		$this->assertSame( 'In Range', $rows[0]['payer_name'] );
+		$this->assertSame( 'Later', $rows[1]['payer_name'] );
+	}
+
+	public function testFindCompletedBetweenReturnsEmptyWhenNoneMatch(): void
+	{
+		$this->repository->create( $this->sampleRow( [
+			'status'       => 'completed',
+			'completed_at' => '2026-05-01 00:00:00'
+		] ) );
+
+		$this->assertSame(
+			[],
+			$this->repository->findCompletedBetween( '2026-07-01 00:00:00', '2026-08-01 00:00:00' )
+		);
+	}
 }
