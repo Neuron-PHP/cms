@@ -1,4 +1,4 @@
-## 0.8.88
+## 0.8.88 2026-09-04
 * Added image folder organization.
 
 
