@@ -413,18 +413,21 @@
 					</div>
 					<div class="card-body">
 						<div class="mb-3">
-							<label for="featured_image" class="form-label">Image URL</label>
-							<input type="url" class="form-control" id="featured_image" name="featured_image" value="<?= htmlspecialchars($event->getFeaturedImage() ?? '') ?>" placeholder="https://">
-							<small class="form-text text-muted">Upload via Media Library or paste URL</small>
+							<label for="featured_image" class="form-label">Featured Image</label>
+							<div class="input-group">
+								<input type="url" class="form-control" id="featured_image" name="featured_image" value="<?= htmlspecialchars($event->getFeaturedImage() ?? '') ?>" placeholder="Enter URL or browse from media library">
+								<button type="button" class="btn btn-outline-secondary" onclick="openMediaPicker('featured_image')">
+									<i class="bi bi-images"></i> Browse
+								</button>
+							</div>
+							<div class="mt-2">
+								<?php if( $event->getFeaturedImage() ): ?>
+									<img id="featured_image_preview" class="img-thumbnail" style="max-width: 300px;" src="<?= htmlspecialchars( $event->getFeaturedImage() ) ?>" alt="Featured image preview">
+								<?php else: ?>
+									<img id="featured_image_preview" class="img-thumbnail d-none" style="max-width: 300px;" alt="Featured image preview">
+								<?php endif; ?>
+							</div>
 						</div>
-
-						<div id="featured-image-preview" class="mb-2" <?= $event->getFeaturedImage() ? '' : 'style="display: none;"' ?>>
-							<img src="<?= htmlspecialchars($event->getFeaturedImage() ?? '') ?>" alt="Preview" class="img-thumbnail" style="max-width: 100%;">
-						</div>
-
-						<a href="<?= route_path('admin_media') ?>" class="btn btn-sm btn-outline-secondary w-100" target="_blank">
-							<i class="bi bi-images"></i> Open Media Library
-						</a>
 					</div>
 				</div>
 
@@ -611,14 +614,13 @@ document.getElementById('slug').addEventListener('input', function() {
 
 // Featured image preview
 document.getElementById('featured_image').addEventListener('input', function() {
-	const preview = document.getElementById('featured-image-preview');
-	const img = preview.querySelector('img');
+	const preview = document.getElementById('featured_image_preview');
 
 	if (this.value) {
-		img.src = this.value;
-		preview.style.display = 'block';
+		preview.src = this.value;
+		preview.classList.remove('d-none');
 	} else {
-		preview.style.display = 'none';
+		preview.classList.add('d-none');
 	}
 });
 
@@ -695,3 +697,5 @@ document.getElementById('event-form').addEventListener('submit', async (e) => {
 	syncByday();
 })();
 </script>
+
+<?php include __DIR__ . '/../../partials/media-picker-modal.php'; ?>
