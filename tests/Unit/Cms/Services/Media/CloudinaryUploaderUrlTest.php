@@ -156,7 +156,7 @@ class CloudinaryUploaderUrlTest extends TestCase
 			->with(
 				'https://example.com/test.jpg',
 				$this->callback( function( $options ) {
-					return $options['folder'] === 'custom'
+					return $options['folder'] === 'test-folder/custom'
 						&& isset( $options['public_id'] );
 				} )
 			)

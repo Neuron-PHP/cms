@@ -23,8 +23,12 @@
 						</ul>
 
 						<div class="tab-content" id="mediaPickerTabContent">
-							<!-- Library Tab -->
 							<div class="tab-pane fade show active" id="library" role="tabpanel" aria-labelledby="library-tab">
+								<nav aria-label="Picker folder breadcrumb" class="mb-2">
+									<ol class="breadcrumb mb-2" id="mediaPickerBreadcrumb"></ol>
+								</nav>
+								<div id="mediaPickerTags" class="mb-3 d-flex flex-wrap gap-2 align-items-center"></div>
+
 								<div id="mediaLibraryLoading" class="text-center py-5">
 									<div class="spinner-border text-primary" role="status">
 										<span class="visually-hidden">Loading...</span>
@@ -34,9 +38,7 @@
 
 								<div id="mediaLibraryError" class="alert alert-danger d-none"></div>
 
-								<div id="mediaLibraryGrid" class="row row-cols-2 row-cols-sm-3 row-cols-md-4 row-cols-lg-5 g-3 d-none">
-									<!-- Media items will be loaded here dynamically -->
-								</div>
+								<div id="mediaLibraryGrid" class="row row-cols-2 row-cols-sm-3 row-cols-md-4 row-cols-lg-5 g-3 d-none"></div>
 
 								<div id="mediaLibraryEmpty" class="text-center py-5 d-none">
 									<i class="bi bi-images" style="font-size: 4rem; color: #ccc;"></i>
@@ -53,7 +55,6 @@
 								</div>
 							</div>
 
-							<!-- Upload Tab -->
 							<div class="tab-pane fade" id="upload" role="tabpanel" aria-labelledby="upload-tab">
 								<form id="mediaPickerUploadForm" enctype="multipart/form-data">
 									<div class="mb-3">
@@ -65,6 +66,18 @@
 											   accept="image/jpeg,image/png,image/gif,image/webp"
 											   required>
 										<div class="form-text">Accepted formats: JPG, PNG, GIF, WebP. Max size: 5MB</div>
+									</div>
+									<div class="mb-3">
+										<label for="mediaPickerName" class="form-label">Name</label>
+										<input type="text" class="form-control" id="mediaPickerName" placeholder="Optional. Defaults to the original filename.">
+									</div>
+									<div class="mb-3">
+										<label for="mediaPickerTagsInput" class="form-label">Tags</label>
+										<input type="text" class="form-control" id="mediaPickerTagsInput" placeholder="comma, separated, tags">
+									</div>
+									<div class="mb-3">
+										<label for="mediaPickerFolder" class="form-label">Folder</label>
+										<input type="text" class="form-control" id="mediaPickerFolder">
 									</div>
 									<div id="mediaPickerUploadProgress" class="progress d-none mb-3">
 										<div class="progress-bar" role="progressbar" style="width: 0%"></div>
@@ -126,26 +139,118 @@
 (function() {
 	let selectedMediaUrl = null;
 	let nextCursor = null;
-	// Target may be either a string (id of an input to populate) or a
-	// callback function that receives the selected/uploaded image URL.
 	let pickerTarget = null;
+	let currentFolder = '';
+	let rootFolder = '';
+	let currentTag = '';
 
-	// Open media picker.
-	// @param {string|function} target Input id to populate, or a callback( url ).
 	window.openMediaPicker = function(target) {
 		pickerTarget = target;
 		selectedMediaUrl = null;
 		nextCursor = null;
+		currentFolder = '';
+		currentTag = '';
 
-		// Show the modal
 		const modal = new bootstrap.Modal(document.getElementById('mediaPickerModal'));
 		modal.show();
 
-		// Load media library
 		loadMediaLibrary();
 	};
 
-	// Load media library
+	function listUrl(cursor) {
+		const params = new URLSearchParams();
+		if (currentFolder) {
+			params.set('folder', currentFolder);
+		}
+		if (currentTag) {
+			params.set('tag', currentTag);
+		}
+		if (cursor) {
+			params.set('cursor', cursor);
+		}
+		const query = params.toString();
+		return '<?= route_path('admin_media_list') ?>' + (query ? '?' + query : '');
+	}
+
+	function renderBreadcrumb(folder, root) {
+		const ol = document.getElementById('mediaPickerBreadcrumb');
+		ol.innerHTML = '';
+
+		const addCrumb = (label, path, active) => {
+			const li = document.createElement('li');
+			li.className = 'breadcrumb-item' + (active ? ' active' : '');
+			if (active) {
+				li.textContent = label;
+			} else {
+				const a = document.createElement('a');
+				a.href = '#';
+				a.textContent = label;
+				a.addEventListener('click', function(e) {
+					e.preventDefault();
+					currentFolder = path;
+					loadMediaLibrary();
+				});
+				li.appendChild(a);
+			}
+			ol.appendChild(li);
+		};
+
+		addCrumb('All', root, folder === root || folder === '');
+
+		if (folder && folder !== root) {
+			const relative = folder.startsWith(root + '/') ? folder.slice(root.length + 1) : folder;
+			let accum = root;
+			const parts = relative.split('/').filter(Boolean);
+			parts.forEach((part, index) => {
+				accum = accum ? accum + '/' + part : part;
+				addCrumb(part, accum, index === parts.length - 1);
+			});
+		}
+	}
+
+	function renderTags(tags) {
+		const wrap = document.getElementById('mediaPickerTags');
+		wrap.innerHTML = '';
+		if (!tags || !tags.length) {
+			return;
+		}
+
+		const label = document.createElement('span');
+		label.className = 'text-muted small';
+		label.textContent = 'Tags:';
+		wrap.appendChild(label);
+
+		['', ...tags].forEach(tag => {
+			const btn = document.createElement('button');
+			btn.type = 'button';
+			btn.className = 'btn btn-sm ' + ((tag === currentTag || (tag === '' && currentTag === '')) ? 'btn-primary' : 'btn-outline-primary');
+			btn.textContent = tag === '' ? 'All' : tag;
+			btn.addEventListener('click', function() {
+				currentTag = tag;
+				loadMediaLibrary();
+			});
+			wrap.appendChild(btn);
+		});
+	}
+
+	function appendFolderCard(grid, folder, isParent) {
+		const col = document.createElement('div');
+		col.className = 'col';
+		col.innerHTML = `
+			<div class="card h-100 media-picker-item" data-folder="${folder.path}">
+				<div class="card-body d-flex flex-column align-items-center justify-content-center py-4">
+					<i class="bi ${isParent ? 'bi-arrow-up-left-square' : 'bi-folder-fill text-warning'}" style="font-size: 2rem;"></i>
+					<small class="mt-2 fw-semibold text-truncate w-100 text-center">${folder.name}</small>
+				</div>
+			</div>
+		`;
+		col.querySelector('.media-picker-item').addEventListener('click', function() {
+			currentFolder = folder.path;
+			loadMediaLibrary();
+		});
+		grid.appendChild(col);
+	}
+
 	function loadMediaLibrary(cursor = null) {
 		const loading = document.getElementById('mediaLibraryLoading');
 		const error = document.getElementById('mediaLibraryError');
@@ -159,80 +264,79 @@
 			grid.classList.add('d-none');
 			empty.classList.add('d-none');
 			pagination.classList.add('d-none');
+			selectedMediaUrl = null;
+			document.getElementById('selectMediaBtn').classList.add('d-none');
 		}
 
-		const url = cursor
-			? '<?= route_path('admin_media') ?>?cursor=' + encodeURIComponent(cursor)
-			: '<?= route_path('admin_media') ?>';
-
-		// Fetch media from the media library endpoint
-		fetch(url)
-			.then(response => response.text())
-			.then(html => {
-				// Parse the HTML to extract media data
-				const parser = new DOMParser();
-				const doc = parser.parseFromString(html, 'text/html');
-				const mediaItems = doc.querySelectorAll('.media-item');
-
+		fetch(listUrl(cursor), {
+			headers: { 'Accept': 'application/json' },
+			credentials: 'same-origin'
+		})
+			.then(response => response.json())
+			.then(data => {
 				loading.classList.add('d-none');
 
-				if (mediaItems.length === 0 && !cursor) {
-					empty.classList.remove('d-none');
-					return;
+				if (!data.success) {
+					throw new Error(data.error || 'Failed to load media library');
 				}
 
-				// Build grid items
+				rootFolder = data.root_folder || rootFolder;
+				currentFolder = data.current_folder || currentFolder || rootFolder;
+				document.getElementById('mediaPickerFolder').value = currentFolder;
+
 				if (!cursor) {
 					grid.innerHTML = '';
+					renderBreadcrumb(currentFolder, rootFolder);
+					renderTags(data.tags || []);
+
+					if (currentFolder && currentFolder !== rootFolder) {
+						const parent = currentFolder.includes('/') ? currentFolder.substring(0, currentFolder.lastIndexOf('/')) : rootFolder;
+						appendFolderCard(grid, { name: 'Parent folder', path: parent || rootFolder }, true);
+					}
+
+					(data.folders || []).forEach(folder => appendFolderCard(grid, folder, false));
 				}
 
-				mediaItems.forEach(item => {
-					const img = item.querySelector('img');
-					if (!img) return;
-
-					const url = img.src;
-					const publicId = img.alt;
-					const cardBody = item.querySelector('.card-body small');
-					const dimensions = cardBody?.textContent.trim() || '';
-
+				(data.resources || []).forEach(resource => {
 					const col = document.createElement('div');
 					col.className = 'col';
-
+					const name = resource.name || resource.public_id || '';
+					const dims = (resource.width || 0) + 'x' + (resource.height || 0);
 					col.innerHTML = `
-						<div class="card h-100 media-picker-item" data-url="${url}">
+						<div class="card h-100 media-picker-item" data-url="${resource.url}">
 							<div class="position-relative" style="padding-top: 100%; overflow: hidden;">
-								<img src="${url}"
+								<img src="${resource.url}"
 									 class="position-absolute top-0 start-0 w-100 h-100"
 									 style="object-fit: cover;"
-									 alt="${publicId}"
+									 alt="${name}"
 									 loading="lazy">
 								<div class="check-overlay">
 									<i class="bi bi-check-lg"></i>
 								</div>
 							</div>
 							<div class="card-body p-2">
-								<small class="text-muted">${dimensions}</small>
+								<small class="fw-semibold d-block text-truncate">${name}</small>
+								<small class="text-muted">${dims}</small>
 							</div>
 						</div>
 					`;
-
 					col.querySelector('.media-picker-item').addEventListener('click', function() {
 						selectMediaItem(this);
 					});
-
 					grid.appendChild(col);
 				});
 
-				grid.classList.remove('d-none');
+				const hasItems = grid.children.length > 0;
+				if (!hasItems && !cursor) {
+					empty.classList.remove('d-none');
+					return;
+				}
 
-				// Check for next cursor
-				const loadMoreBtn = doc.querySelector('a[href*="cursor="]');
-				if (loadMoreBtn) {
-					const cursorMatch = loadMoreBtn.href.match(/cursor=([^&]+)/);
-					nextCursor = cursorMatch ? decodeURIComponent(cursorMatch[1]) : null;
+				grid.classList.remove('d-none');
+				nextCursor = data.next_cursor || null;
+				if (nextCursor) {
 					pagination.classList.remove('d-none');
 				} else {
-					nextCursor = null;
 					pagination.classList.add('d-none');
 				}
 			})
@@ -243,29 +347,22 @@
 			});
 	}
 
-	// Select media item
 	function selectMediaItem(element) {
-		// Deselect all
 		document.querySelectorAll('.media-picker-item.selected').forEach(item => {
 			item.classList.remove('selected');
 		});
 
-		// Select this one
 		element.classList.add('selected');
-		selectedMediaUrl = element.dataset.url;
-
-		// Show select button
-		document.getElementById('selectMediaBtn').classList.remove('d-none');
+		selectedMediaUrl = element.dataset.url || null;
+		document.getElementById('selectMediaBtn').classList.toggle('d-none', !selectedMediaUrl);
 	}
 
-	// Load more button
 	document.getElementById('loadMoreMediaBtn')?.addEventListener('click', function() {
 		if (nextCursor) {
 			loadMediaLibrary(nextCursor);
 		}
 	});
 
-	// Apply the chosen URL to the configured target (input id or callback)
 	function applyPickedUrl(url) {
 		if (typeof pickerTarget === 'function') {
 			pickerTarget(url);
@@ -275,11 +372,8 @@
 		const input = document.getElementById(pickerTarget);
 		if (input) {
 			input.value = url;
-
-			// Trigger change event for any listeners
 			input.dispatchEvent(new Event('change'));
 
-			// Update preview if it exists
 			const preview = document.getElementById(pickerTarget + '_preview');
 			if (preview) {
 				preview.src = url;
@@ -288,23 +382,19 @@
 		}
 	}
 
-	// Select button
 	document.getElementById('selectMediaBtn')?.addEventListener('click', function() {
 		if (selectedMediaUrl && pickerTarget) {
 			applyPickedUrl(selectedMediaUrl);
-
-			// Close modal
 			bootstrap.Modal.getInstance(document.getElementById('mediaPickerModal')).hide();
 		}
 	});
 
-	// Tab switching
 	document.querySelectorAll('#mediaPickerTabs button').forEach(tab => {
 		tab.addEventListener('shown.bs.tab', function(e) {
 			const target = e.target.getAttribute('data-bs-target');
 
 			if (target === '#library') {
-				document.getElementById('selectMediaBtn').classList.remove('d-none');
+				document.getElementById('selectMediaBtn').classList.toggle('d-none', !selectedMediaUrl);
 				document.getElementById('mediaPickerUploadBtn').classList.add('d-none');
 			} else if (target === '#upload') {
 				document.getElementById('selectMediaBtn').classList.add('d-none');
@@ -313,16 +403,12 @@
 		});
 	});
 
-	// Upload functionality
 	const uploadBtn = document.getElementById('mediaPickerUploadBtn');
-	const uploadForm = document.getElementById('mediaPickerUploadForm');
 	const imageFile = document.getElementById('mediaPickerFile');
 	const uploadProgress = document.getElementById('mediaPickerUploadProgress');
 	const uploadError = document.getElementById('mediaPickerUploadError');
 	const uploadSuccess = document.getElementById('mediaPickerUploadSuccess');
 
-	// CSRF tokens are single-use, so fetch a fresh one for every upload rather
-	// than reuse the (possibly already-consumed) token from the page meta tag.
 	function freshCsrfToken() {
 		return fetch('<?= route_path('admin_csrf_token') ?>', {
 			headers: { 'Accept': 'application/json' },
@@ -333,8 +419,6 @@
 		.catch(() => document.querySelector('meta[name="csrf-token"]')?.content || '');
 	}
 
-	// Read a response as JSON, surfacing a clear message when the server returns
-	// non-JSON (e.g. an expired session or a rejected CSRF token redirect).
 	function parseJsonResponse(response) {
 		return response.text().then(text => {
 			try {
@@ -354,21 +438,19 @@
 
 		const formData = new FormData();
 		formData.append('image', imageFile.files[0]);
+		formData.append('name', document.getElementById('mediaPickerName').value);
+		formData.append('tags', document.getElementById('mediaPickerTagsInput').value);
+		formData.append('folder', document.getElementById('mediaPickerFolder').value || currentFolder || rootFolder);
 
-		// Hide previous messages
 		uploadError.classList.add('d-none');
 		uploadSuccess.classList.add('d-none');
 		uploadProgress.classList.remove('d-none');
-
-		// Disable button during upload
 		uploadBtn.disabled = true;
 
 		freshCsrfToken().then(token => fetch('<?= route_path('admin_media_upload') ?>', {
 			method: 'POST',
 			body: formData,
-			headers: {
-				'X-CSRF-Token': token
-			}
+			headers: { 'X-CSRF-Token': token }
 		}))
 		.then(parseJsonResponse)
 		.then(data => {
@@ -379,12 +461,10 @@
 				uploadSuccess.textContent = 'Image uploaded successfully!';
 				uploadSuccess.classList.remove('d-none');
 
-				// Set the URL on the configured target (input id or callback)
 				if (pickerTarget) {
 					applyPickedUrl(data.data.url);
 				}
 
-				// Close modal after 1 second
 				setTimeout(() => {
 					bootstrap.Modal.getInstance(document.getElementById('mediaPickerModal')).hide();
 				}, 1000);

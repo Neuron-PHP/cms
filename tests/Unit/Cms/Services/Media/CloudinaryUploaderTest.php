@@ -495,7 +495,7 @@ class CloudinaryUploaderTest extends TestCase
 				->with(
 					$this->equalTo( $testFile ),
 					$this->callback( function( $options ) {
-						return $options['folder'] === 'custom-folder' &&
+						return $options['folder'] === 'test-folder/custom-folder' &&
 						       $options['public_id'] === 'my-image' &&
 						       isset( $options['tags'] ) &&
 						       in_array( 'test-tag', $options['tags'] );
@@ -639,50 +639,44 @@ class CloudinaryUploaderTest extends TestCase
 
 		// Mock the Cloudinary instance
 		$mockCloudinary = $this->createMock( \Cloudinary\Cloudinary::class );
-		$mockAdminApi = $this->createMock( \Cloudinary\Api\Admin\AdminApi::class );
+
+		$mockSearchApi = $this->createMock( \Cloudinary\Api\Search\SearchApi::class );
+		$mockSearchApi->method( 'expression' )->willReturnSelf();
+		$mockSearchApi->method( 'withField' )->willReturnSelf();
+		$mockSearchApi->method( 'maxResults' )->willReturnSelf();
+		$mockSearchApi->method( 'sortBy' )->willReturnSelf();
+		$mockSearchApi->method( 'nextCursor' )->willReturnSelf();
+		$mockSearchApi->method( 'execute' )->willReturn( [
+			'resources' => [
+				[
+					'secure_url' => 'https://res.cloudinary.com/test/image1.jpg',
+					'public_id' => 'test-folder/image1',
+					'width' => 800,
+					'height' => 600,
+					'format' => 'jpg',
+					'bytes' => 12345,
+					'resource_type' => 'image',
+					'created_at' => '2024-01-01T00:00:00Z'
+				],
+				[
+					'secure_url' => 'https://res.cloudinary.com/test/image2.jpg',
+					'public_id' => 'test-folder/image2',
+					'width' => 1024,
+					'height' => 768,
+					'format' => 'jpg',
+					'bytes' => 23456,
+					'resource_type' => 'image',
+					'created_at' => '2024-01-02T00:00:00Z'
+				]
+			],
+			'next_cursor' => 'abc123',
+			'total_count' => 100
+		] );
 
 		$mockCloudinary
 			->expects( $this->once() )
-			->method( 'adminApi' )
-			->willReturn( $mockAdminApi );
-
-		$mockAdminApi
-			->expects( $this->once() )
-			->method( 'assets' )
-			->with(
-				$this->callback( function( $options ) {
-					return $options['type'] === 'upload' &&
-					       $options['prefix'] === 'test-folder' &&
-					       $options['max_results'] === 30 &&
-					       $options['resource_type'] === 'image';
-				} )
-			)
-			->willReturn( [
-				'resources' => [
-					[
-						'secure_url' => 'https://res.cloudinary.com/test/image1.jpg',
-						'public_id' => 'test-folder/image1',
-						'width' => 800,
-						'height' => 600,
-						'format' => 'jpg',
-						'bytes' => 12345,
-						'resource_type' => 'image',
-						'created_at' => '2024-01-01T00:00:00Z'
-					],
-					[
-						'secure_url' => 'https://res.cloudinary.com/test/image2.jpg',
-						'public_id' => 'test-folder/image2',
-						'width' => 1024,
-						'height' => 768,
-						'format' => 'jpg',
-						'bytes' => 23456,
-						'resource_type' => 'image',
-						'created_at' => '2024-01-02T00:00:00Z'
-					]
-				],
-				'next_cursor' => 'abc123',
-				'total_count' => 100
-			] );
+			->method( 'searchApi' )
+			->willReturn( $mockSearchApi );
 
 		// Use reflection to inject the mock
 		$reflection = new \ReflectionClass( $uploader );
@@ -708,27 +702,33 @@ class CloudinaryUploaderTest extends TestCase
 
 		// Mock the Cloudinary instance
 		$mockCloudinary = $this->createMock( \Cloudinary\Cloudinary::class );
-		$mockAdminApi = $this->createMock( \Cloudinary\Api\Admin\AdminApi::class );
+
+		$mockSearchApi = $this->createMock( \Cloudinary\Api\Search\SearchApi::class );
+		$mockSearchApi->expects( $this->once() )
+			->method( 'expression' )
+			->with( $this->callback( function( $expression ) {
+				return str_contains( $expression, 'folder:"test-folder/custom-folder"' );
+			} ) )
+			->willReturnSelf();
+		$mockSearchApi->method( 'withField' )->willReturnSelf();
+		$mockSearchApi->expects( $this->once() )
+			->method( 'maxResults' )
+			->with( 10 )
+			->willReturnSelf();
+		$mockSearchApi->method( 'sortBy' )->willReturnSelf();
+		$mockSearchApi->expects( $this->once() )
+			->method( 'nextCursor' )
+			->with( 'cursor123' )
+			->willReturnSelf();
+		$mockSearchApi->method( 'execute' )->willReturn( [
+			'resources' => [],
+			'next_cursor' => null,
+			'total_count' => 0
+		] );
 
 		$mockCloudinary
-			->method( 'adminApi' )
-			->willReturn( $mockAdminApi );
-
-		$mockAdminApi
-			->expects( $this->once() )
-			->method( 'assets' )
-			->with(
-				$this->callback( function( $options ) {
-					return $options['max_results'] === 10 &&
-					       $options['next_cursor'] === 'cursor123' &&
-					       $options['prefix'] === 'custom-folder';
-				} )
-			)
-			->willReturn( [
-				'resources' => [],
-				'next_cursor' => null,
-				'total_count' => 0
-			] );
+			->method( 'searchApi' )
+			->willReturn( $mockSearchApi );
 
 		// Use reflection to inject the mock
 		$reflection = new \ReflectionClass( $uploader );
@@ -846,15 +846,18 @@ class CloudinaryUploaderTest extends TestCase
 
 		// Mock the Cloudinary instance
 		$mockCloudinary = $this->createMock( \Cloudinary\Cloudinary::class );
-		$mockAdminApi = $this->createMock( \Cloudinary\Api\Admin\AdminApi::class );
+
+		$mockSearchApi = $this->createMock( \Cloudinary\Api\Search\SearchApi::class );
+		$mockSearchApi->method( 'expression' )->willReturnSelf();
+		$mockSearchApi->method( 'withField' )->willReturnSelf();
+		$mockSearchApi->method( 'maxResults' )->willReturnSelf();
+		$mockSearchApi->method( 'sortBy' )->willReturnSelf();
+		$mockSearchApi->method( 'execute' )
+			->willThrowException( new \Exception( 'Authentication failed' ) );
 
 		$mockCloudinary
-			->method( 'adminApi' )
-			->willReturn( $mockAdminApi );
-
-		$mockAdminApi
-			->method( 'assets' )
-			->willThrowException( new \Exception( 'Authentication failed' ) );
+			->method( 'searchApi' )
+			->willReturn( $mockSearchApi );
 
 		// Use reflection to inject the mock
 		$reflection = new \ReflectionClass( $uploader );

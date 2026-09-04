@@ -436,6 +436,13 @@ class MediaUploadTest extends TestCase
 		$mockSettingManager = Registry::getInstance()->get( RegistryKeys::SETTINGS );
 		$mockSessionManager = $this->createMock( \Neuron\Cms\Auth\SessionManager::class );
 		$mockCloudinaryUploader = $this->createMock( CloudinaryUploader::class );
+		$mockCloudinaryUploader->method( 'getRootFolder' )->willReturn( 'test-folder' );
+		$mockCloudinaryUploader->method( 'isLibraryAsset' )->willReturnCallback(
+			function( string $publicId, ?string $assetFolder = null ): bool {
+				return str_starts_with( $publicId, 'test-folder/' )
+					|| ( $assetFolder !== null && ( $assetFolder === 'test-folder' || str_starts_with( $assetFolder, 'test-folder/' ) ) );
+			}
+		);
 		$mockMediaValidator = $this->createMock( MediaValidator::class );
 
 		return new Media( $this->_mockApp, $mockSettingManager, $mockSessionManager, $mockCloudinaryUploader, $mockMediaValidator );
@@ -524,6 +531,7 @@ class MediaUploadTest extends TestCase
 		$media = $this->makeMediaController();
 
 		$uploaderMock = $this->createMock( CloudinaryUploader::class );
+		$uploaderMock->method( 'isLibraryAsset' )->willReturn( true );
 		$uploaderMock->expects( $this->once() )
 			->method( 'delete' )
 			->with( 'test-folder/image' )
@@ -545,6 +553,7 @@ class MediaUploadTest extends TestCase
 		$media = $this->makeMediaController();
 
 		$uploaderMock = $this->createMock( CloudinaryUploader::class );
+		$uploaderMock->method( 'isLibraryAsset' )->willReturn( true );
 		$uploaderMock->method( 'delete' )->willReturn( false );
 		$this->injectUploader( $media, $uploaderMock );
 
@@ -564,6 +573,7 @@ class MediaUploadTest extends TestCase
 		$media = $this->makeMediaController();
 
 		$uploaderMock = $this->createMock( CloudinaryUploader::class );
+		$uploaderMock->method( 'isLibraryAsset' )->willReturn( true );
 		$uploaderMock->method( 'delete' )->willThrowException( new \Exception( 'Cloudinary error' ) );
 		$this->injectUploader( $media, $uploaderMock );
 
