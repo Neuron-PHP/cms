@@ -1,3 +1,7 @@
+## 0.8.88 2026-09-04
+* Added image folder organization.
+
+
 ## 0.8.87 2026-08-23
 * Added scheduled payment report.
 
@@ -5,7 +9,6 @@
 * Added events for payments.
 
 ## 0.8.85 2026-08-04
-
 ## 0.8.84 2026-08-04
 * Blog tags are now lazy loaded.
 
@@ -25,32 +28,28 @@
 
 ## 0.8.79 2026-07-07
 * Dynamic cart button display.
-* Added toggle for page create/updated at display.
+* Added toggle for the page created/updated at display.
 
 ## 0.8.78 2026-06-28
 
 * Added more cart links and navigation.
 
 ## 0.8.77 2026-06-23
-
 ## 0.8.76 2026-06-23
 
 * Added payments ui components.
 
 ## 0.8.75 2026-06-22
-
 ## 0.8.74 2026-06-22
 
 * Added multi select fields to forms.
 
 ## 0.8.73 2026-06-19
-
 ## 0.8.72 2026-06-19
 
 * Added repeating events.
 
 ## 0.8.71 2026-06-18
-
 ## 0.8.70 2026-06-18
 
 * Added external links to events.
@@ -58,11 +57,8 @@
 ## 0.8.69 2026-06-17
 
 ## 0.8.68 2026-06-12
-
 ## 0.8.67 2026-06-12
-
 ## 0.8.66 2026-06-12
-
 ## 0.8.65 2026-06-12
 * Added image-only mode to featured event shortcodes.
 
@@ -71,20 +67,17 @@
 * Added event registration and related forms.
 
 ## 0.8.62 2026-06-05
-
 ## 0.8.61 2026-06-05
 * Added featured events.
 * Added the featured event widget.
 * Added configurable contact forms.
 
 ## 0.8.60 2026-06-04
-
 ## 0.8.59 2026-06-04
 * Added schedule scaffolding.
 
 
 ## 0.8.58 2026-06-04
-
 ## 0.8.57 2026-06-04
 * Added incremental view upgrades.
 
@@ -92,13 +85,9 @@
 * Added jobs list to the admin dashboard.
 
 ## 0.8.55 2026-06-03
-
 ## 0.8.54 2026-06-03
-
 ## 0.8.53 2026-06-03
-
 ## 0.8.52 2026-06-03
-
 ## 0.8.51 2026-06-03
 * Fixed an issue with cloudinary uploads.
 

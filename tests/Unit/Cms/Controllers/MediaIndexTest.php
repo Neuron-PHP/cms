@@ -107,8 +107,13 @@ class MediaIndexTest extends TestCase
 			'total_count' => 50
 		] );
 
-		$request = $this->createMock( Request::class );
-		$request->method( 'get' )->with( 'cursor' )->willReturn( null );
+		$mockCloudinaryUploader->method( 'getRootFolder' )->willReturn( 'test-folder' );
+		$mockCloudinaryUploader->method( 'resolveLibraryFolder' )->willReturn( 'test-folder' );
+		$mockCloudinaryUploader->method( 'listFolders' )->willReturn( [] );
+		$mockCloudinaryUploader->method( 'listTags' )->willReturn( [ 'hero' ] );
+		$mockCloudinaryUploader->method( 'sanitizeTags' )->willReturn( [] );
+
+		$request = $this->requestWithQuery();
 
 		$result = $media->index( $request );
 
@@ -144,7 +149,8 @@ class MediaIndexTest extends TestCase
 			->method( 'listResources' )
 			->with( $this->callback( function( $options ) {
 				return $options['next_cursor'] === 'xyz789'
-					&& $options['max_results'] === 30;
+					&& $options['max_results'] === 30
+					&& $options['folder'] === 'test-folder';
 			} ) )
 			->willReturn( [
 				'resources' => [],
@@ -152,8 +158,13 @@ class MediaIndexTest extends TestCase
 				'total_count' => 0
 			] );
 
-		$request = $this->createMock( Request::class );
-		$request->method( 'get' )->with( 'cursor' )->willReturn( 'xyz789' );
+		$mockCloudinaryUploader->method( 'getRootFolder' )->willReturn( 'test-folder' );
+		$mockCloudinaryUploader->method( 'resolveLibraryFolder' )->willReturn( 'test-folder' );
+		$mockCloudinaryUploader->method( 'listFolders' )->willReturn( [] );
+		$mockCloudinaryUploader->method( 'listTags' )->willReturn( [] );
+		$mockCloudinaryUploader->method( 'sanitizeTags' )->willReturn( [] );
+
+		$request = $this->requestWithQuery( [ 'cursor' => 'xyz789' ] );
 
 		$result = $media->index( $request );
 
@@ -187,12 +198,67 @@ class MediaIndexTest extends TestCase
 		$mockCloudinaryUploader->method( 'listResources' )
 			->willThrowException( new \Exception( 'Cloudinary API error' ) );
 
-		$request = $this->createMock( Request::class );
-		$request->method( 'get' )->with( 'cursor' )->willReturn( null );
+		$mockCloudinaryUploader->method( 'getRootFolder' )->willReturn( 'test-folder' );
+		$mockCloudinaryUploader->method( 'resolveLibraryFolder' )->willReturn( 'test-folder' );
+		$mockCloudinaryUploader->method( 'listFolders' )->willReturn( [] );
+		$mockCloudinaryUploader->method( 'listTags' )->willReturn( [] );
+
+		$request = $this->requestWithQuery();
 
 		$result = $media->index( $request );
 
 		// Should return HTML response with error message (not throw exception)
 		$this->assertIsString( $result );
+	}
+
+	public function testIndexPassesTagFilter(): void
+	{
+		$user = $this->createMock( User::class );
+		$user->method( 'getId' )->willReturn( 1 );
+		Registry::getInstance()->set( 'Auth.User', $user );
+
+		$mockSettingManager = Registry::getInstance()->get( 'Settings' );
+		$mockSessionManager = $this->createMock( SessionManager::class );
+		$mockCloudinaryUploader = $this->createMock( CloudinaryUploader::class );
+		$mockMediaValidator = $this->createMock( MediaValidator::class );
+
+		$media = $this->getMockBuilder( Media::class )
+			->setConstructorArgs( [ $this->_mockApp, $mockSettingManager, $mockSessionManager, $mockCloudinaryUploader, $mockMediaValidator ] )
+			->onlyMethods( ['renderHtml'] )
+			->getMock();
+
+		$media->method( 'renderHtml' )->willReturn( '<html>test</html>' );
+		$mockSessionManager->method( 'getFlash' )->willReturn( null );
+
+		$mockCloudinaryUploader->method( 'getRootFolder' )->willReturn( 'test-folder' );
+		$mockCloudinaryUploader->method( 'resolveLibraryFolder' )->willReturn( 'test-folder' );
+		$mockCloudinaryUploader->method( 'sanitizeTags' )->willReturn( [ 'hero' ] );
+		$mockCloudinaryUploader->method( 'listFolders' )->willReturn( [] );
+		$mockCloudinaryUploader->method( 'listTags' )->willReturn( [ 'hero' ] );
+		$mockCloudinaryUploader->expects( $this->once() )
+			->method( 'listResources' )
+			->with( $this->callback( function( $options ) {
+				return $options['tag'] === 'hero'
+					&& $options['include_descendants'] === true;
+			} ) )
+			->willReturn( [
+				'resources' => [],
+				'next_cursor' => null,
+				'total_count' => 0
+			] );
+
+		$result = $media->index( $this->requestWithQuery( [ 'tag' => 'hero' ] ) );
+
+		$this->assertIsString( $result );
+	}
+
+	private function requestWithQuery( array $query = [] ): Request
+	{
+		$request = $this->createMock( Request::class );
+		$request->method( 'get' )->willReturnCallback( function( $key, $default = null ) use ( $query ) {
+			return $query[ $key ] ?? $default;
+		} );
+
+		return $request;
 	}
 }
