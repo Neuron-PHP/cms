@@ -79,6 +79,43 @@ if (!function_exists('route_path')) {
 	}
 }
 
+if (!function_exists('media_library_path')) {
+	/**
+	 * Relative URL for the media library at a folder (and optional tag).
+	 *
+	 * The library root omits the folder query so "All" and parent links
+	 * leave a subfolder instead of reloading the current URL.
+	 *
+	 * @param string $rootFolder Configured library root
+	 * @param string $folder Requested folder (root or a descendant)
+	 * @param string $tag Optional tag filter
+	 * @return string Relative URL path
+	 */
+	function media_library_path( string $rootFolder, string $folder = '', string $tag = '' ): string
+	{
+		$params = [];
+
+		if( $folder !== '' && $folder !== $rootFolder )
+		{
+			$params['folder'] = $folder;
+		}
+
+		if( $tag !== '' )
+		{
+			$params['tag'] = $tag;
+		}
+
+		$base = route_path( 'admin_media' );
+
+		if( $base === '' )
+		{
+			$base = '/admin/media';
+		}
+
+		return $params === [] ? $base : $base . '?' . http_build_query( $params );
+	}
+}
+
 if (!function_exists('route_url')) {
 	/**
 	 * Generate an absolute URL for a named route
