@@ -10,16 +10,7 @@
 	$nextCursor = $nextCursor ?? null;
 
 	$folderQuery = function( string $folder = '', string $tag = '' ) use ( $rootFolder ): string {
-		$params = [];
-		if( $folder !== '' && $folder !== $rootFolder )
-		{
-			$params['folder'] = $folder;
-		}
-		if( $tag !== '' )
-		{
-			$params['tag'] = $tag;
-		}
-		return $params === [] ? '' : '?' . http_build_query( $params );
+		return media_library_path( $rootFolder, $folder, $tag );
 	};
 
 	$relativeFolder = $rootFolder !== '' && str_starts_with( $currentFolder, $rootFolder )
@@ -89,7 +80,8 @@
 
 	<div class="card">
 		<div class="card-body">
-			<?php if( empty( $resources ) && empty( $folders ) ): ?>
+			<?php $showParent = $parentFolder !== '' && $currentFolder !== $rootFolder; ?>
+			<?php if( empty( $resources ) && empty( $folders ) && !$showParent ): ?>
 				<div class="text-center py-5">
 					<i class="bi bi-images" style="font-size: 4rem; color: #ccc;"></i>
 					<p class="text-muted mb-3 mt-3">No images in this folder yet.</p>
@@ -99,7 +91,7 @@
 				</div>
 			<?php else: ?>
 				<div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 row-cols-xl-5 g-4">
-					<?php if( $parentFolder !== '' && $currentFolder !== $rootFolder ): ?>
+					<?php if( $showParent ): ?>
 						<div class="col">
 							<a href="<?= htmlspecialchars( $folderQuery( $parentFolder, $currentTag ) ) ?>" class="card h-100 text-decoration-none media-folder">
 								<div class="card-body d-flex flex-column align-items-center justify-content-center py-5">
