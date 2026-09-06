@@ -1,6 +1,7 @@
 <?php
 	$resources = $resources ?? [];
 	$folders = $folders ?? [];
+	$moveFolders = $moveFolders ?? [];
 	$tags = $tags ?? [];
 	$currentFolder = $currentFolder ?? ($rootFolder ?? '');
 	$rootFolder = $rootFolder ?? '';
@@ -316,8 +317,17 @@
 				</div>
 				<div class="mb-3">
 					<label for="editFolder" class="form-label">Folder</label>
-					<input type="text" class="form-control" id="editFolder">
-					<div class="form-text">Moving on older Cloudinary accounts can change the image URL and break existing pages.</div>
+					<select class="form-select" id="editFolder">
+						<?php if( $moveFolders ): ?>
+							<?php foreach( $moveFolders as $path => $label ): ?>
+								<option value="<?= htmlspecialchars( (string) $path ) ?>"><?= htmlspecialchars( (string) $label ) ?></option>
+							<?php endforeach; ?>
+						<?php else: ?>
+							<option value="<?= htmlspecialchars( $rootFolder ) ?>">Library root</option>
+						<?php endif; ?>
+					</select>
+					<input type="text" class="form-control mt-2" id="editNewFolder" placeholder="Or new subfolder name">
+					<div class="form-text">Choose an existing folder, or type a name to create a subfolder under the selection. Moving on older Cloudinary accounts can change the image URL.</div>
 				</div>
 				<div id="editError" class="alert alert-danger d-none"></div>
 			</div>
@@ -445,7 +455,22 @@ document.addEventListener('DOMContentLoaded', function() {
 			document.getElementById('editUrlChangeOnMove').value = item.dataset.urlChangeOnMove || '0';
 			document.getElementById('editName').value = item.dataset.name || '';
 			document.getElementById('editTags').value = item.dataset.tags || '';
-			document.getElementById('editFolder').value = item.dataset.assetFolder || currentFolder;
+			const folderSelect = document.getElementById('editFolder');
+			const currentAssetFolder = item.dataset.assetFolder || currentFolder;
+			if (folderSelect) {
+				folderSelect.value = currentAssetFolder;
+				if (folderSelect.value !== currentAssetFolder && currentAssetFolder) {
+					const extra = document.createElement('option');
+					extra.value = currentAssetFolder;
+					extra.textContent = currentAssetFolder;
+					folderSelect.appendChild(extra);
+					folderSelect.value = currentAssetFolder;
+				}
+			}
+			const newFolderInput = document.getElementById('editNewFolder');
+			if (newFolderInput) {
+				newFolderInput.value = '';
+			}
 			document.getElementById('editError').classList.add('d-none');
 			editModal?.show();
 		});
@@ -456,10 +481,15 @@ document.addEventListener('DOMContentLoaded', function() {
 		const assetFolder = document.getElementById('editAssetFolder').value;
 		const name = document.getElementById('editName').value;
 		const tags = document.getElementById('editTags').value;
-		const folder = document.getElementById('editFolder').value.trim();
+		const selectedFolder = document.getElementById('editFolder').value.trim();
+		const newFolder = (document.getElementById('editNewFolder')?.value || '').trim().replace(/[^a-zA-Z0-9_\-/]+/g, '-').replace(/^-+|-+$/g, '');
+		const folder = newFolder
+			? (selectedFolder ? selectedFolder + '/' + newFolder : newFolder)
+			: selectedFolder;
 		const error = document.getElementById('editError');
 		const button = this;
-		const originalFolder = assetFolder || currentFolder;
+		const originalFolder = (assetFolder || currentFolder || '').replace(/^\/+|\/+$/g, '');
+		const normalizeFolder = (value) => (value || '').replace(/^\/+|\/+$/g, '');
 
 		error.classList.add('d-none');
 		button.disabled = true;
@@ -472,7 +502,7 @@ document.addEventListener('DOMContentLoaded', function() {
 		});
 
 		const maybeMove = (data) => {
-			if (!folder || folder === originalFolder) {
+			if (!folder || normalizeFolder(folder) === originalFolder) {
 				return data;
 			}
 
@@ -502,6 +532,15 @@ document.addEventListener('DOMContentLoaded', function() {
 			.then(data => {
 				if (data && data.success === false) {
 					throw new Error(data.error || 'Move failed');
+				}
+				const dest = data?.data?.asset_folder || folder;
+				if (dest && normalizeFolder(dest) !== normalizeFolder(currentFolder)) {
+					const params = new URLSearchParams();
+					if (dest !== rootFolder) {
+						params.set('folder', dest);
+					}
+					window.location.href = '<?= route_path('admin_media') ?>' + (params.toString() ? '?' + params.toString() : '');
+					return;
 				}
 				window.location.reload();
 			})

@@ -150,7 +150,8 @@ class MediaIndexTest extends TestCase
 			->with( $this->callback( function( $options ) {
 				return $options['next_cursor'] === 'xyz789'
 					&& $options['max_results'] === 30
-					&& $options['folder'] === 'test-folder';
+					&& $options['folder'] === 'test-folder'
+					&& $options['include_descendants'] === false;
 			} ) )
 			->willReturn( [
 				'resources' => [],

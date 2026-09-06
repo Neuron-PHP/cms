@@ -86,6 +86,16 @@ class CloudinaryUploaderTest extends TestCase
 		new CloudinaryUploader( $settings );
 	}
 
+	public function testConstructorDisablesCloudinarySdkLogging(): void
+	{
+		$uploader = new CloudinaryUploader( $this->_settings );
+		$reflection = new \ReflectionClass( $uploader );
+		$property = $reflection->getProperty( '_cloudinary' );
+		$cloudinary = $property->getValue( $uploader );
+
+		$this->assertFalse( (bool)$cloudinary->configuration->logging->enabled );
+	}
+
 	public function testUploadThrowsExceptionForNonExistentFile(): void
 	{
 		$uploader = new CloudinaryUploader( $this->_settings );

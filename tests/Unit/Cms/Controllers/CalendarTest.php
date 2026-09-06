@@ -3,6 +3,7 @@
 namespace Tests\Cms\Controllers;
 
 use Neuron\Cms\Controllers\Calendar;
+use Neuron\Core\Exceptions\NotFound;
 use Neuron\Core\Registry\RegistryKeys;
 use Neuron\Cms\Models\Event;
 use Neuron\Cms\Models\EventCategory;
@@ -207,7 +208,7 @@ class CalendarTest extends TestCase
 		$this->assertEquals( '<html>Event Detail</html>', $result );
 	}
 
-	public function testShowThrowsExceptionForNonexistentEvent(): void
+	public function testShowThrowsNotFoundForNonexistentEvent(): void
 	{
 		$mockEventRepository = $this->createMock( IEventRepository::class );
 		$mockEventRepository->method( 'findBySlug' )->willReturn( null );
@@ -219,18 +220,19 @@ class CalendarTest extends TestCase
 
 		$controller = new Calendar( $this->_mockApp, $mockSettingManager, $mockSessionManager, $mockEventRepository, $mockCategoryRepository );
 
-		$this->expectException( \RuntimeException::class );
-		$this->expectExceptionMessage( 'Event not found' );
+		$this->expectException( NotFound::class );
+		$this->expectExceptionMessage( 'Event not found: nonexistent' );
 
 		$request = new Request();
 		$request->setRouteParameters( [ 'slug' => 'nonexistent' ] );
 		$controller->show( $request );
 	}
 
-	public function testShowThrowsExceptionForUnpublishedEvent(): void
+	public function testShowThrowsNotFoundForUnpublishedEvent(): void
 	{
 		$mockEvent = $this->createMock( Event::class );
 		$mockEvent->method( 'isPublished' )->willReturn( false );
+		$mockEvent->method( 'getId' )->willReturn( 42 );
 
 		$mockEventRepository = $this->createMock( IEventRepository::class );
 		$mockEventRepository->method( 'findBySlug' )->willReturn( $mockEvent );
@@ -242,8 +244,8 @@ class CalendarTest extends TestCase
 
 		$controller = new Calendar( $this->_mockApp, $mockSettingManager, $mockSessionManager, $mockEventRepository, $mockCategoryRepository );
 
-		$this->expectException( \RuntimeException::class );
-		$this->expectExceptionMessage( 'Event not found' );
+		$this->expectException( NotFound::class );
+		$this->expectExceptionMessage( 'Event not found: unpublished-event' );
 
 		$request = new Request();
 		$request->setRouteParameters( [ 'slug' => 'unpublished-event' ] );
@@ -292,7 +294,7 @@ class CalendarTest extends TestCase
 		$this->assertEquals( '<html>Category Events</html>', $result );
 	}
 
-	public function testCategoryThrowsExceptionForNonexistentCategory(): void
+	public function testCategoryThrowsNotFoundForNonexistentCategory(): void
 	{
 		$mockEventRepository = $this->createMock( IEventRepository::class );
 		$mockCategoryRepository = $this->createMock( IEventCategoryRepository::class );
@@ -303,8 +305,8 @@ class CalendarTest extends TestCase
 
 		$controller = new Calendar( $this->_mockApp, $mockSettingManager, $mockSessionManager, $mockEventRepository, $mockCategoryRepository );
 
-		$this->expectException( \RuntimeException::class );
-		$this->expectExceptionMessage( 'Category not found' );
+		$this->expectException( NotFound::class );
+		$this->expectExceptionMessage( 'Category not found: nonexistent' );
 
 		$request = new Request();
 		$request->setRouteParameters( [ 'slug' => 'nonexistent' ] );

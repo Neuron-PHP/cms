@@ -54,6 +54,11 @@ class CloudinaryUploader implements IMediaUploader
 				'cloud_name' => $cloudName,
 				'api_key' => $apiKey,
 				'api_secret' => $apiSecret
+			],
+			// SDK 2.14.0 Logger.php still references E_STRICT, which PHP 8.4
+			// deprecates. Neuron already logs through its own Log singleton.
+			'logging' => [
+				'enabled' => false
 			]
 		] );
 	}
@@ -294,8 +299,7 @@ class CloudinaryUploader implements IMediaUploader
 		try
 		{
 			$folder = $this->resolveLibraryFolder( $options['folder'] ?? null );
-			$root = $this->getRootFolder();
-			$includeDescendants = (bool)( $options['include_descendants'] ?? ( $folder === $root ) );
+			$includeDescendants = (bool)( $options['include_descendants'] ?? false );
 			$tag = isset( $options['tag'] ) ? $this->sanitizeSingleTag( (string) $options['tag'] ) : '';
 
 			$search = $this->_cloudinary->searchApi()
@@ -499,33 +503,52 @@ class CloudinaryUploader implements IMediaUploader
 	public function moveResource( string $publicId, string $destinationFolder ): array
 	{
 		$destination = $this->resolveLibraryFolder( $destinationFolder );
-		$urlChanged = $this->willMoveChangeUrl( $publicId );
+		$shouldRename = $this->willMoveChangeUrl( $publicId );
 
 		try
 		{
-			if( $urlChanged )
-			{
-				$baseName = basename( $publicId );
-				$newPublicId = $destination . '/' . $baseName;
+			$result = [];
 
-				if( $newPublicId === $publicId )
+			try
+			{
+				$result = $this->updateAssetFolder( $publicId, $destination );
+				$movedFolder = trim( (string)( $result['asset_folder'] ?? $result['folder'] ?? '' ), '/' );
+
+				// Dynamic-folder accounts (including those that prefix public_id)
+				// treat asset_folder as the real location. Stop here so we do not
+				// rewrite the delivery URL.
+				if( $movedFolder === $destination )
 				{
-					return $this->formatResult( [
-						'public_id' => $publicId,
-						'asset_folder' => $destination
-					] ) + [ 'url_changed' => false ];
+					return $this->formatResult( $result ) + [ 'url_changed' => false ];
 				}
 
-				$uploadApi = $this->_cloudinary->uploadApi();
-				$result = $uploadApi->rename( $publicId, $newPublicId, [ 'invalidate' => true ] );
-
-				return $this->formatResult( $result ) + [ 'url_changed' => true ];
+				if( !$shouldRename )
+				{
+					return $this->formatResult( $result ) + [ 'url_changed' => false ];
+				}
+			}
+			catch( \Exception $e )
+			{
+				if( !$shouldRename )
+				{
+					throw $e;
+				}
 			}
 
-			$adminApi = $this->_cloudinary->adminApi();
-			$result = $adminApi->update( $publicId, [ 'asset_folder' => $destination ] );
+			$newPublicId = $destination . '/' . basename( $publicId );
 
-			return $this->formatResult( $result ) + [ 'url_changed' => false ];
+			if( $newPublicId === $publicId )
+			{
+				return $this->formatResult( [
+					'public_id' => $publicId,
+					'asset_folder' => $destination
+				] ) + [ 'url_changed' => false ];
+			}
+
+			$uploadApi = $this->_cloudinary->uploadApi();
+			$result = $uploadApi->rename( $publicId, $newPublicId, [ 'invalidate' => true ] );
+
+			return $this->formatResult( $result ) + [ 'url_changed' => true ];
 		}
 		catch( \InvalidArgumentException $e )
 		{
@@ -535,6 +558,24 @@ class CloudinaryUploader implements IMediaUploader
 		{
 			throw new \Exception( "Cloudinary move failed: " . $e->getMessage(), 0, $e );
 		}
+	}
+
+	/**
+	 * Set asset_folder on an existing asset.
+	 *
+	 * This is the move on dynamic-folder accounts. Fixed-folder accounts
+	 * ignore the field; the caller then falls back to rename().
+	 *
+	 * @param string $publicId
+	 * @param string $destination
+	 * @return array|\ArrayAccess
+	 * @throws \Exception
+	 */
+	private function updateAssetFolder( string $publicId, string $destination ): array|\ArrayAccess
+	{
+		$adminApi = $this->_cloudinary->adminApi();
+
+		return $adminApi->update( $publicId, [ 'asset_folder' => $destination ] );
 	}
 
 	/**

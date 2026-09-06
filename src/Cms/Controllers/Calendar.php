@@ -10,7 +10,9 @@ use Neuron\Cms\Models\Event;
 use Neuron\Cms\Services\Event\RecurrenceExpander;
 use Neuron\Cms\Services\Event\RecurrenceRule;
 use Neuron\Cms\Services\Widget\EventRegistrationWidget;
+use Neuron\Core\Exceptions\NotFound;
 use Neuron\Data\Settings\SettingManager;
+use Neuron\Log\Log;
 use Neuron\Mvc\IMvcApplication;
 use Neuron\Mvc\Requests\Request;
 use Neuron\Mvc\Responses\HttpResponseStatus;
@@ -101,16 +103,29 @@ class Calendar extends Content
 
 	/**
 	 * Show single event detail
+	 *
+	 * @param Request $request
+	 * @return string
+	 * @throws NotFound
 	 */
 	#[Get('/event/:slug', name: 'calendar_event')]
 	public function show( Request $request ): string
 	{
-		$slug = $request->getRouteParameter( 'slug' );
+		$slug = (string) $request->getRouteParameter( 'slug' );
 		$event = $this->_eventRepository->findBySlug( $slug );
 
 		if( !$event || !$event->isPublished() )
 		{
-			throw new \RuntimeException( 'Event not found', 404 );
+			if( $event )
+			{
+				Log::warning( "Calendar event not found: slug='{$slug}' (unpublished, id={$event->getId()})" );
+			}
+			else
+			{
+				Log::warning( "Calendar event not found: slug='{$slug}' (missing)" );
+			}
+
+			throw new NotFound( "Event not found: {$slug}" );
 		}
 
 		// Resolve a specific occurrence of a recurring series when requested.
@@ -225,16 +240,21 @@ class Calendar extends Content
 
 	/**
 	 * Show events filtered by category
+	 *
+	 * @param Request $request
+	 * @return string
+	 * @throws NotFound
 	 */
 	#[Get('/category/:slug', name: 'calendar_category')]
 	public function category( Request $request ): string
 	{
-		$slug = $request->getRouteParameter( 'slug' );
+		$slug = (string) $request->getRouteParameter( 'slug' );
 		$category = $this->_categoryRepository->findBySlug( $slug );
 
 		if( !$category )
 		{
-			throw new \RuntimeException( 'Category not found', 404 );
+			Log::warning( "Calendar category not found: slug='{$slug}'" );
+			throw new NotFound( "Category not found: {$slug}" );
 		}
 
 		// Get upcoming events in this category
