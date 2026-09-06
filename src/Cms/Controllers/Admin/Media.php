@@ -679,7 +679,7 @@ class Media extends Content
 		$options = [
 			'max_results' => 30,
 			'folder' => $currentFolder,
-			'include_descendants' => $currentFolder === $rootFolder && $currentTag === ''
+			'include_descendants' => false
 		];
 
 		if( $currentTag !== '' )
@@ -720,6 +720,7 @@ class Media extends Content
 			'nextCursor' => $result['next_cursor'],
 			'totalCount' => $result['total_count'],
 			'folders' => $folders,
+			'moveFolders' => $this->moveFolderOptions( $rootFolder, $currentFolder, $folders ),
 			'tags' => $tags,
 			'currentFolder' => $currentFolder,
 			'rootFolder' => $rootFolder,
@@ -742,6 +743,7 @@ class Media extends Content
 			'nextCursor' => $library['nextCursor'],
 			'totalCount' => $library['totalCount'],
 			'folders' => $library['folders'],
+			'moveFolders' => $library['moveFolders'] ?? [],
 			'tags' => $library['tags'],
 			'currentFolder' => $library['currentFolder'],
 			'rootFolder' => $library['rootFolder'],
@@ -765,11 +767,84 @@ class Media extends Content
 			'nextCursor' => null,
 			'totalCount' => 0,
 			'folders' => [],
+			'moveFolders' => [ $root => 'Library root' ],
 			'tags' => [],
 			'currentFolder' => $root,
 			'rootFolder' => $root,
 			'currentTag' => ''
 		];
+	}
+
+	/**
+	 * Folder paths the edit modal can move an asset into.
+	 *
+	 * @param string $rootFolder
+	 * @param string $currentFolder
+	 * @param array<int, array{name?: string, path?: string}> $childFolders
+	 * @return array<string, string> path => label
+	 */
+	private function moveFolderOptions( string $rootFolder, string $currentFolder, array $childFolders ): array
+	{
+		$options = [];
+
+		if( $rootFolder !== '' )
+		{
+			$options[$rootFolder] = 'Library root';
+		}
+
+		if( $currentFolder !== '' && $currentFolder !== $rootFolder )
+		{
+			$options[$currentFolder] = $this->folderOptionLabel( $rootFolder, $currentFolder );
+		}
+
+		if( $currentFolder !== $rootFolder )
+		{
+			try
+			{
+				$childFolders = array_merge( $this->_uploader->listFolders( $rootFolder ), $childFolders );
+			}
+			catch( \Exception $e )
+			{
+				Log::warning( 'Unable to list root media folders for move targets: ' . $e->getMessage() );
+			}
+		}
+
+		foreach( $childFolders as $folder )
+		{
+			$path = trim( (string)( $folder['path'] ?? '' ), '/' );
+
+			if( $path === '' )
+			{
+				continue;
+			}
+
+			$options[$path] = $this->folderOptionLabel( $rootFolder, $path, (string)( $folder['name'] ?? '' ) );
+		}
+
+		return $options;
+	}
+
+	/**
+	 * Human-readable folder path relative to the library root.
+	 *
+	 * @param string $rootFolder
+	 * @param string $path
+	 * @param string $name
+	 * @return string
+	 */
+	private function folderOptionLabel( string $rootFolder, string $path, string $name = '' ): string
+	{
+		if( $rootFolder !== '' && $path === $rootFolder )
+		{
+			return 'Library root';
+		}
+
+		if( $rootFolder !== '' && str_starts_with( $path, $rootFolder . '/' ) )
+		{
+			return substr( $path, strlen( $rootFolder ) + 1 );
+		}
+
+		return $name !== '' ? $name : $path;
 	}
 
 	/**

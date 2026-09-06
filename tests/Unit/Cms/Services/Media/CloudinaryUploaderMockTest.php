@@ -55,6 +55,7 @@ class CloudinaryUploaderMockTest extends TestCase
 			$this->assertStringContainsString( 'folder:"test-folder"', $expression );
 			$this->assertStringContainsString( 'asset_folder:"test-folder"', $expression );
 			$this->assertStringContainsString( 'resource_type:image', $expression );
+			$this->assertStringNotContainsString( '/*', $expression );
 		} );
 
 		$uploader = $this->uploaderWithCloudinary( $this->cloudinaryWithSearch( $searchMock ) );
@@ -565,6 +566,15 @@ class CloudinaryUploaderMockTest extends TestCase
 
 	public function testMoveResourceRenamesFolderPrefixedPublicId(): void
 	{
+		$adminApiMock = $this->createMock( AdminApi::class );
+		$adminApiMock->expects( $this->once() )
+			->method( 'update' )
+			->with( 'test-folder/image', [ 'asset_folder' => 'test-folder/blog' ] )
+			->willReturn( [
+				'public_id' => 'test-folder/image',
+				'asset_folder' => 'test-folder'
+			] );
+
 		$uploadApiMock = $this->createMock( UploadApi::class );
 		$uploadApiMock->expects( $this->once() )
 			->method( 'rename' )
@@ -575,6 +585,7 @@ class CloudinaryUploaderMockTest extends TestCase
 			] );
 
 		$cloudinaryMock = $this->createMock( Cloudinary::class );
+		$cloudinaryMock->method( 'adminApi' )->willReturn( $adminApiMock );
 		$cloudinaryMock->method( 'uploadApi' )->willReturn( $uploadApiMock );
 
 		$uploader = $this->uploaderWithCloudinary( $cloudinaryMock );
@@ -582,6 +593,30 @@ class CloudinaryUploaderMockTest extends TestCase
 
 		$this->assertTrue( $result['url_changed'] );
 		$this->assertEquals( 'test-folder/blog/image', $result['public_id'] );
+	}
+
+	public function testMoveResourceDoesNotRenameWhenAssetFolderUpdates(): void
+	{
+		$adminApiMock = $this->createMock( AdminApi::class );
+		$adminApiMock->expects( $this->once() )
+			->method( 'update' )
+			->with( 'test-folder/image', [ 'asset_folder' => 'test-folder/blog' ] )
+			->willReturn( [
+				'public_id' => 'test-folder/image',
+				'asset_folder' => 'test-folder/blog',
+				'secure_url' => 'https://example.com/image.jpg'
+			] );
+
+		$cloudinaryMock = $this->createMock( Cloudinary::class );
+		$cloudinaryMock->method( 'adminApi' )->willReturn( $adminApiMock );
+		$cloudinaryMock->expects( $this->never() )->method( 'uploadApi' );
+
+		$uploader = $this->uploaderWithCloudinary( $cloudinaryMock );
+		$result = $uploader->moveResource( 'test-folder/image', 'blog' );
+
+		$this->assertFalse( $result['url_changed'] );
+		$this->assertEquals( 'test-folder/image', $result['public_id'] );
+		$this->assertEquals( 'test-folder/blog', $result['asset_folder'] );
 	}
 
 	public function testMoveResourceUpdatesAssetFolderWhenUrlSafe(): void
@@ -604,6 +639,33 @@ class CloudinaryUploaderMockTest extends TestCase
 
 		$this->assertFalse( $result['url_changed'] );
 		$this->assertEquals( 'test-folder/blog', $result['asset_folder'] );
+	}
+
+	public function testMoveResourceRenamesWhenAssetFolderUpdateFails(): void
+	{
+		$adminApiMock = $this->createMock( AdminApi::class );
+		$adminApiMock->expects( $this->once() )
+			->method( 'update' )
+			->willThrowException( new \Exception( 'asset_folder is not supported' ) );
+
+		$uploadApiMock = $this->createMock( UploadApi::class );
+		$uploadApiMock->expects( $this->once() )
+			->method( 'rename' )
+			->with( 'test-folder/image', 'test-folder/blog/image', [ 'invalidate' => true ] )
+			->willReturn( [
+				'public_id' => 'test-folder/blog/image',
+				'secure_url' => 'https://example.com/blog/image.jpg'
+			] );
+
+		$cloudinaryMock = $this->createMock( Cloudinary::class );
+		$cloudinaryMock->method( 'adminApi' )->willReturn( $adminApiMock );
+		$cloudinaryMock->method( 'uploadApi' )->willReturn( $uploadApiMock );
+
+		$uploader = $this->uploaderWithCloudinary( $cloudinaryMock );
+		$result = $uploader->moveResource( 'test-folder/image', 'blog' );
+
+		$this->assertTrue( $result['url_changed'] );
+		$this->assertEquals( 'test-folder/blog/image', $result['public_id'] );
 	}
 
 	public function testUploadUsesFilenameWhenNoNameProvided(): void
