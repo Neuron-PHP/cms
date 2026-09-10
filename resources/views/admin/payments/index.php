@@ -12,6 +12,7 @@ $statusBadge = static function( string $status ): string {
 	{
 		'completed' => 'bg-success',
 		'failed'    => 'bg-danger',
+		'canceled'  => 'bg-secondary',
 		'refunded'  => 'bg-secondary',
 		default     => 'bg-warning text-dark'
 	};
@@ -27,7 +28,7 @@ $freqLabel = static function( string $f ): string {
 	][ $f ] ?? ucfirst( $f );
 };
 
-$statuses = [ 'pending', 'completed', 'failed', 'refunded' ];
+$statuses = [ 'pending', 'completed', 'canceled', 'failed', 'refunded' ];
 ?>
 <div class="container-fluid">
 	<div class="d-flex justify-content-between align-items-center mb-4">

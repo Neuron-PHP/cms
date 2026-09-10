@@ -151,6 +151,10 @@ class PaymentsTest extends TestCase
 			{
 				return new CheckoutSession( 'cs_x', 'https://example.test/cs_x' );
 			}
+			public function getCheckoutSession( string $sessionId ): CheckoutSession
+			{
+				return new CheckoutSession( $sessionId, 'https://example.test/' . $sessionId );
+			}
 			public function verifyWebhook( string $payload, string $signature ): WebhookEvent
 			{
 				return new WebhookEvent( 'noop', [] );

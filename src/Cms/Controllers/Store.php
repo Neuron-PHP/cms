@@ -8,6 +8,8 @@ use Neuron\Cms\Repositories\IPaymentRepository;
 use Neuron\Cms\Repositories\IProductRepository;
 use Neuron\Cms\Services\Auth\CsrfToken;
 use Neuron\Cms\Services\Payment\PaymentGatewayFactory;
+use Neuron\Cms\Services\Payment\PaymentReconciler;
+use Neuron\Cms\Services\Payment\PaymentService;
 use Neuron\Cms\Services\Store\CartService;
 use Neuron\Cms\Services\Store\StoreService;
 use Neuron\Data\Settings\SettingManager;
@@ -46,6 +48,7 @@ class Store extends Content
 	private PaymentGatewayFactory $_gatewayFactory;
 	private StoreService $_storeService;
 	private CartService $_cart;
+	private PaymentReconciler $_reconciler;
 
 	/**
 	 * @param IMvcApplication $app
@@ -57,6 +60,7 @@ class Store extends Content
 	 * @param PaymentGatewayFactory $gatewayFactory
 	 * @param StoreService|null $storeService
 	 * @param CartService|null $cart
+	 * @param PaymentReconciler|null $reconciler
 	 */
 	public function __construct(
 		IMvcApplication       $app,
@@ -67,7 +71,8 @@ class Store extends Content
 		IOrderItemRepository  $orderItems,
 		PaymentGatewayFactory $gatewayFactory,
 		?StoreService         $storeService = null,
-		?CartService          $cart = null
+		?CartService          $cart = null,
+		?PaymentReconciler    $reconciler = null
 	)
 	{
 		parent::__construct( $app, $settings, $sessionManager );
@@ -78,6 +83,15 @@ class Store extends Content
 		$this->_gatewayFactory = $gatewayFactory;
 		$this->_storeService   = $storeService ?? new StoreService( $settings );
 		$this->_cart           = $cart ?? new CartService( $products, $sessionManager );
+		$this->_reconciler     = $reconciler ?? new PaymentReconciler(
+			$payments,
+			$gatewayFactory,
+			new PaymentService( $settings ),
+			$settings,
+			null,
+			$orderItems,
+			$this->_storeService
+		);
 	}
 
 	/**
@@ -368,14 +382,25 @@ class Store extends Content
 	}
 
 	/**
-	 * Order confirmation page ( presentational; webhook is source of truth ).
+	 * Order confirmation page.
+	 *
+	 * The signed webhook is the primary confirmation path. If it has not
+	 * arrived yet, the hosted session is retrieved so a paid order is not
+	 * left pending.
 	 */
 	#[Get('/store/success', name: 'store_success')]
 	public function success( Request $request ): string
 	{
 		$sessionId = (string) ( $request->get( 'session_id', '' ) ?? '' );
 		$order     = $sessionId !== '' ? $this->_payments->findBySessionId( $sessionId ) : null;
-		$items     = $order !== null ? $this->_orderItems->findByPaymentId( (int) $order['id'] ) : [];
+
+		if( $order !== null && ( $order['status'] ?? '' ) === 'pending' )
+		{
+			$this->_reconciler->sync( $order );
+			$order = $this->_payments->findBySessionId( $sessionId ) ?? $order;
+		}
+
+		$items = $order !== null ? $this->_orderItems->findByPaymentId( (int) $order['id'] ) : [];
 
 		// The buyer completed checkout; empty the cart on return.
 		$this->_cart->clear();
