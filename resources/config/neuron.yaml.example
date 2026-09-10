@@ -166,6 +166,16 @@ database:
 # Note: All databases use UTC timezone and have foreign key constraints enforced
 # Timestamp updates (created_at, updated_at) work identically across all platforms
 
+# Job queue (database driver requires the jobs / failed_jobs tables).
+# Install tables with: ./vendor/bin/neuron queue:install
+# Process queues with: ./vendor/bin/neuron jobs:run
+queue:
+  driver: database
+  default: default
+  retry_after: 90
+  max_attempts: 3
+  backoff: 0
+
 # Migration Configuration
 migrations:
   path: db/migrate  # Path to migrations directory (relative to project root)

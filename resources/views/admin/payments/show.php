@@ -28,6 +28,13 @@ $labelFor = static function( string $name ) use ( $fields ): string {
 	return $name;
 };
 
+$formatValue = static function( mixed $value ): string {
+	return \Neuron\Cms\Services\View\PayloadFormatter::format( $value );
+};
+
+$status   = (string) ( $payment['status'] ?? '' );
+$showSync = $status === 'pending' && !empty( $payment['session_id'] ) && !empty( $canSync ?? false );
+
 $orderedKeys = [];
 foreach( ( $fields ?? [] ) as $field )
 {
@@ -47,9 +54,19 @@ foreach( array_keys( $payload ?? [] ) as $key )
 <div class="container-fluid">
 	<div class="d-flex justify-content-between align-items-center mb-4">
 		<h2>Payment #<?= htmlspecialchars( (string) ( $payment['id'] ?? '' ) ) ?></h2>
-		<a href="<?= route_path('admin_payments') ?>" class="btn btn-outline-secondary">
-			<i class="bi bi-arrow-left"></i> Back
-		</a>
+		<div class="d-flex gap-2">
+			<?php if( $showSync ): ?>
+				<form action="<?= route_path('admin_payment_sync', ['id' => $payment['id']]) ?>" method="POST" class="d-inline">
+					<?= csrf_field() ?>
+					<button type="submit" class="btn btn-outline-primary">
+						<i class="bi bi-arrow-repeat"></i> Sync with Stripe
+					</button>
+				</form>
+			<?php endif; ?>
+			<a href="<?= route_path('admin_payments') ?>" class="btn btn-outline-secondary">
+				<i class="bi bi-arrow-left"></i> Back
+			</a>
+		</div>
 	</div>
 
 	<div class="row g-4">
@@ -126,7 +143,7 @@ foreach( array_keys( $payload ?? [] ) as $key )
 						<dl class="row mb-0">
 							<?php foreach( $orderedKeys as $name ): ?>
 								<dt class="col-sm-3"><?= htmlspecialchars( $labelFor( $name ) ) ?></dt>
-								<dd class="col-sm-9" style="white-space: pre-wrap;"><?= htmlspecialchars( is_array( $payload[ $name ] ?? '' ) ? implode( ', ', $payload[ $name ] ) : (string) ( $payload[ $name ] ?? '' ) ) ?></dd>
+								<dd class="col-sm-9" style="white-space: pre-wrap;"><?= htmlspecialchars( $formatValue( $payload[ $name ] ?? '' ) ) ?></dd>
 							<?php endforeach; ?>
 						</dl>
 					<?php endif; ?>

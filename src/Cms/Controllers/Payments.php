@@ -13,6 +13,7 @@ use Neuron\Cms\Services\Auth\CsrfToken;
 use Neuron\Cms\Services\Contact\ContactFormValidator;
 use Neuron\Cms\Services\Payment\PaymentService;
 use Neuron\Cms\Services\Payment\PaymentGatewayFactory;
+use Neuron\Cms\Services\Payment\PaymentReconciler;
 use Neuron\Cms\Services\Store\StoreService;
 use Neuron\Data\Settings\SettingManager;
 use Neuron\Log\Log;
@@ -52,9 +53,8 @@ class Payments extends Content
 	private ISubscriptionRepository $_subscriptions;
 	private PaymentGatewayFactory $_gatewayFactory;
 	private PaymentService $_paymentService;
+	private PaymentReconciler $_reconciler;
 	private ContactFormValidator $_validator;
-	private ?IOrderItemRepository $_orderItems;
-	private ?StoreService $_storeService;
 
 	/**
 	 * @param IMvcApplication $app
@@ -67,6 +67,7 @@ class Payments extends Content
 	 * @param ContactFormValidator|null $validator
 	 * @param IOrderItemRepository|null $orderItems Order line items ( for store-order receipts )
 	 * @param StoreService|null $storeService Store order emails
+	 * @param PaymentReconciler|null $reconciler Completes pending payments from webhook or session lookup
 	 */
 	public function __construct(
 		IMvcApplication         $app,
@@ -78,7 +79,8 @@ class Payments extends Content
 		?PaymentService         $paymentService = null,
 		?ContactFormValidator   $validator = null,
 		?IOrderItemRepository   $orderItems = null,
-		?StoreService           $storeService = null
+		?StoreService           $storeService = null,
+		?PaymentReconciler      $reconciler = null
 	)
 	{
 		parent::__construct( $app, $settings, $sessionManager );
@@ -88,8 +90,15 @@ class Payments extends Content
 		$this->_gatewayFactory = $gatewayFactory;
 		$this->_paymentService = $paymentService ?? new PaymentService( $settings );
 		$this->_validator      = $validator ?? new ContactFormValidator();
-		$this->_orderItems     = $orderItems;
-		$this->_storeService   = $storeService;
+		$this->_reconciler     = $reconciler ?? new PaymentReconciler(
+			$repository,
+			$gatewayFactory,
+			$this->_paymentService,
+			$settings,
+			$subscriptions,
+			$orderItems,
+			$storeService
+		);
 	}
 
 	/**
@@ -217,7 +226,9 @@ class Payments extends Content
 	/**
 	 * Thank-you page shown after returning from the gateway.
 	 *
-	 * This is presentational only; the payment is confirmed by the webhook.
+	 * The signed webhook is the primary confirmation path. If it has not
+	 * arrived yet, the hosted session is retrieved so a paid checkout is not
+	 * left pending.
 	 */
 	#[Get('/payments/success', name: 'payments_success')]
 	#[Get('/donations/success', name: 'donations_success')]
@@ -225,6 +236,12 @@ class Payments extends Content
 	{
 		$sessionId = (string) ( $request->get( 'session_id', '' ) ?? '' );
 		$payment   = $sessionId !== '' ? $this->_repository->findBySessionId( $sessionId ) : null;
+
+		if( $payment !== null && ( $payment['status'] ?? '' ) === 'pending' )
+		{
+			$this->_reconciler->sync( $payment );
+			$payment = $this->_repository->findBySessionId( $sessionId ) ?? $payment;
+		}
 
 		$message = 'Thank you for your payment!';
 
@@ -345,27 +362,13 @@ class Payments extends Content
 			return $this->plain( HttpResponseStatus::OK, 'already processed' );
 		}
 
-		$paymentId      = (int) $payment['id'];
-		$subscriptionId = $event->subscriptionId();
-		$type           = $subscriptionId !== null ? 'recurring' : 'one_time';
-
-		$this->_repository->markCompleted( $paymentId, [
-			'payment_intent_id' => $event->paymentIntentId(),
-			'subscription_id'   => $subscriptionId,
-			'amount_cents'      => $event->amountTotal(),
-			'type'              => $type
-		] );
-
-		if( $subscriptionId !== null )
-		{
-			$this->openSubscription( $payment, $subscriptionId, $gateway );
-		}
-
-		$completed = $this->_repository->findById( $paymentId ) ?? $payment;
-
-		Event::emit( new PaymentCompletedEvent( $completed, false ) );
-
-		$this->sendNotifications( $completed );
+		$this->_reconciler->finalize(
+			$payment,
+			$event->paymentIntentId(),
+			$event->subscriptionId(),
+			$event->amountTotal(),
+			$gateway
+		);
 
 		return $this->plain( HttpResponseStatus::OK, 'ok' );
 	}
@@ -436,7 +439,7 @@ class Payments extends Content
 		if( $renewal !== null )
 		{
 			Event::emit( new PaymentCompletedEvent( $renewal, true ) );
-			$this->sendNotifications( $renewal, true );
+			$this->_reconciler->notify( $renewal, true );
 		}
 
 		return $this->plain( HttpResponseStatus::OK, 'ok' );
@@ -532,48 +535,7 @@ class Payments extends Content
 	 */
 	private function openSubscription( array $payment, string $subscriptionId, object $gateway ): void
 	{
-		if( $this->_subscriptions->findByGatewayId( $subscriptionId ) !== null )
-		{
-			return;
-		}
-
-		$status     = 'active';
-		$periodEnd  = null;
-
-		try
-		{
-			$subscription = $gateway->getSubscription( $subscriptionId );
-			$status       = $subscription->status ?: 'active';
-			$periodEnd    = $subscription->currentPeriodEnd !== null
-				? date( 'Y-m-d H:i:s', $subscription->currentPeriodEnd )
-				: null;
-		}
-		catch( \Throwable $e )
-		{
-			Log::warning( 'Payment webhook: unable to load subscription details: ' . $e->getMessage() );
-		}
-
-		try
-		{
-			$this->_subscriptions->create( [
-				'purpose'            => $payment['purpose'] ?? 'donation',
-				'form_key'           => $payment['form_key'] ?? '',
-				'provider'           => $payment['provider'] ?? 'stripe',
-				'subscription_id'    => $subscriptionId,
-				'status'             => $status,
-				'frequency'          => $payment['frequency'] ?? 'monthly',
-				'amount_cents'       => (int) ( $payment['amount_cents'] ?? 0 ),
-				'currency'           => $payment['currency'] ?? 'usd',
-				'payer_name'         => $payment['payer_name'] ?? null,
-				'payer_email'        => $payment['payer_email'] ?? null,
-				'payload'            => (string) ( $payment['payload'] ?? '{}' ),
-				'current_period_end' => $periodEnd
-			] );
-		}
-		catch( \Throwable $e )
-		{
-			Log::error( 'Payment webhook: failed to open subscription: ' . $e->getMessage() );
-		}
+		$this->_reconciler->openSubscription( $payment, $subscriptionId, $gateway );
 	}
 
 	/**
@@ -762,106 +724,7 @@ class Payments extends Content
 	 */
 	private function sendNotifications( array $payment, bool $isRenewal = false ): void
 	{
-		// Store orders carry their own notification path ( line-item receipts ).
-		if( ( $payment['purpose'] ?? '' ) === 'order' )
-		{
-			$this->sendOrderNotifications( $payment );
-
-			return;
-		}
-
-		$key    = (string) ( $payment['form_key'] ?? '' );
-		$fields = $this->_paymentService->getFields( $key );
-
-		$values = json_decode( (string) ( $payment['payload'] ?? '{}' ), true );
-		$values = is_array( $values ) ? $values : [];
-
-		$context = [
-			'formLabel'       => $this->_paymentService->getFormConfig( $key )['label'] ?? $key,
-			'formKey'         => $key,
-			'purpose'         => (string) ( $payment['purpose'] ?? 'donation' ),
-			'isRenewal'       => $isRenewal,
-			'fields'          => $fields,
-			'values'          => $values,
-			'amountFormatted' => $this->formatAmount( (int) ( $payment['amount_cents'] ?? 0 ), (string) ( $payment['currency'] ?? 'usd' ) ),
-			'frequencyLabel'  => $this->frequencyLabel( (string) ( $payment['frequency'] ?? 'one_time' ) ),
-			'payment'         => $payment
-		];
-
-		try
-		{
-			$this->_paymentService->sendNotification( $key, $context );
-
-			$payerEmail = (string) ( $payment['payer_email'] ?? '' );
-
-			if( $payerEmail !== '' )
-			{
-				$this->_paymentService->sendReceipt( $payerEmail, $key, $context );
-			}
-		}
-		catch( \Throwable $e )
-		{
-			Log::error( 'Payment notifications failed: ' . $e->getMessage() );
-		}
-	}
-
-	/**
-	 * Send the buyer receipt and internal notification for a completed store
-	 * order, including its line items. No-op when store services are absent.
-	 *
-	 * @param array<string, mixed> $payment
-	 * @return void
-	 */
-	private function sendOrderNotifications( array $payment ): void
-	{
-		$store = $this->_storeService ?? new StoreService( $this->_settings );
-
-		$items = [];
-
-		if( $this->_orderItems !== null )
-		{
-			$items = $this->_orderItems->findByPaymentId( (int) ( $payment['id'] ?? 0 ) );
-		}
-
-		$currency = (string) ( $payment['currency'] ?? 'usd' );
-
-		$lines = array_map( function( array $item ) use ( $currency ): array {
-			$qty  = (int) ( $item['quantity'] ?? 1 );
-			$unit = (int) ( $item['unit_amount_cents'] ?? 0 );
-
-			return [
-				'name'           => (string) ( $item['name'] ?? '' ),
-				'sku'            => $item['sku'] ?? null,
-				'quantity'       => $qty,
-				'unitFormatted'  => $this->formatAmount( $unit, $currency ),
-				'totalFormatted' => $this->formatAmount( $unit * $qty, $currency )
-			];
-		}, $items );
-
-		$context = [
-			'orderId'        => $payment['id'] ?? '',
-			'payerName'      => (string) ( $payment['payer_name'] ?? '' ),
-			'payerEmail'     => (string) ( $payment['payer_email'] ?? '' ),
-			'items'          => $lines,
-			'totalFormatted' => $this->formatAmount( (int) ( $payment['amount_cents'] ?? 0 ), $currency ),
-			'order'          => $payment
-		];
-
-		try
-		{
-			$store->sendOrderNotification( $context );
-
-			$buyerEmail = (string) ( $payment['payer_email'] ?? '' );
-
-			if( $buyerEmail !== '' )
-			{
-				$store->sendOrderReceipt( $buyerEmail, $context );
-			}
-		}
-		catch( \Throwable $e )
-		{
-			Log::error( 'Order notifications failed: ' . $e->getMessage() );
-		}
+		$this->_reconciler->notify( $payment, $isRenewal );
 	}
 
 	/**

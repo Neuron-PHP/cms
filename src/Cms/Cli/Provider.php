@@ -29,6 +29,11 @@ class Provider
 			'Neuron\\Cms\\Cli\\Commands\\Install\\UpgradeCommand'
 		);
 
+		$registry->register(
+			'queue:install',
+			'Neuron\\Cms\\Cli\\Commands\\Queue\\InstallCommand'
+		);
+
 		// User management commands
 		$registry->register(
 			'cms:user:create',
@@ -59,6 +64,11 @@ class Provider
 		$registry->register(
 			'cms:payments:report',
 			'Neuron\\Cms\\Cli\\Commands\\Payments\\ReportCommand'
+		);
+
+		$registry->register(
+			'cms:payments:reconcile',
+			'Neuron\\Cms\\Cli\\Commands\\Payments\\ReconcileCommand'
 		);
 
 		// Maintenance mode commands
