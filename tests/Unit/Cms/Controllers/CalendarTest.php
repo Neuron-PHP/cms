@@ -164,6 +164,102 @@ class CalendarTest extends TestCase
 		$this->assertEquals( '<html>Calendar March 2024</html>', $result );
 	}
 
+	public function testIndexFallsBackToCurrentMonthForNegativeMonth(): void
+	{
+		$mockEventRepository = $this->createMock( IEventRepository::class );
+		$mockCategoryRepository = $this->createMock( IEventCategoryRepository::class );
+
+		$now = new \DateTimeImmutable( 'now' );
+		$expectedStart = $now->format( 'Y-m-01' );
+
+		$mockEventRepository->expects( $this->once() )
+			->method( 'getByDateRange' )
+			->with(
+				$this->callback( function( $date ) use ( $expectedStart ) {
+					return $date->format( 'Y-m-d' ) === $expectedStart;
+				} ),
+				$this->anything(),
+				'published'
+			)
+			->willReturn( [] );
+
+		$mockCategoryRepository->method( 'all' )->willReturn( [] );
+
+		$mockSettingManager = Registry::getInstance()->get( RegistryKeys::SETTINGS );
+		$mockSessionManager = $this->createMock( \Neuron\Cms\Auth\SessionManager::class );
+
+		$controller = $this->getMockBuilder( Calendar::class )
+			->setConstructorArgs( [ $this->_mockApp, $mockSettingManager, $mockSessionManager, $mockEventRepository, $mockCategoryRepository ] )
+			->onlyMethods( [ 'renderHtml' ] )
+			->getMock();
+
+		$controller->method( 'renderHtml' )->willReturn( '<html>Calendar</html>' );
+
+		$request = $this->getMockBuilder( Request::class )
+			->onlyMethods( [ 'get' ] )
+			->getMock();
+		$request->method( 'get' )
+			->willReturnCallback( function( $key, $default ) {
+				return match( $key ) {
+					'month' => '-10',
+					'year' => '2026',
+					default => $default
+				};
+			} );
+
+		$result = $controller->index( $request );
+
+		$this->assertEquals( '<html>Calendar</html>', $result );
+	}
+
+	public function testIndexFallsBackToCurrentMonthForNegativeYear(): void
+	{
+		$mockEventRepository = $this->createMock( IEventRepository::class );
+		$mockCategoryRepository = $this->createMock( IEventCategoryRepository::class );
+
+		$now = new \DateTimeImmutable( 'now' );
+		$expectedStart = $now->format( 'Y-m-01' );
+
+		$mockEventRepository->expects( $this->once() )
+			->method( 'getByDateRange' )
+			->with(
+				$this->callback( function( $date ) use ( $expectedStart ) {
+					return $date->format( 'Y-m-d' ) === $expectedStart;
+				} ),
+				$this->anything(),
+				'published'
+			)
+			->willReturn( [] );
+
+		$mockCategoryRepository->method( 'all' )->willReturn( [] );
+
+		$mockSettingManager = Registry::getInstance()->get( RegistryKeys::SETTINGS );
+		$mockSessionManager = $this->createMock( \Neuron\Cms\Auth\SessionManager::class );
+
+		$controller = $this->getMockBuilder( Calendar::class )
+			->setConstructorArgs( [ $this->_mockApp, $mockSettingManager, $mockSessionManager, $mockEventRepository, $mockCategoryRepository ] )
+			->onlyMethods( [ 'renderHtml' ] )
+			->getMock();
+
+		$controller->method( 'renderHtml' )->willReturn( '<html>Calendar</html>' );
+
+		$request = $this->getMockBuilder( Request::class )
+			->onlyMethods( [ 'get' ] )
+			->getMock();
+		$request->method( 'get' )
+			->willReturnCallback( function( $key, $default ) {
+				return match( $key ) {
+					'month' => '10',
+					'year' => '-2026',
+					default => $default
+				};
+			} );
+
+		$result = $controller->index( $request );
+
+		$this->assertEquals( '<html>Calendar</html>', $result );
+	}
+
 	public function testShowRendersPublishedEvent(): void
 	{
 		$mockEvent = $this->createMock( Event::class );

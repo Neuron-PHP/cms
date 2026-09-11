@@ -73,7 +73,7 @@
 							<tbody>
 								<?php
 								// Create calendar grid
-								$firstDayOfMonth = new DateTimeImmutable("$currentYear-$currentMonth-01");
+								$firstDayOfMonth = new DateTimeImmutable( sprintf( '%04d-%02d-01', $currentYear, $currentMonth ) );
 								$lastDayOfMonth = $firstDayOfMonth->modify('last day of this month');
 								$daysInMonth = (int)$lastDayOfMonth->format('d');
 								$firstDayOfWeek = (int)$firstDayOfMonth->format('w'); // 0 = Sunday
