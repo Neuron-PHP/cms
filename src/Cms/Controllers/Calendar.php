@@ -65,15 +65,7 @@ class Calendar extends Content
 	#[Get('/', name: 'calendar')]
 	public function index( Request $request ): string
 	{
-		// Get month/year from query params (default to current month)
-		$monthParam = $request->get( 'month', date( 'n' ) );
-		$yearParam = $request->get( 'year', date( 'Y' ) );
-
-		$month = (int)$monthParam;
-		$year = (int)$yearParam;
-
-		// Calculate start and end dates for the month
-		$startDate = new DateTimeImmutable( "$year-$month-01 00:00:00" );
+		[ $month, $year, $startDate ] = $this->resolveMonth( $request );
 		$endDate = $startDate->modify( 'last day of this month' )->setTime( 23, 59, 59 );
 
 		// Get events for this month
@@ -236,6 +228,44 @@ class Calendar extends Content
 		$expander = new RecurrenceExpander();
 
 		return $expander->buildOccurrence( $event, $occurrence, $expander->duration( $event ) );
+	}
+
+	/**
+	 * Resolve a valid calendar month from query params.
+	 *
+	 * Invalid or out-of-range month/year values (e.g. month=-10, year=-2026)
+	 * fall back to the current month instead of producing an unparseable
+	 * datetime that crashes the page.
+	 *
+	 * @param Request $request
+	 * @return array{0: int, 1: int, 2: DateTimeImmutable}
+	 */
+	private function resolveMonth( Request $request ): array
+	{
+		$now   = new DateTimeImmutable( 'now' );
+		$month = filter_var( $request->get( 'month', $now->format( 'n' ) ), FILTER_VALIDATE_INT );
+		$year  = filter_var( $request->get( 'year', $now->format( 'Y' ) ), FILTER_VALIDATE_INT );
+
+		if( $month === false || $month < 1 || $month > 12
+			|| $year === false || $year < 1970 || $year > 2100 )
+		{
+			$month = (int)$now->format( 'n' );
+			$year  = (int)$now->format( 'Y' );
+		}
+
+		$startDate = DateTimeImmutable::createFromFormat(
+			'!Y-n-j H:i:s',
+			sprintf( '%d-%d-1 00:00:00', $year, $month )
+		);
+
+		if( $startDate === false )
+		{
+			$startDate = $now->modify( 'first day of this month midnight' );
+			$month     = (int)$startDate->format( 'n' );
+			$year      = (int)$startDate->format( 'Y' );
+		}
+
+		return [ $month, $year, $startDate ];
 	}
 
 	/**
