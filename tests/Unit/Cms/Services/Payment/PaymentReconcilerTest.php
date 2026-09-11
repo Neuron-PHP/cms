@@ -9,7 +9,6 @@ use Neuron\Cms\Repositories\DatabaseSubscriptionRepository;
 use Neuron\Cms\Services\Payment\PaymentGatewayFactory;
 use Neuron\Cms\Services\Payment\PaymentReconciler;
 use Neuron\Cms\Services\Payment\PaymentService;
-use Neuron\Cms\Services\Payment\RetrievedCheckout;
 use Neuron\Data\Settings\SettingManager;
 use Neuron\Data\Settings\Source\Memory;
 use Neuron\Events\Broadcasters\Generic;
@@ -58,7 +57,7 @@ class PaymentReconcilerTest extends TestCase
 		] );
 
 		$reconciler = $this->reconciler( $payments, $subs, $this->gateway(
-			new RetrievedCheckout( 'cs_paid', 'complete', 'paid', 'pi_1', null, 2500 )
+			new CheckoutSession( 'cs_paid', 'https://example.test/cs', 'complete', 'paid', 'pi_1', null, 2500 )
 		) );
 
 		$this->assertSame( PaymentReconciler::COMPLETED, $reconciler->sync( $payments->findById( $id ) ) );
@@ -80,7 +79,7 @@ class PaymentReconcilerTest extends TestCase
 		] );
 
 		$reconciler = $this->reconciler( $payments, $subs, $this->gateway(
-			new RetrievedCheckout( 'cs_exp', 'expired', 'unpaid' )
+			new CheckoutSession( 'cs_exp', 'https://example.test/cs', 'expired', 'unpaid' )
 		) );
 
 		$this->assertSame( PaymentReconciler::CANCELED, $reconciler->sync( $payments->findById( $id ) ) );
@@ -100,7 +99,7 @@ class PaymentReconcilerTest extends TestCase
 		] );
 
 		$reconciler = $this->reconciler( $payments, $subs, $this->gateway(
-			new RetrievedCheckout( 'cs_open', 'open', 'unpaid' )
+			new CheckoutSession( 'cs_open', 'https://example.test/cs', 'open', 'unpaid' )
 		) );
 
 		$this->assertSame( PaymentReconciler::UNPAID, $reconciler->sync( $payments->findById( $id ) ) );
@@ -118,7 +117,7 @@ class PaymentReconcilerTest extends TestCase
 		] );
 
 		$reconciler = $this->reconciler( $payments, $subs, $this->gateway(
-			new RetrievedCheckout( 'cs_x', 'complete', 'paid' )
+			new CheckoutSession( 'cs_x', 'https://example.test/cs', 'complete', 'paid' )
 		) );
 
 		$this->assertSame( PaymentReconciler::NO_SESSION, $reconciler->sync( $payments->findById( $id ) ) );
@@ -135,7 +134,7 @@ class PaymentReconcilerTest extends TestCase
 		] );
 
 		$reconciler = $this->reconciler( $payments, $subs, $this->gateway(
-			new RetrievedCheckout( 'cs_x', 'complete', 'paid' )
+			new CheckoutSession( 'cs_x', 'https://example.test/cs', 'complete', 'paid' )
 		) );
 
 		$reconciler->finalize( $payments->findById( $id ), 'pi_x', null, 500 );
@@ -222,19 +221,19 @@ class PaymentReconcilerTest extends TestCase
 		);
 	}
 
-	private function gateway( RetrievedCheckout $session ): IPaymentGateway
+	private function gateway( CheckoutSession $session ): IPaymentGateway
 	{
 		return new class( $session ) implements IPaymentGateway {
-			public function __construct( private RetrievedCheckout $session )
+			public function __construct( private CheckoutSession $session )
 			{
 			}
 
 			public function createCheckoutSession( CheckoutSessionRequest $request ): CheckoutSession
 			{
-				return new CheckoutSession( $this->session->id, 'https://example.test/cs' );
+				return $this->session;
 			}
 
-			public function getCheckoutSession( string $sessionId ): RetrievedCheckout
+			public function getCheckoutSession( string $sessionId ): CheckoutSession
 			{
 				return $this->session;
 			}

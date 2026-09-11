@@ -120,10 +120,9 @@ class MediaValidator
 			return false;
 		}
 
-		// Verify MIME type
-		$finfo = finfo_open( FILEINFO_MIME_TYPE );
-		$mimeType = finfo_file( $finfo, $filePath );
-		finfo_close( $finfo );
+		// Verify MIME type (finfo is freed automatically; finfo_close() is deprecated in 8.5)
+		$finfo = new \finfo( FILEINFO_MIME_TYPE );
+		$mimeType = $finfo->file( $filePath );
 
 		$allowedMimeTypes = [
 			'image/jpeg',

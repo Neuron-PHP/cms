@@ -35,7 +35,7 @@
 			<p>Hi <?= htmlspecialchars( $registration->getName() ) ?>,</p>
 			<p>Your registration for <strong><?= htmlspecialchars( $event->getTitle() ) ?></strong> is confirmed.</p>
 			<div class="event-meta">
-				<div><strong>Date:</strong> <?= htmlspecialchars( $event->getStartDate()->format( 'l, F j, Y g:i A' ) ) ?></div>
+				<div><strong>Date:</strong> <?= htmlspecialchars( $registration->getDisplayDate( $event )->format( 'l, F j, Y g:i A' ) ) ?></div>
 				<?php if( $event->getLocation() ): ?>
 					<div><strong>Location:</strong> <?= htmlspecialchars( $event->getLocation() ) ?></div>
 				<?php endif; ?>
