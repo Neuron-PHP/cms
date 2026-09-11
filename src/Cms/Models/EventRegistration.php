@@ -97,6 +97,17 @@ class EventRegistration extends Model
 	}
 
 	/**
+	 * Date shown for this registration.
+	 *
+	 * Recurring events store the chosen occurrence; otherwise the event
+	 * series start is used.
+	 */
+	public function getDisplayDate( Event $event ): DateTimeImmutable
+	{
+		return $this->_occurrenceDate ?? $event->getStartDate();
+	}
+
+	/**
 	 * Get user ID (null for anonymous registrations)
 	 */
 	public function getUserId(): ?int

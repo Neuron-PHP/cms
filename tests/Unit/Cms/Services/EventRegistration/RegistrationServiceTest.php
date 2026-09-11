@@ -140,4 +140,45 @@ class RegistrationServiceTest extends TestCase
 
 		$this->assertTrue( $service->sendConfirmation( $this->registration(), $this->event() ) );
 	}
+
+	public function testAdminFallbackBodyUsesOccurrenceDate(): void
+	{
+		$registration = $this->registration();
+		$registration->setOccurrenceDate( new DateTimeImmutable( '2030-03-15 14:00:00' ) );
+
+		$sender = $this->createMock( Sender::class );
+		$sender->method( 'to' )->willReturnSelf();
+		$sender->method( 'replyTo' )->willReturnSelf();
+		$sender->method( 'subject' )->willReturnSelf();
+		$sender->method( 'template' )->willThrowException( new \RuntimeException( 'missing template' ) );
+		$sender->expects( $this->once() )
+			->method( 'body' )
+			->with( $this->stringContains( 'Friday, March 15, 2030 2:00 PM' ), false )
+			->willReturnSelf();
+		$sender->method( 'send' )->willReturn( true );
+
+		$service = new RegistrationService( $this->settings( [ 'notify_email' => 'events@example.com' ] ), $sender );
+
+		$this->assertTrue( $service->notifyAdmin( $registration, $this->event() ) );
+	}
+
+	public function testConfirmationFallbackBodyUsesOccurrenceDate(): void
+	{
+		$registration = $this->registration();
+		$registration->setOccurrenceDate( new DateTimeImmutable( '2030-03-15 14:00:00' ) );
+
+		$sender = $this->createMock( Sender::class );
+		$sender->method( 'to' )->willReturnSelf();
+		$sender->method( 'subject' )->willReturnSelf();
+		$sender->method( 'template' )->willThrowException( new \RuntimeException( 'missing template' ) );
+		$sender->expects( $this->once() )
+			->method( 'body' )
+			->with( $this->stringContains( 'Friday, March 15, 2030 2:00 PM' ), false )
+			->willReturnSelf();
+		$sender->method( 'send' )->willReturn( true );
+
+		$service = new RegistrationService( $this->settings( [ 'confirmation_enabled' => true ] ), $sender );
+
+		$this->assertTrue( $service->sendConfirmation( $registration, $this->event() ) );
+	}
 }

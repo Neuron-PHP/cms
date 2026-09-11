@@ -215,7 +215,7 @@ class RegistrationService
 	{
 		$lines = [
 			'New registration for: ' . $event->getTitle(),
-			'Date: ' . $event->getStartDate()->format( 'l, F j, Y g:i A' ),
+			'Date: ' . $registration->getDisplayDate( $event )->format( 'l, F j, Y g:i A' ),
 			'',
 			'Name: ' . $registration->getName(),
 			'Email: ' . $registration->getEmail()
@@ -242,7 +242,7 @@ class RegistrationService
 			'Hi ' . $registration->getName() . ',',
 			'',
 			'Your registration for "' . $event->getTitle() . '" is confirmed.',
-			'Date: ' . $event->getStartDate()->format( 'l, F j, Y g:i A' ),
+			'Date: ' . $registration->getDisplayDate( $event )->format( 'l, F j, Y g:i A' ),
 			$event->getLocation() ? 'Location: ' . $event->getLocation() : '',
 			'',
 			'Thank you!'

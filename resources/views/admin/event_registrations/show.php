@@ -17,7 +17,7 @@
 							<dd class="col-8"><?= htmlspecialchars( $event->getTitle() ) ?></dd>
 
 							<dt class="col-4">Date</dt>
-							<dd class="col-8"><?= htmlspecialchars( $event->getStartDate()->format( 'l, F j, Y g:i A' ) ) ?></dd>
+							<dd class="col-8"><?= htmlspecialchars( $registration->getDisplayDate( $event )->format( 'l, F j, Y g:i A' ) ) ?></dd>
 
 							<?php if( $event->getLocation() ): ?>
 								<dt class="col-4">Location</dt>

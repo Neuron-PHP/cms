@@ -42,7 +42,7 @@
 					</tr>
 					<tr>
 						<th>Date</th>
-						<td><?= htmlspecialchars( $event->getStartDate()->format( 'l, F j, Y g:i A' ) ) ?></td>
+						<td><?= htmlspecialchars( $registration->getDisplayDate( $event )->format( 'l, F j, Y g:i A' ) ) ?></td>
 					</tr>
 					<?php if( $event->getLocation() ): ?>
 						<tr>
