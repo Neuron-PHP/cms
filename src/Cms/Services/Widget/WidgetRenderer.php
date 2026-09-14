@@ -7,6 +7,7 @@ use Neuron\Cms\Repositories\IEventRepository;
 use Neuron\Cms\Repositories\IEventCategoryRepository;
 use Neuron\Cms\Repositories\IEventRegistrationRepository;
 use Neuron\Cms\Repositories\IProductRepository;
+use Neuron\Cms\Repositories\ITeamRepository;
 use Neuron\Cms\Services\Contact\ContactService;
 use Neuron\Cms\Services\Payment\PaymentService;
 use Neuron\Cms\Services\Store\CartService;
@@ -31,6 +32,7 @@ class WidgetRenderer
 	private ?IEventRegistrationRepository $_eventRegistrationRepository = null;
 	private ?SettingManager $_settings = null;
 	private ?IProductRepository $_productRepository = null;
+	private ?ITeamRepository $_teamRepository = null;
 
 	public function __construct(
 		?IPostRepository $postRepository = null,
@@ -38,7 +40,8 @@ class WidgetRenderer
 		?IEventCategoryRepository $eventCategoryRepository = null,
 		?SettingManager $settings = null,
 		?IEventRegistrationRepository $eventRegistrationRepository = null,
-		?IProductRepository $productRepository = null
+		?IProductRepository $productRepository = null,
+		?ITeamRepository $teamRepository = null
 	)
 	{
 		$this->_postRepository = $postRepository;
@@ -47,6 +50,7 @@ class WidgetRenderer
 		$this->_settings = $settings;
 		$this->_eventRegistrationRepository = $eventRegistrationRepository;
 		$this->_productRepository = $productRepository;
+		$this->_teamRepository = $teamRepository;
 	}
 
 	/**
@@ -69,6 +73,7 @@ class WidgetRenderer
 			'products' => $this->renderStore( 'products', $config ),
 			'product' => $this->renderStore( 'product', $config ),
 			'cart' => $this->renderStore( 'cart', $config ),
+			'team' => $this->renderTeam( $config ),
 			default => $this->renderUnknownWidget( $widgetType )
 		};
 	}
@@ -289,6 +294,28 @@ class WidgetRenderer
 			'cart'    => $widget->renderCart( $config ),
 			default   => $widget->renderProducts( $config )
 		};
+	}
+
+	/**
+	 * Render a named team roster.
+	 *
+	 * Attributes:
+	 * - slug: Team slug (required)
+	 * - title: Optional heading override
+	 *
+	 * @param array<string, mixed> $config
+	 * @return string
+	 */
+	private function renderTeam( array $config ): string
+	{
+		if( !$this->_teamRepository )
+		{
+			return "<!-- Team widget requires TeamRepository -->";
+		}
+
+		$widget = new TeamWidget( $this->_teamRepository );
+
+		return $widget->render( $config );
 	}
 
 	/**

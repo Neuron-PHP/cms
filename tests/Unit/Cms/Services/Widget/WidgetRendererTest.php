@@ -205,4 +205,23 @@ class WidgetRendererTest extends TestCase
 
 		$this->assertStringContainsString( '<!-- Calendar widget requires DatabaseEventRepository and DatabaseEventCategoryRepository -->', $result );
 	}
+
+	public function testRenderTeamWithoutRepositoryReturnsComment(): void
+	{
+		$renderer = new WidgetRenderer();
+		$result = $renderer->render( 'team', [ 'slug' => 'staff' ] );
+
+		$this->assertStringContainsString( '<!-- Team widget requires TeamRepository -->', $result );
+	}
+
+	public function testRenderTeamDelegatesToWidget(): void
+	{
+		$repository = $this->createMock( \Neuron\Cms\Repositories\ITeamRepository::class );
+		$repository->method( 'findBySlug' )->with( 'staff' )->willReturn( null );
+
+		$renderer = new WidgetRenderer( null, null, null, null, null, null, $repository );
+		$result = $renderer->render( 'team', [ 'slug' => 'staff' ] );
+
+		$this->assertStringContainsString( '<!-- Team widget: team not found -->', $result );
+	}
 }

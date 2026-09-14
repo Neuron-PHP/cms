@@ -52,6 +52,8 @@
 							<li><hr class="dropdown-divider"></li>
 							<li><a class="dropdown-item" href="<?= route_path('admin_products') ?>"><i class="bi bi-box-seam me-2"></i>Products</a></li>
 							<li><a class="dropdown-item" href="<?= route_path('admin_orders') ?>"><i class="bi bi-bag-check me-2"></i>Orders</a></li>
+							<li><hr class="dropdown-divider"></li>
+							<li><a class="dropdown-item" href="<?= route_path('admin_teams') ?>"><i class="bi bi-people me-2"></i>Teams</a></li>
 						</ul>
 					</li>
 					<li class="nav-item dropdown">
