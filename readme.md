@@ -54,7 +54,7 @@ A modern, database-backed Content Management System for PHP 8.4+ built on the Ne
 
 - **Shortcodes & Widgets**
   - Reusable content widgets rendered in any page or post body
-  - Built in: `[latest-posts]`, `[calendar]`, `[featured-event]`, `[event-registration]`, `[contact]`
+  - Built in: `[latest-posts]`, `[calendar]`, `[featured-event]`, `[event-registration]`, `[contact]`, `[team]`
 
 - **Media Library**
   - Upload and manage media through the admin panel
@@ -68,6 +68,7 @@ A modern, database-backed Content Management System for PHP 8.4+ built on the Ne
   - Post and page management (CRUD operations)
   - Category and tag management
   - Event, event category, and event-registration management
+  - Team roster management (named teams + members, `[team]` shortcode)
   - Contact submission review
   - Media library
   - User management
@@ -365,6 +366,7 @@ Create CMS-managed pages in the admin panel (Pages → New Page); they're served
 | `[featured-event]` | The next available featured event (full card, or image-only) |
 | `[event-registration]` | A registration form for an event or event category |
 | `[contact]` | A contact form |
+| `[team]` | A named team roster (photo, name, title, optional bio and contact) |
 
 Examples:
 
@@ -376,7 +378,25 @@ Examples:
 [event-registration event="open-house-2026"]
 [event-registration category="workshops" limit="3"]
 [contact]
+[team slug="staff"]
+[team slug="board" title="Board of Directors"]
 ```
+
+#### Team rosters
+
+Create named teams in the admin panel (Content → Teams). Each team has a slug
+and any number of members. Member photos are chosen from the media library.
+A member’s contact field may be an email (rendered as `mailto:`) or a URL/path.
+
+```text
+[team slug="staff"]
+[team slug="board" title="Board of Directors"]
+```
+
+| Attribute | Values | Default | Description |
+|-----------|--------|---------|-------------|
+| `slug` | team slug | required | Which team to render |
+| `title` | any text | _(omitted)_ | Optional heading above the roster. Omit to render cards only. |
 
 #### Featured event display modes
 

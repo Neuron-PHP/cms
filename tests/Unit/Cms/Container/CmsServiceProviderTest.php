@@ -13,6 +13,7 @@ use Neuron\Cms\Repositories\DatabaseEventRepository;
 use Neuron\Cms\Repositories\DatabasePageRepository;
 use Neuron\Cms\Repositories\DatabasePostRepository;
 use Neuron\Cms\Repositories\DatabaseTagRepository;
+use Neuron\Cms\Repositories\DatabaseTeamRepository;
 use Neuron\Cms\Repositories\DatabaseUserRepository;
 use Neuron\Cms\Repositories\ICategoryRepository;
 use Neuron\Cms\Repositories\IEventCategoryRepository;
@@ -20,6 +21,7 @@ use Neuron\Cms\Repositories\IEventRepository;
 use Neuron\Cms\Repositories\IPageRepository;
 use Neuron\Cms\Repositories\IPostRepository;
 use Neuron\Cms\Repositories\ITagRepository;
+use Neuron\Cms\Repositories\ITeamRepository;
 use Neuron\Cms\Repositories\IUserRepository;
 use Neuron\Cms\Services\Content\EditorJsRenderer;
 use Neuron\Cms\Services\Content\ShortcodeParser;
@@ -94,6 +96,7 @@ class CmsServiceProviderTest extends TestCase
 		$this->assertInstanceOf( DatabaseTagRepository::class, $this->container->get( ITagRepository::class ) );
 		$this->assertInstanceOf( DatabaseEventRepository::class, $this->container->get( IEventRepository::class ) );
 		$this->assertInstanceOf( DatabaseEventCategoryRepository::class, $this->container->get( IEventCategoryRepository::class ) );
+		$this->assertInstanceOf( DatabaseTeamRepository::class, $this->container->get( ITeamRepository::class ) );
 	}
 
 	public function testRegisterBindsUserServices(): void
@@ -167,6 +170,7 @@ class CmsServiceProviderTest extends TestCase
 			ITagRepository::class,
 			IEventRepository::class,
 			IEventCategoryRepository::class,
+			ITeamRepository::class,
 			// User services (3)
 			IUserCreator::class,
 			IUserUpdater::class,

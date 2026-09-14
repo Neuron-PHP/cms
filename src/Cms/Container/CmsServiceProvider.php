@@ -17,6 +17,7 @@ use Neuron\Cms\Repositories\IPaymentRepository;
 use Neuron\Cms\Repositories\ISubscriptionRepository;
 use Neuron\Cms\Repositories\IProductRepository;
 use Neuron\Cms\Repositories\IOrderItemRepository;
+use Neuron\Cms\Repositories\ITeamRepository;
 use Neuron\Cms\Repositories\DatabaseUserRepository;
 use Neuron\Cms\Repositories\DatabasePostRepository;
 use Neuron\Cms\Repositories\DatabasePageRepository;
@@ -30,6 +31,7 @@ use Neuron\Cms\Repositories\DatabasePaymentRepository;
 use Neuron\Cms\Repositories\DatabaseSubscriptionRepository;
 use Neuron\Cms\Repositories\DatabaseProductRepository;
 use Neuron\Cms\Repositories\DatabaseOrderItemRepository;
+use Neuron\Cms\Repositories\DatabaseTeamRepository;
 use Neuron\Cms\Services\User\IUserCreator;
 use Neuron\Cms\Services\User\IUserUpdater;
 use Neuron\Cms\Services\User\IUserDeleter;
@@ -95,6 +97,7 @@ class CmsServiceProvider implements IServiceProvider
 		$container->bind( ISubscriptionRepository::class, DatabaseSubscriptionRepository::class );
 		$container->bind( IProductRepository::class, DatabaseProductRepository::class );
 		$container->bind( IOrderItemRepository::class, DatabaseOrderItemRepository::class );
+		$container->bind( ITeamRepository::class, DatabaseTeamRepository::class );
 	}
 
 	/**
@@ -154,7 +157,8 @@ class CmsServiceProvider implements IServiceProvider
 				$c->get( IEventCategoryRepository::class ),
 				$c->get( SettingManager::class ),
 				$c->get( IEventRegistrationRepository::class ),
-				$c->get( IProductRepository::class )
+				$c->get( IProductRepository::class ),
+				$c->get( ITeamRepository::class )
 			);
 		});
 

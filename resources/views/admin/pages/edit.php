@@ -45,7 +45,7 @@
 							<div id="editorjs" style="border: 1px solid #ddd; border-radius: 0.25rem; padding: 20px; min-height: 400px; background: #fff;"></div>
 							<input type="hidden" name="content" id="content-json">
 							<small class="form-text text-muted">
-								Use shortcodes for dynamic content: <code>[latest-posts limit="5"]</code> or <code>[contact-form]</code>
+								Use shortcodes for dynamic content: <code>[latest-posts limit="5"]</code>, <code>[contact]</code>, or <code>[team slug="staff"]</code>
 							</small>
 						</div>
 					</div>

@@ -29,7 +29,8 @@
     "20260622000001_create_subscriptions_table.php",
     "20260623000000_create_products_table.php",
     "20260623000001_create_order_items_table.php",
-    "20260910180000_create_queue_tables.php"
+    "20260910180000_create_queue_tables.php",
+    "20260914150000_create_teams_tables.php"
   ],
   "config_files": [
     "auth.yaml",

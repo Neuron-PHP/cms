@@ -161,6 +161,7 @@ class ShortcodeParser
 					'products' => $this->_widgetRenderer->render( 'products', $attrs ),
 					'product' => $this->_widgetRenderer->render( 'product', $attrs ),
 					'cart' => $this->_widgetRenderer->render( 'cart', $attrs ),
+					'team' => $this->_widgetRenderer->render( 'team', $attrs ),
 					default => "<!-- Unknown shortcode: [{$shortcode}] -->"
 				};
 			}
@@ -191,6 +192,7 @@ class ShortcodeParser
 			|| $shortcode === 'donation'
 			|| $shortcode === 'products'
 			|| $shortcode === 'product'
-			|| $shortcode === 'cart';
+			|| $shortcode === 'cart'
+			|| $shortcode === 'team';
 	}
 }
