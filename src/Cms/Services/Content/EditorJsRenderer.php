@@ -255,8 +255,8 @@ class EditorJsRenderer
 		$service = $data['service'] ?? '';
 		$source = $data['source'] ?? '';
 		$embed = $data['embed'] ?? '';
-		$width = $data['width'] ?? 580;
-		$height = $data['height'] ?? 320;
+		$width = max( 1, intval( $data['width'] ?? 580 ) );
+		$height = max( 1, intval( $data['height'] ?? 320 ) );
 		$caption = htmlspecialchars( $data['caption'] ?? '' );
 
 		// If no embed URL, return comment
@@ -312,9 +312,12 @@ class EditorJsRenderer
 			return "<!-- Embed from untrusted domain: {$host} -->\n";
 		}
 
-		// Create responsive embed container
-		$html = "<figure class='embed-responsive my-4'>\n";
-		$html .= "  <div class='ratio ratio-16x9'>\n";
+		// Landscape stays 16:9. Instagram and other tall embeds use a
+		// portrait frame so vertical video is not cropped.
+		[ $figureClass, $figureAttr, $ratioClass, $ratioAttr ] = $this->embedFrameAttributes( $service, $width, $height );
+
+		$html = "<figure class='{$figureClass}'{$figureAttr}>\n";
+		$html .= "  <div class='{$ratioClass}'{$ratioAttr}>\n";
 		$html .= "    <iframe src='{$embedUrl}' frameborder='0' allowfullscreen sandbox='allow-scripts allow-same-origin allow-presentation allow-popups'></iframe>\n";
 		$html .= "  </div>\n";
 
@@ -326,6 +329,40 @@ class EditorJsRenderer
 		$html .= "</figure>\n";
 
 		return $html;
+	}
+
+	/**
+	 * Choose a responsive frame for the embed.
+	 *
+	 * @return array{0: string, 1: string, 2: string, 3: string} figure class, figure attrs, ratio class, ratio attrs
+	 */
+	private function embedFrameAttributes( string $service, int $width, int $height ): array
+	{
+		$aspectPercent = ( $height / $width ) * 100;
+
+		// Instagram embeds include chrome around the media. Editor.js
+		// stores 400x505, which still crops 9:16 video.
+		if( $service === 'instagram' )
+		{
+			$aspectPercent = max( $aspectPercent, 220.0 );
+		}
+
+		$isPortrait = $service === 'instagram' || $aspectPercent >= 100.0;
+
+		if( !$isPortrait )
+		{
+			return [ 'embed-responsive my-4', '', 'ratio ratio-16x9', '' ];
+		}
+
+		$maxWidth = $service === 'instagram' ? 400 : min( $width, 540 );
+		$formatted = rtrim( rtrim( number_format( $aspectPercent, 2, '.', '' ), '0' ), '.' );
+
+		return [
+			'embed-responsive embed-portrait my-4 mx-auto',
+			" style='max-width: {$maxWidth}px;'",
+			'ratio',
+			" style='--bs-aspect-ratio: {$formatted}%;'"
+		];
 	}
 
 	/**

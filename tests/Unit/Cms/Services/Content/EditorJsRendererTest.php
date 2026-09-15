@@ -763,7 +763,9 @@ class EditorJsRendererTest extends TestCase
 					'type' => 'embed',
 					'data' => [
 						'service' => 'instagram',
-						'embed' => 'https://www.instagram.com/p/ABC123/embed'
+						'embed' => 'https://www.instagram.com/p/ABC123/embed',
+						'width' => 400,
+						'height' => 505
 					]
 				]
 			]
@@ -773,6 +775,33 @@ class EditorJsRendererTest extends TestCase
 
 		$this->assertStringContainsString( '<iframe', $result );
 		$this->assertStringContainsString( 'instagram.com', $result );
+		$this->assertStringNotContainsString( 'ratio-16x9', $result );
+		$this->assertStringContainsString( 'embed-portrait', $result );
+		$this->assertStringContainsString( 'max-width: 400px', $result );
+		$this->assertStringContainsString( '--bs-aspect-ratio: 220%', $result );
+	}
+
+	public function testRenderEmbedUsesPortraitFrameForTallVideo(): void
+	{
+		$data = [
+			'blocks' => [
+				[
+					'type' => 'embed',
+					'data' => [
+						'service' => 'vimeo',
+						'embed' => 'https://player.vimeo.com/video/123456789',
+						'width' => 320,
+						'height' => 568
+					]
+				]
+			]
+		];
+
+		$result = $this->renderer->render( $data );
+
+		$this->assertStringNotContainsString( 'ratio-16x9', $result );
+		$this->assertStringContainsString( 'embed-portrait', $result );
+		$this->assertStringContainsString( '--bs-aspect-ratio: 177.5%', $result );
 	}
 
 	public function testRenderEmbedWithGitHubGistService(): void
