@@ -763,6 +763,7 @@ class EditorJsRendererTest extends TestCase
 					'type' => 'embed',
 					'data' => [
 						'service' => 'instagram',
+						'source' => 'https://www.instagram.com/p/ABC123/',
 						'embed' => 'https://www.instagram.com/p/ABC123/embed',
 						'width' => 400,
 						'height' => 505
@@ -773,12 +774,58 @@ class EditorJsRendererTest extends TestCase
 
 		$result = $this->renderer->render( $data );
 
-		$this->assertStringContainsString( '<iframe', $result );
-		$this->assertStringContainsString( 'instagram.com', $result );
+		$this->assertStringContainsString( 'instagram-media', $result );
+		$this->assertStringContainsString( 'https://www.instagram.com/p/ABC123/', $result );
+		$this->assertStringContainsString( 'instagram.com/embed.js', $result );
 		$this->assertStringNotContainsString( 'ratio-16x9', $result );
-		$this->assertStringContainsString( 'embed-portrait', $result );
-		$this->assertStringContainsString( 'max-width: 400px', $result );
-		$this->assertStringContainsString( '--bs-aspect-ratio: 220%', $result );
+		$this->assertStringNotContainsString( '--bs-aspect-ratio: 220%', $result );
+	}
+
+	public function testRenderEmbedWithInstagramDerivesPermalinkFromEmbedUrl(): void
+	{
+		$data = [
+			'blocks' => [
+				[
+					'type' => 'embed',
+					'data' => [
+						'service' => 'instagram',
+						'embed' => 'https://www.instagram.com/reel/ReelId99/embed/captioned'
+					]
+				]
+			]
+		];
+
+		$result = $this->renderer->render( $data );
+
+		$this->assertStringContainsString( "data-instgrm-permalink='https://www.instagram.com/reel/ReelId99/'", $result );
+		$this->assertEquals( 1, substr_count( $result, 'instagram.com/embed.js' ) );
+	}
+
+	public function testRenderEmbedWithInstagramEmitsScriptOnce(): void
+	{
+		$data = [
+			'blocks' => [
+				[
+					'type' => 'embed',
+					'data' => [
+						'service' => 'instagram',
+						'embed' => 'https://www.instagram.com/p/One/embed'
+					]
+				],
+				[
+					'type' => 'embed',
+					'data' => [
+						'service' => 'instagram',
+						'embed' => 'https://www.instagram.com/p/Two/embed'
+					]
+				]
+			]
+		];
+
+		$result = $this->renderer->render( $data );
+
+		$this->assertEquals( 2, substr_count( $result, 'instagram-media' ) );
+		$this->assertEquals( 1, substr_count( $result, 'instagram.com/embed.js' ) );
 	}
 
 	public function testRenderEmbedUsesPortraitFrameForTallVideo(): void
