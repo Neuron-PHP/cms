@@ -12,6 +12,7 @@ namespace Neuron\Cms\Services\Content;
 class EditorJsRenderer
 {
 	private ?ShortcodeParser $_shortcodeParser = null;
+	private bool $_needsInstagramEmbedScript = false;
 
 	public function __construct( ?ShortcodeParser $shortcodeParser = null )
 	{
@@ -26,11 +27,17 @@ class EditorJsRenderer
 	 */
 	public function render( array $editorData ): string
 	{
+		$this->_needsInstagramEmbedScript = false;
 		$html = '';
 
 		foreach( $editorData['blocks'] ?? [] as $block )
 		{
 			$html .= $this->renderBlock( $block );
+		}
+
+		if( $this->_needsInstagramEmbedScript )
+		{
+			$html .= "<script async src='https://www.instagram.com/embed.js'></script>\n";
 		}
 
 		return $html;
@@ -312,9 +319,14 @@ class EditorJsRenderer
 			return "<!-- Embed from untrusted domain: {$host} -->\n";
 		}
 
-		// Landscape stays 16:9. Instagram and other tall embeds use a
-		// portrait frame so vertical video is not cropped.
-		[ $figureClass, $figureAttr, $ratioClass, $ratioAttr ] = $this->embedFrameAttributes( $service, $width, $height );
+		if( $service === 'instagram' )
+		{
+			return $this->renderInstagramEmbed( $source, $embed, $caption );
+		}
+
+		// Landscape stays 16:9. Tall embeds use a portrait frame so
+		// vertical video is not cropped.
+		[ $figureClass, $figureAttr, $ratioClass, $ratioAttr ] = $this->embedFrameAttributes( $width, $height );
 
 		$html = "<figure class='{$figureClass}'{$figureAttr}>\n";
 		$html .= "  <div class='{$ratioClass}'{$ratioAttr}>\n";
@@ -332,29 +344,86 @@ class EditorJsRenderer
 	}
 
 	/**
+	 * Render an Instagram post with Instagram's embed script so the
+	 * iframe matches the media height instead of a guessed ratio.
+	 */
+	private function renderInstagramEmbed( string $source, string $embed, string $caption ): string
+	{
+		$permalink = $this->instagramPermalink( $source, $embed );
+
+		if( $permalink === null )
+		{
+			return "<!-- Embed from untrusted domain: instagram -->\n";
+		}
+
+		$permalinkAttr = htmlspecialchars( $permalink );
+
+		$html = "<figure class='embed-responsive embed-instagram my-4 mx-auto' style='max-width: 540px;'>\n";
+		$html .= "  <blockquote class='instagram-media' data-instgrm-permalink='{$permalinkAttr}' data-instgrm-version='14' style='background: #FFF; border: 0; margin: 0 auto; max-width: 540px; min-width: 326px; width: 100%;'></blockquote>\n";
+
+		if( $caption )
+		{
+			$html .= "  <figcaption class='text-center text-muted mt-2'>{$caption}</figcaption>\n";
+		}
+
+		$html .= "</figure>\n";
+
+		$this->_needsInstagramEmbedScript = true;
+
+		return $html;
+	}
+
+	/**
+	 * Build a canonical Instagram permalink from the Editor.js source or embed URL.
+	 */
+	private function instagramPermalink( string $source, string $embed ): ?string
+	{
+		foreach( [ $source, $embed ] as $url )
+		{
+			if( $url === '' )
+			{
+				continue;
+			}
+
+			$parsed = parse_url( $url );
+			$scheme = strtolower( $parsed['scheme'] ?? '' );
+			$host = strtolower( $parsed['host'] ?? '' );
+
+			if( $scheme !== 'https' )
+			{
+				continue;
+			}
+
+			if( $host !== 'instagram.com' && !str_ends_with( $host, '.instagram.com' ) )
+			{
+				continue;
+			}
+
+			$path = $parsed['path'] ?? '';
+			if( preg_match( '#^/(p|reel|tv)/([A-Za-z0-9_-]+)#', $path, $matches ) )
+			{
+				return 'https://www.instagram.com/' . $matches[1] . '/' . $matches[2] . '/';
+			}
+		}
+
+		return null;
+	}
+
+	/**
 	 * Choose a responsive frame for the embed.
 	 *
 	 * @return array{0: string, 1: string, 2: string, 3: string} figure class, figure attrs, ratio class, ratio attrs
 	 */
-	private function embedFrameAttributes( string $service, int $width, int $height ): array
+	private function embedFrameAttributes( int $width, int $height ): array
 	{
 		$aspectPercent = ( $height / $width ) * 100;
 
-		// Instagram embeds include chrome around the media. Editor.js
-		// stores 400x505, which still crops 9:16 video.
-		if( $service === 'instagram' )
-		{
-			$aspectPercent = max( $aspectPercent, 220.0 );
-		}
-
-		$isPortrait = $service === 'instagram' || $aspectPercent >= 100.0;
-
-		if( !$isPortrait )
+		if( $aspectPercent < 100.0 )
 		{
 			return [ 'embed-responsive my-4', '', 'ratio ratio-16x9', '' ];
 		}
 
-		$maxWidth = $service === 'instagram' ? 400 : min( $width, 540 );
+		$maxWidth = min( $width, 540 );
 		$formatted = rtrim( rtrim( number_format( $aspectPercent, 2, '.', '' ), '0' ), '.' );
 
 		return [
