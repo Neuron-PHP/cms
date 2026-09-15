@@ -125,9 +125,18 @@
 											echo "</figure>";
 											break;
 										case 'embed':
-											echo "<div class='ratio ratio-16x9 mb-3'>";
-											echo "<iframe src='" . htmlspecialchars($block['data']['embed']) . "' allowfullscreen></iframe>";
-											echo "</div>";
+											$embedService = $block['data']['service'] ?? '';
+											$embedSrc = htmlspecialchars($block['data']['embed'] ?? '');
+											if ($embedService === 'instagram') {
+												echo "<div class='embed-portrait mx-auto mb-3' style='max-width: 400px;'>";
+												echo "<div class='ratio' style='--bs-aspect-ratio: 220%;'>";
+												echo "<iframe src='" . $embedSrc . "' allowfullscreen></iframe>";
+												echo "</div></div>";
+											} else {
+												echo "<div class='ratio ratio-16x9 mb-3'>";
+												echo "<iframe src='" . $embedSrc . "' allowfullscreen></iframe>";
+												echo "</div>";
+											}
 											break;
 									}
 								}
