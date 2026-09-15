@@ -23,6 +23,9 @@ class Post extends Model
 	private string $_body = '';  // Plain text fallback, derived from contentRaw
 	private string $_contentRaw = '{"blocks":[]}';  // JSON string for Editor.js
 	private ?string $_excerpt = null;
+	private ?string $_metaTitle = null;
+	private ?string $_metaDescription = null;
+	private ?string $_metaKeywords = null;
 	private ?string $_featuredImage = null;
 	private int $_authorId;
 	private string $_status = 'draft';
@@ -187,6 +190,39 @@ class Post extends Model
 	public function setExcerpt( ?string $excerpt ): self
 	{
 		$this->_excerpt = $excerpt;
+		return $this;
+	}
+
+	public function getMetaTitle(): ?string
+	{
+		return $this->_metaTitle;
+	}
+
+	public function setMetaTitle( ?string $metaTitle ): self
+	{
+		$this->_metaTitle = $metaTitle;
+		return $this;
+	}
+
+	public function getMetaDescription(): ?string
+	{
+		return $this->_metaDescription;
+	}
+
+	public function setMetaDescription( ?string $metaDescription ): self
+	{
+		$this->_metaDescription = $metaDescription;
+		return $this;
+	}
+
+	public function getMetaKeywords(): ?string
+	{
+		return $this->_metaKeywords;
+	}
+
+	public function setMetaKeywords( ?string $metaKeywords ): self
+	{
+		$this->_metaKeywords = $metaKeywords;
 		return $this;
 	}
 
@@ -600,6 +636,9 @@ class Post extends Model
 		}
 
 		$post->setExcerpt( $data['excerpt'] ?? null );
+		$post->setMetaTitle( $data['meta_title'] ?? null );
+		$post->setMetaDescription( $data['meta_description'] ?? null );
+		$post->setMetaKeywords( $data['meta_keywords'] ?? null );
 		$post->setFeaturedImage( $data['featured_image'] ?? null );
 		$post->setAuthorId( (int)($data['author_id'] ?? 0) );
 		$post->setStatus( $data['status'] ?? self::STATUS_DRAFT );
@@ -664,6 +703,9 @@ class Post extends Model
 			'body' => $this->_body,
 			'content_raw' => $this->_contentRaw,
 			'excerpt' => $this->_excerpt,
+			'meta_title' => $this->_metaTitle,
+			'meta_description' => $this->_metaDescription,
+			'meta_keywords' => $this->_metaKeywords,
 			'featured_image' => $this->_featuredImage,
 			'author_id' => $this->_authorId,
 			'status' => $this->_status,

@@ -292,3 +292,64 @@ if (!function_exists('group_timezones_for_select')) {
 		return $grouped;
 	}
 }
+
+if( !function_exists( 'cms_menu' ) )
+{
+	/**
+	 * Nested navigation items for a published menu location.
+	 *
+	 * @return array<int, array{label: string, href: string, target: string, children: array}>
+	 */
+	function cms_menu( string $location ): array
+	{
+		$app = \Neuron\Patterns\Registry::getInstance()->get( 'App' );
+
+		if( !$app || !method_exists( $app, 'getContainer' ) )
+		{
+			return [];
+		}
+
+		try
+		{
+			$service = $app->getContainer()->get( \Neuron\Cms\Services\Menu\MenuService::class );
+
+			return $service instanceof \Neuron\Cms\Services\Menu\MenuService
+				? $service->forLocation( $location )
+				: [];
+		}
+		catch( \Throwable )
+		{
+			return [];
+		}
+	}
+}
+
+if( !function_exists( 'cms_absolute_url' ) )
+{
+	/**
+	 * Absolute site URL for a named route (used for canonical and Open Graph).
+	 *
+	 * @param array<string, mixed> $parameters
+	 */
+	function cms_absolute_url( string $routeName, array $parameters = [] ): string
+	{
+		$settings = \Neuron\Patterns\Registry::getInstance()->get( \Neuron\Core\Registry\RegistryKeys::SETTINGS )
+			?? \Neuron\Patterns\Registry::getInstance()->get( 'Settings' );
+		$base = is_object( $settings ) && method_exists( $settings, 'get' )
+			? rtrim( (string) ( $settings->get( 'site', 'url' ) ?? '' ), '/' )
+			: '';
+		$path = route_path( $routeName, $parameters );
+
+		if( $base === '' )
+		{
+			return $path;
+		}
+
+		if( $path === '' || $path === '/' )
+		{
+			return $base . '/';
+		}
+
+		return $base . ( str_starts_with( $path, '/' ) ? $path : '/' . $path );
+	}
+}

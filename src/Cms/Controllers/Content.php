@@ -205,6 +205,61 @@ class Content extends Base
 	}
 
 	/**
+	 * Absolute URL for a named route, using site.url when available.
+	 *
+	 * @param array<string, mixed> $parameters
+	 */
+	protected function absoluteRoute( string $routeName, array $parameters = [] ): string
+	{
+		if( function_exists( 'cms_absolute_url' ) )
+		{
+			$url = cms_absolute_url( $routeName, $parameters );
+
+			if( $url !== '' )
+			{
+				return $url;
+			}
+		}
+
+		$path = function_exists( 'route_path' ) ? route_path( $routeName, $parameters ) : '';
+		$base = rtrim( $this->getUrl(), '/' );
+
+		if( $base === '' )
+		{
+			return $path;
+		}
+
+		return $base . ( $path === '' || $path === '/' ? '/' : ( str_starts_with( $path, '/' ) ? $path : '/' . $path ) );
+	}
+
+	/**
+	 * Shared SEO / Open Graph view data.
+	 *
+	 * @return array<string, string>
+	 */
+	protected function seoViewData(
+		string $title,
+		string $description,
+		string $canonical,
+		?string $image = null,
+		string $type = 'website',
+		?string $keywords = null
+	): array
+	{
+		return [
+			'Title' => $title,
+			'Description' => $description,
+			'CanonicalUrl' => $canonical,
+			'OgTitle' => $title,
+			'OgDescription' => $description,
+			'OgUrl' => $canonical,
+			'OgImage' => $image ?? '',
+			'OgType' => $type,
+			'MetaKeywords' => $keywords ?? '',
+		];
+	}
+
+	/**
 	 * Render a markdown page.
 	 *
 	 * @param Request $request

@@ -204,7 +204,7 @@ class DatabasePostRepository implements IPostRepository
 	/**
 	 * Get posts by author
 	 */
-	public function getByAuthor( int $authorId, ?string $status = null ): array
+	public function getByAuthor( int $authorId, ?string $status = null, int $limit = 0, int $offset = 0 ): array
 	{
 		// Eager load author, categories and tags so listings can display
 		// them without a separate query per post
@@ -215,13 +215,20 @@ class DatabasePostRepository implements IPostRepository
 			$query->where( 'status', $status );
 		}
 
-		return $query->orderBy( 'created_at', 'DESC' )->get();
+		$query->orderBy( 'created_at', 'DESC' );
+
+		if( $limit > 0 )
+		{
+			$query->limit( $limit )->offset( $offset );
+		}
+
+		return $query->get();
 	}
 
 	/**
 	 * Get posts by category
 	 */
-	public function getByCategory( int $categoryId, ?string $status = null ): array
+	public function getByCategory( int $categoryId, ?string $status = null, int $limit = 0, int $offset = 0 ): array
 	{
 		// Use ORM JOIN support instead of raw SQL. Eager load categories and
 		// tags so listings can display them without a separate query per post.
@@ -236,13 +243,20 @@ class DatabasePostRepository implements IPostRepository
 			$query->where( 'posts.status', $status );
 		}
 
-		return $query->orderBy( 'posts.created_at', 'DESC' )->get();
+		$query->orderBy( 'posts.created_at', 'DESC' );
+
+		if( $limit > 0 )
+		{
+			$query->limit( $limit )->offset( $offset );
+		}
+
+		return $query->get();
 	}
 
 	/**
 	 * Get posts by tag
 	 */
-	public function getByTag( int $tagId, ?string $status = null ): array
+	public function getByTag( int $tagId, ?string $status = null, int $limit = 0, int $offset = 0 ): array
 	{
 		// Use ORM JOIN support instead of raw SQL. Eager load categories and
 		// tags so listings can display them without a separate query per post.
@@ -257,7 +271,64 @@ class DatabasePostRepository implements IPostRepository
 			$query->where( 'posts.status', $status );
 		}
 
-		return $query->orderBy( 'posts.created_at', 'DESC' )->get();
+		$query->orderBy( 'posts.created_at', 'DESC' );
+
+		if( $limit > 0 )
+		{
+			$query->limit( $limit )->offset( $offset );
+		}
+
+		return $query->get();
+	}
+
+	public function countByAuthor( int $authorId, ?string $status = null ): int
+	{
+		$query = Post::query()->where( 'author_id', $authorId );
+
+		if( $status )
+		{
+			$query->where( 'status', $status );
+		}
+
+		return $query->count();
+	}
+
+	public function countByCategory( int $categoryId, ?string $status = null ): int
+	{
+		$sql = 'SELECT COUNT(*) FROM posts
+			INNER JOIN post_categories ON posts.id = post_categories.post_id
+			WHERE post_categories.category_id = ?';
+		$params = [ $categoryId ];
+
+		if( $status )
+		{
+			$sql .= ' AND posts.status = ?';
+			$params[] = $status;
+		}
+
+		$stmt = $this->_pdo->prepare( $sql );
+		$stmt->execute( $params );
+
+		return (int) $stmt->fetchColumn();
+	}
+
+	public function countByTag( int $tagId, ?string $status = null ): int
+	{
+		$sql = 'SELECT COUNT(*) FROM posts
+			INNER JOIN post_tags ON posts.id = post_tags.post_id
+			WHERE post_tags.tag_id = ?';
+		$params = [ $tagId ];
+
+		if( $status )
+		{
+			$sql .= ' AND posts.status = ?';
+			$params[] = $status;
+		}
+
+		$stmt = $this->_pdo->prepare( $sql );
+		$stmt->execute( $params );
+
+		return (int) $stmt->fetchColumn();
 	}
 
 	/**

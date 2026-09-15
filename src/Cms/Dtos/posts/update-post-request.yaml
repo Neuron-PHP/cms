@@ -35,6 +35,24 @@ dto:
     length:
       max: 500
 
+  meta_title:
+    type: string
+    required: false
+    length:
+      max: 60
+
+  meta_description:
+    type: string
+    required: false
+    length:
+      max: 160
+
+  meta_keywords:
+    type: string
+    required: false
+    length:
+      max: 255
+
   status:
     type: string
     required: true

@@ -725,7 +725,7 @@ class InstallCommand extends Command
 		}
 
 		$folder = $this->prompt( "Upload folder (optional)", "neuron-cms/images" );
-		$maxFileSize = $this->prompt( "Max file size in bytes", "5242880" );  // 5MB default
+		$maxFileSize = $this->prompt( "Max file size in bytes", "20971520" );  // 20MB default
 
 		$this->_messages[] = "Cloudinary: $cloudName (folder: $folder)";
 

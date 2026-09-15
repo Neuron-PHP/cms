@@ -34,6 +34,29 @@
 					<textarea class="form-control" id="excerpt" name="excerpt" rows="3"></textarea>
 				</div>
 
+				<div class="card mb-3">
+					<div class="card-header">
+						<h5 class="mb-0">SEO</h5>
+					</div>
+					<div class="card-body">
+						<div class="mb-3">
+							<label for="meta_title" class="form-label">Meta Title</label>
+							<input type="text" class="form-control" id="meta_title" name="meta_title" maxlength="60">
+							<small class="form-text text-muted">60 chars max. Leave blank to use the post title.</small>
+						</div>
+						<div class="mb-3">
+							<label for="meta_description" class="form-label">Meta Description</label>
+							<textarea class="form-control" id="meta_description" name="meta_description" rows="3" maxlength="160"></textarea>
+							<small class="form-text text-muted">160 chars max. Falls back to the excerpt.</small>
+						</div>
+						<div class="mb-3 mb-0">
+							<label for="meta_keywords" class="form-label">Meta Keywords</label>
+							<input type="text" class="form-control" id="meta_keywords" name="meta_keywords">
+							<small class="form-text text-muted">Comma-separated</small>
+						</div>
+					</div>
+				</div>
+
 				<div class="mb-3">
 					<label for="status" class="form-label">Status</label>
 					<select class="form-select" id="status" name="status" required>

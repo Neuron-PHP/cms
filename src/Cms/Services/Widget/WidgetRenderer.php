@@ -8,6 +8,7 @@ use Neuron\Cms\Repositories\IEventCategoryRepository;
 use Neuron\Cms\Repositories\IEventRegistrationRepository;
 use Neuron\Cms\Repositories\IProductRepository;
 use Neuron\Cms\Repositories\ITeamRepository;
+use Neuron\Cms\Repositories\ICarouselRepository;
 use Neuron\Cms\Services\Contact\ContactService;
 use Neuron\Cms\Services\Payment\PaymentService;
 use Neuron\Cms\Services\Store\CartService;
@@ -33,6 +34,7 @@ class WidgetRenderer
 	private ?SettingManager $_settings = null;
 	private ?IProductRepository $_productRepository = null;
 	private ?ITeamRepository $_teamRepository = null;
+	private ?ICarouselRepository $_carouselRepository = null;
 
 	public function __construct(
 		?IPostRepository $postRepository = null,
@@ -41,7 +43,8 @@ class WidgetRenderer
 		?SettingManager $settings = null,
 		?IEventRegistrationRepository $eventRegistrationRepository = null,
 		?IProductRepository $productRepository = null,
-		?ITeamRepository $teamRepository = null
+		?ITeamRepository $teamRepository = null,
+		?ICarouselRepository $carouselRepository = null
 	)
 	{
 		$this->_postRepository = $postRepository;
@@ -51,6 +54,7 @@ class WidgetRenderer
 		$this->_eventRegistrationRepository = $eventRegistrationRepository;
 		$this->_productRepository = $productRepository;
 		$this->_teamRepository = $teamRepository;
+		$this->_carouselRepository = $carouselRepository;
 	}
 
 	/**
@@ -74,6 +78,7 @@ class WidgetRenderer
 			'product' => $this->renderStore( 'product', $config ),
 			'cart' => $this->renderStore( 'cart', $config ),
 			'team' => $this->renderTeam( $config ),
+			'carousel' => $this->renderCarousel( $config ),
 			default => $this->renderUnknownWidget( $widgetType )
 		};
 	}
@@ -110,13 +115,15 @@ class WidgetRenderer
 		foreach( $posts as $post )
 		{
 			$title = htmlspecialchars( $post->getTitle() );
-			$slug = htmlspecialchars( $post->getSlug() );
+			$slug = $post->getSlug();
+			$href = function_exists( 'route_path' ) ? route_path( 'blog_post', [ 'slug' => $slug ] ) : '';
+			$href = htmlspecialchars( $href !== '' ? $href : '/blog/post/' . $slug );
 			$excerpt = htmlspecialchars( $post->getExcerpt() ?? '' );
 			$date = $post->getPublishedAt() ? $post->getPublishedAt()->format( 'F j, Y' ) : '';
 
 			$html .= "    <article class='post-item mb-4 pb-4 border-bottom'>\n";
 			$html .= "      <h4 class='h5'>\n";
-			$html .= "        <a href='/blog/article/{$slug}' class='text-decoration-none'>{$title}</a>\n";
+			$html .= "        <a href='{$href}' class='text-decoration-none'>{$title}</a>\n";
 			$html .= "      </h4>\n";
 			if( $date )
 			{
@@ -314,6 +321,30 @@ class WidgetRenderer
 		}
 
 		$widget = new TeamWidget( $this->_teamRepository );
+
+		return $widget->render( $config );
+	}
+
+	/**
+	 * Render a named image carousel.
+	 *
+	 * Attributes:
+	 * - slug: Carousel slug (required)
+	 * - display: Optional slider|gallery|logos override
+	 * - title: Optional heading override
+	 * - interval: Slider autoplay milliseconds (0 disables)
+	 *
+	 * @param array<string, mixed> $config
+	 * @return string
+	 */
+	private function renderCarousel( array $config ): string
+	{
+		if( !$this->_carouselRepository )
+		{
+			return "<!-- Carousel widget requires CarouselRepository -->";
+		}
+
+		$widget = new CarouselWidget( $this->_carouselRepository );
 
 		return $widget->render( $config );
 	}

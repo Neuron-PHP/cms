@@ -54,6 +54,8 @@
 							<li><a class="dropdown-item" href="<?= route_path('admin_orders') ?>"><i class="bi bi-bag-check me-2"></i>Orders</a></li>
 							<li><hr class="dropdown-divider"></li>
 							<li><a class="dropdown-item" href="<?= route_path('admin_teams') ?>"><i class="bi bi-people me-2"></i>Teams</a></li>
+							<li><a class="dropdown-item" href="<?= route_path('admin_carousels') ?>"><i class="bi bi-images me-2"></i>Carousels</a></li>
+							<li><a class="dropdown-item" href="<?= route_path('admin_menus') ?>"><i class="bi bi-list me-2"></i>Menus</a></li>
 						</ul>
 					</li>
 					<li class="nav-item dropdown">

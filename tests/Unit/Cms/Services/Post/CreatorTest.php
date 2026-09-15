@@ -115,6 +115,37 @@ class CreatorTest extends TestCase
 		$this->assertEquals( 'Test body content', $result->getBody() );
 	}
 
+	public function testCreatesPostWithSeoMetaFields(): void
+	{
+		$this->_mockCategoryRepository
+			->method( 'findByIds' )
+			->willReturn( [] );
+
+		$this->_mockTagResolver
+			->method( 'resolveFromString' )
+			->willReturn( [] );
+
+		$this->_mockPostRepository
+			->method( 'create' )
+			->willReturnArgument( 0 );
+
+		$dto = $this->createDto(
+			'SEO Post',
+			'{"blocks":[]}',
+			1,
+			Post::STATUS_DRAFT
+		);
+		$dto->meta_title = 'SEO title';
+		$dto->meta_description = 'SEO description';
+		$dto->meta_keywords = 'seo, cms';
+
+		$result = $this->_creator->create( $dto );
+
+		$this->assertSame( 'SEO title', $result->getMetaTitle() );
+		$this->assertSame( 'SEO description', $result->getMetaDescription() );
+		$this->assertSame( 'seo, cms', $result->getMetaKeywords() );
+	}
+
 	public function testGeneratesSlugWhenNotProvided(): void
 	{
 		$this->_mockCategoryRepository

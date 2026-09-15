@@ -14,6 +14,18 @@ use Neuron\Data\Settings\SettingManager;
  */
 class MediaValidator
 {
+	/** @var array<string, string> */
+	private const MIME_ALIASES = [
+		'image/jpeg' => 'jpg',
+		'image/jpg' => 'jpg',
+		'image/pjpeg' => 'jpg',
+		'image/png' => 'png',
+		'image/x-png' => 'png',
+		'image/apng' => 'png',
+		'image/gif' => 'gif',
+		'image/webp' => 'webp'
+	];
+
 	private SettingManager $_settings;
 	private array $_errors = [];
 
@@ -59,7 +71,7 @@ class MediaValidator
 		}
 
 		// Validate file size
-		if( !$this->validateFileSize( $file['size'] ) )
+		if( !$this->validateFileSize( (int) $file['size'] ) )
 		{
 			return false;
 		}
@@ -81,7 +93,7 @@ class MediaValidator
 	 */
 	private function validateFileSize( int $size ): bool
 	{
-		$maxSize = $this->_settings->get( 'cloudinary', 'max_file_size' ) ?? UploadConfig::MAX_FILE_SIZE_5MB;
+		$maxSize = $this->maxFileSize();
 
 		if( $size > $maxSize )
 		{
@@ -108,45 +120,120 @@ class MediaValidator
 	 */
 	private function validateFileType( string $filePath, string $fileName ): bool
 	{
-		$allowedFormats = $this->_settings->get( 'cloudinary', 'allowed_formats' )
-			?? ['jpg', 'jpeg', 'png', 'gif', 'webp'];
-
-		// Get file extension
+		$allowedFormats = $this->allowedFormats();
 		$extension = strtolower( pathinfo( $fileName, PATHINFO_EXTENSION ) );
 
-		if( !in_array( $extension, $allowedFormats ) )
+		if( !in_array( $extension, $allowedFormats, true ) )
 		{
 			$this->_errors[] = 'File type not allowed. Allowed types: ' . implode( ', ', $allowedFormats );
 			return false;
 		}
 
-		// Verify MIME type (finfo is freed automatically; finfo_close() is deprecated in 8.5)
 		$finfo = new \finfo( FILEINFO_MIME_TYPE );
-		$mimeType = $finfo->file( $filePath );
+		$mimeType = (string) $finfo->file( $filePath );
+		$signatureOk = $this->matchesImageSignature( $filePath, $extension );
 
-		$allowedMimeTypes = [
-			'image/jpeg',
-			'image/jpg',
-			'image/png',
-			'image/gif',
-			'image/webp'
-		];
-
-		if( !in_array( $mimeType, $allowedMimeTypes ) )
+		// finfo sometimes reports PNG as image/x-png or application/octet-stream.
+		if( !$this->isMimeAllowed( $mimeType, $allowedFormats ) && !( $extension === 'png' && $signatureOk ) )
 		{
 			$this->_errors[] = 'Invalid file type. Must be a valid image file.';
 			return false;
 		}
 
-		// Additional security check: verify it's actually an image
+		// iOS/optimized PNGs can fail getimagesize() while still being a PNG.
 		$imageInfo = @getimagesize( $filePath );
-		if( $imageInfo === false )
+		if( $imageInfo === false && !( $extension === 'png' && $signatureOk ) )
 		{
 			$this->_errors[] = 'File is not a valid image';
 			return false;
 		}
 
 		return true;
+	}
+
+	/**
+	 * Configured upload size limit in bytes.
+	 */
+	private function maxFileSize(): int
+	{
+		$maxSize = $this->_settings->get( 'cloudinary', 'max_file_size' )
+			?? UploadConfig::MAX_FILE_SIZE_20MB;
+
+		return max( 1, (int) $maxSize );
+	}
+
+	/**
+	 * @return list<string>
+	 */
+	private function allowedFormats(): array
+	{
+		$formats = $this->_settings->get( 'cloudinary', 'allowed_formats' )
+			?? UploadConfig::ALLOWED_IMAGE_FORMATS;
+
+		if( is_string( $formats ) )
+		{
+			$formats = preg_split( '/\s*,\s*/', $formats ) ?: [];
+		}
+
+		if( !is_array( $formats ) )
+		{
+			$formats = UploadConfig::ALLOWED_IMAGE_FORMATS;
+		}
+
+		return array_values( array_filter( array_map(
+			static fn( mixed $format ): string => strtolower( trim( (string) $format ) ),
+			$formats
+		) ) );
+	}
+
+	/**
+	 * @param list<string> $allowedFormats
+	 */
+	private function isMimeAllowed( string $mimeType, array $allowedFormats ): bool
+	{
+		$format = self::MIME_ALIASES[ strtolower( $mimeType ) ] ?? null;
+
+		if( $format === null )
+		{
+			return false;
+		}
+
+		if( $format === 'jpg' )
+		{
+			return in_array( 'jpg', $allowedFormats, true )
+				|| in_array( 'jpeg', $allowedFormats, true );
+		}
+
+		return in_array( $format, $allowedFormats, true );
+	}
+
+	private function matchesImageSignature( string $filePath, string $extension ): bool
+	{
+		$handle = fopen( $filePath, 'rb' );
+
+		if( $handle === false )
+		{
+			return false;
+		}
+
+		$header = fread( $handle, 12 );
+		fclose( $handle );
+
+		if( !is_string( $header ) || $header === '' )
+		{
+			return false;
+		}
+
+		return match( $extension )
+		{
+			'png' => str_starts_with( $header, "\x89PNG\r\n\x1a\n" ),
+			'jpg', 'jpeg' => str_starts_with( $header, "\xFF\xD8\xFF" ),
+			'gif' => str_starts_with( $header, 'GIF87a' ) || str_starts_with( $header, 'GIF89a' ),
+			'webp' => strlen( $header ) >= 12
+				&& str_starts_with( $header, 'RIFF' )
+				&& substr( $header, 8, 4 ) === 'WEBP',
+			default => false
+		};
 	}
 
 	/**

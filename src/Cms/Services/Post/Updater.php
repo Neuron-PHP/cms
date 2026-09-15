@@ -56,6 +56,9 @@ class Updater implements IPostUpdater
 		$slug = $request->slug ?? null;
 		$excerpt = $request->excerpt ?? null;
 		$featuredImage = $request->featured_image ?? null;
+		$metaTitle = $request->meta_title ?? null;
+		$metaDescription = $request->meta_description ?? null;
+		$metaKeywords = $request->meta_keywords ?? null;
 		$publishedAt = $request->published_at ?? null;
 
 		// Look up the post
@@ -69,6 +72,9 @@ class Updater implements IPostUpdater
 		$post->setSlug( $slug ?: $this->generateSlug( $title ) );
 		$post->setContent( $content );
 		$post->setExcerpt( $excerpt );
+		$post->setMetaTitle( $metaTitle );
+		$post->setMetaDescription( $metaDescription );
+		$post->setMetaKeywords( $metaKeywords );
 		$post->setFeaturedImage( $featuredImage );
 		$post->setStatus( $status );
 

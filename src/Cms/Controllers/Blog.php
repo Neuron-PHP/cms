@@ -70,22 +70,15 @@ class Blog extends Content
 	#[Get('/', name: 'blog')]
 	public function index( Request $request ): string
 	{
-		$posts = $this->_postRepository->getPublished();
+		$title = $this->getName() . ' | ' . $this->getTitle();
 
-		$categories = $this->_categoryRepository->all();
-		$tags = $this->_tagRepository->all();
-
-		return $this->renderHtml(
-			HttpResponseStatus::OK,
-			[
-				'Posts'       => $posts,
-				'Categories'  => $categories,
-				'Tags'        => $tags,
-				'Title'       => $this->getName() . ' | ' . $this->getTitle(),
-				'Name'        => $this->getName(),
-				'Description' => $this->getDescription(),
-			],
-			'index'
+		return $this->renderListing(
+			$request,
+			$this->paginatePublished( $request ),
+			$title,
+			$this->getDescription(),
+			$this->absoluteRoute( 'blog' ),
+			route_path( 'blog' ) ?: '/blog'
 		);
 	}
 
@@ -131,15 +124,27 @@ class Blog extends Content
 			$renderedContent = '<p>' . htmlspecialchars( $post->getBody() ) . '</p>';
 		}
 
+		$metaTitle = $post->getMetaTitle() ?: $post->getTitle();
+		$description = $post->getMetaDescription() ?: ( $post->getExcerpt() ?: $this->getDescription() );
+
 		return $this->renderHtml(
 			$responseStatus,
-			[
-				'Categories' => $categories,
-				'Tags'        => $tags,
-				'Post'        => $post,
-				'renderedContent' => $renderedContent,
-				'Title'       => $post->getTitle() . ' | ' . $this->getName()
-			],
+			array_merge(
+				$this->seoViewData(
+					$metaTitle . ' | ' . $this->getName(),
+					(string) $description,
+					$this->absoluteRoute( 'blog_post', [ 'slug' => $post->getSlug() ] ),
+					$post->getFeaturedImage(),
+					'article',
+					$post->getMetaKeywords()
+				),
+				[
+					'Categories' => $categories,
+					'Tags'        => $tags,
+					'Post'        => $post,
+					'renderedContent' => $renderedContent,
+				]
+			),
 			'show'
 		);
 	}
@@ -159,26 +164,24 @@ class Blog extends Content
 		// Look up user by username
 		$user = $this->_userRepository->findByUsername( $authorName );
 
-		// Get posts by this author (only published posts for public view)
-		$posts = [];
-		if( $user )
-		{
-			$posts = $this->_postRepository->getByAuthor( $user->getId(), ContentStatus::PUBLISHED->value );
-		}
+		$listing = $user
+			? $this->paginateFiltered(
+				$request,
+				fn( int $limit, int $offset ) => $this->_postRepository->getByAuthor( $user->getId(), ContentStatus::PUBLISHED->value, $limit, $offset ),
+				fn() => $this->_postRepository->countByAuthor( $user->getId(), ContentStatus::PUBLISHED->value )
+			)
+			: $this->emptyListing();
 
-		$categories = $this->_categoryRepository->all();
-		$tags = $this->_tagRepository->all();
+		$title = "Articles by $authorName | " . $this->getName();
 
-		return $this->renderHtml(
-			HttpResponseStatus::OK,
-			[
-				'Categories' => $categories,
-				'Tags'        => $tags,
-				'Posts'       => $posts,
-				'Title'       => "Articles by $authorName | " . $this->getName(),
-				'Author'      => $authorName
-			],
-			'index'
+		return $this->renderListing(
+			$request,
+			$listing,
+			$title,
+			$this->getDescription(),
+			$this->absoluteRoute( 'blog_author', [ 'username' => $authorName ] ),
+			route_path( 'blog_author', [ 'username' => $authorName ] ),
+			[ 'Author' => $authorName ]
 		);
 	}
 
@@ -198,29 +201,30 @@ class Blog extends Content
 
 		if( !$tag )
 		{
-			$posts = [];
 			$tagName = ucfirst( str_replace( '-', ' ', $tagSlug ) );
+			$listing = $this->emptyListing();
 		}
 		else
 		{
-			$status = ContentStatus::PUBLISHED->value;
-			$posts = $this->_postRepository->getByTag( $tag->getId(), $status );
 			$tagName = $tag->getName();
+			$status  = ContentStatus::PUBLISHED->value;
+			$listing = $this->paginateFiltered(
+				$request,
+				fn( int $limit, int $offset ) => $this->_postRepository->getByTag( $tag->getId(), $status, $limit, $offset ),
+				fn() => $this->_postRepository->countByTag( $tag->getId(), $status )
+			);
 		}
 
-		$categories = $this->_categoryRepository->all();
-		$tags = $this->_tagRepository->all();
+		$title = "Articles tagged with $tagName | " . $this->getName();
 
-		return $this->renderHtml(
-			HttpResponseStatus::OK,
-			[
-				'Categories' => $categories,
-				'Tags'        => $tags,
-				'Posts'       => $posts,
-				'Title'       => "Articles tagged with $tagName | " . $this->getName(),
-				'Tag'         => $tagName
-			],
-			'index'
+		return $this->renderListing(
+			$request,
+			$listing,
+			$title,
+			$this->getDescription(),
+			$this->absoluteRoute( 'blog_tag', [ 'slug' => $tagSlug ] ),
+			route_path( 'blog_tag', [ 'slug' => $tagSlug ] ),
+			[ 'Tag' => $tagName ]
 		);
 	}
 
@@ -239,29 +243,30 @@ class Blog extends Content
 
 		if( !$category )
 		{
-			$posts = [];
 			$categoryName = ucfirst( str_replace( '-', ' ', $categorySlug ) );
+			$listing = $this->emptyListing();
 		}
 		else
 		{
-			$status = ContentStatus::PUBLISHED->value;
-			$posts = $this->_postRepository->getByCategory( $category->getId(), $status );
 			$categoryName = $category->getName();
+			$status       = ContentStatus::PUBLISHED->value;
+			$listing      = $this->paginateFiltered(
+				$request,
+				fn( int $limit, int $offset ) => $this->_postRepository->getByCategory( $category->getId(), $status, $limit, $offset ),
+				fn() => $this->_postRepository->countByCategory( $category->getId(), $status )
+			);
 		}
 
-		$categories = $this->_categoryRepository->all();
-		$tags = $this->_tagRepository->all();
+		$title = "Articles in category $categoryName | " . $this->getName();
 
-		return $this->renderHtml(
-			HttpResponseStatus::OK,
-			[
-				'Categories' => $categories,
-				'Tags'        => $tags,
-				'Posts'       => $posts,
-				'Title'       => "Articles in category $categoryName | " . $this->getName(),
-				'Category'    => $categoryName
-			],
-			'index'
+		return $this->renderListing(
+			$request,
+			$listing,
+			$title,
+			$this->getDescription(),
+			$this->absoluteRoute( 'blog_category', [ 'slug' => $categorySlug ] ),
+			route_path( 'blog_category', [ 'slug' => $categorySlug ] ),
+			[ 'Category' => $categoryName ]
 		);
 	}
 
@@ -290,7 +295,7 @@ class Blog extends Content
 		{
 			$xml .= '<item>' . "\n";
 			$xml .= '<title>' . htmlspecialchars( $post->getTitle() ) . '</title>' . "\n";
-			$xml .= '<link>' . htmlspecialchars( $this->getUrl() . '/blog/article/' . $post->getSlug() ) . '</link>' . "\n";
+			$xml .= '<link>' . htmlspecialchars( $this->absoluteRoute( 'blog_post', [ 'slug' => $post->getSlug() ] ) ) . '</link>' . "\n";
 			$xml .= '<description>' . htmlspecialchars( $post->getExcerpt() ?: substr( strip_tags( $post->getBody() ), 0, 200 ) ) . '</description>' . "\n";
 
 			if( $post->getPublishedAt() )
@@ -298,7 +303,7 @@ class Blog extends Content
 				$xml .= '<pubDate>' . $post->getPublishedAt()->format( 'r' ) . '</pubDate>' . "\n";
 			}
 
-			$xml .= '<guid>' . htmlspecialchars( $this->getUrl() . '/blog/article/' . $post->getSlug() ) . '</guid>' . "\n";
+			$xml .= '<guid>' . htmlspecialchars( $this->absoluteRoute( 'blog_post', [ 'slug' => $post->getSlug() ] ) ) . '</guid>' . "\n";
 
 			// Add categories
 			foreach( $post->getCategories() as $category )
@@ -316,5 +321,88 @@ class Blog extends Content
 		header( 'Content-Type: application/rss+xml; charset=UTF-8' );
 		echo $xml;
 		exit;
+	}
+
+	/**
+	 * @param array{posts: array, page: int, pages: int, perPage: int, total: int} $listing
+	 * @param array<string, mixed> $extra
+	 */
+	private function renderListing(
+		Request $request,
+		array $listing,
+		string $title,
+		string $description,
+		string $canonical,
+		string $paginationBase,
+		array $extra = []
+	): string
+	{
+		return $this->renderHtml(
+			HttpResponseStatus::OK,
+			array_merge(
+				$this->seoViewData( $title, $description, $canonical ),
+				[
+					'Posts' => $listing['posts'],
+					'Categories' => $this->_categoryRepository->all(),
+					'Tags' => $this->_tagRepository->all(),
+					'Name' => $this->getName(),
+					'page' => $listing['page'],
+					'pages' => $listing['pages'],
+					'perPage' => $listing['perPage'],
+					'total' => $listing['total'],
+					'PaginationBase' => $paginationBase,
+				],
+				$extra
+			),
+			'index'
+		);
+	}
+
+	/**
+	 * @return array{posts: array, page: int, pages: int, perPage: int, total: int}
+	 */
+	private function paginatePublished( Request $request ): array
+	{
+		return $this->paginateFiltered(
+			$request,
+			fn( int $limit, int $offset ) => $this->_postRepository->getPublished( $limit, $offset ),
+			fn() => $this->_postRepository->count( ContentStatus::PUBLISHED->value )
+		);
+	}
+
+	/**
+	 * @param callable(int, int): array $fetch
+	 * @param callable(): int $count
+	 * @return array{posts: array, page: int, pages: int, perPage: int, total: int}
+	 */
+	private function paginateFiltered( Request $request, callable $fetch, callable $count ): array
+	{
+		$perPage = max( 1, (int) ( $this->_settings->get( 'blog', 'posts_per_page' ) ?? 10 ) );
+		$page    = max( 1, (int) ( $request->get( 'page', 1 ) ?? 1 ) );
+		$total   = $count();
+		$pages   = max( 1, (int) ceil( $total / $perPage ) );
+		$page    = min( $page, $pages );
+
+		return [
+			'posts' => $fetch( $perPage, ( $page - 1 ) * $perPage ),
+			'page' => $page,
+			'pages' => $total === 0 ? 1 : $pages,
+			'perPage' => $perPage,
+			'total' => $total,
+		];
+	}
+
+	/**
+	 * @return array{posts: array, page: int, pages: int, perPage: int, total: int}
+	 */
+	private function emptyListing(): array
+	{
+		return [
+			'posts' => [],
+			'page' => 1,
+			'pages' => 1,
+			'perPage' => max( 1, (int) ( $this->_settings->get( 'blog', 'posts_per_page' ) ?? 10 ) ),
+			'total' => 0,
+		];
 	}
 }

@@ -49,6 +49,7 @@
 				</div>
 			<?php endforeach; ?>
 		</div>
+		<?php include dirname( __DIR__ ) . '/partials/pagination.php'; ?>
 	<?php else: ?>
 		<div class="alert alert-info">
 			<p>No posts found. Check back soon!</p>

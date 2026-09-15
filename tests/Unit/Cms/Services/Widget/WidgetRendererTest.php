@@ -174,7 +174,7 @@ class WidgetRendererTest extends TestCase
 		$this->assertStringContainsString( "<div class='post-list'>", $result );
 		$this->assertStringContainsString( "<article class='post-item mb-4 pb-4 border-bottom'>", $result );
 		$this->assertStringContainsString( "<h4 class='h5'>", $result );
-		$this->assertStringContainsString( "<a href='/blog/article/test'", $result );
+		$this->assertStringContainsString( "<a href='/blog/post/test'", $result );
 	}
 
 	public function testRenderCalendarWithoutRepositoriesReturnsComment(): void
@@ -223,5 +223,24 @@ class WidgetRendererTest extends TestCase
 		$result = $renderer->render( 'team', [ 'slug' => 'staff' ] );
 
 		$this->assertStringContainsString( '<!-- Team widget: team not found -->', $result );
+	}
+
+	public function testRenderCarouselWithoutRepositoryReturnsComment(): void
+	{
+		$renderer = new WidgetRenderer();
+		$result = $renderer->render( 'carousel', [ 'slug' => 'hero' ] );
+
+		$this->assertStringContainsString( '<!-- Carousel widget requires CarouselRepository -->', $result );
+	}
+
+	public function testRenderCarouselDelegatesToWidget(): void
+	{
+		$repository = $this->createMock( \Neuron\Cms\Repositories\ICarouselRepository::class );
+		$repository->method( 'findBySlug' )->with( 'hero' )->willReturn( null );
+
+		$renderer = new WidgetRenderer( null, null, null, null, null, null, null, $repository );
+		$result = $renderer->render( 'carousel', [ 'slug' => 'hero' ] );
+
+		$this->assertStringContainsString( '<!-- Carousel widget: carousel not found -->', $result );
 	}
 }

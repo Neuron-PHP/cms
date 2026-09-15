@@ -98,6 +98,15 @@ services:
   Neuron\Cms\Repositories\DatabaseTeamRepository:
     type: autowire
 
+  Neuron\Cms\Repositories\DatabaseCarouselRepository:
+    type: autowire
+
+  Neuron\Cms\Repositories\DatabaseMenuRepository:
+    type: autowire
+
+  Neuron\Cms\Services\Menu\MenuService:
+    type: autowire
+
   # Builds the optional payment gateway from the `payments` config section.
   # Safe to autowire whether or not neuron-php/payments is installed.
   Neuron\Cms\Services\Payment\PaymentGatewayFactory:
@@ -175,6 +184,14 @@ services:
   Neuron\Cms\Repositories\ITeamRepository:
     type: alias
     target: Neuron\Cms\Repositories\DatabaseTeamRepository
+
+  Neuron\Cms\Repositories\ICarouselRepository:
+    type: alias
+    target: Neuron\Cms\Repositories\DatabaseCarouselRepository
+
+  Neuron\Cms\Repositories\IMenuRepository:
+    type: alias
+    target: Neuron\Cms\Repositories\DatabaseMenuRepository
 
 
   # ============================================================================
@@ -392,6 +409,7 @@ services:
       - '@Neuron\Cms\Repositories\DatabaseEventRegistrationRepository'
       - '@Neuron\Cms\Repositories\DatabaseProductRepository'
       - '@Neuron\Cms\Repositories\DatabaseTeamRepository'
+      - '@Neuron\Cms\Repositories\DatabaseCarouselRepository'
 
   Neuron\Cms\Services\Content\ShortcodeParser:
     type: create
