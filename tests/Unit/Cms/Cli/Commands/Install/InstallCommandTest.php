@@ -479,7 +479,7 @@ class InstallCommandTest extends TestCase
 		$this->assertEquals( 'simple', $method->invoke( $this->command, 'simple' ) );
 	}
 
-	public function testPublishViewsCopiesOnlyLayouts(): void
+	public function testPublishViewsCopiesLayoutsOnly(): void
 	{
 		$base = sys_get_temp_dir() . '/neuron_cms_install_views_' . uniqid();
 		$project = $base . '/project';
@@ -488,8 +488,12 @@ class InstallCommandTest extends TestCase
 		mkdir( $project . '/resources/views/layouts', 0777, true );
 		mkdir( $package . '/resources/views/layouts', 0777, true );
 		mkdir( $package . '/resources/views/admin/dashboard', 0777, true );
+		mkdir( $package . '/resources/views/http_codes', 0777, true );
+		mkdir( $package . '/resources/views/blog', 0777, true );
 		file_put_contents( $package . '/resources/views/layouts/default.php', 'LAYOUT' );
 		file_put_contents( $package . '/resources/views/admin/dashboard/index.php', 'ADMIN' );
+		file_put_contents( $package . '/resources/views/http_codes/404.php', '404' );
+		file_put_contents( $package . '/resources/views/blog/index.php', 'BLOG' );
 
 		$reflection = new \ReflectionClass( $this->command );
 		$reflection->getProperty( '_projectPath' )->setValue( $this->command, $project );
@@ -500,7 +504,9 @@ class InstallCommandTest extends TestCase
 			$method = $reflection->getMethod( 'publishViews' );
 			$this->assertTrue( $method->invoke( $this->command ) );
 			$this->assertFileExists( $project . '/resources/views/layouts/default.php' );
+			$this->assertFileDoesNotExist( $project . '/resources/views/http_codes/404.php' );
 			$this->assertFileDoesNotExist( $project . '/resources/views/admin/dashboard/index.php' );
+			$this->assertFileDoesNotExist( $project . '/resources/views/blog/index.php' );
 		}
 		finally
 		{
@@ -511,8 +517,12 @@ class InstallCommandTest extends TestCase
 			@rmdir( $project );
 			@unlink( $package . '/resources/views/layouts/default.php' );
 			@unlink( $package . '/resources/views/admin/dashboard/index.php' );
+			@unlink( $package . '/resources/views/http_codes/404.php' );
+			@unlink( $package . '/resources/views/blog/index.php' );
 			@rmdir( $package . '/resources/views/admin/dashboard' );
 			@rmdir( $package . '/resources/views/admin' );
+			@rmdir( $package . '/resources/views/http_codes' );
+			@rmdir( $package . '/resources/views/blog' );
 			@rmdir( $package . '/resources/views/layouts' );
 			@rmdir( $package . '/resources/views' );
 			@rmdir( $package . '/resources' );

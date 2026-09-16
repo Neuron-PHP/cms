@@ -294,7 +294,9 @@ class UpgradeCommand extends Command
 		}
 
 		// Unmodified published copies shadow package views and can be pruned.
-		if( !$this->input->getOption( 'migrations-only' ) && !$this->input->getOption( 'skip-views' ) )
+		if( !$this->input->getOption( 'migrations-only' )
+			&& !$this->input->getOption( 'skip-views' )
+			&& $this->packageViewsAreResolvable() )
 		{
 			$prunableViews = $this->getPrunableViews();
 
@@ -507,6 +509,15 @@ class UpgradeCommand extends Command
 			return true;
 		}
 
+		if( !$this->packageViewsAreResolvable() )
+		{
+			$this->output->writeln( "  Skipping view prune: neuron-php/mvc cannot resolve package views yet." );
+			$this->output->writeln( "  Update neuron-php/mvc, then run cms:upgrade again." );
+			$this->output->writeln( "  Package views location: " . $viewSource . "/" );
+
+			return true;
+		}
+
 		$pruned = $this->pruneUnmodifiedViews();
 
 		if( $pruned > 0 )
@@ -575,6 +586,14 @@ class UpgradeCommand extends Command
 		}
 
 		return $pruned;
+	}
+
+	/**
+	 * Prune is only safe when MVC can fall back to package views.
+	 */
+	private function packageViewsAreResolvable(): bool
+	{
+		return class_exists( \Neuron\Mvc\Views\ViewLocator::class );
 	}
 
 	/**
