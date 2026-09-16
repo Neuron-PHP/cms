@@ -29,9 +29,10 @@ After running `composer update neuron-php/cms`, follow these steps:
 ## Unreleased (site builder)
 
 These features ship with the next CMS release. After `composer update`, run
-`php neuron cms:upgrade` then `php neuron db:migrate`. Upgrade refreshes
-unmodified published views and leaves edited copies alone. Do **not** use
-`--force-views` if you customized layouts.
+`php neuron cms:upgrade` then `php neuron db:migrate`. Stock CMS views are
+served from the package. `cms:upgrade` prunes unmodified published copies
+and leaves edited site views alone. Do **not** use `--force-views` if you
+customized layouts. Copy a single view with `php neuron cms:views:publish`.
 
 ### Database Changes
 
@@ -53,6 +54,7 @@ New migrations (do not edit existing ones):
 - SEO pack: `/sitemap.xml`, `/robots.txt`, Open Graph, per-post meta
 - Configurable homepage (`homepage.mode`: `blog`, `page`, `landing`)
 - Paginated blog listings (`blog.posts_per_page`)
+- Site-first / package-fallback view resolution. Stock admin and feature views are served from the CMS package; site copies override them. `cms:upgrade` prunes unmodified published views. `cms:views:publish` copies one view for customization.
 
 ### Action Required
 
@@ -157,8 +159,9 @@ php neuron db:migrate
 **Problem:** Running `cms:install` with reinstall overwrites customized views.
 
 **Solution:**
-- Use `php neuron cms:upgrade` instead. It adds missing views and refreshes published views that still match the last published checksum. Edited views are left alone.
-- Use `php neuron cms:upgrade --skip-views` to skip view updates entirely
+- Use `php neuron cms:upgrade` instead. It prunes unmodified published views so stock UI comes from the package. Edited views are left alone.
+- Use `php neuron cms:upgrade --skip-views` to skip view pruning entirely
+- Use `php neuron cms:views:publish path/to/view.php` to copy one package view into the site
 - Use `--prompt-views` to review files that differ, or merge by comparing package views with your copies
 
 ### Schema Drift After Composer Update

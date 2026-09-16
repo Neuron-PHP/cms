@@ -171,7 +171,7 @@ That's it. The installer handles all setup automatically.
 
 ### Upgrading
 
-After updating the package with Composer, run the upgrade command to copy any new migrations and resources into your installation:
+After updating the package with Composer, run the upgrade command to copy any new migrations. Stock CMS views are served from the package; a site file overrides the package copy when present.
 
 ```bash
 composer update neuron-php/cms
@@ -181,10 +181,10 @@ php neuron cms:upgrade
 Useful flags:
 - `--check` - show available updates without applying them
 - `--migrations-only` - copy only new migration files
-- `--skip-views` - don't touch published views
+- `--skip-views` - don't prune published views
 - `--run-migrations` - run database migrations automatically
 
-The upgrade command adds missing views and refreshes published views that were never edited (checksum still matches the last publish). Views you changed are left alone unless you pass `--force-views`.
+`cms:upgrade` removes unmodified published views so package updates appear automatically. Views you changed are left alone. Use `php neuron cms:views:publish layouts/default.php` to copy one package view into the site for customization. Do not pass `--force-views` if you customized layouts.
 
 ## Project Structure
 

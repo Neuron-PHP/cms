@@ -30,6 +30,11 @@ class Provider
 		);
 
 		$registry->register(
+			'cms:views:publish',
+			'Neuron\\Cms\\Cli\\Commands\\Views\\PublishCommand'
+		);
+
+		$registry->register(
 			'queue:install',
 			'Neuron\\Cms\\Cli\\Commands\\Queue\\InstallCommand'
 		);

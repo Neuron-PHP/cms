@@ -133,7 +133,7 @@ class UpgradeCommandTest extends TestCase
 		}
 	}
 
-	public function testCopyNewViewsRefreshesUnmodifiedPublishedViews(): void
+	public function testCopyNewViewsDoesNotRefreshUnmodifiedPublishedViews(): void
 	{
 		$base   = sys_get_temp_dir() . '/neuron_cms_views_hash_' . uniqid();
 		$source = $base . '/source';
@@ -155,14 +155,8 @@ class UpgradeCommandTest extends TestCase
 
 			$copied = $method->invoke( $this->command, $source, $dest );
 
-			$this->assertEquals( 1, $copied );
-			$this->assertEquals( 'PACKAGE_NEW', file_get_contents( $dest . '/layouts/admin.php' ) );
-
-			$stored = $manifest->getValue( $this->command );
-			$this->assertEquals(
-				hash( 'sha256', 'PACKAGE_NEW' ),
-				$stored['published_views']['layouts/admin.php']
-			);
+			$this->assertEquals( 0, $copied );
+			$this->assertEquals( 'PACKAGE_OLD', file_get_contents( $dest . '/layouts/admin.php' ) );
 		} finally {
 			$this->removeDirectory( $base );
 		}
@@ -197,7 +191,7 @@ class UpgradeCommandTest extends TestCase
 		}
 	}
 
-	public function testCopyNewViewsRecordsHashWhenLocalAlreadyMatchesPackage(): void
+	public function testCopyNewViewsLeavesMatchingLocalCopyUntouched(): void
 	{
 		$base   = sys_get_temp_dir() . '/neuron_cms_views_seed_' . uniqid();
 		$source = $base . '/source';
@@ -217,12 +211,47 @@ class UpgradeCommandTest extends TestCase
 
 			$this->assertEquals( 0, $copied );
 			$this->assertEquals( 'PACKAGE_LAYOUT', file_get_contents( $dest . '/layouts/admin.php' ) );
+			$this->assertArrayNotHasKey( 'published_views', $manifest->getValue( $this->command ) );
+		} finally {
+			$this->removeDirectory( $base );
+		}
+	}
+
+	public function testPruneUnmodifiedViewsRemovesUnmodifiedAndKeepsEdits(): void
+	{
+		$base    = sys_get_temp_dir() . '/neuron_cms_views_prune_' . uniqid();
+		$project = $base . '/project';
+		$views   = $project . '/resources/views';
+
+		$this->writeFile( $views . '/layouts/admin.php', 'PACKAGE_OLD' );
+		$this->writeFile( $views . '/home/index.php', 'CUSTOM_HOME' );
+		$this->writeFile( $views . '/admin/jobs/index.php', 'PACKAGE_JOBS' );
+
+		$reflection = new \ReflectionClass( $this->command );
+		$reflection->getProperty( '_projectPath' )->setValue( $this->command, $project );
+		$manifest = $reflection->getProperty( '_installedManifest' );
+		$manifest->setValue( $this->command, [
+			'published_views' => [
+				'layouts/admin.php' => hash( 'sha256', 'PACKAGE_OLD' ),
+				'home/index.php' => hash( 'sha256', 'PACKAGE_HOME' ),
+				'admin/jobs/index.php' => hash( 'sha256', 'PACKAGE_JOBS' ),
+			]
+		] );
+
+		try {
+			$method = $reflection->getMethod( 'pruneUnmodifiedViews' );
+			$pruned = $method->invoke( $this->command );
+
+			$this->assertEquals( 2, $pruned );
+			$this->assertFileDoesNotExist( $views . '/layouts/admin.php' );
+			$this->assertFileDoesNotExist( $views . '/admin/jobs/index.php' );
+			$this->assertFileDoesNotExist( $views . '/admin/jobs' );
+			$this->assertEquals( 'CUSTOM_HOME', file_get_contents( $views . '/home/index.php' ) );
 
 			$stored = $manifest->getValue( $this->command );
-			$this->assertEquals(
-				hash( 'sha256', 'PACKAGE_LAYOUT' ),
-				$stored['published_views']['layouts/admin.php']
-			);
+			$this->assertArrayNotHasKey( 'layouts/admin.php', $stored['published_views'] );
+			$this->assertArrayNotHasKey( 'admin/jobs/index.php', $stored['published_views'] );
+			$this->assertArrayHasKey( 'home/index.php', $stored['published_views'] );
 		} finally {
 			$this->removeDirectory( $base );
 		}

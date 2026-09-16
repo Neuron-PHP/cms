@@ -5,8 +5,11 @@ namespace Neuron\Cms\Services\Email;
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\SMTP;
 use PHPMailer\PHPMailer\Exception as PHPMailerException;
+use Neuron\Core\Registry\RegistryKeys;
 use Neuron\Data\Settings\SettingManager;
 use Neuron\Log\Log;
+use Neuron\Mvc\Views\ViewLocator;
+use Neuron\Patterns\Registry;
 
 /**
  * Email sending service.
@@ -108,11 +111,12 @@ class Sender
 	{
 		try
 		{
-			$templateFile = $this->_basePath . '/resources/views/' . $templatePath . '.php';
+			$relative = ltrim( str_replace( '\\', '/', $templatePath ), '/' ) . '.php';
+			$templateFile = $this->resolveTemplateFile( $relative );
 
-			if( !file_exists( $templateFile ) )
+			if( !$templateFile )
 			{
-				throw new \RuntimeException( "Email template not found: {$templateFile}" );
+				throw new \RuntimeException( "Email template not found: {$relative}" );
 			}
 
 			// Extract data variables into local scope
@@ -131,6 +135,54 @@ class Sender
 			Log::error( "Email template error: " . $exception->getMessage() );
 			throw new \RuntimeException( "Failed to render email template: {$templatePath}" );
 		}
+	}
+
+	/**
+	 * Resolve a template from view roots, then the sender base path.
+	 */
+	private function resolveTemplateFile( string $relative ): ?string
+	{
+		if( class_exists( ViewLocator::class ) )
+		{
+			$located = ( new ViewLocator() )->locate( $relative );
+
+			if( $located )
+			{
+				return $located;
+			}
+		}
+
+		$registered = Registry::getInstance()->get( RegistryKeys::VIEWS_PATH );
+		$paths = [];
+
+		if( is_string( $registered ) && $registered !== '' )
+		{
+			$paths[] = rtrim( str_replace( '\\', '/', $registered ), '/' );
+		}
+		elseif( is_array( $registered ) )
+		{
+			foreach( $registered as $path )
+			{
+				if( is_string( $path ) && $path !== '' )
+				{
+					$paths[] = rtrim( str_replace( '\\', '/', $path ), '/' );
+				}
+			}
+		}
+
+		foreach( $paths as $root )
+		{
+			$candidate = $root . '/' . $relative;
+
+			if( file_exists( $candidate ) )
+			{
+				return $candidate;
+			}
+		}
+
+		$fallback = $this->_basePath . '/resources/views/' . $relative;
+
+		return file_exists( $fallback ) ? $fallback : null;
 	}
 
 	/**

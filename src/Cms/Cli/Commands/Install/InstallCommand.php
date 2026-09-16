@@ -94,8 +94,8 @@ class InstallCommand extends Command
 		// Check if already installed
 		if( $this->isAlreadyInstalled() )
 		{
-			$this->output->warning( "Admin UI appears to be already installed." );
-			$this->output->writeln( "Resources directory exists: resources/views/admin/" );
+			$this->output->warning( "CMS appears to be already installed." );
+			$this->output->writeln( "Installation manifest exists: .cms-manifest.json" );
 			$this->output->writeln( "" );
 
 			if( !$force && !$this->confirm( "Do you want to reinstall? This will overwrite existing files", false ) )
@@ -217,7 +217,7 @@ class InstallCommand extends Command
 	 */
 	protected function isAlreadyInstalled(): bool
 	{
-		return is_dir( $this->_projectPath . '/resources/views/admin' );
+		return file_exists( $this->_projectPath . '/.cms-manifest.json' );
 	}
 
 	/**
@@ -226,24 +226,8 @@ class InstallCommand extends Command
 	protected function createDirectories(): bool
 	{
 		$directories = [
-			// View directories
-			'/resources/views/admin',
-			'/resources/views/admin/auth',
-			'/resources/views/admin/dashboard',
-			'/resources/views/admin/users',
-			'/resources/views/admin/posts',
-			'/resources/views/admin/categories',
-			'/resources/views/admin/tags',
-			'/resources/views/admin/profile',
-			'/resources/views/auth',
-			'/resources/views/blog',
-			'/resources/views/content',
-			'/resources/views/emails',
-			'/resources/views/http_codes',
+			// Site-owned view starting point; stock CMS UI is served from the package.
 			'/resources/views/layouts',
-			'/resources/views/member',
-			'/resources/views/member/dashboard',
-			'/resources/views/member/profile',
 
 			// Application directories
 			'/app/Controllers',
@@ -291,12 +275,14 @@ class InstallCommand extends Command
 	}
 
 	/**
-	 * Publish view templates
+	 * Publish starting layout examples.
+	 *
+	 * Stock admin/blog/member views stay in the package and are resolved at
+	 * runtime. Copy a view into the site only when customizing it.
 	 */
 	protected function publishViews(): bool
 	{
-		// Copy all view directories
-		$viewDirs = [ 'admin', 'auth', 'blog', 'content', 'emails', 'home', 'http_codes', 'layouts', 'member' ];
+		$viewDirs = [ 'layouts' ];
 
 		foreach( $viewDirs as $dir )
 		{
@@ -306,10 +292,9 @@ class InstallCommand extends Command
 			if( !is_dir( $viewSource ) )
 			{
 				$this->output->warning( "  Source views not found at: $viewSource" );
-				continue; // Skip if directory doesn't exist
+				continue;
 			}
 
-			// Copy all view files recursively
 			if( !$this->copyDirectory( $viewSource, $viewDest ) )
 			{
 				$this->output->error( "  Failed to copy views from: $dir" );
@@ -1820,7 +1805,7 @@ class InstallCommand extends Command
 	}
 
 	/**
-	 * Record published view checksums so cms:upgrade can refresh unmodified copies.
+	 * Record published view checksums so cms:upgrade can prune unmodified copies.
 	 */
 	protected function writeCmsManifest(): bool
 	{
@@ -1857,7 +1842,7 @@ class InstallCommand extends Command
 
 		if( $json === false || file_put_contents( $installedPath, $json . "\n" ) === false )
 		{
-			$this->output->warning( "Failed to write .cms-manifest.json; cms:upgrade may not refresh unmodified views." );
+			$this->output->warning( "Failed to write .cms-manifest.json; cms:upgrade may not prune unmodified views." );
 			return true;
 		}
 

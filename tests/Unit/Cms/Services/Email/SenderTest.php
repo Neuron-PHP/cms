@@ -3,7 +3,9 @@
 namespace Tests\Unit\Cms\Services\Email;
 
 use Neuron\Cms\Services\Email\Sender;
+use Neuron\Core\Registry\RegistryKeys;
 use Neuron\Data\Settings\SettingManager;
+use Neuron\Patterns\Registry;
 use PHPUnit\Framework\TestCase;
 
 class SenderTest extends TestCase
@@ -121,6 +123,30 @@ class SenderTest extends TestCase
 			{
 				rmdir( $templateDir );
 			}
+		}
+	}
+
+	public function testTemplateUsesViewLocatorBeforeBasePath(): void
+	{
+		$site = sys_get_temp_dir() . '/neuron_email_views_' . uniqid();
+		mkdir( $site . '/emails', 0777, true );
+		file_put_contents( $site . '/emails/locator.php', '<p><?= $name ?></p>' );
+
+		$previous = Registry::getInstance()->get( RegistryKeys::VIEWS_PATH );
+		Registry::getInstance()->set( RegistryKeys::VIEWS_PATH, $site );
+
+		try
+		{
+			$sender = new Sender( $this->settings, sys_get_temp_dir() . '/missing-base-' . uniqid() );
+			$result = $sender->template( 'emails/locator', [ 'name' => 'Ada' ] );
+			$this->assertSame( $sender, $result );
+		}
+		finally
+		{
+			Registry::getInstance()->set( RegistryKeys::VIEWS_PATH, $previous );
+			@unlink( $site . '/emails/locator.php' );
+			@rmdir( $site . '/emails' );
+			@rmdir( $site );
 		}
 	}
 
