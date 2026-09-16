@@ -223,18 +223,20 @@ class UpgradeCommandTest extends TestCase
 		$project = $base . '/project';
 		$views   = $project . '/resources/views';
 
-		$this->writeFile( $views . '/layouts/admin.php', 'PACKAGE_OLD' );
+		$this->writeFile( $views . '/layouts/member.php', 'PACKAGE_OLD' );
 		$this->writeFile( $views . '/home/index.php', 'CUSTOM_HOME' );
-		$this->writeFile( $views . '/admin/jobs/index.php', 'PACKAGE_JOBS' );
+		$this->writeFile( $views . '/blog/index.php', 'PACKAGE_BLOG' );
+		$this->writeFile( $views . '/http_codes/404.php', 'PACKAGE_404' );
 
 		$reflection = new \ReflectionClass( $this->command );
 		$reflection->getProperty( '_projectPath' )->setValue( $this->command, $project );
 		$manifest = $reflection->getProperty( '_installedManifest' );
 		$manifest->setValue( $this->command, [
 			'published_views' => [
-				'layouts/admin.php' => hash( 'sha256', 'PACKAGE_OLD' ),
+				'layouts/member.php' => hash( 'sha256', 'PACKAGE_OLD' ),
 				'home/index.php' => hash( 'sha256', 'PACKAGE_HOME' ),
-				'admin/jobs/index.php' => hash( 'sha256', 'PACKAGE_JOBS' ),
+				'blog/index.php' => hash( 'sha256', 'PACKAGE_BLOG' ),
+				'http_codes/404.php' => hash( 'sha256', 'PACKAGE_404' ),
 			]
 		] );
 
@@ -242,19 +244,31 @@ class UpgradeCommandTest extends TestCase
 			$method = $reflection->getMethod( 'pruneUnmodifiedViews' );
 			$pruned = $method->invoke( $this->command );
 
-			$this->assertEquals( 2, $pruned );
-			$this->assertFileDoesNotExist( $views . '/layouts/admin.php' );
-			$this->assertFileDoesNotExist( $views . '/admin/jobs/index.php' );
-			$this->assertFileDoesNotExist( $views . '/admin/jobs' );
+			$this->assertEquals( 3, $pruned );
+			$this->assertFileDoesNotExist( $views . '/layouts/member.php' );
+			$this->assertFileDoesNotExist( $views . '/blog/index.php' );
+			$this->assertFileDoesNotExist( $views . '/http_codes/404.php' );
 			$this->assertEquals( 'CUSTOM_HOME', file_get_contents( $views . '/home/index.php' ) );
 
 			$stored = $manifest->getValue( $this->command );
-			$this->assertArrayNotHasKey( 'layouts/admin.php', $stored['published_views'] );
-			$this->assertArrayNotHasKey( 'admin/jobs/index.php', $stored['published_views'] );
+			$this->assertArrayNotHasKey( 'layouts/member.php', $stored['published_views'] );
+			$this->assertArrayNotHasKey( 'blog/index.php', $stored['published_views'] );
+			$this->assertArrayNotHasKey( 'http_codes/404.php', $stored['published_views'] );
 			$this->assertArrayHasKey( 'home/index.php', $stored['published_views'] );
 		} finally {
 			$this->removeDirectory( $base );
 		}
+	}
+
+	public function testPackageViewsAreResolvableMatchesInstalledMvc(): void
+	{
+		$reflection = new \ReflectionClass( $this->command );
+		$method = $reflection->getMethod( 'packageViewsAreResolvable' );
+
+		$this->assertSame(
+			class_exists( \Neuron\Mvc\Views\ViewLocator::class ),
+			$method->invoke( $this->command )
+		);
 	}
 
 	public function testCopyNewViewsForceOverwritesExistingFiles(): void
