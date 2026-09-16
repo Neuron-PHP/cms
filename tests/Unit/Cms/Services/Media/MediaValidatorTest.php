@@ -352,6 +352,35 @@ class MediaValidatorTest extends TestCase
 		fclose( $tmpFile );
 	}
 
+	public function testValidateAcceptsCommaSeparatedAllowedFormats(): void
+	{
+		$memory = new Memory();
+		$memory->set( 'cloudinary', 'max_file_size', 5242880 );
+		$memory->set( 'cloudinary', 'allowed_formats', 'JPG, PNG, GIF' );
+
+		$validator = new MediaValidator( new SettingManager( $memory ) );
+
+		$pngData = base64_decode(
+			'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=='
+		);
+
+		$tmpFile = tmpfile();
+		$tmpPath = stream_get_meta_data( $tmpFile )['uri'];
+		fwrite( $tmpFile, $pngData );
+
+		$result = $validator->validate( [
+			'error' => UPLOAD_ERR_OK,
+			'tmp_name' => $tmpPath,
+			'name' => 'test.PNG',
+			'size' => strlen( $pngData )
+		] );
+
+		$this->assertTrue( $result );
+		$this->assertEmpty( $validator->getErrors() );
+
+		fclose( $tmpFile );
+	}
+
 	public function testValidatePassesForValidGifFile(): void
 	{
 		// Create a minimal valid GIF file (1x1 transparent pixel)

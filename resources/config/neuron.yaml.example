@@ -34,6 +34,12 @@ site:
   description: 'A modern content management system built with Neuron.'  # Site description
   title: 'Neuron CMS'  # Default page title
 
+# Public breadcrumbs (Home → section → current page)
+breadcrumbs:
+  enabled: true
+  home_label: Home
+  json_ld: true
+
 # Theme Configuration
 # Controls the Bootswatch theme for different portals
 # Themes are role-based: admin, subscriber (member), and guest (public/auth)
@@ -86,6 +92,22 @@ pages:
   show_author: true  # Display the "By <author>" byline on public pages
   show_view_count: true  # Display the view counter on public pages
 
+# Homepage
+# The stock Home controller serves `/`. Site-specific controllers listed first
+# in routing.yaml still take precedence.
+homepage:
+  mode: blog      # blog | page | landing
+  page: welcome   # CMS page slug when mode is page
+
+# Blog listing
+blog:
+  posts_per_page: 10
+
+# Optional menu slug overrides (defaults: first menu with that location)
+# menus:
+#   header: header
+#   footer: footer
+
 # Cloudinary Configuration
 # Sign up for free at: https://cloudinary.com
 # Get credentials from: https://console.cloudinary.com/settings/general
@@ -94,7 +116,7 @@ cloudinary:
   api_key: your-api-key  # API key from Cloudinary console (required)
   api_secret: your-api-secret  # API secret from Cloudinary console (required)
   folder: neuron-cms/images  # Default folder for uploads (optional)
-  max_file_size: 5242880  # Maximum file size in bytes (5MB default)
+  max_file_size: 20971520  # Maximum file size in bytes (20MB default)
   allowed_formats: [jpg, jpeg, png, gif, webp]  # Allowed image formats
 
 # Database Configuration

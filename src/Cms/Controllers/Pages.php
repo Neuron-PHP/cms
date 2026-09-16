@@ -83,17 +83,27 @@ class Pages extends Content
 
 		return $this->renderHtml(
 			HttpResponseStatus::OK,
-			[
-				'Page' => $page,
-				'ContentHtml' => $contentHtml,
-				'Title' => $pageTitle,
-				'Description' => $page->getMetaDescription() ?: $this->getDescription(),
-				'MetaKeywords' => $page->getMetaKeywords(),
-				'Template' => $page->getTemplate(),
-				'ShowDates' => $this->_settings->get( 'pages', 'show_dates' ) ?? true,
-				'ShowAuthor' => $this->_settings->get( 'pages', 'show_author' ) ?? true,
-				'ShowViewCount' => $this->_settings->get( 'pages', 'show_view_count' ) ?? true
-			],
+			array_merge(
+				$this->seoViewData(
+					$pageTitle,
+					$page->getMetaDescription() ?: $this->getDescription(),
+					$this->absoluteRoute( 'page', [ 'slug' => $page->getSlug() ] ),
+					null,
+					'website',
+					$page->getMetaKeywords()
+				),
+				$this->breadcrumbViewData( [
+					[ 'label' => $page->getTitle() ]
+				] ),
+				[
+					'Page' => $page,
+					'ContentHtml' => $contentHtml,
+					'Template' => $page->getTemplate(),
+					'ShowDates' => $this->_settings->get( 'pages', 'show_dates' ) ?? true,
+					'ShowAuthor' => $this->_settings->get( 'pages', 'show_author' ) ?? true,
+					'ShowViewCount' => $this->_settings->get( 'pages', 'show_view_count' ) ?? true
+				]
+			),
 			'show'
 		);
 	}

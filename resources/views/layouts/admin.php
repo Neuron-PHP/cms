@@ -54,6 +54,11 @@
 							<li><a class="dropdown-item" href="<?= route_path('admin_orders') ?>"><i class="bi bi-bag-check me-2"></i>Orders</a></li>
 							<li><hr class="dropdown-divider"></li>
 							<li><a class="dropdown-item" href="<?= route_path('admin_teams') ?>"><i class="bi bi-people me-2"></i>Teams</a></li>
+							<li><a class="dropdown-item" href="<?= route_path('admin_carousels') ?>"><i class="bi bi-images me-2"></i>Carousels</a></li>
+							<li><a class="dropdown-item" href="<?= route_path('admin_testimonials') ?>"><i class="bi bi-chat-quote me-2"></i>Testimonials</a></li>
+							<li><a class="dropdown-item" href="<?= route_path('admin_faqs') ?>"><i class="bi bi-question-circle me-2"></i>FAQs</a></li>
+							<li><a class="dropdown-item" href="<?= route_path('admin_menus') ?>"><i class="bi bi-list me-2"></i>Menus</a></li>
+							<li><a class="dropdown-item" href="<?= route_path('admin_redirects') ?>"><i class="bi bi-signpost-split me-2"></i>Redirects</a></li>
 						</ul>
 					</li>
 					<li class="nav-item dropdown">

@@ -24,6 +24,8 @@ A modern, database-backed Content Management System for PHP 8.4+ built on the Ne
   - Create, edit, and publish blog posts
   - Category and tag organization
   - SEO-friendly URLs with slug support
+  - Paginated listings (configurable `blog.posts_per_page`)
+  - Per-post SEO meta (title, description, keywords)
   - RSS feed generation
   - Draft and scheduled post support
   - View count tracking
@@ -32,6 +34,11 @@ A modern, database-backed Content Management System for PHP 8.4+ built on the Ne
   - CMS-managed static pages served at `/pages/:slug`
   - Editor.js block content with shortcode support
   - Draft/published status and SEO-friendly slugs
+
+- **SEO**
+  - Per-post and per-page meta title, description, and keywords
+  - Open Graph and Twitter cards in the default layout
+  - Canonical URLs, `/sitemap.xml`, and `/robots.txt`
 
 - **Events & Calendar**
   - Calendar and event listings with event categories
@@ -54,7 +61,7 @@ A modern, database-backed Content Management System for PHP 8.4+ built on the Ne
 
 - **Shortcodes & Widgets**
   - Reusable content widgets rendered in any page or post body
-  - Built in: `[latest-posts]`, `[calendar]`, `[featured-event]`, `[event-registration]`, `[contact]`, `[team]`
+  - Built in: `[latest-posts]`, `[calendar]`, `[featured-event]`, `[event-registration]`, `[contact]`, `[team]`, `[carousel]`, `[testimonial]`, `[faq]`
 
 - **Media Library**
   - Upload and manage media through the admin panel
@@ -69,6 +76,12 @@ A modern, database-backed Content Management System for PHP 8.4+ built on the Ne
   - Category and tag management
   - Event, event category, and event-registration management
   - Team roster management (named teams + members, `[team]` shortcode)
+  - Carousel management (named sliders, galleries, and logo strips, `[carousel]` shortcode)
+  - Testimonial management (named quote collections, `[testimonial]` shortcode)
+  - FAQ management (named question groups, `[faq]` accordion shortcode)
+  - Navigation menu management (header/footer menus with nested items)
+  - Redirect management (301/302 rules for moved URLs)
+  - Public breadcrumbs on pages, posts, calendar, contact, and store
   - Contact submission review
   - Media library
   - User management
@@ -367,6 +380,9 @@ Create CMS-managed pages in the admin panel (Pages → New Page); they're served
 | `[event-registration]` | A registration form for an event or event category |
 | `[contact]` | A contact form |
 | `[team]` | A named team roster (photo, name, title, optional bio and contact) |
+| `[carousel]` | A named image carousel (slider, gallery, or logo strip) |
+| `[testimonial]` | A named quote collection (cards, list, or featured) |
+| `[faq]` | A named FAQ accordion |
 
 Examples:
 
@@ -380,6 +396,13 @@ Examples:
 [contact]
 [team slug="staff"]
 [team slug="board" title="Board of Directors"]
+[carousel slug="hero"]
+[carousel slug="partners" display="logos"]
+[carousel slug="camp" display="gallery" title="Camp photos"]
+[testimonial slug="success-stories"]
+[testimonial slug="homepage" display="featured" title="What families say"]
+[faq slug="general"]
+[faq slug="intake" title="Intake FAQs" open="first"]
 ```
 
 #### Team rosters
@@ -397,6 +420,118 @@ A member’s contact field may be an email (rendered as `mailto:`) or a URL/path
 |-----------|--------|---------|-------------|
 | `slug` | team slug | required | Which team to render |
 | `title` | any text | _(omitted)_ | Optional heading above the roster. Omit to render cards only. |
+
+#### Image carousels
+
+Create named carousels in the admin panel (Content → Carousels). Each carousel
+has a slug, a default display mode, and any number of slides. Slide images are
+chosen from the media library. Optional heading, caption, link, and alt text
+are stored on each slide.
+
+```text
+[carousel slug="hero"]
+[carousel slug="partners" display="logos"]
+[carousel slug="camp" display="gallery" title="Camp photos"]
+[carousel slug="hero" interval="0"]
+```
+
+| Attribute | Values | Default | Description |
+|-----------|--------|---------|-------------|
+| `slug` | carousel slug | required | Which carousel to render |
+| `display` | `slider`, `gallery`, `logos` | carousel default | `slider` is a rotating Bootstrap carousel. `gallery` is a thumbnail grid with a lightbox. `logos` is a compact partner/sponsor strip. |
+| `title` | any text | _(omitted)_ | Optional heading above the collection. |
+| `interval` | milliseconds | `5000` | Slider autoplay interval. `0` disables autoplay. |
+
+If the slug is missing or the carousel is not found, the shortcode renders
+nothing visible (an HTML comment).
+
+#### Testimonials
+
+Create named quote collections in the admin panel (Content → Testimonials).
+Each collection has a slug, a default display mode, and any number of quotes.
+Optional name, role, organization, and photo are stored on each quote.
+
+```text
+[testimonial slug="success-stories"]
+[testimonial slug="homepage" display="featured" title="What families say"]
+```
+
+| Attribute | Values | Default | Description |
+|-----------|--------|---------|-------------|
+| `slug` | collection slug | required | Which collection to render |
+| `display` | `cards`, `list`, `featured` | collection default | `cards` is a quote grid. `list` is stacked blockquotes. `featured` is a large rotating pull-quote. |
+| `title` | any text | _(omitted)_ | Optional heading above the collection. |
+
+If the slug is missing or the collection is not found, the shortcode renders
+nothing visible (an HTML comment).
+
+#### FAQs
+
+Create named FAQ groups in the admin panel (Content → FAQs). Each group has a
+slug and any number of questions. Embed the accordion on any page:
+
+```text
+[faq slug="general"]
+[faq slug="intake" title="Intake FAQs" open="first"]
+```
+
+| Attribute | Values | Default | Description |
+|-----------|--------|---------|-------------|
+| `slug` | group slug | required | Which FAQ group to render |
+| `title` | any text | _(omitted)_ | Optional heading above the accordion. |
+| `open` | `none`, `first`, `all` | `none` | Which items start expanded. `all` allows more than one item open at once. |
+
+If the slug is missing or the group is not found, the shortcode renders
+nothing visible (an HTML comment).
+
+#### Navigation menus
+
+Create named menus in the admin panel (Content → Menus). Each menu is assigned
+to the header or footer and can contain nested items that link to a CMS page,
+a built-in route (`home`, `blog`, `calendar`, `contact`), or a custom URL.
+
+Public layouts render them with `cms_menu('header')` and `cms_menu('footer')`.
+If more than one menu exists for a location, the first by name is used unless
+you pin a slug in `neuron.yaml`:
+
+```yaml
+menus:
+  header: header
+  footer: footer
+```
+
+Customized site layouts still work if they include the stock
+`partials/navigation.php` and `partials/footer-navigation.php` files.
+
+#### HTTP redirects
+
+Create 301 or 302 rules in the admin panel (Content → Redirects). Each rule
+maps one path to a new site path or an external URL. Matching happens before
+route resolution, so an old path redirects even if a CMS page still exists
+there. `/admin` paths are never redirected.
+
+Query strings are preserved by default unless the destination already has one.
+Inactive rules are ignored.
+
+#### Public breadcrumbs
+
+The default public layout renders a trail above the page (Home → section →
+current). Pages, blog listings and posts, calendar, contact, and the store
+set it automatically. The homepage and landing-page templates omit it.
+
+```yaml
+breadcrumbs:
+  enabled: true
+  home_label: Home
+  json_ld: true
+```
+
+Customized layouts can call `cms_breadcrumbs( $Breadcrumbs )` and
+`cms_breadcrumb_json_ld( $Breadcrumbs, $CanonicalUrl ?? '' )`.
+
+Full author-facing docs: [Site Builder Guide](https://neuronphp.com/md/cms/guides/site-builder).
+Remaining ideas (search, newsletter, comments, and so on) live in
+[ROADMAP.md](ROADMAP.md).
 
 #### Featured event display modes
 
@@ -513,9 +648,27 @@ The installer creates `config/auth.yaml` with sensible defaults. You can customi
 
 The CMS uses attribute-based routing defined directly on controller methods. The installer creates `config/routing.yaml` to configure URL rewrites and controller paths.
 
+#### Homepage
+
+The stock `Home` controller serves `/`. Configure it in `neuron.yaml`:
+
+```yaml
+homepage:
+  mode: blog      # blog | page | landing
+  page: welcome   # used when mode is page
+blog:
+  posts_per_page: 10
+```
+
+- `blog` — paginated published posts at `/`
+- `page` — render the published CMS page with slug `homepage.page`
+- `landing` — the marketing landing view in `home/index.php`
+
+Site controllers listed first in `routing.yaml` still take precedence for `/`.
+
 #### URL Rewrites
 
-By default, the CMS rewrites the root URL (`/`) to `/blog`. You can customize this in `config/routing.yaml`:
+The package no longer rewrites `/` to `/blog` by default. Add a rewrite only when a site-specific controller owns a different path:
 
 ```yaml
 # config/routing.yaml
@@ -552,12 +705,20 @@ URL rewrites are transparent (no HTTP redirect) - the browser URL stays the same
 
 The CMS provides these pre-configured routes via controller attributes:
 
+- **Public homepage**:
+  - `/` - Configurable homepage (`homepage.mode`: blog, page, or landing)
+
 - **Public blog pages**:
-  - `/blog` - Blog listing
-  - `/blog/article/:slug` - Individual post
+  - `/blog` - Paginated blog listing
+  - `/blog/post/:slug` - Individual post
+  - `/blog/author/:username` - Posts by author
   - `/blog/category/:slug` - Category listing
   - `/blog/tag/:slug` - Tag listing
   - `/blog/rss` - RSS feed
+
+- **SEO**:
+  - `/sitemap.xml` - Published pages, posts, and events
+  - `/robots.txt` - Crawler rules pointing at the sitemap
 
 - **Pages**:
   - `/pages/:slug` - CMS-managed page
@@ -575,7 +736,7 @@ The CMS provides these pre-configured routes via controller attributes:
   - `/contact` - Contact form
   - `/contact/submit` - Contact form submission (CSRF protected)
 
-- **Admin panel**: `/admin/*` - Full admin interface with authentication (posts, pages, categories, tags, events, event categories, event registrations, contact submissions, media, users, jobs)
+- **Admin panel**: `/admin/*` - Full admin interface with authentication (posts, pages, categories, tags, events, event categories, event registrations, contact submissions, menus, carousels, testimonials, faqs, teams, redirects, media, users, jobs)
 
 - **Authentication**:
   - `/login` - Login form

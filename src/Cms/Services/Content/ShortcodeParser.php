@@ -162,6 +162,9 @@ class ShortcodeParser
 					'product' => $this->_widgetRenderer->render( 'product', $attrs ),
 					'cart' => $this->_widgetRenderer->render( 'cart', $attrs ),
 					'team' => $this->_widgetRenderer->render( 'team', $attrs ),
+					'carousel' => $this->_widgetRenderer->render( 'carousel', $attrs ),
+					'testimonial' => $this->_widgetRenderer->render( 'testimonial', $attrs ),
+					'faq' => $this->_widgetRenderer->render( 'faq', $attrs ),
 					default => "<!-- Unknown shortcode: [{$shortcode}] -->"
 				};
 			}
@@ -193,6 +196,9 @@ class ShortcodeParser
 			|| $shortcode === 'products'
 			|| $shortcode === 'product'
 			|| $shortcode === 'cart'
-			|| $shortcode === 'team';
+			|| $shortcode === 'team'
+			|| $shortcode === 'carousel'
+			|| $shortcode === 'testimonial'
+			|| $shortcode === 'faq';
 	}
 }

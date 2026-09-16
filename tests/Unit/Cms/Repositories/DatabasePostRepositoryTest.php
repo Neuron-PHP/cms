@@ -83,6 +83,9 @@ class DatabasePostRepositoryTest extends TestCase
 				body TEXT NOT NULL,
 				content_raw TEXT DEFAULT '{\"blocks\":[]}',
 				excerpt TEXT,
+				meta_title VARCHAR(255),
+				meta_description VARCHAR(512),
+				meta_keywords VARCHAR(512),
 				featured_image VARCHAR(255),
 				author_id INTEGER NOT NULL,
 				status VARCHAR(20) DEFAULT 'draft',
@@ -544,6 +547,53 @@ class DatabasePostRepositoryTest extends TestCase
 		$this->assertEquals( 'Tech', $taggedPosts[0]->getCategories()[0]->getName() );
 		$this->assertCount( 1, $taggedPosts[0]->getTags() );
 		$this->assertEquals( 'PHP', $taggedPosts[0]->getTags()[0]->getName() );
+	}
+
+	public function testPersistsSeoMetaFields(): void
+	{
+		$post = new Post();
+		$post->setTitle( 'SEO Post' );
+		$post->setSlug( 'seo-post' );
+		$post->setBody( 'Body' );
+		$post->setAuthorId( 1 );
+		$post->setStatus( Post::STATUS_PUBLISHED );
+		$post->setMetaTitle( 'Custom title' );
+		$post->setMetaDescription( 'Custom description' );
+		$post->setMetaKeywords( 'one, two' );
+
+		$created = $this->_Repository->create( $post );
+		$found = $this->_Repository->findById( $created->getId() );
+
+		$this->assertSame( 'Custom title', $found->getMetaTitle() );
+		$this->assertSame( 'Custom description', $found->getMetaDescription() );
+		$this->assertSame( 'one, two', $found->getMetaKeywords() );
+	}
+
+	public function testCanGetPublishedPostsWithLimitAndOffset(): void
+	{
+		$this->createTestPost( 'Post 1', 'post-1', Post::STATUS_PUBLISHED );
+		$this->createTestPost( 'Post 2', 'post-2', Post::STATUS_PUBLISHED );
+		$this->createTestPost( 'Post 3', 'post-3', Post::STATUS_PUBLISHED );
+
+		$posts = $this->_Repository->getPublished( 1, 1 );
+
+		$this->assertCount( 1, $posts );
+	}
+
+	public function testCanCountPostsByAuthorCategoryAndTag(): void
+	{
+		$category = $this->createCategory( 'Tech', 'tech' );
+		$tag = $this->createTag( 'PHP', 'php' );
+
+		$post = $this->createTestPost( 'Counted', 'counted', Post::STATUS_PUBLISHED, 3 );
+		$post->addCategory( $category );
+		$post->addTag( $tag );
+		$this->_Repository->update( $post );
+		$this->createTestPost( 'Other', 'other', Post::STATUS_PUBLISHED, 1 );
+
+		$this->assertSame( 1, $this->_Repository->countByAuthor( 3, Post::STATUS_PUBLISHED ) );
+		$this->assertSame( 1, $this->_Repository->countByCategory( $category->getId(), Post::STATUS_PUBLISHED ) );
+		$this->assertSame( 1, $this->_Repository->countByTag( $tag->getId(), Post::STATUS_PUBLISHED ) );
 	}
 
 	public function testCanGetPublishedPosts(): void

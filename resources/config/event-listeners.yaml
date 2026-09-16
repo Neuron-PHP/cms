@@ -16,7 +16,8 @@ events:
   # Request and Response Events (from MVC layer)
   request.received:
     class: 'Neuron\Mvc\Events\RequestReceivedEvent'
-    listeners: []
+    listeners:
+      - 'Neuron\Cms\Listeners\ApplyRedirectListener'
   rate.limit.exceeded:
     class: 'Neuron\Mvc\Events\RateLimitExceededEvent'
     listeners: []

@@ -51,27 +51,48 @@ interface IPostRepository
 	 *
 	 * @param int $authorId Author user ID
 	 * @param string|null $status Filter by status
+	 * @param int $limit Limit number of results (0 = no limit)
+	 * @param int $offset Offset for pagination
 	 * @return Post[]
 	 */
-	public function getByAuthor( int $authorId, ?string $status = null ): array;
+	public function getByAuthor( int $authorId, ?string $status = null, int $limit = 0, int $offset = 0 ): array;
 
 	/**
 	 * Get posts by category
 	 *
 	 * @param int $categoryId Category ID
 	 * @param string|null $status Filter by status
+	 * @param int $limit Limit number of results (0 = no limit)
+	 * @param int $offset Offset for pagination
 	 * @return Post[]
 	 */
-	public function getByCategory( int $categoryId, ?string $status = null ): array;
+	public function getByCategory( int $categoryId, ?string $status = null, int $limit = 0, int $offset = 0 ): array;
 
 	/**
 	 * Get posts by tag
 	 *
 	 * @param int $tagId Tag ID
 	 * @param string|null $status Filter by status
+	 * @param int $limit Limit number of results (0 = no limit)
+	 * @param int $offset Offset for pagination
 	 * @return Post[]
 	 */
-	public function getByTag( int $tagId, ?string $status = null ): array;
+	public function getByTag( int $tagId, ?string $status = null, int $limit = 0, int $offset = 0 ): array;
+
+	/**
+	 * Count posts by author
+	 */
+	public function countByAuthor( int $authorId, ?string $status = null ): int;
+
+	/**
+	 * Count posts by category
+	 */
+	public function countByCategory( int $categoryId, ?string $status = null ): int;
+
+	/**
+	 * Count posts by tag
+	 */
+	public function countByTag( int $tagId, ?string $status = null ): int;
 
 	/**
 	 * Get published posts

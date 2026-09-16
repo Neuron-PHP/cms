@@ -65,7 +65,7 @@
 											   name="image"
 											   accept="image/jpeg,image/png,image/gif,image/webp"
 											   required>
-										<div class="form-text">Accepted formats: JPG, PNG, GIF, WebP. Max size: 5MB</div>
+										<div class="form-text">Accepted formats: JPG, PNG, GIF, WebP. Max size: 20MB</div>
 									</div>
 									<div class="mb-3">
 										<label for="mediaPickerName" class="form-label">Name</label>
@@ -421,11 +421,21 @@
 
 	function parseJsonResponse(response) {
 		return response.text().then(text => {
+			let data = null;
 			try {
-				return JSON.parse(text);
+				data = JSON.parse(text);
 			} catch (e) {
+				if (!response.ok) {
+					throw new Error(text || ('Upload failed (' + response.status + ')'));
+				}
 				throw new Error('Your session may have expired. Please refresh the page and try again.');
 			}
+
+			if (!response.ok && data && data.error) {
+				throw new Error(data.error);
+			}
+
+			return data;
 		});
 	}
 

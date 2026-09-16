@@ -158,6 +158,9 @@ class BlogControllerTest extends TestCase
 				body TEXT NOT NULL,
 				content_raw TEXT DEFAULT '{\"blocks\":[]}',
 				excerpt TEXT,
+				meta_title VARCHAR(255),
+				meta_description VARCHAR(512),
+				meta_keywords VARCHAR(512),
 				featured_image VARCHAR(255),
 				author_id INTEGER NOT NULL,
 				status VARCHAR(20) DEFAULT 'draft',
@@ -344,6 +347,23 @@ class BlogControllerTest extends TestCase
 
 		$this->assertIsString( $result );
 		// Should contain published posts but not drafts
+	}
+
+	public function testIndexPaginatesPublishedPosts(): void
+	{
+		for( $i = 1; $i <= 12; $i++ )
+		{
+			$this->createTestPost( "Published Post $i", "published-$i", Post::STATUS_PUBLISHED );
+		}
+
+		$blog = $this->createBlogWithInjectedRepositories();
+		$_GET['page'] = 2;
+		$result = $blog->index( new Request() );
+		unset( $_GET['page'] );
+
+		$this->assertStringContainsString( 'aria-label="Pagination"', $result );
+		$this->assertStringContainsString( 'page=1', $result );
+		$this->assertStringContainsString( 'page=2', $result );
 	}
 
 	public function testShowWithValidSlug(): void

@@ -30,7 +30,13 @@
     "20260623000000_create_products_table.php",
     "20260623000001_create_order_items_table.php",
     "20260910180000_create_queue_tables.php",
-    "20260914150000_create_teams_tables.php"
+    "20260914150000_create_teams_tables.php",
+    "20260915120000_create_carousels_tables.php",
+    "20260915140000_create_menus_tables.php",
+    "20260915150000_add_seo_to_posts.php",
+    "20260915180000_create_testimonials_tables.php",
+    "20260915190000_create_faqs_tables.php",
+    "20260916120000_create_redirects_table.php"
   ],
   "config_files": [
     "auth.yaml",

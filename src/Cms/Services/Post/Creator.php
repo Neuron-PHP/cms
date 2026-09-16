@@ -56,6 +56,9 @@ class Creator implements IPostCreator
 		$slug = $request->slug ?? null;
 		$excerpt = $request->excerpt ?? null;
 		$featuredImage = $request->featured_image ?? null;
+		$metaTitle = $request->meta_title ?? null;
+		$metaDescription = $request->meta_description ?? null;
+		$metaKeywords = $request->meta_keywords ?? null;
 		$publishedAt = $request->published_at ?? null;
 
 		$post = new Post();
@@ -63,6 +66,9 @@ class Creator implements IPostCreator
 		$post->setSlug( $slug ?: $this->generateSlug( $title ) );
 		$post->setContent( $content );
 		$post->setExcerpt( $excerpt );
+		$post->setMetaTitle( $metaTitle );
+		$post->setMetaDescription( $metaDescription );
+		$post->setMetaKeywords( $metaKeywords );
 		$post->setFeaturedImage( $featuredImage );
 		$post->setAuthorId( $authorId );
 		$post->setStatus( $status );
