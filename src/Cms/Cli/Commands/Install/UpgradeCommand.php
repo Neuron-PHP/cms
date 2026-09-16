@@ -239,18 +239,14 @@ class UpgradeCommand extends Command
 	 */
 	private function isInstalled(): bool
 	{
-		// Check for key indicators
-		$indicators = [
-			'/resources/views/admin',
-			'/db/migrate'
-		];
-
-		foreach( $indicators as $path )
+		if( file_exists( $this->_projectPath . '/.cms-manifest.json' ) )
 		{
-			if( !file_exists( $this->_projectPath . $path ) )
-			{
-				return false;
-			}
+			return true;
+		}
+
+		if( !is_dir( $this->_projectPath . '/db/migrate' ) )
+		{
+			return false;
 		}
 
 		// Routing config: current installs use config/routing.yaml.
@@ -297,32 +293,19 @@ class UpgradeCommand extends Command
 			}
 		}
 
-		// Check for new view files (respecting view-related flags)
+		// Unmodified published copies shadow package views and can be pruned.
 		if( !$this->input->getOption( 'migrations-only' ) && !$this->input->getOption( 'skip-views' ) )
 		{
-			$newViews = $this->getNewViewFiles();
+			$prunableViews = $this->getPrunableViews();
 
-			if( !empty( $newViews ) )
+			if( !empty( $prunableViews ) )
 			{
 				$hasUpdates = true;
-				$this->output->writeln( "New Views Available:" );
+				$this->output->writeln( "Unmodified published views can be removed (package fallback will serve them):" );
 
-				foreach( $newViews as $view )
+				foreach( $prunableViews as $view )
 				{
-					$this->output->writeln( "  + resources/views/$view" );
-				}
-			}
-
-			$refreshableViews = $this->getRefreshableViews();
-
-			if( !empty( $refreshableViews ) )
-			{
-				$hasUpdates = true;
-				$this->output->writeln( "Unmodified published views have package updates:" );
-
-				foreach( $refreshableViews as $view )
-				{
-					$this->output->writeln( "  ~ resources/views/$view" );
+					$this->output->writeln( "  - resources/views/$view" );
 				}
 			}
 
@@ -354,142 +337,43 @@ class UpgradeCommand extends Command
 	}
 
 	/**
-	 * Get list of package view files that are not yet present in the installation.
-	 *
-	 * @return array Relative view paths (e.g. "admin/jobs/index.php")
-	 */
-	private function getNewViewFiles(): array
-	{
-		$viewSource = $this->_componentPath . '/resources/views';
-		$viewDest   = $this->_projectPath . '/resources/views';
-
-		if( !is_dir( $viewSource ) )
-		{
-			return [];
-		}
-
-		return $this->findMissingViews( $viewSource, $viewDest, '' );
-	}
-
-	/**
-	 * Package views whose local copies still match the last published checksum
-	 * (never edited) and now differ from the package.
+	 * Published views whose local copies still match the last published checksum.
 	 *
 	 * @return array<int, string>
 	 */
-	private function getRefreshableViews(): array
+	private function getPrunableViews(): array
 	{
-		$viewSource = $this->_componentPath . '/resources/views';
-		$viewDest   = $this->_projectPath . '/resources/views';
+		$viewsRoot = $this->_projectPath . '/resources/views';
+		$published = $this->_installedManifest['published_views'] ?? [];
 
-		if( !is_dir( $viewSource ) )
+		if( !is_array( $published ) || $published === [] )
 		{
 			return [];
 		}
 
-		return $this->findRefreshableViews( $viewSource, $viewDest, $viewDest );
-	}
+		$prunable = [];
 
-	/**
-	 * Recursively collect view files present in the package but missing from
-	 * the installation.
-	 *
-	 * @param string $source Package view directory
-	 * @param string $dest Installation view directory
-	 * @param string $relative Relative path accumulated so far
-	 * @return array Relative view paths
-	 */
-	private function findMissingViews( string $source, string $dest, string $relative ): array
-	{
-		$items = scandir( $source );
-
-		if( $items === false )
+		foreach( array_keys( $published ) as $key )
 		{
-			return [];
-		}
-
-		$missing = [];
-
-		foreach( $items as $item )
-		{
-			if( $item === '.' || $item === '..' )
+			if( !is_string( $key ) || $key === '' || str_contains( $key, '..' ) )
 			{
 				continue;
 			}
 
-			$sourcePath   = $source . '/' . $item;
-			$destPath     = $dest . '/' . $item;
-			$itemRelative = $relative === '' ? $item : $relative . '/' . $item;
-
-			if( is_dir( $sourcePath ) )
-			{
-				$missing = array_merge( $missing, $this->findMissingViews( $sourcePath, $destPath, $itemRelative ) );
-				continue;
-			}
-
-			if( !file_exists( $destPath ) )
-			{
-				$missing[] = $itemRelative;
-			}
-		}
-
-		return $missing;
-	}
-
-	/**
-	 * Recursively collect unmodified published views that the package has changed.
-	 *
-	 * @return array<int, string>
-	 */
-	private function findRefreshableViews( string $source, string $dest, string $viewsRoot ): array
-	{
-		$items = scandir( $source );
-
-		if( $items === false )
-		{
-			return [];
-		}
-
-		$refreshable = [];
-
-		foreach( $items as $item )
-		{
-			if( $item === '.' || $item === '..' )
-			{
-				continue;
-			}
-
-			$sourcePath = $source . '/' . $item;
-			$destPath   = $dest . '/' . $item;
-
-			if( is_dir( $sourcePath ) )
-			{
-				$refreshable = array_merge(
-					$refreshable,
-					$this->findRefreshableViews( $sourcePath, $destPath, $viewsRoot )
-				);
-				continue;
-			}
+			$destPath = $viewsRoot . '/' . $key;
 
 			if( !file_exists( $destPath ) )
 			{
 				continue;
 			}
 
-			if( !$this->isUnmodifiedPublishedView( $destPath, $viewsRoot ) )
+			if( $this->isUnmodifiedPublishedView( $destPath, $viewsRoot ) )
 			{
-				continue;
+				$prunable[] = $key;
 			}
-
-			if( $this->fileHash( $destPath ) === $this->fileHash( $sourcePath ) )
-			{
-				continue;
-			}
-
-			$refreshable[] = $this->publishedViewKey( $destPath, $viewsRoot );
 		}
 
-		return $refreshable;
+		return $prunable;
 	}
 
 	/**
@@ -566,9 +450,9 @@ class UpgradeCommand extends Command
 	/**
 	 * Update view files.
 	 *
-	 * Adds missing views. Refreshes published views whose local copy still
-	 * matches the last published checksum (never edited). Leaves modified
-	 * views alone unless --force-views is set.
+	 * Default: prune unmodified published copies so package views are used
+	 * at runtime. Edited site copies are left alone. --force-views copies
+	 * package files over the site tree. --prompt-views asks per file.
 	 */
 	private function updateViews(): bool
 	{
@@ -577,7 +461,7 @@ class UpgradeCommand extends Command
 
 		if( !is_dir( $viewSource ) )
 		{
-			$this->output->writeln( "  No package views found to copy" );
+			$this->output->writeln( "  No package views found" );
 			return true;
 		}
 
@@ -605,33 +489,138 @@ class UpgradeCommand extends Command
 			return true;
 		}
 
-		$copied = $this->copyNewViews( $viewSource, $viewDest, $force );
-
-		if( $copied > 0 )
+		if( $force )
 		{
-			$this->output->writeln( "\n  Copied $copied view file" . ( $copied !== 1 ? 's' : '' ) );
+			$copied = $this->copyNewViews( $viewSource, $viewDest, true );
+
+			if( $copied > 0 )
+			{
+				$this->output->writeln( "\n  Copied $copied view file" . ( $copied !== 1 ? 's' : '' ) );
+			}
+			else
+			{
+				$this->output->writeln( "  No view files to copy" );
+			}
+
+			$this->output->writeln( "  Package views location: " . $viewSource . "/" );
+
+			return true;
+		}
+
+		$pruned = $this->pruneUnmodifiedViews();
+
+		if( $pruned > 0 )
+		{
+			$this->output->writeln( "\n  Removed $pruned unmodified published view" . ( $pruned !== 1 ? 's' : '' ) );
 		}
 		else
 		{
-			$this->output->writeln( "  No view files to copy" );
+			$this->output->writeln( "  No unmodified published views to remove" );
 		}
 
-		if( !$force )
-		{
-			$this->output->writeln( "  ℹ️  Unmodified published views were refreshed; edited views were left unchanged" );
-		}
-
+		$this->output->writeln( "  ℹ️  Edited views were left unchanged; stock UI is served from the CMS package" );
 		$this->output->writeln( "  Package views location: " . $viewSource . "/" );
 
 		return true;
 	}
 
 	/**
+	 * Delete published views that still match their recorded checksum.
+	 */
+	private function pruneUnmodifiedViews(): int
+	{
+		$viewsRoot = $this->_projectPath . '/resources/views';
+		$published = $this->_installedManifest['published_views'] ?? [];
+
+		if( !is_array( $published ) || $published === [] )
+		{
+			return 0;
+		}
+
+		$pruned = 0;
+
+		foreach( array_keys( $published ) as $key )
+		{
+			if( !is_string( $key ) || $key === '' || str_contains( $key, '..' ) )
+			{
+				continue;
+			}
+
+			$destPath = $viewsRoot . '/' . $key;
+
+			if( !file_exists( $destPath ) )
+			{
+				unset( $this->_installedManifest['published_views'][$key] );
+				continue;
+			}
+
+			if( !$this->isUnmodifiedPublishedView( $destPath, $viewsRoot ) )
+			{
+				continue;
+			}
+
+			$relative = ltrim( str_replace( $this->_projectPath, '', $destPath ), '/' );
+
+			if( !unlink( $destPath ) )
+			{
+				$this->output->error( "  ✗ Failed to remove: $relative" );
+				continue;
+			}
+
+			unset( $this->_installedManifest['published_views'][$key] );
+			$this->removeEmptyViewDirectories( dirname( $destPath ), $viewsRoot );
+			$this->output->writeln( "  ✓ Removed: $relative" );
+			$this->_messages[] = "Removed unmodified view: $relative";
+			$pruned++;
+		}
+
+		return $pruned;
+	}
+
+	/**
+	 * Remove empty directories left after pruning, stopping at the views root.
+	 */
+	private function removeEmptyViewDirectories( string $directory, string $viewsRoot ): void
+	{
+		$directory = rtrim( str_replace( '\\', '/', $directory ), '/' );
+		$viewsRoot = rtrim( str_replace( '\\', '/', $viewsRoot ), '/' );
+
+		while( $directory !== $viewsRoot && str_starts_with( $directory, $viewsRoot . '/' ) )
+		{
+			if( !is_dir( $directory ) )
+			{
+				return;
+			}
+
+			$items = scandir( $directory );
+
+			if( $items === false )
+			{
+				return;
+			}
+
+			$remaining = array_diff( $items, [ '.', '..' ] );
+
+			if( $remaining !== [] )
+			{
+				return;
+			}
+
+			if( !rmdir( $directory ) )
+			{
+				return;
+			}
+
+			$directory = dirname( $directory );
+		}
+	}
+
+	/**
 	 * Recursively copy view files into the destination.
 	 *
-	 * Missing files are added. Existing files are refreshed when they still
-	 * match the last published checksum, or when $force is true. Edited copies
-	 * are left alone. Missing destination directories are created as needed.
+	 * Missing files are added. Existing files are overwritten only when
+	 * $force is true. Edited and unmodified copies are left alone so the
+	 * package fallback can serve stock UI.
 	 *
 	 * @param string $source Source directory
 	 * @param string $dest Destination directory
@@ -669,23 +658,6 @@ class UpgradeCommand extends Command
 
 			$exists = file_exists( $destPath );
 			$shouldCopy = !$exists || $force;
-
-			if( $exists && !$force )
-			{
-				if( $this->isUnmodifiedPublishedView( $destPath, $viewsRoot ) )
-				{
-					$shouldCopy = $this->fileHash( $destPath ) !== $this->fileHash( $sourcePath );
-				}
-				elseif( $this->fileHash( $destPath ) === $this->fileHash( $sourcePath ) )
-				{
-					$this->recordPublishedView( $destPath, $viewsRoot );
-					continue;
-				}
-				else
-				{
-					continue;
-				}
-			}
 
 			if( !$shouldCopy )
 			{

@@ -50,6 +50,31 @@ function boot( string $configPath ) : Application
 	// 5. Environment variables (highest priority)
 	$app = \Neuron\Mvc\boot( $configPath );
 
+	$packageViews = dirname( __DIR__ ) . '/resources/views';
+
+	if( is_dir( $packageViews ) )
+	{
+		if( class_exists( \Neuron\Mvc\Views\ViewLocator::class ) )
+		{
+			\Neuron\Mvc\Views\ViewLocator::appendPath( $packageViews );
+		}
+		else
+		{
+			$registry = Registry::getInstance();
+			$current = $registry->get( RegistryKeys::VIEWS_PATH );
+			$paths = is_array( $current ) ? $current : ( is_string( $current ) && $current !== '' ? [ $current ] : [] );
+
+			if( !in_array( $packageViews, $paths, true ) )
+			{
+				$paths[] = $packageViews;
+				$registry->set(
+					RegistryKeys::VIEWS_PATH,
+					count( $paths ) === 1 ? $paths[0] : $paths
+				);
+			}
+		}
+	}
+
 	// Load site configuration into Registry for global access
 	// This ensures site name, version, etc. are available even when no Content controller runs
 	$settings = $app->getSettingManager();

@@ -23,6 +23,10 @@ cache:
 
 views:
   path: resources/views
+  # Optional extra roots after the site path. The CMS package view directory
+  # is registered automatically at boot; add more only if you need them.
+  # paths:
+  #   - vendor/neuron-php/cms/resources/views
 
 site:
   name: 'Neuron CMS'
