@@ -32,6 +32,46 @@
 					Events
 				</a>
 			</div>
+			<div class="col-12 col-sm-6 col-lg-3">
+				<a href="<?= route_path('admin_teams') ?>" class="btn btn-outline-primary w-100 py-3">
+					<i class="bi bi-people d-block mb-2" style="font-size: 1.5rem;"></i>
+					Teams
+				</a>
+			</div>
+		</div>
+
+		<h6 class="text-muted mt-4 mb-2">Site Builder</h6>
+		<div class="row g-3 mb-4">
+			<div class="col-12 col-sm-6 col-lg-3">
+				<a href="<?= route_path('admin_carousels') ?>" class="btn btn-outline-primary w-100 py-3">
+					<i class="bi bi-collection-play d-block mb-2" style="font-size: 1.5rem;"></i>
+					Carousels
+				</a>
+			</div>
+			<div class="col-12 col-sm-6 col-lg-3">
+				<a href="<?= route_path('admin_testimonials') ?>" class="btn btn-outline-primary w-100 py-3">
+					<i class="bi bi-chat-quote d-block mb-2" style="font-size: 1.5rem;"></i>
+					Testimonials
+				</a>
+			</div>
+			<div class="col-12 col-sm-6 col-lg-3">
+				<a href="<?= route_path('admin_faqs') ?>" class="btn btn-outline-primary w-100 py-3">
+					<i class="bi bi-question-circle d-block mb-2" style="font-size: 1.5rem;"></i>
+					FAQs
+				</a>
+			</div>
+			<div class="col-12 col-sm-6 col-lg-3">
+				<a href="<?= route_path('admin_menus') ?>" class="btn btn-outline-primary w-100 py-3">
+					<i class="bi bi-list d-block mb-2" style="font-size: 1.5rem;"></i>
+					Menus
+				</a>
+			</div>
+			<div class="col-12 col-sm-6 col-lg-3">
+				<a href="<?= route_path('admin_redirects') ?>" class="btn btn-outline-primary w-100 py-3">
+					<i class="bi bi-signpost-split d-block mb-2" style="font-size: 1.5rem;"></i>
+					Redirects
+				</a>
+			</div>
 		</div>
 
 		<h6 class="text-muted mt-4 mb-2">Organization</h6>
