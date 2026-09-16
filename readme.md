@@ -529,8 +529,9 @@ breadcrumbs:
 Customized layouts can call `cms_breadcrumbs( $Breadcrumbs )` and
 `cms_breadcrumb_json_ld( $Breadcrumbs, $CanonicalUrl ?? '' )`.
 
-Remaining site-builder ideas (search, newsletter, comments, and so on) live
-in [ROADMAP.md](ROADMAP.md).
+Full author-facing docs: [Site Builder Guide](https://neuronphp.com/md/cms/guides/site-builder).
+Remaining ideas (search, newsletter, comments, and so on) live in
+[ROADMAP.md](ROADMAP.md).
 
 #### Featured event display modes
 

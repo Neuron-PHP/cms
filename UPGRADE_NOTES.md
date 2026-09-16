@@ -26,6 +26,44 @@ After running `composer update neuron-php/cms`, follow these steps:
 
 ---
 
+## Unreleased (site builder)
+
+These features ship with the next CMS release. After `composer update`, run
+`php neuron cms:upgrade` then `php neuron db:migrate`. Do **not** use
+`--force-views` if you customized layouts.
+
+### Database Changes
+
+New migrations (do not edit existing ones):
+
+- `20260915120000_create_carousels_tables.php`
+- `20260915140000_create_menus_tables.php`
+- `20260915150000_add_seo_to_posts.php`
+- `20260915180000_create_testimonials_tables.php`
+- `20260915190000_create_faqs_tables.php`
+- `20260916120000_create_redirects_table.php`
+
+### New Features
+
+- Named carousels, testimonials, and FAQ groups (`[carousel]`, `[testimonial]`, `[faq]`)
+- CMS-managed header and footer menus (`cms_menu()`)
+- HTTP 301/302 redirects (Content → Redirects)
+- Public breadcrumbs (`cms_breadcrumbs()`, JSON-LD)
+- SEO pack: `/sitemap.xml`, `/robots.txt`, Open Graph, per-post meta
+- Configurable homepage (`homepage.mode`: `blog`, `page`, `landing`)
+- Paginated blog listings (`blog.posts_per_page`)
+
+### Action Required
+
+1. Update `neuron-php/routing` if you want `Router::setRedirectResolver()`. Until that method is installed, keep `Neuron\Cms\Listeners\ApplyRedirectListener` on `request.received`.
+2. If the admin layout is customized, add Content links for Carousels, Testimonials, FAQs, Menus, and Redirects.
+3. If the public layout is customized, include `partials/navigation.php` / `partials/footer-navigation.php` (or call `cms_menu()`), and call `cms_breadcrumbs()` / `cms_breadcrumb_json_ld()`.
+4. Do not rewrite `'/'` to `'/blog'` unless you intend to bypass the Home controller.
+
+See the [Site Builder Guide](https://neuronphp.com/md/cms/guides/site-builder) and `cms/ROADMAP.md` for deferred features.
+
+---
+
 ## Version 2025.12.5
 
 ### Database Changes
