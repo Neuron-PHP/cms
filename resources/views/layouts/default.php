@@ -49,6 +49,13 @@
 	<?php else: ?>
 		<meta name="twitter:card" content="summary">
 	<?php endif; ?>
+	<?php
+	$showBreadcrumbs = !empty( $Breadcrumbs ) && ( $Template ?? '' ) !== 'landing';
+	if( $showBreadcrumbs )
+	{
+		echo cms_breadcrumb_json_ld( $Breadcrumbs, $canonical );
+	}
+	?>
 
 	<link href="https://cdn.jsdelivr.net/npm/bootswatch@5.3.7/dist/<?= htmlspecialchars($theme) ?>/bootstrap.min.css" rel="stylesheet">
 	<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
@@ -69,6 +76,9 @@
 	</div>
 </nav>
 <div class="container pt-5 mt-4">
+	<?php if( !empty( $showBreadcrumbs ) ): ?>
+		<?= cms_breadcrumbs( $Breadcrumbs ) ?>
+	<?php endif; ?>
 	<?= $content ?>
 	<hr>
 	<footer class="footer" role="contentinfo">

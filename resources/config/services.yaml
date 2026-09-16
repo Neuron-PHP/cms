@@ -104,7 +104,13 @@ services:
   Neuron\Cms\Repositories\DatabaseMenuRepository:
     type: autowire
 
+  Neuron\Cms\Repositories\DatabaseRedirectRepository:
+    type: autowire
+
   Neuron\Cms\Services\Menu\MenuService:
+    type: autowire
+
+  Neuron\Cms\Services\Redirect\RedirectService:
     type: autowire
 
   # Builds the optional payment gateway from the `payments` config section.
@@ -189,9 +195,21 @@ services:
     type: alias
     target: Neuron\Cms\Repositories\DatabaseCarouselRepository
 
+  Neuron\Cms\Repositories\ITestimonialRepository:
+    type: alias
+    target: Neuron\Cms\Repositories\DatabaseTestimonialRepository
+
+  Neuron\Cms\Repositories\IFaqRepository:
+    type: alias
+    target: Neuron\Cms\Repositories\DatabaseFaqRepository
+
   Neuron\Cms\Repositories\IMenuRepository:
     type: alias
     target: Neuron\Cms\Repositories\DatabaseMenuRepository
+
+  Neuron\Cms\Repositories\IRedirectRepository:
+    type: alias
+    target: Neuron\Cms\Repositories\DatabaseRedirectRepository
 
 
   # ============================================================================
@@ -410,6 +428,8 @@ services:
       - '@Neuron\Cms\Repositories\DatabaseProductRepository'
       - '@Neuron\Cms\Repositories\DatabaseTeamRepository'
       - '@Neuron\Cms\Repositories\DatabaseCarouselRepository'
+      - '@Neuron\Cms\Repositories\DatabaseTestimonialRepository'
+      - '@Neuron\Cms\Repositories\DatabaseFaqRepository'
 
   Neuron\Cms\Services\Content\ShortcodeParser:
     type: create

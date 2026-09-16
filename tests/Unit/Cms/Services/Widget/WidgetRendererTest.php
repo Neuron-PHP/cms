@@ -243,4 +243,42 @@ class WidgetRendererTest extends TestCase
 
 		$this->assertStringContainsString( '<!-- Carousel widget: carousel not found -->', $result );
 	}
+
+	public function testRenderTestimonialWithoutRepositoryReturnsComment(): void
+	{
+		$renderer = new WidgetRenderer();
+		$result = $renderer->render( 'testimonial', [ 'slug' => 'success-stories' ] );
+
+		$this->assertStringContainsString( '<!-- Testimonial widget requires TestimonialRepository -->', $result );
+	}
+
+	public function testRenderTestimonialDelegatesToWidget(): void
+	{
+		$repository = $this->createMock( \Neuron\Cms\Repositories\ITestimonialRepository::class );
+		$repository->method( 'findBySlug' )->with( 'success-stories' )->willReturn( null );
+
+		$renderer = new WidgetRenderer( null, null, null, null, null, null, null, null, $repository );
+		$result = $renderer->render( 'testimonial', [ 'slug' => 'success-stories' ] );
+
+		$this->assertStringContainsString( '<!-- Testimonial widget: collection not found -->', $result );
+	}
+
+	public function testRenderFaqWithoutRepositoryReturnsComment(): void
+	{
+		$renderer = new WidgetRenderer();
+		$result = $renderer->render( 'faq', [ 'slug' => 'general' ] );
+
+		$this->assertStringContainsString( '<!-- FAQ widget requires FaqRepository -->', $result );
+	}
+
+	public function testRenderFaqDelegatesToWidget(): void
+	{
+		$repository = $this->createMock( \Neuron\Cms\Repositories\IFaqRepository::class );
+		$repository->method( 'findBySlug' )->with( 'general' )->willReturn( null );
+
+		$renderer = new WidgetRenderer( null, null, null, null, null, null, null, null, null, $repository );
+		$result = $renderer->render( 'faq', [ 'slug' => 'general' ] );
+
+		$this->assertStringContainsString( '<!-- FAQ widget: group not found -->', $result );
+	}
 }

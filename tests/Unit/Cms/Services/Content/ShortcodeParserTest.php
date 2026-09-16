@@ -189,6 +189,8 @@ class ShortcodeParserTest extends TestCase
 		$this->assertTrue( $parser->hasShortcode( 'cart' ) );
 		$this->assertTrue( $parser->hasShortcode( 'team' ) );
 		$this->assertTrue( $parser->hasShortcode( 'carousel' ) );
+		$this->assertTrue( $parser->hasShortcode( 'testimonial' ) );
+		$this->assertTrue( $parser->hasShortcode( 'faq' ) );
 	}
 
 	public function testParseStoreShortcodesDelegateToRenderer(): void
@@ -205,6 +207,8 @@ class ShortcodeParserTest extends TestCase
 		$this->assertStringContainsString( '<div>cart</div>', $parser->parse( '[cart]' ) );
 		$this->assertStringContainsString( '<div>team</div>', $parser->parse( '[team slug="staff"]' ) );
 		$this->assertStringContainsString( '<div>carousel</div>', $parser->parse( '[carousel slug="hero"]' ) );
+		$this->assertStringContainsString( '<div>testimonial</div>', $parser->parse( '[testimonial slug="success-stories"]' ) );
+		$this->assertStringContainsString( '<div>faq</div>', $parser->parse( '[faq slug="general"]' ) );
 	}
 
 	public function testParseBuiltInShortcodeWithWidgetRenderer(): void

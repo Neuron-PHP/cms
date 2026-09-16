@@ -30,6 +30,11 @@ site:
   description: 'A modern content management system built with Neuron.'
   title: 'Neuron CMS'
 
+breadcrumbs:
+  enabled: true
+  home_label: Home
+  json_ld: true
+
 # Theme Configuration
 # Controls the Bootswatch theme for different portals
 # Available themes: cerulean, cosmo, cyborg, darkly, flatly, journal, litera,

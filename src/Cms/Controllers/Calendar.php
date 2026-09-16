@@ -74,16 +74,21 @@ class Calendar extends Content
 		// Get all categories for filter
 		$categories = $this->_categoryRepository->all();
 
-		$viewData = [
-			'Title' => 'Calendar | ' . $this->getName(),
-			'Description' => 'View upcoming events',
-			'events' => $events,
-			'categories' => $categories,
-			'currentMonth' => $month,
-			'currentYear' => $year,
-			'startDate' => $startDate,
-			'endDate' => $endDate
-		];
+		$viewData = array_merge(
+			[
+				'Title' => 'Calendar | ' . $this->getName(),
+				'Description' => 'View upcoming events',
+				'events' => $events,
+				'categories' => $categories,
+				'currentMonth' => $month,
+				'currentYear' => $year,
+				'startDate' => $startDate,
+				'endDate' => $endDate
+			],
+			$this->breadcrumbViewData( [
+				[ 'label' => 'Calendar' ]
+			] )
+		);
 
 		return $this->renderHtml(
 			HttpResponseStatus::OK,
@@ -153,12 +158,18 @@ class Calendar extends Content
 			$registrationForm = $widget->render( $widgetAttrs );
 		}
 
-		$viewData = [
-			'Title' => $event->getTitle() . ' | ' . $this->getName(),
-			'Description' => $event->getDescription() ?? $event->getTitle(),
-			'event' => $event,
-			'registrationForm' => $registrationForm
-		];
+		$viewData = array_merge(
+			[
+				'Title' => $event->getTitle() . ' | ' . $this->getName(),
+				'Description' => $event->getDescription() ?? $event->getTitle(),
+				'event' => $event,
+				'registrationForm' => $registrationForm
+			],
+			$this->breadcrumbViewData( [
+				[ 'label' => 'Calendar', 'url' => route_path( 'calendar' ) ?: '/calendar' ],
+				[ 'label' => $event->getTitle() ]
+			] )
+		);
 
 		return $this->renderHtml(
 			HttpResponseStatus::OK,
@@ -290,12 +301,18 @@ class Calendar extends Content
 		// Get upcoming events in this category
 		$events = $this->_eventRepository->getByCategory( $category->getId(), 'published' );
 
-		$viewData = [
-			'Title' => $category->getName() . ' Events | ' . $this->getName(),
-			'Description' => 'Events in ' . $category->getName(),
-			'category' => $category,
-			'events' => $events
-		];
+		$viewData = array_merge(
+			[
+				'Title' => $category->getName() . ' Events | ' . $this->getName(),
+				'Description' => 'Events in ' . $category->getName(),
+				'category' => $category,
+				'events' => $events
+			],
+			$this->breadcrumbViewData( [
+				[ 'label' => 'Calendar', 'url' => route_path( 'calendar' ) ?: '/calendar' ],
+				[ 'label' => $category->getName() ]
+			] )
+		);
 
 		return $this->renderHtml(
 			HttpResponseStatus::OK,

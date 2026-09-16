@@ -83,11 +83,16 @@ class Contact extends Content
 
 		return $this->renderHtml(
 			HttpResponseStatus::OK,
-			[
-				'Title'       => $this->getName() . ' | Contact',
-				'Description' => $this->getDescription(),
-				'ContactForm' => $widget->render( [] )
-			],
+			array_merge(
+				[
+					'Title'       => $this->getName() . ' | Contact',
+					'Description' => $this->getDescription(),
+					'ContactForm' => $widget->render( [] )
+				],
+				$this->breadcrumbViewData( [
+					[ 'label' => 'Contact' ]
+				] )
+			),
 			'index',
 			'default'
 		);

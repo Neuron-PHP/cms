@@ -19,7 +19,10 @@ use Neuron\Cms\Repositories\IProductRepository;
 use Neuron\Cms\Repositories\IOrderItemRepository;
 use Neuron\Cms\Repositories\ITeamRepository;
 use Neuron\Cms\Repositories\ICarouselRepository;
+use Neuron\Cms\Repositories\ITestimonialRepository;
+use Neuron\Cms\Repositories\IFaqRepository;
 use Neuron\Cms\Repositories\IMenuRepository;
+use Neuron\Cms\Repositories\IRedirectRepository;
 use Neuron\Cms\Repositories\DatabaseUserRepository;
 use Neuron\Cms\Repositories\DatabasePostRepository;
 use Neuron\Cms\Repositories\DatabasePageRepository;
@@ -35,8 +38,12 @@ use Neuron\Cms\Repositories\DatabaseProductRepository;
 use Neuron\Cms\Repositories\DatabaseOrderItemRepository;
 use Neuron\Cms\Repositories\DatabaseTeamRepository;
 use Neuron\Cms\Repositories\DatabaseCarouselRepository;
+use Neuron\Cms\Repositories\DatabaseTestimonialRepository;
+use Neuron\Cms\Repositories\DatabaseFaqRepository;
 use Neuron\Cms\Repositories\DatabaseMenuRepository;
+use Neuron\Cms\Repositories\DatabaseRedirectRepository;
 use Neuron\Cms\Services\Menu\MenuService;
+use Neuron\Cms\Services\Redirect\RedirectService;
 use Neuron\Cms\Services\User\IUserCreator;
 use Neuron\Cms\Services\User\IUserUpdater;
 use Neuron\Cms\Services\User\IUserDeleter;
@@ -104,7 +111,10 @@ class CmsServiceProvider implements IServiceProvider
 		$container->bind( IOrderItemRepository::class, DatabaseOrderItemRepository::class );
 		$container->bind( ITeamRepository::class, DatabaseTeamRepository::class );
 		$container->bind( ICarouselRepository::class, DatabaseCarouselRepository::class );
+		$container->bind( ITestimonialRepository::class, DatabaseTestimonialRepository::class );
+		$container->bind( IFaqRepository::class, DatabaseFaqRepository::class );
 		$container->bind( IMenuRepository::class, DatabaseMenuRepository::class );
+		$container->bind( IRedirectRepository::class, DatabaseRedirectRepository::class );
 	}
 
 	/**
@@ -166,7 +176,9 @@ class CmsServiceProvider implements IServiceProvider
 				$c->get( IEventRegistrationRepository::class ),
 				$c->get( IProductRepository::class ),
 				$c->get( ITeamRepository::class ),
-				$c->get( ICarouselRepository::class )
+				$c->get( ICarouselRepository::class ),
+				$c->get( ITestimonialRepository::class ),
+				$c->get( IFaqRepository::class )
 			);
 		});
 
@@ -189,6 +201,12 @@ class CmsServiceProvider implements IServiceProvider
 				$c->get( IMenuRepository::class ),
 				$c->get( IPageRepository::class ),
 				$c->get( SettingManager::class )
+			);
+		});
+
+		$container->singleton( RedirectService::class, function( $c ) {
+			return new RedirectService(
+				$c->get( IRedirectRepository::class )
 			);
 		});
 	}

@@ -92,6 +92,9 @@ class Pages extends Content
 					'website',
 					$page->getMetaKeywords()
 				),
+				$this->breadcrumbViewData( [
+					[ 'label' => $page->getTitle() ]
+				] ),
 				[
 					'Page' => $page,
 					'ContentHtml' => $contentHtml,

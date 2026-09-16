@@ -61,7 +61,7 @@ A modern, database-backed Content Management System for PHP 8.4+ built on the Ne
 
 - **Shortcodes & Widgets**
   - Reusable content widgets rendered in any page or post body
-  - Built in: `[latest-posts]`, `[calendar]`, `[featured-event]`, `[event-registration]`, `[contact]`, `[team]`, `[carousel]`
+  - Built in: `[latest-posts]`, `[calendar]`, `[featured-event]`, `[event-registration]`, `[contact]`, `[team]`, `[carousel]`, `[testimonial]`, `[faq]`
 
 - **Media Library**
   - Upload and manage media through the admin panel
@@ -77,7 +77,11 @@ A modern, database-backed Content Management System for PHP 8.4+ built on the Ne
   - Event, event category, and event-registration management
   - Team roster management (named teams + members, `[team]` shortcode)
   - Carousel management (named sliders, galleries, and logo strips, `[carousel]` shortcode)
+  - Testimonial management (named quote collections, `[testimonial]` shortcode)
+  - FAQ management (named question groups, `[faq]` accordion shortcode)
   - Navigation menu management (header/footer menus with nested items)
+  - Redirect management (301/302 rules for moved URLs)
+  - Public breadcrumbs on pages, posts, calendar, contact, and store
   - Contact submission review
   - Media library
   - User management
@@ -377,6 +381,8 @@ Create CMS-managed pages in the admin panel (Pages → New Page); they're served
 | `[contact]` | A contact form |
 | `[team]` | A named team roster (photo, name, title, optional bio and contact) |
 | `[carousel]` | A named image carousel (slider, gallery, or logo strip) |
+| `[testimonial]` | A named quote collection (cards, list, or featured) |
+| `[faq]` | A named FAQ accordion |
 
 Examples:
 
@@ -393,6 +399,10 @@ Examples:
 [carousel slug="hero"]
 [carousel slug="partners" display="logos"]
 [carousel slug="camp" display="gallery" title="Camp photos"]
+[testimonial slug="success-stories"]
+[testimonial slug="homepage" display="featured" title="What families say"]
+[faq slug="general"]
+[faq slug="intake" title="Intake FAQs" open="first"]
 ```
 
 #### Team rosters
@@ -435,6 +445,45 @@ are stored on each slide.
 If the slug is missing or the carousel is not found, the shortcode renders
 nothing visible (an HTML comment).
 
+#### Testimonials
+
+Create named quote collections in the admin panel (Content → Testimonials).
+Each collection has a slug, a default display mode, and any number of quotes.
+Optional name, role, organization, and photo are stored on each quote.
+
+```text
+[testimonial slug="success-stories"]
+[testimonial slug="homepage" display="featured" title="What families say"]
+```
+
+| Attribute | Values | Default | Description |
+|-----------|--------|---------|-------------|
+| `slug` | collection slug | required | Which collection to render |
+| `display` | `cards`, `list`, `featured` | collection default | `cards` is a quote grid. `list` is stacked blockquotes. `featured` is a large rotating pull-quote. |
+| `title` | any text | _(omitted)_ | Optional heading above the collection. |
+
+If the slug is missing or the collection is not found, the shortcode renders
+nothing visible (an HTML comment).
+
+#### FAQs
+
+Create named FAQ groups in the admin panel (Content → FAQs). Each group has a
+slug and any number of questions. Embed the accordion on any page:
+
+```text
+[faq slug="general"]
+[faq slug="intake" title="Intake FAQs" open="first"]
+```
+
+| Attribute | Values | Default | Description |
+|-----------|--------|---------|-------------|
+| `slug` | group slug | required | Which FAQ group to render |
+| `title` | any text | _(omitted)_ | Optional heading above the accordion. |
+| `open` | `none`, `first`, `all` | `none` | Which items start expanded. `all` allows more than one item open at once. |
+
+If the slug is missing or the group is not found, the shortcode renders
+nothing visible (an HTML comment).
+
 #### Navigation menus
 
 Create named menus in the admin panel (Content → Menus). Each menu is assigned
@@ -453,6 +502,35 @@ menus:
 
 Customized site layouts still work if they include the stock
 `partials/navigation.php` and `partials/footer-navigation.php` files.
+
+#### HTTP redirects
+
+Create 301 or 302 rules in the admin panel (Content → Redirects). Each rule
+maps one path to a new site path or an external URL. Matching happens before
+route resolution, so an old path redirects even if a CMS page still exists
+there. `/admin` paths are never redirected.
+
+Query strings are preserved by default unless the destination already has one.
+Inactive rules are ignored.
+
+#### Public breadcrumbs
+
+The default public layout renders a trail above the page (Home → section →
+current). Pages, blog listings and posts, calendar, contact, and the store
+set it automatically. The homepage and landing-page templates omit it.
+
+```yaml
+breadcrumbs:
+  enabled: true
+  home_label: Home
+  json_ld: true
+```
+
+Customized layouts can call `cms_breadcrumbs( $Breadcrumbs )` and
+`cms_breadcrumb_json_ld( $Breadcrumbs, $CanonicalUrl ?? '' )`.
+
+Remaining site-builder ideas (search, newsletter, comments, and so on) live
+in [ROADMAP.md](ROADMAP.md).
 
 #### Featured event display modes
 
@@ -657,7 +735,7 @@ The CMS provides these pre-configured routes via controller attributes:
   - `/contact` - Contact form
   - `/contact/submit` - Contact form submission (CSRF protected)
 
-- **Admin panel**: `/admin/*` - Full admin interface with authentication (posts, pages, categories, tags, events, event categories, event registrations, contact submissions, menus, carousels, teams, media, users, jobs)
+- **Admin panel**: `/admin/*` - Full admin interface with authentication (posts, pages, categories, tags, events, event categories, event registrations, contact submissions, menus, carousels, testimonials, faqs, teams, redirects, media, users, jobs)
 
 - **Authentication**:
   - `/login` - Login form

@@ -132,15 +132,20 @@ class Store extends Content
 
 		return $this->renderHtml(
 			HttpResponseStatus::OK,
-			[
-				'Title'       => $this->getName() . ' | ' . $this->_storeService->getStoreTitle(),
-				'Description' => 'Shop',
-				'Products'    => $this->_products->allActive(),
-				'StoreTitle'  => $this->_storeService->getStoreTitle(),
-				'Cart'        => $this->_cart->resolve(),
-				'Success'     => $success,
-				'Error'       => $error
-			],
+			array_merge(
+				[
+					'Title'       => $this->getName() . ' | ' . $this->_storeService->getStoreTitle(),
+					'Description' => 'Shop',
+					'Products'    => $this->_products->allActive(),
+					'StoreTitle'  => $this->_storeService->getStoreTitle(),
+					'Cart'        => $this->_cart->resolve(),
+					'Success'     => $success,
+					'Error'       => $error
+				],
+				$this->breadcrumbViewData( [
+					[ 'label' => $this->_storeService->getStoreTitle() ]
+				] )
+			),
 			'index',
 			'default'
 		);
@@ -163,11 +168,14 @@ class Store extends Content
 		{
 			return $this->renderHtml(
 				HttpResponseStatus::NOT_FOUND,
-				[
-					'Title'       => $this->getName() . ' | Not Found',
-					'Description' => 'Product not found',
-					'Message'     => 'Sorry, that product is not available.'
-				],
+				array_merge(
+					[
+						'Title'       => $this->getName() . ' | Not Found',
+						'Description' => 'Product not found',
+						'Message'     => 'Sorry, that product is not available.'
+					],
+					$this->storeBreadcrumbs( 'Not Found' )
+				),
 				'not_found',
 				'default'
 			);
@@ -175,14 +183,17 @@ class Store extends Content
 
 		return $this->renderHtml(
 			HttpResponseStatus::OK,
-			[
-				'Title'       => $this->getName() . ' | ' . ( $product['name'] ?? 'Product' ),
-				'Description' => substr( strip_tags( (string) ( $product['description'] ?? '' ) ), 0, 160 ),
-				'Product'     => $product,
-				'Cart'        => $this->_cart->resolve(),
-				'Success'     => $success,
-				'Error'       => $error
-			],
+			array_merge(
+				[
+					'Title'       => $this->getName() . ' | ' . ( $product['name'] ?? 'Product' ),
+					'Description' => substr( strip_tags( (string) ( $product['description'] ?? '' ) ), 0, 160 ),
+					'Product'     => $product,
+					'Cart'        => $this->_cart->resolve(),
+					'Success'     => $success,
+					'Error'       => $error
+				],
+				$this->storeBreadcrumbs( (string) ( $product['name'] ?? 'Product' ) )
+			),
 			'product',
 			'default'
 		);
@@ -200,13 +211,16 @@ class Store extends Content
 
 		return $this->renderHtml(
 			HttpResponseStatus::OK,
-			[
-				'Title'       => $this->getName() . ' | Cart',
-				'Description' => 'Your cart',
-				'Cart'        => $this->_cart->resolve(),
-				'Success'     => $success,
-				'Error'       => $error
-			],
+			array_merge(
+				[
+					'Title'       => $this->getName() . ' | Cart',
+					'Description' => 'Your cart',
+					'Cart'        => $this->_cart->resolve(),
+					'Success'     => $success,
+					'Error'       => $error
+				],
+				$this->storeBreadcrumbs( 'Cart' )
+			),
 			'cart',
 			'default'
 		);
@@ -407,13 +421,16 @@ class Store extends Content
 
 		return $this->renderHtml(
 			HttpResponseStatus::OK,
-			[
-				'Title'       => $this->getName() . ' | Thank You',
-				'Description' => 'Order received',
-				'Message'     => 'Thank you for your order!',
-				'Order'       => $order,
-				'Items'       => $items
-			],
+			array_merge(
+				[
+					'Title'       => $this->getName() . ' | Thank You',
+					'Description' => 'Order received',
+					'Message'     => 'Thank you for your order!',
+					'Order'       => $order,
+					'Items'       => $items
+				],
+				$this->storeBreadcrumbs( 'Thank You' )
+			),
 			'success',
 			'default'
 		);
@@ -427,11 +444,14 @@ class Store extends Content
 	{
 		return $this->renderHtml(
 			HttpResponseStatus::OK,
-			[
-				'Title'       => $this->getName() . ' | Order Canceled',
-				'Description' => 'Order canceled',
-				'Message'     => 'Your order was canceled and you have not been charged. Your cart is still saved.'
-			],
+			array_merge(
+				[
+					'Title'       => $this->getName() . ' | Order Canceled',
+					'Description' => 'Order canceled',
+					'Message'     => 'Your order was canceled and you have not been charged. Your cart is still saved.'
+				],
+				$this->storeBreadcrumbs( 'Order Canceled' )
+			),
 			'cancel',
 			'default'
 		);
@@ -516,6 +536,17 @@ class Store extends Content
 		{
 			Log::error( 'Order items persistence failed: ' . $e->getMessage() );
 		}
+	}
+
+	/**
+	 * @return array{Breadcrumbs: array<int, array{label: string, url: ?string}>}
+	 */
+	private function storeBreadcrumbs( string $current ): array
+	{
+		return $this->breadcrumbViewData( [
+			[ 'label' => $this->_storeService->getStoreTitle(), 'url' => route_path( 'store_index' ) ?: '/store' ],
+			[ 'label' => $current ]
+		] );
 	}
 
 	/**

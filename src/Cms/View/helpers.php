@@ -353,3 +353,46 @@ if( !function_exists( 'cms_absolute_url' ) )
 		return $base . ( str_starts_with( $path, '/' ) ? $path : '/' . $path );
 	}
 }
+
+if( !function_exists( 'cms_breadcrumbs' ) )
+{
+	/**
+	 * Render a Bootstrap breadcrumb trail.
+	 *
+	 * @param array<int, array{label: string, url: ?string}> $items
+	 */
+	function cms_breadcrumbs( array $items ): string
+	{
+		$settings = \Neuron\Patterns\Registry::getInstance()->get( \Neuron\Core\Registry\RegistryKeys::SETTINGS )
+			?? \Neuron\Patterns\Registry::getInstance()->get( 'Settings' );
+
+		if( !$settings instanceof \Neuron\Data\Settings\SettingManager )
+		{
+			return '';
+		}
+
+		return ( new \Neuron\Cms\Services\Breadcrumb\BreadcrumbService( $settings ) )->render( $items );
+	}
+}
+
+if( !function_exists( 'cms_breadcrumb_json_ld' ) )
+{
+	/**
+	 * JSON-LD BreadcrumbList for the current trail.
+	 *
+	 * @param array<int, array{label: string, url: ?string}> $items
+	 */
+	function cms_breadcrumb_json_ld( array $items, string $canonical = '' ): string
+	{
+		$settings = \Neuron\Patterns\Registry::getInstance()->get( \Neuron\Core\Registry\RegistryKeys::SETTINGS )
+			?? \Neuron\Patterns\Registry::getInstance()->get( 'Settings' );
+
+		if( !$settings instanceof \Neuron\Data\Settings\SettingManager )
+		{
+			return '';
+		}
+
+		return ( new \Neuron\Cms\Services\Breadcrumb\BreadcrumbService( $settings ) )
+			->jsonLd( $items, $canonical );
+	}
+}

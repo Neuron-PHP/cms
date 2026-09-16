@@ -12,6 +12,7 @@ use Neuron\Mvc\IMvcApplication;
 use Neuron\Mvc\Controllers\Base;
 use Neuron\Mvc\Requests\Request;
 use Neuron\Mvc\Responses\HttpResponseStatus;
+use Neuron\Cms\Services\Breadcrumb\BreadcrumbService;
 use Neuron\Patterns\Registry;
 
 /**
@@ -256,6 +257,17 @@ class Content extends Base
 			'OgImage' => $image ?? '',
 			'OgType' => $type,
 			'MetaKeywords' => $keywords ?? '',
+		];
+	}
+
+	/**
+	 * @param array<int, array{label: string, url?: ?string}> $items
+	 * @return array{Breadcrumbs: array<int, array{label: string, url: ?string}>}
+	 */
+	protected function breadcrumbViewData( array $items ): array
+	{
+		return [
+			'Breadcrumbs' => ( new BreadcrumbService( $this->_settings ) )->trail( $items )
 		];
 	}
 

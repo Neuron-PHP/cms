@@ -138,6 +138,10 @@ class Blog extends Content
 					'article',
 					$post->getMetaKeywords()
 				),
+				$this->breadcrumbViewData( [
+					[ 'label' => 'Blog', 'url' => route_path( 'blog' ) ?: '/blog' ],
+					[ 'label' => $post->getTitle() ]
+				] ),
 				[
 					'Categories' => $categories,
 					'Tags'        => $tags,
@@ -341,6 +345,7 @@ class Blog extends Content
 			HttpResponseStatus::OK,
 			array_merge(
 				$this->seoViewData( $title, $description, $canonical ),
+				$this->breadcrumbViewData( $this->listingBreadcrumbs( $extra ) ),
 				[
 					'Posts' => $listing['posts'],
 					'Categories' => $this->_categoryRepository->all(),
@@ -356,6 +361,32 @@ class Blog extends Content
 			),
 			'index'
 		);
+	}
+
+	/**
+	 * @param array<string, mixed> $extra
+	 * @return array<int, array{label: string, url?: ?string}>
+	 */
+	private function listingBreadcrumbs( array $extra ): array
+	{
+		$blog = [ 'label' => 'Blog', 'url' => route_path( 'blog' ) ?: '/blog' ];
+
+		if( isset( $extra['Category'] ) )
+		{
+			return [ $blog, [ 'label' => (string) $extra['Category'] ] ];
+		}
+
+		if( isset( $extra['Tag'] ) )
+		{
+			return [ $blog, [ 'label' => (string) $extra['Tag'] ] ];
+		}
+
+		if( isset( $extra['Author'] ) )
+		{
+			return [ $blog, [ 'label' => (string) $extra['Author'] ] ];
+		}
+
+		return [ [ 'label' => 'Blog' ] ];
 	}
 
 	/**

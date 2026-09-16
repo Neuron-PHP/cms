@@ -60,4 +60,27 @@ class HelpersTest extends TestCase
 
 		$this->assertSame( 'https://example.test/', cms_absolute_url( 'home' ) );
 	}
+
+	public function testCmsBreadcrumbsRendersTrail(): void
+	{
+		$settings = $this->createMock( SettingManager::class );
+		$settings->method( 'get' )->willReturn( null );
+		Registry::getInstance()->set( RegistryKeys::SETTINGS, $settings );
+
+		$html = cms_breadcrumbs( [
+			[ 'label' => 'Home', 'url' => '/' ],
+			[ 'label' => 'About', 'url' => null ]
+		] );
+
+		$this->assertStringContainsString( 'breadcrumb', $html );
+		$this->assertStringContainsString( 'About', $html );
+	}
+
+	public function testCmsBreadcrumbsReturnsEmptyWithoutSettings(): void
+	{
+		Registry::getInstance()->set( RegistryKeys::SETTINGS, null );
+		Registry::getInstance()->set( 'Settings', null );
+
+		$this->assertSame( '', cms_breadcrumbs( [ [ 'label' => 'About', 'url' => null ] ] ) );
+	}
 }

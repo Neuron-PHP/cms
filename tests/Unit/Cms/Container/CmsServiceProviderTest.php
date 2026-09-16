@@ -15,7 +15,10 @@ use Neuron\Cms\Repositories\DatabasePostRepository;
 use Neuron\Cms\Repositories\DatabaseTagRepository;
 use Neuron\Cms\Repositories\DatabaseTeamRepository;
 use Neuron\Cms\Repositories\DatabaseCarouselRepository;
+use Neuron\Cms\Repositories\DatabaseTestimonialRepository;
+use Neuron\Cms\Repositories\DatabaseFaqRepository;
 use Neuron\Cms\Repositories\DatabaseMenuRepository;
+use Neuron\Cms\Repositories\DatabaseRedirectRepository;
 use Neuron\Cms\Repositories\DatabaseUserRepository;
 use Neuron\Cms\Repositories\ICategoryRepository;
 use Neuron\Cms\Repositories\IEventCategoryRepository;
@@ -25,11 +28,15 @@ use Neuron\Cms\Repositories\IPostRepository;
 use Neuron\Cms\Repositories\ITagRepository;
 use Neuron\Cms\Repositories\ITeamRepository;
 use Neuron\Cms\Repositories\ICarouselRepository;
+use Neuron\Cms\Repositories\ITestimonialRepository;
+use Neuron\Cms\Repositories\IFaqRepository;
 use Neuron\Cms\Repositories\IMenuRepository;
+use Neuron\Cms\Repositories\IRedirectRepository;
 use Neuron\Cms\Repositories\IUserRepository;
 use Neuron\Cms\Services\Content\EditorJsRenderer;
 use Neuron\Cms\Services\Content\ShortcodeParser;
 use Neuron\Cms\Services\Menu\MenuService;
+use Neuron\Cms\Services\Redirect\RedirectService;
 use Neuron\Cms\Services\User\Creator;
 use Neuron\Cms\Services\User\Deleter;
 use Neuron\Cms\Services\User\IUserCreator;
@@ -103,7 +110,10 @@ class CmsServiceProviderTest extends TestCase
 		$this->assertInstanceOf( DatabaseEventCategoryRepository::class, $this->container->get( IEventCategoryRepository::class ) );
 		$this->assertInstanceOf( DatabaseTeamRepository::class, $this->container->get( ITeamRepository::class ) );
 		$this->assertInstanceOf( DatabaseCarouselRepository::class, $this->container->get( ICarouselRepository::class ) );
+		$this->assertInstanceOf( DatabaseTestimonialRepository::class, $this->container->get( ITestimonialRepository::class ) );
+		$this->assertInstanceOf( DatabaseFaqRepository::class, $this->container->get( IFaqRepository::class ) );
 		$this->assertInstanceOf( DatabaseMenuRepository::class, $this->container->get( IMenuRepository::class ) );
+		$this->assertInstanceOf( DatabaseRedirectRepository::class, $this->container->get( IRedirectRepository::class ) );
 	}
 
 	public function testRegisterBindsUserServices(): void
@@ -148,6 +158,7 @@ class CmsServiceProviderTest extends TestCase
 		$this->assertInstanceOf( ShortcodeParser::class, $this->container->get( ShortcodeParser::class ) );
 		$this->assertInstanceOf( EditorJsRenderer::class, $this->container->get( EditorJsRenderer::class ) );
 		$this->assertInstanceOf( MenuService::class, $this->container->get( MenuService::class ) );
+		$this->assertInstanceOf( RedirectService::class, $this->container->get( RedirectService::class ) );
 	}
 
 	public function testRegisterCreatesSharedServiceSingletons(): void
@@ -180,7 +191,10 @@ class CmsServiceProviderTest extends TestCase
 			IEventCategoryRepository::class,
 			ITeamRepository::class,
 			ICarouselRepository::class,
+			ITestimonialRepository::class,
+			IFaqRepository::class,
 			IMenuRepository::class,
+			IRedirectRepository::class,
 			// User services (3)
 			IUserCreator::class,
 			IUserUpdater::class,
@@ -195,6 +209,7 @@ class CmsServiceProviderTest extends TestCase
 			ShortcodeParser::class,
 			EditorJsRenderer::class,
 			MenuService::class,
+			RedirectService::class,
 			// Shared services (2)
 			SettingManager::class,
 			Emitter::class,

@@ -34,6 +34,12 @@ site:
   description: 'A modern content management system built with Neuron.'  # Site description
   title: 'Neuron CMS'  # Default page title
 
+# Public breadcrumbs (Home → section → current page)
+breadcrumbs:
+  enabled: true
+  home_label: Home
+  json_ld: true
+
 # Theme Configuration
 # Controls the Bootswatch theme for different portals
 # Themes are role-based: admin, subscriber (member), and guest (public/auth)

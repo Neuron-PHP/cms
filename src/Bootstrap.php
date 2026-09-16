@@ -90,6 +90,25 @@ function boot( string $configPath ) : Application
 
 		// Set container on Application so MVC router can use it for controller instantiation
 		$app->setContainer( $container );
+
+		try
+		{
+			$router = $app->getRouter();
+			$redirectService = $container->get( \Neuron\Cms\Services\Redirect\RedirectService::class );
+
+			if( method_exists( $router, 'setRedirectResolver' ) )
+			{
+				$router->setRedirectResolver(
+					static function( string $uri ) use ( $redirectService ) {
+						return $redirectService->resolveAndApply( $uri );
+					}
+				);
+			}
+		}
+		catch( \Throwable $e )
+		{
+			\Neuron\Log\Log::debug( 'Redirect resolver not registered: ' . $e->getMessage() );
+		}
 	}
 	catch( \Exception $e )
 	{

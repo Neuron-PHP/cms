@@ -3,17 +3,6 @@
 		<div class="col-lg-10 mx-auto">
 			<!-- Category Header -->
 			<div class="mb-4">
-				<nav aria-label="breadcrumb">
-					<ol class="breadcrumb">
-						<li class="breadcrumb-item">
-							<a href="<?= route_path('calendar') ?>">Calendar</a>
-						</li>
-						<li class="breadcrumb-item active" aria-current="page">
-							<?= htmlspecialchars($category->getName()) ?>
-						</li>
-					</ol>
-				</nav>
-
 				<div class="d-flex align-items-center gap-3 mb-3">
 					<span class="badge fs-5"
 					      style="background-color: <?= htmlspecialchars($category->getColor()) ?>">

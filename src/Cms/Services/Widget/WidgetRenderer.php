@@ -9,6 +9,8 @@ use Neuron\Cms\Repositories\IEventRegistrationRepository;
 use Neuron\Cms\Repositories\IProductRepository;
 use Neuron\Cms\Repositories\ITeamRepository;
 use Neuron\Cms\Repositories\ICarouselRepository;
+use Neuron\Cms\Repositories\ITestimonialRepository;
+use Neuron\Cms\Repositories\IFaqRepository;
 use Neuron\Cms\Services\Contact\ContactService;
 use Neuron\Cms\Services\Payment\PaymentService;
 use Neuron\Cms\Services\Store\CartService;
@@ -35,6 +37,8 @@ class WidgetRenderer
 	private ?IProductRepository $_productRepository = null;
 	private ?ITeamRepository $_teamRepository = null;
 	private ?ICarouselRepository $_carouselRepository = null;
+	private ?ITestimonialRepository $_testimonialRepository = null;
+	private ?IFaqRepository $_faqRepository = null;
 
 	public function __construct(
 		?IPostRepository $postRepository = null,
@@ -44,7 +48,9 @@ class WidgetRenderer
 		?IEventRegistrationRepository $eventRegistrationRepository = null,
 		?IProductRepository $productRepository = null,
 		?ITeamRepository $teamRepository = null,
-		?ICarouselRepository $carouselRepository = null
+		?ICarouselRepository $carouselRepository = null,
+		?ITestimonialRepository $testimonialRepository = null,
+		?IFaqRepository $faqRepository = null
 	)
 	{
 		$this->_postRepository = $postRepository;
@@ -55,6 +61,8 @@ class WidgetRenderer
 		$this->_productRepository = $productRepository;
 		$this->_teamRepository = $teamRepository;
 		$this->_carouselRepository = $carouselRepository;
+		$this->_testimonialRepository = $testimonialRepository;
+		$this->_faqRepository = $faqRepository;
 	}
 
 	/**
@@ -79,6 +87,8 @@ class WidgetRenderer
 			'cart' => $this->renderStore( 'cart', $config ),
 			'team' => $this->renderTeam( $config ),
 			'carousel' => $this->renderCarousel( $config ),
+			'testimonial' => $this->renderTestimonial( $config ),
+			'faq' => $this->renderFaq( $config ),
 			default => $this->renderUnknownWidget( $widgetType )
 		};
 	}
@@ -345,6 +355,40 @@ class WidgetRenderer
 		}
 
 		$widget = new CarouselWidget( $this->_carouselRepository );
+
+		return $widget->render( $config );
+	}
+
+	/**
+	 * Render a named testimonial collection.
+	 *
+	 * @param array<string, mixed> $config
+	 */
+	private function renderTestimonial( array $config ): string
+	{
+		if( !$this->_testimonialRepository )
+		{
+			return "<!-- Testimonial widget requires TestimonialRepository -->";
+		}
+
+		$widget = new TestimonialWidget( $this->_testimonialRepository );
+
+		return $widget->render( $config );
+	}
+
+	/**
+	 * Render a named FAQ accordion.
+	 *
+	 * @param array<string, mixed> $config
+	 */
+	private function renderFaq( array $config ): string
+	{
+		if( !$this->_faqRepository )
+		{
+			return "<!-- FAQ widget requires FaqRepository -->";
+		}
+
+		$widget = new FaqWidget( $this->_faqRepository );
 
 		return $widget->render( $config );
 	}
