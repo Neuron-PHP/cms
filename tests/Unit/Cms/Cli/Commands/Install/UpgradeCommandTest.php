@@ -133,6 +133,101 @@ class UpgradeCommandTest extends TestCase
 		}
 	}
 
+	public function testCopyNewViewsRefreshesUnmodifiedPublishedViews(): void
+	{
+		$base   = sys_get_temp_dir() . '/neuron_cms_views_hash_' . uniqid();
+		$source = $base . '/source';
+		$dest   = $base . '/dest';
+
+		$this->writeFile( $source . '/layouts/admin.php', 'PACKAGE_NEW' );
+		$this->writeFile( $dest . '/layouts/admin.php', 'PACKAGE_OLD' );
+
+		$reflection = new \ReflectionClass( $this->command );
+		$manifest = $reflection->getProperty( '_installedManifest' );
+		$manifest->setValue( $this->command, [
+			'published_views' => [
+				'layouts/admin.php' => hash( 'sha256', 'PACKAGE_OLD' )
+			]
+		] );
+
+		try {
+			$method = $reflection->getMethod( 'copyNewViews' );
+
+			$copied = $method->invoke( $this->command, $source, $dest );
+
+			$this->assertEquals( 1, $copied );
+			$this->assertEquals( 'PACKAGE_NEW', file_get_contents( $dest . '/layouts/admin.php' ) );
+
+			$stored = $manifest->getValue( $this->command );
+			$this->assertEquals(
+				hash( 'sha256', 'PACKAGE_NEW' ),
+				$stored['published_views']['layouts/admin.php']
+			);
+		} finally {
+			$this->removeDirectory( $base );
+		}
+	}
+
+	public function testCopyNewViewsPreservesEditedPublishedViews(): void
+	{
+		$base   = sys_get_temp_dir() . '/neuron_cms_views_edited_' . uniqid();
+		$source = $base . '/source';
+		$dest   = $base . '/dest';
+
+		$this->writeFile( $source . '/layouts/admin.php', 'PACKAGE_NEW' );
+		$this->writeFile( $dest . '/layouts/admin.php', 'CUSTOM_LAYOUT' );
+
+		$reflection = new \ReflectionClass( $this->command );
+		$manifest = $reflection->getProperty( '_installedManifest' );
+		$manifest->setValue( $this->command, [
+			'published_views' => [
+				'layouts/admin.php' => hash( 'sha256', 'PACKAGE_OLD' )
+			]
+		] );
+
+		try {
+			$method = $reflection->getMethod( 'copyNewViews' );
+
+			$copied = $method->invoke( $this->command, $source, $dest );
+
+			$this->assertEquals( 0, $copied );
+			$this->assertEquals( 'CUSTOM_LAYOUT', file_get_contents( $dest . '/layouts/admin.php' ) );
+		} finally {
+			$this->removeDirectory( $base );
+		}
+	}
+
+	public function testCopyNewViewsRecordsHashWhenLocalAlreadyMatchesPackage(): void
+	{
+		$base   = sys_get_temp_dir() . '/neuron_cms_views_seed_' . uniqid();
+		$source = $base . '/source';
+		$dest   = $base . '/dest';
+
+		$this->writeFile( $source . '/layouts/admin.php', 'PACKAGE_LAYOUT' );
+		$this->writeFile( $dest . '/layouts/admin.php', 'PACKAGE_LAYOUT' );
+
+		$reflection = new \ReflectionClass( $this->command );
+		$manifest = $reflection->getProperty( '_installedManifest' );
+		$manifest->setValue( $this->command, [] );
+
+		try {
+			$method = $reflection->getMethod( 'copyNewViews' );
+
+			$copied = $method->invoke( $this->command, $source, $dest );
+
+			$this->assertEquals( 0, $copied );
+			$this->assertEquals( 'PACKAGE_LAYOUT', file_get_contents( $dest . '/layouts/admin.php' ) );
+
+			$stored = $manifest->getValue( $this->command );
+			$this->assertEquals(
+				hash( 'sha256', 'PACKAGE_LAYOUT' ),
+				$stored['published_views']['layouts/admin.php']
+			);
+		} finally {
+			$this->removeDirectory( $base );
+		}
+	}
+
 	public function testCopyNewViewsForceOverwritesExistingFiles(): void
 	{
 		$base   = sys_get_temp_dir() . '/neuron_cms_views_force_' . uniqid();

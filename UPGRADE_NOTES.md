@@ -29,7 +29,8 @@ After running `composer update neuron-php/cms`, follow these steps:
 ## Unreleased (site builder)
 
 These features ship with the next CMS release. After `composer update`, run
-`php neuron cms:upgrade` then `php neuron db:migrate`. Do **not** use
+`php neuron cms:upgrade` then `php neuron db:migrate`. Upgrade refreshes
+unmodified published views and leaves edited copies alone. Do **not** use
 `--force-views` if you customized layouts.
 
 ### Database Changes
@@ -156,9 +157,9 @@ php neuron db:migrate
 **Problem:** Running `cms:install` with reinstall overwrites customized views.
 
 **Solution:**
-- Use `php neuron cms:upgrade` instead - it only updates new/critical files
+- Use `php neuron cms:upgrade` instead. It adds missing views and refreshes published views that still match the last published checksum. Edited views are left alone.
 - Use `php neuron cms:upgrade --skip-views` to skip view updates entirely
-- Manually merge view changes by comparing package views with your customizations
+- Use `--prompt-views` to review files that differ, or merge by comparing package views with your copies
 
 ### Schema Drift After Composer Update
 

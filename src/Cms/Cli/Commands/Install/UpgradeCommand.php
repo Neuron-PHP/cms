@@ -313,6 +313,19 @@ class UpgradeCommand extends Command
 				}
 			}
 
+			$refreshableViews = $this->getRefreshableViews();
+
+			if( !empty( $refreshableViews ) )
+			{
+				$hasUpdates = true;
+				$this->output->writeln( "Unmodified published views have package updates:" );
+
+				foreach( $refreshableViews as $view )
+				{
+					$this->output->writeln( "  ~ resources/views/$view" );
+				}
+			}
+
 			// A missing scheduled jobs config can be scaffolded
 			if( !file_exists( $this->_projectPath . '/config/schedule.yaml' )
 				&& file_exists( $this->_componentPath . '/resources/config/schedule.yaml' ) )
@@ -359,6 +372,25 @@ class UpgradeCommand extends Command
 	}
 
 	/**
+	 * Package views whose local copies still match the last published checksum
+	 * (never edited) and now differ from the package.
+	 *
+	 * @return array<int, string>
+	 */
+	private function getRefreshableViews(): array
+	{
+		$viewSource = $this->_componentPath . '/resources/views';
+		$viewDest   = $this->_projectPath . '/resources/views';
+
+		if( !is_dir( $viewSource ) )
+		{
+			return [];
+		}
+
+		return $this->findRefreshableViews( $viewSource, $viewDest, $viewDest );
+	}
+
+	/**
 	 * Recursively collect view files present in the package but missing from
 	 * the installation.
 	 *
@@ -402,6 +434,62 @@ class UpgradeCommand extends Command
 		}
 
 		return $missing;
+	}
+
+	/**
+	 * Recursively collect unmodified published views that the package has changed.
+	 *
+	 * @return array<int, string>
+	 */
+	private function findRefreshableViews( string $source, string $dest, string $viewsRoot ): array
+	{
+		$items = scandir( $source );
+
+		if( $items === false )
+		{
+			return [];
+		}
+
+		$refreshable = [];
+
+		foreach( $items as $item )
+		{
+			if( $item === '.' || $item === '..' )
+			{
+				continue;
+			}
+
+			$sourcePath = $source . '/' . $item;
+			$destPath   = $dest . '/' . $item;
+
+			if( is_dir( $sourcePath ) )
+			{
+				$refreshable = array_merge(
+					$refreshable,
+					$this->findRefreshableViews( $sourcePath, $destPath, $viewsRoot )
+				);
+				continue;
+			}
+
+			if( !file_exists( $destPath ) )
+			{
+				continue;
+			}
+
+			if( !$this->isUnmodifiedPublishedView( $destPath, $viewsRoot ) )
+			{
+				continue;
+			}
+
+			if( $this->fileHash( $destPath ) === $this->fileHash( $sourcePath ) )
+			{
+				continue;
+			}
+
+			$refreshable[] = $this->publishedViewKey( $destPath, $viewsRoot );
+		}
+
+		return $refreshable;
 	}
 
 	/**
@@ -478,8 +566,9 @@ class UpgradeCommand extends Command
 	/**
 	 * Update view files.
 	 *
-	 * Copies only views that do not already exist in the installation. Existing
-	 * view files are never overwritten so user customizations are preserved.
+	 * Adds missing views. Refreshes published views whose local copy still
+	 * matches the last published checksum (never edited). Leaves modified
+	 * views alone unless --force-views is set.
 	 */
 	private function updateViews(): bool
 	{
@@ -520,18 +609,16 @@ class UpgradeCommand extends Command
 
 		if( $copied > 0 )
 		{
-			$label = $force ? 'view file' : 'new view file';
-			$this->output->writeln( "\n  Copied $copied $label" . ( $copied !== 1 ? 's' : '' ) );
+			$this->output->writeln( "\n  Copied $copied view file" . ( $copied !== 1 ? 's' : '' ) );
 		}
 		else
 		{
-			$this->output->writeln( "  No " . ( $force ? '' : 'new ' ) . "view files to copy" );
+			$this->output->writeln( "  No view files to copy" );
 		}
 
 		if( !$force )
 		{
-			$this->output->writeln( "  ℹ️  Existing views were left unchanged to preserve customizations" );
-			$this->output->writeln( "  Compare package views with your installation if needed" );
+			$this->output->writeln( "  ℹ️  Unmodified published views were refreshed; edited views were left unchanged" );
 		}
 
 		$this->output->writeln( "  Package views location: " . $viewSource . "/" );
@@ -542,18 +629,19 @@ class UpgradeCommand extends Command
 	/**
 	 * Recursively copy view files into the destination.
 	 *
-	 * By default, existing files are skipped (never overwritten) to preserve
-	 * user customizations. When $force is true, existing files are overwritten
-	 * with the package versions. Missing destination directories are created as
-	 * needed.
+	 * Missing files are added. Existing files are refreshed when they still
+	 * match the last published checksum, or when $force is true. Edited copies
+	 * are left alone. Missing destination directories are created as needed.
 	 *
 	 * @param string $source Source directory
 	 * @param string $dest Destination directory
 	 * @param bool $force Overwrite existing files when true
+	 * @param string|null $viewsRoot Root of the destination view tree
 	 * @return int Number of files copied
 	 */
-	private function copyNewViews( string $source, string $dest, bool $force = false ): int
+	private function copyNewViews( string $source, string $dest, bool $force = false, ?string $viewsRoot = null ): int
 	{
+		$viewsRoot ??= $dest;
 		$items = scandir( $source );
 
 		if( $items === false )
@@ -575,14 +663,31 @@ class UpgradeCommand extends Command
 
 			if( is_dir( $sourcePath ) )
 			{
-				$copied += $this->copyNewViews( $sourcePath, $destPath, $force );
+				$copied += $this->copyNewViews( $sourcePath, $destPath, $force, $viewsRoot );
 				continue;
 			}
 
 			$exists = file_exists( $destPath );
+			$shouldCopy = !$exists || $force;
 
-			// Preserve customizations unless force overwrite is requested.
 			if( $exists && !$force )
+			{
+				if( $this->isUnmodifiedPublishedView( $destPath, $viewsRoot ) )
+				{
+					$shouldCopy = $this->fileHash( $destPath ) !== $this->fileHash( $sourcePath );
+				}
+				elseif( $this->fileHash( $destPath ) === $this->fileHash( $sourcePath ) )
+				{
+					$this->recordPublishedView( $destPath, $viewsRoot );
+					continue;
+				}
+				else
+				{
+					continue;
+				}
+			}
+
+			if( !$shouldCopy )
 			{
 				continue;
 			}
@@ -602,6 +707,7 @@ class UpgradeCommand extends Command
 				$verb = $exists ? 'Updated' : 'Added';
 				$this->output->writeln( "  ✓ $verb: $relative" );
 				$this->_messages[] = "$verb view: $relative";
+				$this->recordPublishedView( $destPath, $viewsRoot );
 				$copied++;
 			}
 			else
@@ -614,6 +720,70 @@ class UpgradeCommand extends Command
 	}
 
 	/**
+	 * SHA-256 of a file, or an empty string when the file cannot be hashed.
+	 */
+	private function fileHash( string $path ): string
+	{
+		$hash = hash_file( 'sha256', $path );
+
+		return is_string( $hash ) ? $hash : '';
+	}
+
+	/**
+	 * View path relative to the published views root.
+	 */
+	private function publishedViewKey( string $destPath, string $viewsRoot ): string
+	{
+		$destPath  = str_replace( '\\', '/', $destPath );
+		$viewsRoot = rtrim( str_replace( '\\', '/', $viewsRoot ), '/' );
+
+		if( str_starts_with( $destPath, $viewsRoot . '/' ) )
+		{
+			return substr( $destPath, strlen( $viewsRoot ) + 1 );
+		}
+
+		return ltrim( $destPath, '/' );
+	}
+
+	/**
+	 * True when the local file still matches the checksum recorded at publish.
+	 */
+	private function isUnmodifiedPublishedView( string $destPath, string $viewsRoot ): bool
+	{
+		$key = $this->publishedViewKey( $destPath, $viewsRoot );
+		$recorded = $this->_installedManifest['published_views'][$key] ?? null;
+
+		if( !is_string( $recorded ) || $recorded === '' )
+		{
+			return false;
+		}
+
+		$current = $this->fileHash( $destPath );
+
+		return $current !== '' && hash_equals( $recorded, $current );
+	}
+
+	/**
+	 * Record the current checksum of a published view in the installed manifest.
+	 */
+	private function recordPublishedView( string $destPath, string $viewsRoot ): void
+	{
+		$key = $this->publishedViewKey( $destPath, $viewsRoot );
+
+		if( $key === '' )
+		{
+			return;
+		}
+
+		if( !isset( $this->_installedManifest['published_views'] ) || !is_array( $this->_installedManifest['published_views'] ) )
+		{
+			$this->_installedManifest['published_views'] = [];
+		}
+
+		$this->_installedManifest['published_views'][$key] = $this->fileHash( $destPath );
+	}
+
+	/**
 	 * Recursively copy views, prompting before overwriting changed files.
 	 *
 	 * Missing views are added automatically. An existing view is only offered
@@ -623,10 +793,12 @@ class UpgradeCommand extends Command
 	 *
 	 * @param string $source Source directory
 	 * @param string $dest Destination directory
+	 * @param string|null $viewsRoot Root of the destination view tree
 	 * @return int Number of files copied
 	 */
-	private function copyViewsInteractive( string $source, string $dest ): int
+	private function copyViewsInteractive( string $source, string $dest, ?string $viewsRoot = null ): int
 	{
+		$viewsRoot ??= $dest;
 		$items = scandir( $source );
 
 		if( $items === false )
@@ -648,7 +820,7 @@ class UpgradeCommand extends Command
 
 			if( is_dir( $sourcePath ) )
 			{
-				$copied += $this->copyViewsInteractive( $sourcePath, $destPath );
+				$copied += $this->copyViewsInteractive( $sourcePath, $destPath, $viewsRoot );
 				continue;
 			}
 
@@ -661,6 +833,7 @@ class UpgradeCommand extends Command
 				{
 					$this->output->writeln( "  ✓ Added: $relative" );
 					$this->_messages[] = "Added view: $relative";
+					$this->recordPublishedView( $destPath, $viewsRoot );
 					$copied++;
 				}
 
@@ -676,6 +849,7 @@ class UpgradeCommand extends Command
 			// Skip when contents are identical despite the newer timestamp.
 			if( md5_file( $sourcePath ) === md5_file( $destPath ) )
 			{
+				$this->recordPublishedView( $destPath, $viewsRoot );
 				continue;
 			}
 
@@ -694,6 +868,7 @@ class UpgradeCommand extends Command
 			{
 				$this->output->writeln( "  ✓ Updated: $relative" );
 				$this->_messages[] = "Updated view: $relative";
+				$this->recordPublishedView( $destPath, $viewsRoot );
 				$copied++;
 			}
 		}

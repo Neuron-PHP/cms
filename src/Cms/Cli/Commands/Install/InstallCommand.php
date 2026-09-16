@@ -149,6 +149,8 @@ class InstallCommand extends Command
 			}
 		}
 
+		$this->writeCmsManifest();
+
 		// Ask to run migration (skip in force mode)
 		if( !$force )
 		{
@@ -1815,6 +1817,105 @@ class InstallCommand extends Command
 			$this->output->error( "  Error seeding default data: " . $e->getMessage() );
 			return false;
 		}
+	}
+
+	/**
+	 * Record published view checksums so cms:upgrade can refresh unmodified copies.
+	 */
+	protected function writeCmsManifest(): bool
+	{
+		$installedPath = $this->_projectPath . '/.cms-manifest.json';
+		$installed = [];
+
+		if( file_exists( $installedPath ) )
+		{
+			$decoded = json_decode( (string) file_get_contents( $installedPath ), true );
+			$installed = is_array( $decoded ) ? $decoded : [];
+		}
+
+		$packageManifestPath = $this->_componentPath . '/resources/.cms-manifest.json';
+
+		if( file_exists( $packageManifestPath ) )
+		{
+			$package = json_decode( (string) file_get_contents( $packageManifestPath ), true );
+
+			if( is_array( $package ) )
+			{
+				$installed['version'] = $package['version'] ?? ( $installed['version'] ?? 'unknown' );
+				$installed['migrations'] = $package['migrations'] ?? ( $installed['migrations'] ?? [] );
+			}
+		}
+
+		$installed['updated_at'] = date( 'Y-m-d H:i:s' );
+		$installed['published_views'] = $this->collectPublishedViewHashes(
+			$this->_componentPath . '/resources/views',
+			$this->_projectPath . '/resources/views',
+			''
+		);
+
+		$json = json_encode( $installed, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES );
+
+		if( $json === false || file_put_contents( $installedPath, $json . "\n" ) === false )
+		{
+			$this->output->warning( "Failed to write .cms-manifest.json; cms:upgrade may not refresh unmodified views." );
+			return true;
+		}
+
+		return true;
+	}
+
+	/**
+	 * @return array<string, string>
+	 */
+	private function collectPublishedViewHashes( string $source, string $dest, string $relative ): array
+	{
+		if( !is_dir( $source ) )
+		{
+			return [];
+		}
+
+		$items = scandir( $source );
+
+		if( $items === false )
+		{
+			return [];
+		}
+
+		$hashes = [];
+
+		foreach( $items as $item )
+		{
+			if( $item === '.' || $item === '..' )
+			{
+				continue;
+			}
+
+			$itemRelative = $relative === '' ? $item : $relative . '/' . $item;
+			$sourcePath = $source . '/' . $item;
+			$destPath = $dest . '/' . $item;
+
+			if( is_dir( $sourcePath ) )
+			{
+				$hashes = array_merge( $hashes, $this->collectPublishedViewHashes( $sourcePath, $destPath, $itemRelative ) );
+				continue;
+			}
+
+			if( !file_exists( $destPath ) )
+			{
+				continue;
+			}
+
+			$hash = hash_file( 'sha256', $destPath );
+
+			if( is_string( $hash ) )
+			{
+				$hashes[$itemRelative] = $hash;
+			}
+		}
+
+		ksort( $hashes );
+
+		return $hashes;
 	}
 
 }

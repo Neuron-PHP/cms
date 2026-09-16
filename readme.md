@@ -184,7 +184,7 @@ Useful flags:
 - `--skip-views` - don't touch published views
 - `--run-migrations` - run database migrations automatically
 
-The upgrade command preserves your customizations (it won't overwrite views by default) and reports any version-specific notes or breaking changes.
+The upgrade command adds missing views and refreshes published views that were never edited (checksum still matches the last publish). Views you changed are left alone unless you pass `--force-views`.
 
 ## Project Structure
 
