@@ -15,7 +15,9 @@
     RewriteRule ^ %1 [L,R=301]
 
     # Send Requests To Front Controller
+    # Pass the requested path through as the `route` query parameter (QSA keeps
+    # any existing query string) so the router can match it.
     RewriteCond %{REQUEST_FILENAME} !-d
     RewriteCond %{REQUEST_FILENAME} !-f
-    RewriteRule ^ index.php [L]
+    RewriteRule ^(.*)$ index.php?route=/$1 [L,QSA]
 </IfModule>
