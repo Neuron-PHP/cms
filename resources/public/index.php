@@ -10,6 +10,10 @@ use Neuron\Cms\Exceptions\CsrfValidationException;
 use Neuron\Cms\Exceptions\UnauthenticatedException;
 use Neuron\Cms\Exceptions\EmailVerificationRequiredException;
 
+// Apache's working directory is not this folder. The requires below are
+// relative (../vendor, ../config), so make public/ the cwd first.
+chdir( __DIR__ );
+
 require '../vendor/autoload.php';
 
 // Exclude deprecation warnings from being displayed (they will still be logged)

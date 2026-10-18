@@ -396,3 +396,33 @@ if( !function_exists( 'cms_breadcrumb_json_ld' ) )
 			->jsonLd( $items, $canonical );
 	}
 }
+
+if( !function_exists( 'cms_view_path' ) )
+{
+	/**
+	 * Absolute path of a view file, preferring the site copy over the package.
+	 *
+	 * Published views are copied into the site while the views they include
+	 * are not, so includes must resolve through the view roots rather than
+	 * relative to the including file.
+	 *
+	 * @param string $relative Path relative to a view root, e.g. 'partials/navigation.php'
+	 *
+	 * @example
+	 * include cms_view_path( 'partials/navigation.php' );
+	 */
+	function cms_view_path( string $relative ): string
+	{
+		if( class_exists( \Neuron\Mvc\Views\ViewLocator::class ) )
+		{
+			$located = ( new \Neuron\Mvc\Views\ViewLocator() )->locate( $relative );
+
+			if( $located !== null )
+			{
+				return $located;
+			}
+		}
+
+		return dirname( __DIR__, 3 ) . '/resources/views/' . ltrim( $relative, '/' );
+	}
+}
