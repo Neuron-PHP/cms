@@ -83,4 +83,71 @@ class HelpersTest extends TestCase
 
 		$this->assertSame( '', cms_breadcrumbs( [ [ 'label' => 'About', 'url' => null ] ] ) );
 	}
+
+	public function testCmsViewPathPrefersSiteCopy(): void
+	{
+		$site = sys_get_temp_dir() . '/cms_view_path_' . uniqid();
+		mkdir( $site . '/partials', 0755, true );
+		file_put_contents( $site . '/partials/navigation.php', 'site' );
+
+		$previous = Registry::getInstance()->get( RegistryKeys::VIEWS_PATH );
+		Registry::getInstance()->set( RegistryKeys::VIEWS_PATH, [ $site, $this->packageViews() ] );
+
+		try
+		{
+			$this->assertSame( $site . '/partials/navigation.php', cms_view_path( 'partials/navigation.php' ) );
+		}
+		finally
+		{
+			Registry::getInstance()->set( RegistryKeys::VIEWS_PATH, $previous );
+			unlink( $site . '/partials/navigation.php' );
+			rmdir( $site . '/partials' );
+			rmdir( $site );
+		}
+	}
+
+	public function testCmsViewPathFallsBackToPackageWhenSiteLacksView(): void
+	{
+		$site = sys_get_temp_dir() . '/cms_view_path_' . uniqid();
+		mkdir( $site, 0755, true );
+
+		$previous = Registry::getInstance()->get( RegistryKeys::VIEWS_PATH );
+		Registry::getInstance()->set( RegistryKeys::VIEWS_PATH, [ $site, $this->packageViews() ] );
+
+		try
+		{
+			$path = cms_view_path( 'partials/footer-navigation.php' );
+
+			$this->assertSame( $this->packageViews() . '/partials/footer-navigation.php', $path );
+			$this->assertFileExists( $path );
+		}
+		finally
+		{
+			Registry::getInstance()->set( RegistryKeys::VIEWS_PATH, $previous );
+			rmdir( $site );
+		}
+	}
+
+	public function testCmsViewPathFallsBackToPackageWithoutRegisteredRoots(): void
+	{
+		$previousViews = Registry::getInstance()->get( RegistryKeys::VIEWS_PATH );
+		$previousBase = Registry::getInstance()->get( RegistryKeys::BASE_PATH );
+		Registry::getInstance()->set( RegistryKeys::VIEWS_PATH, null );
+		Registry::getInstance()->set( RegistryKeys::BASE_PATH, null );
+
+		try
+		{
+			$this->assertFileExists( cms_view_path( 'partials/navigation.php' ) );
+		}
+		finally
+		{
+			Registry::getInstance()->set( RegistryKeys::VIEWS_PATH, $previousViews );
+			Registry::getInstance()->set( RegistryKeys::BASE_PATH, $previousBase );
+		}
+	}
+
+	private function packageViews(): string
+	{
+		return realpath( __DIR__ . '/../../../../resources/views' );
+	}
 }

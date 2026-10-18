@@ -72,7 +72,7 @@
 		<button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
 			<span class="navbar-toggler-icon"></span>
 		</button>
-		<?php include dirname( __DIR__ ) . '/partials/navigation.php'; ?>
+		<?php include cms_view_path( 'partials/navigation.php' ); ?>
 	</div>
 </nav>
 <div class="container pt-5 mt-4">
@@ -83,7 +83,7 @@
 	<hr>
 	<footer class="footer" role="contentinfo">
 		<div class="text-center small mb-2">
-			<?php include dirname( __DIR__ ) . '/partials/footer-navigation.php'; ?>
+			<?php include cms_view_path( 'partials/footer-navigation.php' ); ?>
 		</div>
 		<div class="text-center small mb-2">
 			<a href="<?= route_path('rss_feed') ?>" class="text-decoration-none" title="Subscribe to RSS Feed">
