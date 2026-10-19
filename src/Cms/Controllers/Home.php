@@ -11,6 +11,7 @@ use Neuron\Cms\Repositories\IPostRepository;
 use Neuron\Cms\Repositories\ITagRepository;
 use Neuron\Cms\Services\Content\EditorJsRenderer;
 use Neuron\Data\Settings\SettingManager;
+use Neuron\Log\Log;
 use Neuron\Mvc\IMvcApplication;
 use Neuron\Mvc\Requests\Request;
 use Neuron\Mvc\Responses\HttpResponseStatus;
@@ -20,9 +21,10 @@ use Neuron\Routing\Attributes\Get;
  * Configurable public homepage.
  *
  * neuron.yaml homepage.mode:
- *   blog    — paginated published posts (default)
- *   page    — a designated CMS page (homepage.page slug)
- *   landing — the stock marketing landing view
+ *   blog       — paginated published posts (default)
+ *   page       — a designated CMS page (homepage.page slug)
+ *   landing    — the stock marketing landing view
+ *   controller — a site controller action (homepage.controller, Class@method)
  *
  * @package Neuron\Cms\Controllers
  */
@@ -63,8 +65,37 @@ class Home extends Content
 		{
 			HomepageMode::PAGE => $this->renderConfiguredPage(),
 			HomepageMode::LANDING => $this->renderLanding(),
+			HomepageMode::CONTROLLER => $this->renderController( $request ),
 			default => $this->renderBlog( $request ),
 		};
+	}
+
+	/**
+	 * Delegate the homepage to the site controller action named by
+	 * homepage.controller ("App\Controllers\Pages@index"). Falls back to the
+	 * landing view when the setting is missing or cannot be resolved.
+	 */
+	private function renderController( Request $request ): string
+	{
+		$target = trim( (string) ( $this->_settings->get( 'homepage', 'controller' ) ?? '' ) );
+		$parts  = explode( '@', $target, 2 );
+
+		if( count( $parts ) !== 2 || $parts[ 0 ] === '' || $parts[ 1 ] === '' )
+		{
+			Log::error( "homepage.controller must be 'Class@method', got '{$target}'" );
+			return $this->renderLanding();
+		}
+
+		[ $class, $method ] = $parts;
+		$app = $this->getApplication();
+
+		if( !class_exists( $class ) || !method_exists( $class, $method ) || !$app->hasContainer() )
+		{
+			Log::error( "homepage.controller '{$target}' could not be resolved" );
+			return $this->renderLanding();
+		}
+
+		return $app->getContainer()->make( $class )->$method( $request );
 	}
 
 	private function renderLanding(): string

@@ -93,11 +93,12 @@ pages:
   show_view_count: true  # Display the view counter on public pages
 
 # Homepage
-# The stock Home controller serves `/`. Site-specific controllers listed first
-# in routing.yaml still take precedence.
+# The stock Home controller serves `/`. Site controllers must not also declare
+# a `/` route (duplicate routes fail startup); use mode `controller` instead.
 homepage:
-  mode: blog      # blog | page | landing
+  mode: blog      # blog | page | landing | controller
   page: welcome   # CMS page slug when mode is page
+  # controller: 'App\Controllers\Pages@index'  # Class@method when mode is controller
 
 # Blog listing
 blog:

@@ -12,6 +12,7 @@ enum HomepageMode: string
 	case BLOG = 'blog';
 	case PAGE = 'page';
 	case LANDING = 'landing';
+	case CONTROLLER = 'controller';
 
 	/**
 	 * @return array<string>
