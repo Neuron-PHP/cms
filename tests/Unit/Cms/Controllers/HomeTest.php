@@ -17,6 +17,7 @@ use Neuron\Data\Settings\SettingManager;
 use Neuron\Mvc\IMvcApplication;
 use Neuron\Mvc\Requests\Request;
 use Neuron\Mvc\Responses\HttpResponseStatus;
+use Neuron\Patterns\Container\IContainer;
 use Neuron\Patterns\Registry;
 use Neuron\Routing\Router;
 use PHPUnit\Framework\TestCase;
@@ -143,13 +144,66 @@ class HomeTest extends TestCase
 		$this->assertTrue( $home->lastData['RegistrationEnabled'] );
 	}
 
+	public function testControllerModeDelegatesToConfiguredAction(): void
+	{
+		$this->settingsMap['homepage']['mode'] = 'controller';
+		$this->settingsMap['homepage']['controller'] = HomepageTargetController::class . '@index';
+
+		$request = new Request();
+		$target = new HomepageTargetController();
+
+		$container = $this->createMock( IContainer::class );
+		$container->expects( $this->once() )
+			->method( 'make' )
+			->with( HomepageTargetController::class )
+			->willReturn( $target );
+
+		$home = $this->home( [], $container );
+		$result = $home->index( $request );
+
+		$this->assertSame( 'site homepage', $result );
+		$this->assertSame( $request, $target->received );
+		$this->assertSame( '', $home->lastView );
+	}
+
+	public function testControllerModeFallsBackToLandingWhenSettingMalformed(): void
+	{
+		$this->settingsMap['homepage']['mode'] = 'controller';
+		$this->settingsMap['homepage']['controller'] = HomepageTargetController::class;
+
+		$home = $this->home();
+		$home->index( new Request() );
+
+		$this->assertSame( 'index', $home->lastView );
+	}
+
+	public function testControllerModeFallsBackToLandingWhenActionMissing(): void
+	{
+		$this->settingsMap['homepage']['mode'] = 'controller';
+		$this->settingsMap['homepage']['controller'] = HomepageTargetController::class . '@missing';
+
+		$container = $this->createMock( IContainer::class );
+		$container->expects( $this->never() )->method( 'make' );
+
+		$home = $this->home( [], $container );
+		$home->index( new Request() );
+
+		$this->assertSame( 'index', $home->lastView );
+	}
+
 	/**
 	 * @param array<class-string, object> $overrides
 	 */
-	private function home( array $overrides = [] ): TestableHome
+	private function home( array $overrides = [], ?IContainer $container = null ): TestableHome
 	{
 		$app = $this->createMock( IMvcApplication::class );
 		$app->method( 'getRouter' )->willReturn( $this->createMock( Router::class ) );
+		$app->method( 'hasContainer' )->willReturn( $container !== null );
+
+		if( $container )
+		{
+			$app->method( 'getContainer' )->willReturn( $container );
+		}
 
 		return new TestableHome(
 			$app,
@@ -189,5 +243,17 @@ class TestableHome extends Home
 		$this->lastView = $page;
 
 		return $page;
+	}
+}
+
+class HomepageTargetController
+{
+	public ?Request $received = null;
+
+	public function index( Request $request ): string
+	{
+		$this->received = $request;
+
+		return 'site homepage';
 	}
 }

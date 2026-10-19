@@ -706,7 +706,7 @@ URL rewrites are transparent (no HTTP redirect) - the browser URL stays the same
 The CMS provides these pre-configured routes via controller attributes:
 
 - **Public homepage**:
-  - `/` - Configurable homepage (`homepage.mode`: blog, page, or landing)
+  - `/` - Configurable homepage (`homepage.mode`: blog, page, landing, or controller — `homepage.controller: 'App\Controllers\Pages@index'` delegates `/` to a site controller)
 
 - **Public blog pages**:
   - `/blog` - Paginated blog listing
