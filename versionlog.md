@@ -1,4 +1,4 @@
-## 0.8.106
+## 0.8.106 2026-10-20
 
 * Added `Neuron\Cms\Jobs\WorkerBootstrap` so `jobs:work` and `jobs:schedule`
   boot the CMS (container, database, events, views). Set
