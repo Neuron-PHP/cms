@@ -138,7 +138,8 @@ cloudinary:
 #   url: sqlite:///storage/database.sqlite3
 #   url: sqlite::memory:  # For in-memory database
 #
-# Environment variable (takes precedence over config file):
+# Environment variable (takes precedence over this section, including for
+# db:migrate; keys it does not carry, such as charset, fall through):
 #   DATABASE_URL=mysql://user:pass@host:3306/dbname
 #
 # You can also mix URL with individual overrides:
@@ -191,13 +192,27 @@ database:
 
 # Job queue (database driver requires the jobs / failed_jobs tables).
 # Install tables with: ./vendor/bin/neuron queue:install
-# Process queues with: ./vendor/bin/neuron jobs:run
+# Process queues with: ./vendor/bin/neuron jobs:run (development) or
+# jobs:schedule + jobs:work as separate services (production).
 queue:
-  driver: database
+  driver: database  # database, redis, file, array, or sync
   default: default
   retry_after: 90
   max_attempts: 3
   backoff: 0
+  # Application booted by `neuron jobs:work` and `neuron jobs:schedule` so jobs
+  # get the CMS container, database connection and event listeners.
+  bootstrap: Neuron\Cms\Jobs\WorkerBootstrap
+  # Uncomment to run more than one `jobs:schedule` instance; each due job is
+  # claimed once through a schedule_locks table on the queue connection.
+  # schedule_lock: database
+  # File touched by `neuron jobs:restart`; workers exit between jobs once it is
+  # newer than their start time. Relative to the site root.
+  # restart_file: storage/jobs.restart
+  # Redis driver (needs the phpredis extension on the worker hosts):
+  # redis:
+  #   url: redis://127.0.0.1:6379/0   # or host / port / password / database
+  #   prefix: neuron:queue
 
 # Migration Configuration
 migrations:
@@ -212,6 +227,9 @@ migrations:
 email:
   test_mode: false  # When enabled, emails are logged instead of being sent (useful for development)
   driver: mail  # Email driver: mail, sendmail, or smtp
+  # Name a queue (e.g. "emails") to send mail from a `neuron jobs:work` worker
+  # instead of inside the web request. Leave empty to send inline.
+  # queue: emails
   from_address: noreply@yourdomain.com  # From address for system emails
   from_name: Your Site Name  # From name for system emails
 

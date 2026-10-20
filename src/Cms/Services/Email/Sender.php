@@ -5,6 +5,7 @@ namespace Neuron\Cms\Services\Email;
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\SMTP;
 use PHPMailer\PHPMailer\Exception as PHPMailerException;
+use Neuron\Cms\Jobs\SendEmailJob;
 use Neuron\Core\Registry\RegistryKeys;
 use Neuron\Data\Settings\SettingManager;
 use Neuron\Log\Log;
@@ -15,6 +16,12 @@ use Neuron\Patterns\Registry;
  * Email sending service.
  *
  * Sends emails with templates using PHPMailer.
+ *
+ * When `email.queue` names a queue in neuron.yaml, send() hands the fully
+ * rendered message to a SendEmailJob on that queue and returns at once; a
+ * worker delivers it. Templates are rendered in the calling process, so the
+ * queued payload is plain strings and no template data has to be serialised.
+ * sendNow() always delivers inline.
  *
  * @package Neuron\Cms\Services\Email
  */
@@ -32,11 +39,87 @@ class Sender
 	private ?string $_replyTo = null;
 	private ?string $_replyToName = null;
 	private array $_smtpTranscript = [];
+	private ?string $_queue = null;
 
 	public function __construct( ?SettingManager $settings = null, string $basePath = '' )
 	{
 		$this->_settings = $settings;
 		$this->_basePath = $basePath ?: getcwd();
+	}
+
+	/**
+	 * Rebuild a Sender from the array produced by toArray().
+	 *
+	 * @param array $data
+	 * @param SettingManager|null $settings
+	 * @param string $basePath
+	 * @return self
+	 */
+	public static function fromArray( array $data, ?SettingManager $settings = null, string $basePath = '' ): self
+	{
+		$sender = new self( $settings, $basePath );
+
+		foreach( $data['to'] ?? [] as $recipient )
+		{
+			$sender->to( $recipient['email'], $recipient['name'] ?? '' );
+		}
+
+		foreach( $data['cc'] ?? [] as $recipient )
+		{
+			$sender->cc( $recipient['email'], $recipient['name'] ?? '' );
+		}
+
+		foreach( $data['bcc'] ?? [] as $recipient )
+		{
+			$sender->bcc( $recipient['email'], $recipient['name'] ?? '' );
+		}
+
+		$sender->subject( (string)( $data['subject'] ?? '' ) );
+		$sender->body( (string)( $data['body'] ?? '' ), (bool)( $data['is_html'] ?? true ) );
+
+		if( !empty( $data['reply_to'] ) )
+		{
+			$sender->replyTo( $data['reply_to'], $data['reply_to_name'] ?? '' );
+		}
+
+		foreach( $data['attachments'] ?? [] as $attachment )
+		{
+			$sender->attach( $attachment['path'], $attachment['name'] ?? '' );
+		}
+
+		return $sender;
+	}
+
+	/**
+	 * The message as a JSON-safe array: what SendEmailJob receives.
+	 *
+	 * @return array
+	 */
+	public function toArray(): array
+	{
+		return [
+			'to' => $this->_to,
+			'cc' => $this->_cc,
+			'bcc' => $this->_bcc,
+			'subject' => $this->_subject,
+			'body' => $this->_body,
+			'is_html' => $this->_isHtml,
+			'reply_to' => $this->_replyTo,
+			'reply_to_name' => $this->_replyToName,
+			'attachments' => $this->_attachments,
+		];
+	}
+
+	/**
+	 * Queue this message on the named queue regardless of `email.queue`.
+	 *
+	 * @param string $queue
+	 * @return self
+	 */
+	public function onQueue( string $queue ): self
+	{
+		$this->_queue = $queue;
+		return $this;
 	}
 
 	/**
@@ -186,9 +269,71 @@ class Sender
 	}
 
 	/**
-	 * Send the email
+	 * Send the email: queued when a queue is configured, otherwise inline.
+	 *
+	 * Returns true as soon as the message is accepted by the queue; delivery
+	 * failures then surface in the worker log and the failed jobs table.
 	 */
 	public function send(): bool
+	{
+		$queue = $this->resolveQueue();
+
+		if( $queue === null )
+		{
+			return $this->sendNow();
+		}
+
+		if( empty( $this->_to ) )
+		{
+			Log::error( 'Email not queued: no recipients' );
+			return false;
+		}
+
+		try
+		{
+			$id = \dispatch( new SendEmailJob(), $this->toArray(), $queue );
+
+			Log::info( "Email queued for {$this->_to[0]['email']} on '{$queue}' ({$id})" );
+
+			return true;
+		}
+		catch( \Throwable $exception )
+		{
+			Log::error( "Email could not be queued, sending inline: {$exception->getMessage()}" );
+
+			return $this->sendNow();
+		}
+	}
+
+	/**
+	 * Queue to use for this message, or null to send inline.
+	 *
+	 * onQueue() wins; then `email.queue` (or legacy `mail.queue`). Empty or
+	 * unset means inline, preserving the pre-queue behaviour.
+	 *
+	 * @return string|null
+	 */
+	private function resolveQueue(): ?string
+	{
+		if( $this->_queue !== null )
+		{
+			return $this->_queue;
+		}
+
+		$configured = $this->_settings?->get( 'email', 'queue' ) ?? $this->_settings?->get( 'mail', 'queue' );
+
+		if( !is_string( $configured ) || trim( $configured ) === '' )
+		{
+			return null;
+		}
+
+		return trim( $configured );
+	}
+
+	/**
+	 * Deliver the email in this process, ignoring any queue configuration.
+	 */
+	public function sendNow(): bool
 	{
 		// Check for test mode or log driver
 		$driver = $this->_settings?->get( 'mail', 'driver' );
