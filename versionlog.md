@@ -1,3 +1,5 @@
+## 0.8.107
+
 ## 0.8.106 2026-10-20
 
 * Added `Neuron\Cms\Jobs\WorkerBootstrap` so `jobs:work` and `jobs:schedule`
