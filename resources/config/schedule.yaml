@@ -11,6 +11,11 @@
 #   args:  optional arguments passed to the job's run() method
 #   queue: optional queue name (dispatches to the queue instead of running inline)
 #
+# Without `queue:` a job runs inside the scheduler process, so a slow job delays
+# everything scheduled after it. If you run a worker (`neuron jobs:work`), add
+# `queue:` to anything that takes more than a second or so, or that talks to
+# the network. The scheduler then only has to enqueue it.
+#
 # The jobs below are shipped with the CMS. Adjust the schedules, retention
 # values, or remove entries to suit your installation.
 

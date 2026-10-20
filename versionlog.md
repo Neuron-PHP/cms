@@ -1,3 +1,20 @@
+## 0.8.106 2026-10-20
+
+* Added `Neuron\Cms\Jobs\WorkerBootstrap` so `jobs:work` and `jobs:schedule`
+  boot the CMS (container, database, events, views). Set
+  `queue.bootstrap: Neuron\Cms\Jobs\WorkerBootstrap` in `neuron.yaml`; the
+  example config ships with it.
+* Email can be queued: set `email.queue` to a queue name (or call
+  `Sender::onQueue()`) and `Sender::send()` dispatches a `SendEmailJob`
+  instead of sending inside the request. Templates are rendered before
+  queuing; delivery failures surface as failed jobs and fall back to inline
+  sending if dispatch itself fails. All existing mail call sites are covered.
+* `Database\ConnectionFactory` delegates to
+  `Neuron\Data\Database\ConnectionFactory`; `DATABASE_URL` now overrides the
+  configured database as the example config has long claimed.
+* `neuron.yaml.example` documents `queue.schedule_lock`, `queue.restart_file`
+  and the `redis` driver; `schedule.yaml` recommends `queue:` for slow jobs.
+
 ## 0.8.105 2026-10-19
 
 ## 0.8.104.1
