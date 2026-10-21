@@ -51,18 +51,46 @@ Requires `neuron-php/mvc` and `neuron-php/jobs` releases that include
 - `routes:list` includes component routes and shows a *Source* column when
   any are present (`--source=` filters by it).
 
+### Security Fix: admin routes now check role
+
+Previously every `/admin` controller used the `auth` filter, which only
+verifies that a session exists. **Any signed-in user, including subscribers,
+could open the dashboard, Users, Payments, Orders and every other admin
+screen.**
+
+- New `Neuron\Cms\Auth\Filters\AdminAuthenticationFilter`, registered as
+  `admin` by `Neuron\Cms\boot()`. Anonymous visitors are still redirected to
+  login; signed-in users whose role is not in the allowed list get a 403.
+- All `Controllers/Admin/*` route groups now declare `filters: ['admin']`.
+- Allowed roles default to `admin`, `editor`, `author` and can be changed
+  with `auth.admin_roles` (see `resources/config/auth.yaml`). Authors stay
+  in because Posts, Pages and Events already scope them to their own content.
+- Because the filter is registered by the package, sites do **not** need to
+  edit their published `app/Initializers/AuthInitializer.php`. The published
+  copy gained a comment showing how to override the filter.
+
+If a site has its own controllers under `/admin`, switch them from `auth` to
+`admin` as well. Member-facing routes keep `auth` / `member`.
+
 ### Breaking Changes
 
-- None. Sites with a customized `layouts/admin.php` or
+- Subscribers can no longer reach `/admin/*` (403). Any workflow that relied
+  on that was relying on the bug.
+- `composer.json` now requires `neuron-php/mvc >=0.9.58` and
+  `neuron-php/jobs >=0.2.24`.
+- Sites with a customized `layouts/admin.php` or
   `admin/dashboard/index.php` keep their copies; add the System dropdown
   from the package view if you want component menu entries.
 
 ### Action Required
 
 1. `composer update`, then `php neuron cms:upgrade` to refresh
-   `neuron.yaml.example`.
-2. Optional: add a `components:` section to `neuron.yaml` if you need to
-   disable a component.
+   `neuron.yaml.example` and `auth.yaml` examples.
+2. Switch any site-specific `/admin` controllers from `filters: ['auth']`
+   to `filters: ['admin']`.
+3. Optional: set `auth.admin_roles` if editors or authors should be kept
+   out; add a `components:` section to `neuron.yaml` if you need to disable
+   a web component.
 
 ---
 

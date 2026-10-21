@@ -29,7 +29,7 @@ use Neuron\Routing\Attributes\RouteGroup;
  *
  * @package Neuron\Cms\Controllers\Admin
  */
-#[RouteGroup(prefix: '/admin', filters: ['auth'])]
+#[RouteGroup(prefix: '/admin', filters: ['admin'])]
 class Pages extends Content
 {
 	private IPageRepository $_pageRepository;

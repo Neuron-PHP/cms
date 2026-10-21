@@ -4,6 +4,7 @@ namespace App\Initializers;
 
 use Neuron\Cms\Services\Auth\Authentication;
 use Neuron\Cms\Services\Auth\CsrfToken;
+use Neuron\Cms\Auth\Filters\AdminAuthenticationFilter;
 use Neuron\Cms\Auth\Filters\AuthenticationFilter;
 use Neuron\Cms\Auth\Filters\CsrfFilter;
 use Neuron\Core\Registry\RegistryKeys;
@@ -81,6 +82,12 @@ class AuthInitializer implements IRunnable
 				// Note: Routes can now combine multiple filters using filters: [auth, csrf]
 				$app->getRouter()->registerFilter( 'auth', $authFilter );
 				$app->getRouter()->registerFilter( 'csrf', $csrfFilter );
+
+				// `admin` (authenticated + staff role) is registered by
+				// Neuron\Cms\boot() with the roles from `auth.admin_roles`.
+				// Re-register it here only to customise it, e.g.:
+				// $app->getRouter()->registerFilter( 'admin',
+				//     new AdminAuthenticationFilter( $authentication, [ 'admin', 'editor' ] ) );
 
 				// Store services in Registry for backward compatibility
 				Registry::getInstance()->set( RegistryKeys::AUTHENTICATION_LEGACY, $authentication );
