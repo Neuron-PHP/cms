@@ -6,6 +6,8 @@ use Neuron\Cms\Controllers\Admin\Jobs;
 use Neuron\Core\Registry\RegistryKeys;
 use Neuron\Data\Settings\Source\Memory;
 use Neuron\Data\Settings\SettingManager;
+use Neuron\Jobs\Queue\QueueManager;
+use Neuron\Jobs\Schedule\DatabaseScheduleLock;
 use Neuron\Mvc\IMvcApplication;
 use Neuron\Mvc\Requests\Request;
 use Neuron\Mvc\Views\ViewContext;
@@ -222,6 +224,113 @@ class JobsTest extends TestCase
 		$this->assertNull( $capturedJobs[0]['queue'] );
 
 		$this->assertEquals( 'reports', $capturedJobs[1]['queue'] );
+	}
+
+	/**
+	 * @runInSeparateProcess
+	 * @preserveGlobalState disabled
+	 */
+	public function testLastTriggeredComesFromDatabaseScheduleLock(): void
+	{
+		$this->writeSchedule(
+			"schedule:\n" .
+			"  cleanupLogs:\n" .
+			"    class: App\\Jobs\\CleanupLogsJob\n" .
+			"    cron: \"0 2 * * *\"\n" .
+			"  neverRan:\n" .
+			"    class: App\\Jobs\\NeverJob\n" .
+			"    cron: \"0 3 * * *\"\n"
+		);
+
+		$this->_settingManager->set( 'queue', 'schedule_lock', 'database' );
+
+		$pdo = new \PDO( 'sqlite::memory:' );
+		$lock = new DatabaseScheduleLock( $pdo );
+		$lock->acquire( 'cleanupLogs', new \DateTimeImmutable( '2026-01-01 02:00:00' ) );
+		$pdo->exec( "UPDATE schedule_locks SET claimed_at = 1700000000" );
+
+		Registry::getInstance()->set(
+			QueueManager::REGISTRY_KEY,
+			new QueueManager( null, [ 'driver' => 'database' ], $pdo )
+		);
+
+		$captured = $this->captureIndex();
+
+		$this->assertTrue( $captured['lastTriggeredAvailable'] );
+		$this->assertSame( date( 'Y-m-d H:i:s', 1700000000 ), $captured['jobs'][0]['lastTriggered'] );
+		$this->assertSame( 1700000000, $captured['jobs'][0]['lastTriggeredAt'] );
+		$this->assertNull( $captured['jobs'][1]['lastTriggered'] );
+		$this->assertFalse( $captured['jobs'][0]['classExists'] );
+	}
+
+	/**
+	 * @runInSeparateProcess
+	 * @preserveGlobalState disabled
+	 */
+	public function testLastTriggeredUnavailableWithoutDatabaseLock(): void
+	{
+		$this->writeSchedule( "schedule:\n  demo:\n    class: App\\Jobs\\DemoJob\n    cron: \"0 1 * * *\"\n" );
+
+		$captured = $this->captureIndex();
+
+		$this->assertFalse( $captured['lastTriggeredAvailable'] );
+		$this->assertArrayHasKey( 'lastTriggered', $captured['jobs'][0] );
+		$this->assertNull( $captured['jobs'][0]['lastTriggered'] );
+	}
+
+	/**
+	 * @runInSeparateProcess
+	 * @preserveGlobalState disabled
+	 */
+	public function testLastTriggeredUnavailableWhenLockConfiguredButQueueIsNotDatabase(): void
+	{
+		$this->writeSchedule( "schedule:\n  demo:\n    class: App\\Jobs\\DemoJob\n    cron: \"0 1 * * *\"\n" );
+
+		$this->_settingManager->set( 'queue', 'schedule_lock', 'database' );
+		Registry::getInstance()->set( QueueManager::REGISTRY_KEY, new QueueManager( null, [ 'driver' => 'array' ] ) );
+
+		$captured = $this->captureIndex();
+
+		$this->assertFalse( $captured['lastTriggeredAvailable'] );
+	}
+
+	/**
+	 * Run index() with the view mocked and return everything passed to with().
+	 */
+	private function captureIndex(): array
+	{
+		$controller = $this->getMockBuilder( Jobs::class )
+			->setConstructorArgs( [ $this->_mockApp, $this->mockSettingManager, $this->mockSessionManager ] )
+			->onlyMethods( [ 'view' ] )
+			->getMock();
+
+		$captured = [];
+
+		$mockViewContext = $this->getMockBuilder( ViewContext::class )
+			->disableOriginalConstructor()
+			->onlyMethods( [ 'title', 'description', 'withCurrentUser', 'withCsrfToken', 'with', 'render' ] )
+			->getMock();
+
+		$mockViewContext->method( 'title' )->willReturn( $mockViewContext );
+		$mockViewContext->method( 'description' )->willReturn( $mockViewContext );
+		$mockViewContext->method( 'withCurrentUser' )->willReturn( $mockViewContext );
+		$mockViewContext->method( 'withCsrfToken' )->willReturn( $mockViewContext );
+		$mockViewContext->method( 'with' )->willReturnCallback(
+			function( $data ) use ( $mockViewContext, &$captured )
+			{
+				if( is_array( $data ) )
+				{
+					$captured = $data + $captured;
+				}
+				return $mockViewContext;
+			}
+		);
+		$mockViewContext->method( 'render' )->willReturn( '<html>Jobs</html>' );
+
+		$controller->method( 'view' )->willReturn( $mockViewContext );
+		$controller->index( new Request() );
+
+		return $captured;
 	}
 
 	/**

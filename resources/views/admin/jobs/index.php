@@ -24,6 +24,9 @@
 							<th>Class</th>
 							<th>Cron</th>
 							<th>Next Run</th>
+							<?php if( !empty( $lastTriggeredAvailable ) ): ?>
+							<th>Last Triggered</th>
+							<?php endif; ?>
 							<th>Queue</th>
 							<th>Arguments</th>
 						</tr>
@@ -32,7 +35,12 @@
 						<?php foreach( $jobs as $job ): ?>
 							<tr>
 								<td><?= htmlspecialchars( $job['name'] ) ?></td>
-								<td><code><?= htmlspecialchars( $job['class'] ) ?></code></td>
+								<td>
+									<code><?= htmlspecialchars( $job['class'] ) ?></code>
+									<?php if( isset( $job['classExists'] ) && !$job['classExists'] ): ?>
+										<span class="badge bg-danger ms-1" title="This class could not be autoloaded">Class missing</span>
+									<?php endif; ?>
+								</td>
 								<td><code><?= htmlspecialchars( $job['cron'] ) ?></code></td>
 								<td>
 									<?php if( !empty( $job['valid'] ) && $job['nextRun'] !== null ): ?>
@@ -41,6 +49,15 @@
 										<span class="badge bg-danger">Invalid cron</span>
 									<?php endif; ?>
 								</td>
+								<?php if( !empty( $lastTriggeredAvailable ) ): ?>
+								<td>
+									<?php if( !empty( $job['lastTriggered'] ) ): ?>
+										<?= htmlspecialchars( $job['lastTriggered'] ) ?>
+									<?php else: ?>
+										<span class="text-muted">never</span>
+									<?php endif; ?>
+								</td>
+								<?php endif; ?>
 								<td>
 									<?php if( !empty( $job['queue'] ) ): ?>
 										<span class="badge bg-info text-dark"><?= htmlspecialchars( (string)$job['queue'] ) ?></span>

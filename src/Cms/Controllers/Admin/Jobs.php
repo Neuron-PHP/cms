@@ -2,26 +2,30 @@
 
 namespace Neuron\Cms\Controllers\Admin;
 
-use Cron\CronExpression;
 use Neuron\Cms\Auth\SessionManager;
 use Neuron\Cms\Controllers\Content;
 use Neuron\Cms\Enums\FlashMessageType;
 use Neuron\Core\Exceptions\NotFound;
 use Neuron\Core\Registry\RegistryKeys;
 use Neuron\Data\Settings\SettingManager;
+use Neuron\Jobs\Queue\DatabaseQueue;
+use Neuron\Jobs\Queue\QueueManager;
+use Neuron\Jobs\Schedule\DatabaseScheduleLock;
+use Neuron\Jobs\Schedule\ScheduleEntry;
+use Neuron\Jobs\Schedule\ScheduleFile;
+use Neuron\Log\Log;
 use Neuron\Mvc\IMvcApplication;
 use Neuron\Mvc\Requests\Request;
 use Neuron\Patterns\Registry;
 use Neuron\Routing\Attributes\Get;
 use Neuron\Routing\Attributes\RouteGroup;
-use Symfony\Component\Yaml\Exception\ParseException;
-use Symfony\Component\Yaml\Yaml;
 
 /**
  * Scheduled jobs controller.
  *
  * Displays the scheduled jobs defined in the application's
- * config/schedule.yaml file. Read-only.
+ * config/schedule.yaml file, with the last time the scheduler claimed each
+ * one when a database schedule lock is in use. Read-only.
  *
  * @package Neuron\Cms\Controllers\Admin
  */
@@ -56,9 +60,19 @@ class Jobs extends Content
 	{
 		$this->initializeCsrfToken();
 
-		$schedulePath = $this->getSchedulePath();
-		$fileExists   = $schedulePath !== null && file_exists( $schedulePath );
-		$jobs         = $fileExists ? $this->loadJobs( $schedulePath ) : [];
+		$schedule   = $this->schedule();
+		$fileExists = $schedule !== null && $schedule->exists();
+		$lastClaims = $fileExists ? $this->lastClaims() : null;
+
+		$jobs = [];
+
+		if( $fileExists )
+		{
+			foreach( $schedule->entries() as $entry )
+			{
+				$jobs[] = $this->present( $entry, $lastClaims );
+			}
+		}
 
 		return $this->view()
 			->title( 'Scheduled Jobs' )
@@ -68,6 +82,7 @@ class Jobs extends Content
 			->with([
 				'jobs' => $jobs,
 				'scheduleFileExists' => $fileExists,
+				'lastTriggeredAvailable' => $lastClaims !== null,
 				FlashMessageType::SUCCESS->viewKey() => $this->getSessionManager()->getFlash( FlashMessageType::SUCCESS->value ),
 				FlashMessageType::ERROR->viewKey() => $this->getSessionManager()->getFlash( FlashMessageType::ERROR->value )
 			])
@@ -75,11 +90,30 @@ class Jobs extends Content
 	}
 
 	/**
-	 * Resolve the absolute path to config/schedule.yaml.
+	 * Row data for one schedule entry.
 	 *
-	 * @return string|null
+	 * @param ScheduleEntry $entry
+	 * @param array<string,int>|null $lastClaims
+	 * @return array
 	 */
-	private function getSchedulePath(): ?string
+	private function present( ScheduleEntry $entry, ?array $lastClaims ): array
+	{
+		$row = $entry->toArray();
+
+		$claimed = $lastClaims[ $entry->getName() ] ?? null;
+
+		$row['lastTriggered'] = $claimed !== null ? date( 'Y-m-d H:i:s', $claimed ) : null;
+		$row['lastTriggeredAt'] = $claimed;
+
+		return $row;
+	}
+
+	/**
+	 * The application's schedule file, or null when no base path is known.
+	 *
+	 * @return ScheduleFile|null
+	 */
+	private function schedule(): ?ScheduleFile
 	{
 		$basePath = $this->resolveBasePath();
 
@@ -88,7 +122,38 @@ class Jobs extends Content
 			return null;
 		}
 
-		return rtrim( $basePath, '/' ) . '/config/schedule.yaml';
+		return ScheduleFile::fromBasePath( $basePath );
+	}
+
+	/**
+	 * Latest claim per schedule entry from the database schedule lock, or
+	 * null when the application is not using one (nothing to show).
+	 *
+	 * @return array<string,int>|null
+	 */
+	private function lastClaims(): ?array
+	{
+		if( $this->_settings->get( 'queue', 'schedule_lock' ) !== 'database' )
+		{
+			return null;
+		}
+
+		try
+		{
+			$driver = QueueManager::fromRegistry()->getDriver();
+
+			if( !$driver instanceof DatabaseQueue )
+			{
+				return null;
+			}
+
+			return ( new DatabaseScheduleLock( $driver->getConnection() ) )->getLastClaims();
+		}
+		catch( \Throwable $e )
+		{
+			Log::warning( 'Scheduled Jobs: could not read schedule lock claims: ' . $e->getMessage() );
+			return null;
+		}
 	}
 
 	/**
@@ -125,72 +190,5 @@ class Jobs extends Content
 		$cwd = getcwd();
 
 		return $cwd !== false ? $cwd : null;
-	}
-
-	/**
-	 * Parse schedule.yaml into a normalized list of jobs for display.
-	 *
-	 * Each entry contains: name, class, cron, args, queue, nextRun, valid.
-	 *
-	 * @param string $path
-	 * @return array
-	 */
-	private function loadJobs( string $path ): array
-	{
-		try
-		{
-			$data = Yaml::parseFile( $path );
-		}
-		catch( ParseException $exception )
-		{
-			return [];
-		}
-
-		$schedule = $data['schedule'] ?? [];
-
-		if( !is_array( $schedule ) )
-		{
-			return [];
-		}
-
-		$jobs = [];
-
-		foreach( $schedule as $name => $job )
-		{
-			if( !is_array( $job ) )
-			{
-				continue;
-			}
-
-			$cron    = (string)( $job['cron'] ?? '' );
-			$nextRun = null;
-			$valid   = false;
-
-			if( $cron !== '' )
-			{
-				try
-				{
-					$nextRun = ( new CronExpression( $cron ) )->getNextRunDate()->format( 'Y-m-d H:i:s' );
-					$valid   = true;
-				}
-				catch( \Exception $exception )
-				{
-					$nextRun = null;
-					$valid   = false;
-				}
-			}
-
-			$jobs[] = [
-				'name'    => (string)$name,
-				'class'   => (string)( $job['class'] ?? '' ),
-				'cron'    => $cron,
-				'args'    => $job['args'] ?? [],
-				'queue'   => $job['queue'] ?? null,
-				'nextRun' => $nextRun,
-				'valid'   => $valid
-			];
-		}
-
-		return $jobs;
 	}
 }

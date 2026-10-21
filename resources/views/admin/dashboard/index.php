@@ -132,12 +132,14 @@
 					Users
 				</a>
 			</div>
+			<?php foreach( \Neuron\Cms\Admin\Navigation::items( \Neuron\Cms\Admin\Navigation::GROUP_SYSTEM ) as $Item ): ?>
 			<div class="col-12 col-sm-6 col-lg-3">
-				<a href="<?= route_path('admin_jobs') ?>" class="btn btn-outline-info w-100 py-3">
-					<i class="bi bi-clock-history d-block mb-2" style="font-size: 1.5rem;"></i>
-					Scheduled Jobs
+				<a href="<?= route_path( $Item['route'] ) ?>" class="btn btn-outline-info w-100 py-3">
+					<i class="bi <?= htmlspecialchars( $Item['icon'] ?? 'bi-gear' ) ?> d-block mb-2" style="font-size: 1.5rem;"></i>
+					<?= htmlspecialchars( $Item['label'] ) ?>
 				</a>
 			</div>
+			<?php endforeach; ?>
 			<div class="col-12 col-sm-6 col-lg-3">
 				<a target="_blank" href="<?= route_path('home') ?>" class="btn btn-outline-success w-100 py-3">
 					<i class="bi bi-eye d-block mb-2" style="font-size: 1.5rem;"></i>
