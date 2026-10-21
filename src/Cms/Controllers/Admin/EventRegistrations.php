@@ -19,7 +19,7 @@ use Neuron\Routing\Attributes\RouteGroup;
  *
  * @package Neuron\Cms\Controllers\Admin
  */
-#[RouteGroup(prefix: '/admin', filters: ['auth'])]
+#[RouteGroup(prefix: '/admin', filters: ['admin'])]
 class EventRegistrations extends Content
 {
 	private const PER_PAGE = 25;

@@ -33,7 +33,7 @@ use Neuron\Routing\Attributes\RouteGroup;
  *
  * @package Neuron\Cms\Controllers\Admin
  */
-#[RouteGroup(prefix: '/admin', filters: ['auth'])]
+#[RouteGroup(prefix: '/admin', filters: ['admin'])]
 class Posts extends Content
 {
 	private IPostRepository $_postRepository;

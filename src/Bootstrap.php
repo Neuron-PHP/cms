@@ -6,8 +6,11 @@ use Neuron\Data\Settings\SettingManager;
 use Neuron\Mvc\Application;
 use Neuron\Mvc\IMvcApplication;
 use Neuron\Orm\Model;
+use Neuron\Cms\Auth\Filters\AdminAuthenticationFilter;
 use Neuron\Cms\Database\ConnectionFactory;
 use Neuron\Cms\Container\Container;
+use Neuron\Cms\Services\Auth\Authentication;
+use Neuron\Patterns\Container\IContainer;
 use Neuron\Patterns\Registry;
 
 // Load authentication helper functions
@@ -116,6 +119,8 @@ function boot( string $configPath ) : Application
 		// Set container on Application so MVC router can use it for controller instantiation
 		$app->setContainer( $container );
 
+		registerAdminFilter( $app, $container );
+
 		try
 		{
 			$router = $app->getRouter();
@@ -176,4 +181,43 @@ function boot( string $configPath ) : Application
 	}
 
 	return $app;
+}
+
+/**
+ * Register the `admin` route filter the admin controllers depend on.
+ *
+ * Lives here rather than in the site's AuthInitializer because that file is
+ * published once at install and not refreshed by cms:upgrade; registering
+ * from the package means every site gets the role check the moment it
+ * updates. A site initializer that runs later may re-register `admin` to
+ * change the allowed roles (or set `auth.admin_roles` in configuration).
+ *
+ * The Authentication service is resolved on first use, not at boot, so a
+ * request that never touches /admin never builds it.
+ *
+ * @param Application $app
+ * @param IContainer $container
+ * @return void
+ */
+function registerAdminFilter( Application $app, IContainer $container ): void
+{
+	if( !$container->has( Authentication::class ) )
+	{
+		\Neuron\Log\Log::debug( 'Authentication service unavailable; admin filter not registered' );
+		return;
+	}
+
+	$roles = $app->getSettingManager()?->get( 'auth', 'admin_roles' );
+
+	if( is_string( $roles ) )
+	{
+		$roles = array_filter( array_map( 'trim', explode( ',', $roles ) ) );
+	}
+
+	$filter = new AdminAuthenticationFilter(
+		static fn() => $container->get( Authentication::class ),
+		is_array( $roles ) && $roles !== [] ? array_values( $roles ) : AdminAuthenticationFilter::DEFAULT_ROLES
+	);
+
+	$app->getRouter()->registerFilter( 'admin', $filter );
 }

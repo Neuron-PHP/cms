@@ -5,6 +5,15 @@ auth:
   # Default authentication driver
   default: session
 
+  # Roles allowed into /admin. The `admin` route filter redirects anonymous
+  # visitors to login and answers 403 to any signed-in user whose role is not
+  # listed (subscribers). Authors are included because the Posts, Pages and
+  # Events screens already limit them to their own content.
+  admin_roles:
+    - admin
+    - editor
+    - author
+
   # Session configuration
   session:
     lifetime: 120  # Session lifetime in minutes (2 hours)

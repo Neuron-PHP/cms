@@ -24,7 +24,7 @@ use Neuron\Routing\Attributes\RouteGroup;
  *
  * @package Neuron\Cms\Controllers\Admin
  */
-#[RouteGroup(prefix: '/admin', filters: ['auth'])]
+#[RouteGroup(prefix: '/admin', filters: ['admin'])]
 class Media extends Content
 {
 	private CloudinaryUploader $_uploader;

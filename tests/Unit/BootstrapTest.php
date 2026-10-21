@@ -91,6 +91,47 @@ YAML;
 		$this->assertInstanceOf( Application::class, $app );
 		$this->assertEquals( '1.0.0', $app->getVersion() );
 	}
+
+	/**
+	 * The admin controllers declare filters: ['admin']; boot() must supply
+	 * it from the package so sites with an older AuthInitializer keep working
+	 * and pick up the role check.
+	 */
+	public function testBootRegistersAdminFilter()
+	{
+		$app = \Neuron\Cms\boot( 'examples/config' );
+
+		$filter = $app->getRouter()->getFilter( 'admin' );
+
+		$this->assertInstanceOf( \Neuron\Cms\Auth\Filters\AdminAuthenticationFilter::class, $filter );
+		$this->assertSame( \Neuron\Cms\Auth\Filters\AdminAuthenticationFilter::DEFAULT_ROLES, $filter->getRoles() );
+	}
+
+	public function testAdminFilterRolesComeFromSettings()
+	{
+		$configDir = sys_get_temp_dir() . '/neuron_cms_admin_roles_' . uniqid();
+		mkdir( $configDir, 0777, true );
+
+		$yaml = file_get_contents( 'examples/config/neuron.yaml' );
+		file_put_contents( $configDir . '/neuron.yaml', $yaml . "\nauth:\n  admin_roles:\n    - admin\n    - editor\n" );
+
+		try
+		{
+			// Base::initSettings() reuses whatever SettingManager is already in
+			// the Registry, so start clean or the previous boot's settings win.
+			Registry::getInstance()->reset();
+
+			$app = \Neuron\Cms\boot( $configDir );
+
+			$this->assertSame( [ 'admin', 'editor' ], $app->getRouter()->getFilter( 'admin' )->getRoles() );
+		}
+		finally
+		{
+			Registry::getInstance()->reset();
+			@unlink( $configDir . '/neuron.yaml' );
+			@rmdir( $configDir );
+		}
+	}
 	
 	/**
 	 * Test Boot function with missing config file (falls back to environment)

@@ -32,7 +32,7 @@ class ContactSubmissionsTest extends TestCase
 
 		$args = $attributes[0]->getArguments();
 		$this->assertSame( '/admin', $args['prefix'] ?? null );
-		$this->assertContains( 'auth', $args['filters'] ?? [] );
+		$this->assertContains( 'admin', $args['filters'] ?? [] );
 	}
 
 	public function testDestroyRouteHasCsrfFilter(): void

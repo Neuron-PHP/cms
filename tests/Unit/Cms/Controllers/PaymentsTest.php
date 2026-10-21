@@ -214,6 +214,7 @@ class PaymentsTest extends TestCase
 			$filters = $attribute->getArguments()['filters'] ?? [];
 			$this->assertNotContains( 'csrf', $filters, 'webhook must not require a CSRF token' );
 			$this->assertNotContains( 'auth', $filters, 'webhook must not require authentication' );
+			$this->assertNotContains( 'admin', $filters, 'webhook must not require a staff account' );
 		}
 	}
 
