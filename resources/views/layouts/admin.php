@@ -69,6 +69,19 @@
 							<li><a class="dropdown-item" href="<?= route_path('admin_users') ?>"><i class="bi bi-people me-2"></i>All Users</a></li>
 						</ul>
 					</li>
+					<?php $SystemNav = \Neuron\Cms\Admin\Navigation::items( \Neuron\Cms\Admin\Navigation::GROUP_SYSTEM ); ?>
+					<?php if( !empty( $SystemNav ) ): ?>
+					<li class="nav-item dropdown">
+						<a class="nav-link dropdown-toggle" href="#" id="systemDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+							System
+						</a>
+						<ul class="dropdown-menu" aria-labelledby="systemDropdown">
+							<?php foreach( $SystemNav as $Item ): ?>
+							<li><a class="dropdown-item" href="<?= route_path( $Item['route'] ) ?>"><?php if( $Item['icon'] ): ?><i class="bi <?= htmlspecialchars( $Item['icon'] ) ?> me-2"></i><?php endif; ?><?= htmlspecialchars( $Item['label'] ) ?></a></li>
+							<?php endforeach; ?>
+						</ul>
+					</li>
+					<?php endif; ?>
 					<li class="nav-item">
 						<a class="nav-link" href="<?= route_path('home') ?>">View Site</a>
 					</li>

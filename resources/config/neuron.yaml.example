@@ -214,6 +214,17 @@ queue:
   #   url: redis://127.0.0.1:6379/0   # or host / port / password / database
   #   prefix: neuron:queue
 
+# Web Components
+# Installed packages that declare `extra.neuron.mvc-provider` in their
+# composer.json are picked up at boot: their routes, views and admin menu
+# entries appear without any site wiring (e.g. neuron-php/labor-board adds
+# System → Queue). Turn discovery off entirely, or opt individual components
+# out by provider class, and their routes and menu entries disappear.
+# components:
+#   discovery: true
+#   disabled:
+#     - Neuron\LaborBoard\Provider
+
 # Migration Configuration
 migrations:
   path: db/migrate  # Path to migrations directory (relative to project root)

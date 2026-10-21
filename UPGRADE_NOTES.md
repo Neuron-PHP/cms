@@ -26,6 +26,46 @@ After running `composer update neuron-php/cms`, follow these steps:
 
 ---
 
+## Unreleased (web components)
+
+Requires `neuron-php/mvc` and `neuron-php/jobs` releases that include
+`Neuron\Mvc\Components` and `Neuron\Jobs\Schedule\ScheduleFile`.
+
+### New Features
+
+- **Web component discovery.** Packages that declare `extra.neuron.mvc-provider`
+  in their `composer.json` are loaded by the MVC application at boot. Their
+  routes are registered after the site's own, their views are appended after
+  the site's, and they can add entries to the admin menu through
+  `Neuron\Mvc\Components\INavigationProvider`.
+- **System menu.** The admin layout gains a *System* dropdown (next to *Users*)
+  listing Scheduled Jobs plus whatever installed components contribute to the
+  `system` group. The dashboard's *Users & Settings* tiles come from the same
+  list. Entries whose route is not registered are dropped automatically.
+- **Scheduled Jobs page.** Now built on `Neuron\Jobs\Schedule\ScheduleFile`,
+  flags job classes that cannot be autoloaded, and, when
+  `queue.schedule_lock: database` is set, shows *Last Triggered* from the
+  `schedule_locks` table.
+- `components.discovery` / `components.disabled` in `neuron.yaml` (see
+  `neuron.yaml.example`) turn component loading off or skip named providers.
+- `routes:list` includes component routes and shows a *Source* column when
+  any are present (`--source=` filters by it).
+
+### Breaking Changes
+
+- None. Sites with a customized `layouts/admin.php` or
+  `admin/dashboard/index.php` keep their copies; add the System dropdown
+  from the package view if you want component menu entries.
+
+### Action Required
+
+1. `composer update`, then `php neuron cms:upgrade` to refresh
+   `neuron.yaml.example`.
+2. Optional: add a `components:` section to `neuron.yaml` if you need to
+   disable a component.
+
+---
+
 ## Unreleased (site builder)
 
 These features ship with the next CMS release. After `composer update`, run
