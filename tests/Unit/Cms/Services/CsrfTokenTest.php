@@ -6,11 +6,12 @@ use Neuron\Core\System\FakeRandom;
 use PHPUnit\Framework\TestCase;
 use Neuron\Cms\Services\Auth\CsrfToken;
 use Neuron\Cms\Auth\SessionManager;
+use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
+use PHPUnit\Framework\Attributes\PreserveGlobalState;
 
-/**
- * @runTestsInSeparateProcesses
- * @preserveGlobalState disabled
- */
+#[RunTestsInSeparateProcesses]
+#[PreserveGlobalState( false )]
+
 class CsrfTokenTest extends TestCase
 {
 	private CsrfToken $_csrfToken;

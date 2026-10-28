@@ -10,11 +10,12 @@ use Neuron\Cms\Repositories\DatabaseMenuRepository;
 use Neuron\Data\Settings\SettingManager;
 use PHPUnit\Framework\TestCase;
 use PDO;
+use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
+use PHPUnit\Framework\Attributes\PreserveGlobalState;
 
-/**
- * @runTestsInSeparateProcesses
- * @preserveGlobalState disabled
- */
+#[RunTestsInSeparateProcesses]
+#[PreserveGlobalState( false )]
+
 class DatabaseMenuRepositoryTest extends TestCase
 {
 	private PDO $pdo;

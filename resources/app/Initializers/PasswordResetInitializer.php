@@ -39,9 +39,9 @@ class PasswordResetInitializer implements IRunnable
 		// Check if database is configured
 		try
 		{
-			$settingNames = $settings->getSectionSettingNames( 'database' );
+			$database = $settings->getSection( 'database' );
 
-			if( !empty( $settingNames ) )
+			if( !empty( $database ) )
 			{
 				// Get site configuration
 				$siteUrl = $settings->get( 'site', 'url' ) ?? 'http://localhost:8000';

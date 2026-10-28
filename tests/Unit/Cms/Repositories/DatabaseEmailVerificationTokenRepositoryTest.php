@@ -8,11 +8,12 @@ use Neuron\Cms\Models\EmailVerificationToken;
 use Neuron\Data\Settings\SettingManager;
 use PDO;
 use DateTimeImmutable;
+use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
+use PHPUnit\Framework\Attributes\PreserveGlobalState;
 
-/**
- * @runTestsInSeparateProcesses
- * @preserveGlobalState disabled
- */
+#[RunTestsInSeparateProcesses]
+#[PreserveGlobalState( false )]
+
 class DatabaseEmailVerificationTokenRepositoryTest extends TestCase
 {
 	private DatabaseEmailVerificationTokenRepository $repository;

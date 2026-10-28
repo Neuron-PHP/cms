@@ -9,11 +9,12 @@ use Neuron\Cms\Repositories\DatabaseTestimonialRepository;
 use Neuron\Data\Settings\SettingManager;
 use PHPUnit\Framework\TestCase;
 use PDO;
+use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
+use PHPUnit\Framework\Attributes\PreserveGlobalState;
 
-/**
- * @runTestsInSeparateProcesses
- * @preserveGlobalState disabled
- */
+#[RunTestsInSeparateProcesses]
+#[PreserveGlobalState( false )]
+
 class DatabaseTestimonialRepositoryTest extends TestCase
 {
 	private PDO $pdo;

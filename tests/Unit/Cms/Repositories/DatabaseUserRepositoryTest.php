@@ -10,11 +10,12 @@ use Neuron\Data\Settings\SettingManager;
 use Neuron\Orm\Model;
 use PDO;
 use DateTimeImmutable;
+use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
+use PHPUnit\Framework\Attributes\PreserveGlobalState;
 
-/**
- * @runTestsInSeparateProcesses
- * @preserveGlobalState disabled
- */
+#[RunTestsInSeparateProcesses]
+#[PreserveGlobalState( false )]
+
 class DatabaseUserRepositoryTest extends TestCase
 {
 	private DatabaseUserRepository $repository;

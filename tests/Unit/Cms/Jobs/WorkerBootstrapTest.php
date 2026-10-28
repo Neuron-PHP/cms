@@ -8,6 +8,8 @@ use Neuron\Jobs\Bootstrap\IWorkerBootstrap;
 use Neuron\Mvc\Application;
 use Neuron\Patterns\Container\IContainer;
 use Neuron\Patterns\Registry;
+use PHPUnit\Framework\Attributes\PreserveGlobalState;
+use PHPUnit\Framework\Attributes\RunInSeparateProcess;
 use PHPUnit\Framework\TestCase;
 
 class WorkerBootstrapTest extends TestCase
@@ -56,6 +58,8 @@ class WorkerBootstrapTest extends TestCase
 		$app->finish();
 	}
 
+	#[RunInSeparateProcess]
+	#[PreserveGlobalState( false )]
 	public function testShippedInitializersRunInACliProcess(): void
 	{
 		// Point the runner at the initializers the CMS ships to sites, since

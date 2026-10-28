@@ -10,11 +10,12 @@ use Neuron\Data\Settings\SettingManager;
 use Neuron\Data\Settings\Source\Memory;
 use Neuron\Patterns\Registry;
 use PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
+use PHPUnit\Framework\Attributes\PreserveGlobalState;
 
-/**
- * @runTestsInSeparateProcesses
- * @preserveGlobalState disabled
- */
+#[RunTestsInSeparateProcesses]
+#[PreserveGlobalState( false )]
+
 class MonthlyPaymentReportJobTest extends TestCase
 {
 	protected function setUp(): void

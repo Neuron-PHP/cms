@@ -7,11 +7,12 @@ use Neuron\Cms\Repositories\DatabaseRedirectRepository;
 use Neuron\Data\Settings\SettingManager;
 use PHPUnit\Framework\TestCase;
 use PDO;
+use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
+use PHPUnit\Framework\Attributes\PreserveGlobalState;
 
-/**
- * @runTestsInSeparateProcesses
- * @preserveGlobalState disabled
- */
+#[RunTestsInSeparateProcesses]
+#[PreserveGlobalState( false )]
+
 class DatabaseRedirectRepositoryTest extends TestCase
 {
 	private PDO $pdo;

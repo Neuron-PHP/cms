@@ -3,6 +3,7 @@
 namespace Tests\Cms\Controllers\Admin;
 
 use Neuron\Routing\Attributes\RouteGroup;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -11,9 +12,7 @@ use PHPUnit\Framework\TestCase;
  */
 class AdminRouteGroupFilterTest extends TestCase
 {
-	/**
-	 * @dataProvider adminControllers
-	 */
+	#[DataProvider( 'adminControllers' )]
 	public function testAdminControllersUseTheAdminFilter( string $class ): void
 	{
 		$attributes = ( new \ReflectionClass( $class ) )->getAttributes( RouteGroup::class );
@@ -28,7 +27,7 @@ class AdminRouteGroupFilterTest extends TestCase
 		$this->assertNotContains( 'auth', $filters, "$class must not fall back to the authentication-only filter" );
 	}
 
-	public function adminControllers(): array
+	public static function adminControllers(): array
 	{
 		$dir = dirname( __DIR__, 5 ) . '/src/Cms/Controllers/Admin';
 		$cases = [];
