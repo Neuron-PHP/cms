@@ -9,11 +9,12 @@ use Neuron\Data\Settings\Source\Memory;
 use Neuron\Patterns\Registry;
 use PDO;
 use PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
+use PHPUnit\Framework\Attributes\PreserveGlobalState;
 
-/**
- * @runTestsInSeparateProcesses
- * @preserveGlobalState disabled
- */
+#[RunTestsInSeparateProcesses]
+#[PreserveGlobalState( false )]
+
 class PruneContentRevisionsJobTest extends TestCase
 {
 	private string $dbPath;

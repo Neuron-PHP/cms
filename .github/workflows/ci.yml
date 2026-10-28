@@ -67,7 +67,7 @@ jobs:
         TEST_DB_NAME: cms_test
         TEST_DB_USER: ${{ matrix.database == 'mysql' && 'root' || 'postgres' }}
         TEST_DB_PASSWORD: test_password
-      run: vendor/bin/phpunit -c tests/phpunit.xml --testsuite=unit --coverage-clover coverage.xml --coverage-filter src
+      run: vendor/bin/phpunit -c tests/phpunit.xml --testsuite=unit --coverage-clover coverage.xml
 
     - name: Run Integration Tests
       env:

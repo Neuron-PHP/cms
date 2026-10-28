@@ -12,11 +12,12 @@ use Neuron\Data\Settings\SettingManager;
 use Neuron\Orm\Model;
 use DateTimeImmutable;
 use PDO;
+use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
+use PHPUnit\Framework\Attributes\PreserveGlobalState;
 
-/**
- * @runTestsInSeparateProcesses
- * @preserveGlobalState disabled
- */
+#[RunTestsInSeparateProcesses]
+#[PreserveGlobalState( false )]
+
 class AuthenticationTest extends TestCase
 {
 	private Authentication $_authentication;

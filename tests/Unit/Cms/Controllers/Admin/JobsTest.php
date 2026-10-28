@@ -14,6 +14,8 @@ use Neuron\Mvc\Views\ViewContext;
 use Neuron\Patterns\Registry;
 use Neuron\Routing\Router;
 use PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\Attributes\RunInSeparateProcess;
+use PHPUnit\Framework\Attributes\PreserveGlobalState;
 
 class JobsTest extends TestCase
 {
@@ -102,9 +104,10 @@ class JobsTest extends TestCase
 	 * (only the legacy key is). The base path must resolve from the configured
 	 * system.base_path setting instead.
 	 *
-	 * @runInSeparateProcess
-	 * @preserveGlobalState disabled
 	 */
+	#[RunInSeparateProcess]
+	#[PreserveGlobalState( false )]
+
 	public function testResolvesBasePathFromSystemSettingWithoutRegistry(): void
 	{
 		// Configure system.base_path and place schedule.yaml under it.
@@ -160,10 +163,9 @@ class JobsTest extends TestCase
 		$this->assertEquals( 'demo', $capturedJobs[0]['name'] );
 	}
 
-	/**
-	 * @runInSeparateProcess
-	 * @preserveGlobalState disabled
-	 */
+		#[RunInSeparateProcess]
+	#[PreserveGlobalState( false )]
+
 	public function testIndexRendersView(): void
 	{
 		$this->writeSchedule(
@@ -226,10 +228,9 @@ class JobsTest extends TestCase
 		$this->assertEquals( 'reports', $capturedJobs[1]['queue'] );
 	}
 
-	/**
-	 * @runInSeparateProcess
-	 * @preserveGlobalState disabled
-	 */
+		#[RunInSeparateProcess]
+	#[PreserveGlobalState( false )]
+
 	public function testLastTriggeredComesFromDatabaseScheduleLock(): void
 	{
 		$this->writeSchedule(
@@ -263,10 +264,9 @@ class JobsTest extends TestCase
 		$this->assertFalse( $captured['jobs'][0]['classExists'] );
 	}
 
-	/**
-	 * @runInSeparateProcess
-	 * @preserveGlobalState disabled
-	 */
+		#[RunInSeparateProcess]
+	#[PreserveGlobalState( false )]
+
 	public function testLastTriggeredUnavailableWithoutDatabaseLock(): void
 	{
 		$this->writeSchedule( "schedule:\n  demo:\n    class: App\\Jobs\\DemoJob\n    cron: \"0 1 * * *\"\n" );
@@ -278,10 +278,9 @@ class JobsTest extends TestCase
 		$this->assertNull( $captured['jobs'][0]['lastTriggered'] );
 	}
 
-	/**
-	 * @runInSeparateProcess
-	 * @preserveGlobalState disabled
-	 */
+		#[RunInSeparateProcess]
+	#[PreserveGlobalState( false )]
+
 	public function testLastTriggeredUnavailableWhenLockConfiguredButQueueIsNotDatabase(): void
 	{
 		$this->writeSchedule( "schedule:\n  demo:\n    class: App\\Jobs\\DemoJob\n    cron: \"0 1 * * *\"\n" );
@@ -333,10 +332,9 @@ class JobsTest extends TestCase
 		return $captured;
 	}
 
-	/**
-	 * @runInSeparateProcess
-	 * @preserveGlobalState disabled
-	 */
+		#[RunInSeparateProcess]
+	#[PreserveGlobalState( false )]
+
 	public function testIndexWithMissingScheduleFile(): void
 	{
 		Registry::getInstance()->set( RegistryKeys::BASE_PATH, $this->_basePath );

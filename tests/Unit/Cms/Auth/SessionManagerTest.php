@@ -4,11 +4,12 @@ namespace Tests\Cms\Auth;
 
 use PHPUnit\Framework\TestCase;
 use Neuron\Cms\Auth\SessionManager;
+use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
+use PHPUnit\Framework\Attributes\PreserveGlobalState;
 
-/**
- * @runTestsInSeparateProcesses
- * @preserveGlobalState disabled
- */
+#[RunTestsInSeparateProcesses]
+#[PreserveGlobalState( false )]
+
 class SessionManagerTest extends TestCase
 {
 	private SessionManager $sessionManager;

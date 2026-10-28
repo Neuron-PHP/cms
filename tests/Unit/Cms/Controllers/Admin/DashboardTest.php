@@ -12,6 +12,8 @@ use Neuron\Mvc\Views\ViewContext;
 use Neuron\Patterns\Registry;
 use Neuron\Routing\Router;
 use PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\Attributes\RunInSeparateProcess;
+use PHPUnit\Framework\Attributes\PreserveGlobalState;
 
 class DashboardTest extends TestCase
 {
@@ -80,10 +82,9 @@ class DashboardTest extends TestCase
 		$this->assertInstanceOf( Dashboard::class, $controller );
 	}
 
-	/**
-	 * @runInSeparateProcess
-	 * @preserveGlobalState disabled
-	 */
+		#[RunInSeparateProcess]
+	#[PreserveGlobalState( false )]
+
 	public function testIndexRendersView(): void
 	{
 		// Mock the controller to test view() method chain
@@ -112,10 +113,9 @@ class DashboardTest extends TestCase
 		$this->assertEquals( '<html>Dashboard</html>', $result );
 	}
 
-	/**
-	 * @runInSeparateProcess
-	 * @preserveGlobalState disabled
-	 */
+		#[RunInSeparateProcess]
+	#[PreserveGlobalState( false )]
+
 	public function testIndexPassesRecentContactSubmissionsToView(): void
 	{
 		$submissions = [
@@ -161,10 +161,9 @@ class DashboardTest extends TestCase
 		$this->assertSame( 12, $captured['TotalSubmissions'] );
 	}
 
-	/**
-	 * @runInSeparateProcess
-	 * @preserveGlobalState disabled
-	 */
+		#[RunInSeparateProcess]
+	#[PreserveGlobalState( false )]
+
 	public function testIndexRendersWhenSubmissionRepositoryFails(): void
 	{
 		$repository = $this->createMock( IContactSubmissionRepository::class );

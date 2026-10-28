@@ -27,6 +27,7 @@ use Neuron\Payments\Dto\Refund;
 use Neuron\Payments\Dto\Subscription;
 use Neuron\Payments\Dto\WebhookEvent;
 use Neuron\Payments\IPaymentGateway;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use PDO;
 
@@ -218,9 +219,7 @@ class PaymentsTest extends TestCase
 		}
 	}
 
-	/**
-	 * @dataProvider amountProvider
-	 */
+	#[DataProvider( 'amountProvider' )]
 	public function testResolveAmount( array $post, ?float $expected, bool $expectError ): void
 	{
 		$_POST = $post;

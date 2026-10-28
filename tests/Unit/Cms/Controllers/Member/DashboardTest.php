@@ -12,6 +12,8 @@ use Neuron\Mvc\Requests\Request;
 use Neuron\Mvc\Views\ViewContext;
 use Neuron\Patterns\Registry;
 use PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\Attributes\RunInSeparateProcess;
+use PHPUnit\Framework\Attributes\PreserveGlobalState;
 
 class DashboardTest extends TestCase
 {
@@ -82,10 +84,9 @@ class DashboardTest extends TestCase
 		$this->assertInstanceOf( Dashboard::class, $controller );
 	}
 
-	/**
-	 * @runInSeparateProcess
-	 * @preserveGlobalState disabled
-	 */
+		#[RunInSeparateProcess]
+	#[PreserveGlobalState( false )]
+
 	public function testIndexRendersView(): void
 	{
 		$mockSettingManager = Registry::getInstance()->get( RegistryKeys::SETTINGS );

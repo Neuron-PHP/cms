@@ -18,7 +18,7 @@ class WidgetRegistryTest extends TestCase
 		$parser
 			->expects( $this->once() )
 			->method( 'register' )
-			->with( 'test-widget', $this->isType( 'callable' ) );
+			->with( 'test-widget', $this->isCallable() );
 
 		$registry = new WidgetRegistry( $parser );
 		$registry->register( $widget );

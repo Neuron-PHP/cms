@@ -13,6 +13,8 @@ use Neuron\Patterns\Registry;
 use Neuron\Routing\Router;
 use org\bovigo\vfs\vfsStream;
 use PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\Attributes\RunInSeparateProcess;
+use PHPUnit\Framework\Attributes\PreserveGlobalState;
 
 class ContentControllerTest extends TestCase
 {
@@ -164,7 +166,7 @@ class ContentControllerTest extends TestCase
 			->method( 'renderMarkdown' )
 			->with(
 				HttpResponseStatus::OK,
-				$this->isType( 'array' ),
+				$this->isArray(),
 				'test-page'
 			)
 			->willReturn( '<html>Test Content</html>' );
@@ -178,9 +180,10 @@ class ContentControllerTest extends TestCase
 
 	/**
 	 * Test getSessionManager returns SessionManager instance
-	 * @runInSeparateProcess
-	 * @preserveGlobalState disabled
 	 */
+	#[RunInSeparateProcess]
+	#[PreserveGlobalState( false )]
+
 	public function testGetSessionManager()
 	{
 		$controller = new Content( $this->_mockApp, $this->_settingManager, $this->mockSessionManager );
@@ -200,9 +203,10 @@ class ContentControllerTest extends TestCase
 
 	/**
 	 * Test flash method sets flash message
-	 * @runInSeparateProcess
-	 * @preserveGlobalState disabled
 	 */
+	#[RunInSeparateProcess]
+	#[PreserveGlobalState( false )]
+
 	public function testFlash()
 	{
 		$controller = new Content( $this->_mockApp, $this->_settingManager, $this->mockSessionManager );

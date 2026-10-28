@@ -50,17 +50,29 @@ class DeleterTest extends TestCase
 		$user3 = new User();
 		$user3->setId( 3 );
 
+		$expectedIds = [ 1, 2, 3 ];
+		$users = [ $user1, $user2, $user3 ];
+		$findCall = 0;
+		$deleteCall = 0;
+
 		$this->_mockUserRepository
 			->expects( $this->exactly( 3 ) )
 			->method( 'findById' )
-			->withConsecutive( [ 1 ], [ 2 ], [ 3 ] )
-			->willReturnOnConsecutiveCalls( $user1, $user2, $user3 );
+			->willReturnCallback( function( int $id ) use ( &$findCall, $expectedIds, $users ) {
+				$this->assertSame( $expectedIds[ $findCall ], $id );
+
+				return $users[ $findCall++ ];
+			} );
 
 		$this->_mockUserRepository
 			->expects( $this->exactly( 3 ) )
 			->method( 'delete' )
-			->withConsecutive( [ 1 ], [ 2 ], [ 3 ] )
-			->willReturn( true );
+			->willReturnCallback( function( int $id ) use ( &$deleteCall, $expectedIds ) {
+				$this->assertSame( $expectedIds[ $deleteCall ], $id );
+				$deleteCall++;
+
+				return true;
+			} );
 
 		$this->_deleter->delete( 1 );
 		$this->_deleter->delete( 2 );

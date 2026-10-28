@@ -10,12 +10,14 @@ use Neuron\Core\Exceptions\Forbidden;
 use Neuron\Core\Registry\RegistryKeys;
 use Neuron\Patterns\Registry;
 use Neuron\Routing\RouteMap;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
+use PHPUnit\Framework\Attributes\PreserveGlobalState;
 
-/**
- * @runTestsInSeparateProcesses
- * @preserveGlobalState disabled
- */
+#[RunTestsInSeparateProcesses]
+#[PreserveGlobalState( false )]
+
 class AdminAuthenticationFilterTest extends TestCase
 {
 	private Authentication $_authentication;
@@ -86,9 +88,7 @@ class AdminAuthenticationFilterTest extends TestCase
 		$this->assertNull( Registry::getInstance()->get( RegistryKeys::AUTH_USER ), 'refused user must not be published' );
 	}
 
-	/**
-	 * @dataProvider staffRoles
-	 */
+	#[DataProvider( 'staffRoles' )]
 	public function testStaffRolesPassAndArePublished( string $role ): void
 	{
 		$user = $this->user( 3, $role );
@@ -101,7 +101,7 @@ class AdminAuthenticationFilterTest extends TestCase
 		$this->assertSame( $role, Registry::getInstance()->get( RegistryKeys::AUTH_USER_ROLE ) );
 	}
 
-	public function staffRoles(): array
+	public static function staffRoles(): array
 	{
 		return [
 			'admin'  => [ User::ROLE_ADMIN ],

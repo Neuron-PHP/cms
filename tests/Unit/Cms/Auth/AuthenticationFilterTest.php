@@ -9,13 +9,16 @@ use Neuron\Cms\Models\User;
 use Neuron\Routing\RouteMap;
 use Neuron\Patterns\Registry;
 use PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
+use PHPUnit\Framework\Attributes\PreserveGlobalState;
 
 /**
  * Unit tests for admin authentication filter
  *
- * @runTestsInSeparateProcesses
- * @preserveGlobalState disabled
  */
+#[RunTestsInSeparateProcesses]
+#[PreserveGlobalState( false )]
+
 class AuthenticationFilterTest extends TestCase
 {
 	private Authentication $_authentication;

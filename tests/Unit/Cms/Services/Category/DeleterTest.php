@@ -50,17 +50,29 @@ class DeleterTest extends TestCase
 		$category3 = new Category();
 		$category3->setId( 10 );
 
+		$expectedIds = [ 1, 5, 10 ];
+		$categories = [ $category1, $category2, $category3 ];
+		$findCall = 0;
+		$deleteCall = 0;
+
 		$this->_mockCategoryRepository
 			->expects( $this->exactly( 3 ) )
 			->method( 'findById' )
-			->withConsecutive( [ 1 ], [ 5 ], [ 10 ] )
-			->willReturnOnConsecutiveCalls( $category1, $category2, $category3 );
+			->willReturnCallback( function( int $id ) use ( &$findCall, $expectedIds, $categories ) {
+				$this->assertSame( $expectedIds[ $findCall ], $id );
+
+				return $categories[ $findCall++ ];
+			} );
 
 		$this->_mockCategoryRepository
 			->expects( $this->exactly( 3 ) )
 			->method( 'delete' )
-			->withConsecutive( [ 1 ], [ 5 ], [ 10 ] )
-			->willReturn( true );
+			->willReturnCallback( function( int $id ) use ( &$deleteCall, $expectedIds ) {
+				$this->assertSame( $expectedIds[ $deleteCall ], $id );
+				$deleteCall++;
+
+				return true;
+			} );
 
 		$this->_deleter->delete( 1 );
 		$this->_deleter->delete( 5 );

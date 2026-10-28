@@ -8,11 +8,12 @@ use Neuron\Cms\Repositories\DatabaseTeamRepository;
 use Neuron\Data\Settings\SettingManager;
 use PHPUnit\Framework\TestCase;
 use PDO;
+use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
+use PHPUnit\Framework\Attributes\PreserveGlobalState;
 
-/**
- * @runTestsInSeparateProcesses
- * @preserveGlobalState disabled
- */
+#[RunTestsInSeparateProcesses]
+#[PreserveGlobalState( false )]
+
 class DatabaseTeamRepositoryTest extends TestCase
 {
 	private PDO $pdo;

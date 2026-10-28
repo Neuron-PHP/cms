@@ -2,6 +2,7 @@
 
 namespace Tests;
 
+use Neuron\Core\Registry\RegistryKeys;
 use Neuron\Mvc\Application;
 use Neuron\Patterns\Registry;
 use org\bovigo\vfs\vfsStream;
@@ -14,10 +15,16 @@ class BootstrapTest extends TestCase
 {
 	private $root;
 	private $originalEnv;
+	private mixed $previousSettings;
 
 	protected function setUp(): void
 	{
 		parent::setUp();
+
+		// Application::initSettings() reuses a SettingManager left in the
+		// Registry by an earlier test. Boot must load this test's config.
+		$this->previousSettings = Registry::getInstance()->get( RegistryKeys::SETTINGS );
+		Registry::getInstance()->set( RegistryKeys::SETTINGS, null );
 
 		// Create virtual filesystem
 		$this->root = vfsStream::setup( 'test' );
@@ -31,6 +38,8 @@ class BootstrapTest extends TestCase
 	
 	protected function tearDown(): void
 	{
+		Registry::getInstance()->set( RegistryKeys::SETTINGS, $this->previousSettings );
+
 		// Restore original environment
 		$_ENV = $this->originalEnv;
 		
