@@ -2,6 +2,7 @@
 
 namespace Tests\Cms\Services\Media;
 
+use Cloudinary\Api\ApiResponse;
 use PHPUnit\Framework\TestCase;
 use Neuron\Cms\Services\Media\CloudinaryUploader;
 use Neuron\Data\Settings\SettingManager;
@@ -443,7 +444,7 @@ class CloudinaryUploaderTest extends TestCase
 						       $options['resource_type'] === 'image';
 					} )
 				)
-				->willReturn( [
+				->willReturn( new ApiResponse( [
 					'secure_url' => 'https://res.cloudinary.com/test/image.jpg',
 					'public_id' => 'test-folder/image',
 					'width' => 800,
@@ -452,7 +453,7 @@ class CloudinaryUploaderTest extends TestCase
 					'bytes' => 12345,
 					'resource_type' => 'image',
 					'created_at' => '2024-01-01T00:00:00Z'
-				] );
+				], [] ) );
 
 			// Use reflection to inject the mock
 			$reflection = new \ReflectionClass( $uploader );
@@ -511,13 +512,13 @@ class CloudinaryUploaderTest extends TestCase
 						       in_array( 'test-tag', $options['tags'] );
 					} )
 				)
-				->willReturn( [
+				->willReturn( new ApiResponse( [
 					'secure_url' => 'https://res.cloudinary.com/test/custom-folder/my-image.jpg',
 					'public_id' => 'custom-folder/my-image',
 					'width' => 1024,
 					'height' => 768,
 					'format' => 'jpg'
-				] );
+				], [] ) );
 
 			// Use reflection to inject the mock
 			$reflection = new \ReflectionClass( $uploader );
@@ -565,13 +566,13 @@ class CloudinaryUploaderTest extends TestCase
 					       $options['folder'] === 'test-folder';
 				} )
 			)
-			->willReturn( [
+			->willReturn( new ApiResponse( [
 				'secure_url' => 'https://res.cloudinary.com/test/image.jpg',
 				'public_id' => 'test-folder/image',
 				'width' => 800,
 				'height' => 600,
 				'format' => 'jpg'
-			] );
+			], [] ) );
 
 		// Use reflection to inject the mock
 		$reflection = new \ReflectionClass( $uploader );
@@ -603,7 +604,7 @@ class CloudinaryUploaderTest extends TestCase
 			->expects( $this->once() )
 			->method( 'destroy' )
 			->with( $this->equalTo( 'test-folder/image-to-delete' ) )
-			->willReturn( [ 'result' => 'ok' ] );
+			->willReturn( new ApiResponse( [ 'result' => 'ok' ], [] ) );
 
 		// Use reflection to inject the mock
 		$reflection = new \ReflectionClass( $uploader );
@@ -630,7 +631,7 @@ class CloudinaryUploaderTest extends TestCase
 
 		$mockUploadApi
 			->method( 'destroy' )
-			->willReturn( [ 'result' => 'not found' ] );
+			->willReturn( new ApiResponse( [ 'result' => 'not found' ], [] ) );
 
 		// Use reflection to inject the mock
 		$reflection = new \ReflectionClass( $uploader );
@@ -656,7 +657,7 @@ class CloudinaryUploaderTest extends TestCase
 		$mockSearchApi->method( 'maxResults' )->willReturnSelf();
 		$mockSearchApi->method( 'sortBy' )->willReturnSelf();
 		$mockSearchApi->method( 'nextCursor' )->willReturnSelf();
-		$mockSearchApi->method( 'execute' )->willReturn( [
+		$mockSearchApi->method( 'execute' )->willReturn( new ApiResponse( [
 			'resources' => [
 				[
 					'secure_url' => 'https://res.cloudinary.com/test/image1.jpg',
@@ -681,7 +682,7 @@ class CloudinaryUploaderTest extends TestCase
 			],
 			'next_cursor' => 'abc123',
 			'total_count' => 100
-		] );
+		], [] ) );
 
 		$mockCloudinary
 			->expects( $this->once() )
@@ -730,11 +731,11 @@ class CloudinaryUploaderTest extends TestCase
 			->method( 'nextCursor' )
 			->with( 'cursor123' )
 			->willReturnSelf();
-		$mockSearchApi->method( 'execute' )->willReturn( [
+		$mockSearchApi->method( 'execute' )->willReturn( new ApiResponse( [
 			'resources' => [],
 			'next_cursor' => null,
 			'total_count' => 0
-		] );
+		], [] ) );
 
 		$mockCloudinary
 			->method( 'searchApi' )

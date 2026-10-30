@@ -2,6 +2,7 @@
 
 namespace Tests\Cms\Services\Media;
 
+use Cloudinary\Api\ApiResponse;
 use Cloudinary\Api\Admin\AdminApi;
 use Cloudinary\Api\Search\SearchApi;
 use Cloudinary\Api\Upload\UploadApi;
@@ -198,7 +199,7 @@ class CloudinaryUploaderMockTest extends TestCase
 		$uploadApiMock->expects( $this->once() )
 			->method( 'destroy' )
 			->with( 'test-folder/test-image' )
-			->willReturn( [ 'result' => 'ok' ] );
+			->willReturn( new ApiResponse( [ 'result' => 'ok' ], [] ) );
 
 		$cloudinaryMock = $this->createMock( Cloudinary::class );
 		$cloudinaryMock->method( 'uploadApi' )->willReturn( $uploadApiMock );
@@ -219,7 +220,7 @@ class CloudinaryUploaderMockTest extends TestCase
 		$uploadApiMock = $this->createMock( UploadApi::class );
 
 		$uploadApiMock->method( 'destroy' )
-			->willReturn( [ 'result' => 'not found' ] );
+			->willReturn( new ApiResponse( [ 'result' => 'not found' ], [] ) );
 
 		$cloudinaryMock = $this->createMock( Cloudinary::class );
 		$cloudinaryMock->method( 'uploadApi' )->willReturn( $uploadApiMock );
@@ -275,14 +276,14 @@ class CloudinaryUploaderMockTest extends TestCase
 						&& $options['resource_type'] === 'image';
 				} )
 			)
-			->willReturn( [
+			->willReturn( new ApiResponse( [
 				'secure_url' => 'https://example.com/test.jpg',
 				'public_id' => 'test-folder/test',
 				'width' => 800,
 				'height' => 600,
 				'format' => 'jpg',
 				'bytes' => 50000
-			] );
+			], [] ) );
 
 		$cloudinaryMock = $this->createMock( Cloudinary::class );
 		$cloudinaryMock->method( 'uploadApi' )->willReturn( $uploadApiMock );
@@ -362,14 +363,14 @@ class CloudinaryUploaderMockTest extends TestCase
 						&& in_array( 'test', $options['tags'] );
 				} )
 			)
-			->willReturn( [
+			->willReturn( new ApiResponse( [
 				'secure_url' => 'https://example.com/custom.jpg',
 				'public_id' => 'custom-folder/my-image',
 				'width' => 1024,
 				'height' => 768,
 				'format' => 'jpg',
 				'bytes' => 100000
-			] );
+			], [] ) );
 
 		$cloudinaryMock = $this->createMock( Cloudinary::class );
 		$cloudinaryMock->method( 'uploadApi' )->willReturn( $uploadApiMock );
@@ -411,14 +412,14 @@ class CloudinaryUploaderMockTest extends TestCase
 						&& is_array( $options['transformation'] );
 				} )
 			)
-			->willReturn( [
+			->willReturn( new ApiResponse( [
 				'secure_url' => 'https://example.com/transformed.jpg',
 				'public_id' => 'test-folder/transformed',
 				'width' => 800,
 				'height' => 600,
 				'format' => 'jpg',
 				'bytes' => 50000
-			] );
+			], [] ) );
 
 		$cloudinaryMock = $this->createMock( Cloudinary::class );
 		$cloudinaryMock->method( 'uploadApi' )->willReturn( $uploadApiMock );
@@ -488,12 +489,12 @@ class CloudinaryUploaderMockTest extends TestCase
 		$adminApiMock->expects( $this->once() )
 			->method( 'subFolders' )
 			->with( 'test-folder' )
-			->willReturn( [
+			->willReturn( new ApiResponse( [
 				'folders' => [
 					[ 'name' => 'blog', 'path' => 'test-folder/blog' ],
 					[ 'name' => 'escape', 'path' => '../escape' ]
 				]
-			] );
+			], [] ) );
 
 		$cloudinaryMock = $this->createMock( Cloudinary::class );
 		$cloudinaryMock->method( 'adminApi' )->willReturn( $adminApiMock );
@@ -520,7 +521,7 @@ class CloudinaryUploaderMockTest extends TestCase
 		$adminApiMock->expects( $this->once() )
 			->method( 'createFolder' )
 			->with( 'test-folder/blog' )
-			->willReturn( [ 'name' => 'blog', 'path' => 'test-folder/blog' ] );
+			->willReturn( new ApiResponse( [ 'name' => 'blog', 'path' => 'test-folder/blog' ], [] ) );
 
 		$cloudinaryMock = $this->createMock( Cloudinary::class );
 		$cloudinaryMock->method( 'adminApi' )->willReturn( $adminApiMock );
@@ -544,12 +545,12 @@ class CloudinaryUploaderMockTest extends TestCase
 						&& $options['display_name'] === 'Hero';
 				} )
 			)
-			->willReturn( [
+			->willReturn( new ApiResponse( [
 				'public_id' => 'test-folder/image',
 				'secure_url' => 'https://example.com/image.jpg',
 				'display_name' => 'Hero',
 				'tags' => [ 'hero' ]
-			] );
+			], [] ) );
 
 		$cloudinaryMock = $this->createMock( Cloudinary::class );
 		$cloudinaryMock->method( 'adminApi' )->willReturn( $adminApiMock );
@@ -570,19 +571,19 @@ class CloudinaryUploaderMockTest extends TestCase
 		$adminApiMock->expects( $this->once() )
 			->method( 'update' )
 			->with( 'test-folder/image', [ 'asset_folder' => 'test-folder/blog' ] )
-			->willReturn( [
+			->willReturn( new ApiResponse( [
 				'public_id' => 'test-folder/image',
 				'asset_folder' => 'test-folder'
-			] );
+			], [] ) );
 
 		$uploadApiMock = $this->createMock( UploadApi::class );
 		$uploadApiMock->expects( $this->once() )
 			->method( 'rename' )
 			->with( 'test-folder/image', 'test-folder/blog/image', [ 'invalidate' => true ] )
-			->willReturn( [
+			->willReturn( new ApiResponse( [
 				'public_id' => 'test-folder/blog/image',
 				'secure_url' => 'https://example.com/blog/image.jpg'
-			] );
+			], [] ) );
 
 		$cloudinaryMock = $this->createMock( Cloudinary::class );
 		$cloudinaryMock->method( 'adminApi' )->willReturn( $adminApiMock );
@@ -601,11 +602,11 @@ class CloudinaryUploaderMockTest extends TestCase
 		$adminApiMock->expects( $this->once() )
 			->method( 'update' )
 			->with( 'test-folder/image', [ 'asset_folder' => 'test-folder/blog' ] )
-			->willReturn( [
+			->willReturn( new ApiResponse( [
 				'public_id' => 'test-folder/image',
 				'asset_folder' => 'test-folder/blog',
 				'secure_url' => 'https://example.com/image.jpg'
-			] );
+			], [] ) );
 
 		$cloudinaryMock = $this->createMock( Cloudinary::class );
 		$cloudinaryMock->method( 'adminApi' )->willReturn( $adminApiMock );
@@ -625,11 +626,11 @@ class CloudinaryUploaderMockTest extends TestCase
 		$adminApiMock->expects( $this->once() )
 			->method( 'update' )
 			->with( 'randomid', [ 'asset_folder' => 'test-folder/blog' ] )
-			->willReturn( [
+			->willReturn( new ApiResponse( [
 				'public_id' => 'randomid',
 				'asset_folder' => 'test-folder/blog',
 				'secure_url' => 'https://example.com/randomid.jpg'
-			] );
+			], [] ) );
 
 		$cloudinaryMock = $this->createMock( Cloudinary::class );
 		$cloudinaryMock->method( 'adminApi' )->willReturn( $adminApiMock );
@@ -652,10 +653,10 @@ class CloudinaryUploaderMockTest extends TestCase
 		$uploadApiMock->expects( $this->once() )
 			->method( 'rename' )
 			->with( 'test-folder/image', 'test-folder/blog/image', [ 'invalidate' => true ] )
-			->willReturn( [
+			->willReturn( new ApiResponse( [
 				'public_id' => 'test-folder/blog/image',
 				'secure_url' => 'https://example.com/blog/image.jpg'
-			] );
+			], [] ) );
 
 		$cloudinaryMock = $this->createMock( Cloudinary::class );
 		$cloudinaryMock->method( 'adminApi' )->willReturn( $adminApiMock );
@@ -685,10 +686,10 @@ class CloudinaryUploaderMockTest extends TestCase
 						&& $options['folder'] === 'test-folder';
 				} )
 			)
-			->willReturn( [
+			->willReturn( new ApiResponse( [
 				'secure_url' => 'https://example.com/test.jpg',
 				'public_id' => 'test-folder/original-name'
-			] );
+			], [] ) );
 
 		$cloudinaryMock = $this->createMock( Cloudinary::class );
 		$cloudinaryMock->method( 'uploadApi' )->willReturn( $uploadApiMock );
@@ -715,7 +716,7 @@ class CloudinaryUploaderMockTest extends TestCase
 		$searchMock->method( 'maxResults' )->willReturnSelf();
 		$searchMock->method( 'sortBy' )->willReturnSelf();
 		$searchMock->method( 'nextCursor' )->willReturnSelf();
-		$searchMock->method( 'execute' )->willReturn( $result );
+		$searchMock->method( 'execute' )->willReturn( new ApiResponse( $result, [] ) );
 
 		return $searchMock;
 	}
