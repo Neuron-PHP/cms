@@ -2,6 +2,7 @@
 
 namespace Tests\Cms\Services\Media;
 
+use Cloudinary\Api\ApiResponse;
 use Cloudinary\Api\Upload\UploadApi;
 use Cloudinary\Cloudinary;
 use PHPUnit\Framework\TestCase;
@@ -123,14 +124,14 @@ class CloudinaryUploaderUrlTest extends TestCase
 						&& $options['resource_type'] === 'image';
 				} )
 			)
-			->willReturn( [
+			->willReturn( new ApiResponse( [
 				'secure_url' => 'https://res.cloudinary.com/test/image/upload/v1/test.jpg',
 				'public_id' => 'test-folder/test',
 				'width' => 800,
 				'height' => 600,
 				'format' => 'jpg',
 				'bytes' => 50000
-			] );
+			], [] ) );
 
 		$cloudinaryMock = $this->createMock( Cloudinary::class );
 		$cloudinaryMock->method( 'uploadApi' )->willReturn( $uploadApiMock );
@@ -160,14 +161,14 @@ class CloudinaryUploaderUrlTest extends TestCase
 						&& isset( $options['public_id'] );
 				} )
 			)
-			->willReturn( [
+			->willReturn( new ApiResponse( [
 				'secure_url' => 'https://res.cloudinary.com/test/image/upload/v1/custom.jpg',
 				'public_id' => 'custom/my-image',
 				'width' => 1024,
 				'height' => 768,
 				'format' => 'jpg',
 				'bytes' => 100000
-			] );
+			], [] ) );
 
 		$cloudinaryMock = $this->createMock( Cloudinary::class );
 		$cloudinaryMock->method( 'uploadApi' )->willReturn( $uploadApiMock );
