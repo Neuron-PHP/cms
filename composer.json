@@ -22,7 +22,7 @@
         "neuron-php/payments": "0.3.*",
         "rlanvin/php-rrule": "^2.6",
         "phpmailer/phpmailer": "^6.9 || ^7.0",
-        "cloudinary/cloudinary_php": "^2.0",
+        "cloudinary/cloudinary_php": "^2.0 || ^3.0",
         "php-di/php-di": "^7.1",
         "symfony/yaml": "^6.4"
     },
