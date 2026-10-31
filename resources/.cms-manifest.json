@@ -36,7 +36,8 @@
     "20260915150000_add_seo_to_posts.php",
     "20260915180000_create_testimonials_tables.php",
     "20260915190000_create_faqs_tables.php",
-    "20260916120000_create_redirects_table.php"
+    "20260916120000_create_redirects_table.php",
+    "20261031000000_create_remember_tokens_table.php"
   ],
   "config_files": [
     "auth.yaml",

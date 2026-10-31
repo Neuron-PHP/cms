@@ -4,8 +4,11 @@ namespace Neuron\Cms\Services\Auth;
 
 use Neuron\Cms\Auth\SessionManager;
 use Neuron\Cms\Auth\PasswordHasher;
+use Neuron\Cms\Models\RememberToken;
 use Neuron\Cms\Models\User;
+use Neuron\Cms\Repositories\IRememberTokenRepository;
 use Neuron\Cms\Repositories\IUserRepository;
+use Neuron\Log\Log;
 use DateTimeImmutable;
 use DateInterval;
 use Neuron\Cms\Enums\UserRole;
@@ -22,18 +25,31 @@ class Authentication implements IAuthenticationService
 	private IUserRepository $_userRepository;
 	private SessionManager $_sessionManager;
 	private PasswordHasher $_passwordHasher;
+	private ?IRememberTokenRepository $_rememberTokens;
 	private int $_maxLoginAttempts = 5;
 	private int $_lockoutDuration = 15; // minutes
+	private int $_rememberLifetime = 43200; // minutes (30 days)
+	private bool $_rememberEnabled = true;
 
+	public const REMEMBER_COOKIE = 'remember_token';
+
+	/**
+	 * @param IUserRepository $userRepository
+	 * @param SessionManager $sessionManager
+	 * @param PasswordHasher $passwordHasher
+	 * @param IRememberTokenRepository|null $rememberTokens Without it, "remember me" is unavailable.
+	 */
 	public function __construct(
 		IUserRepository $userRepository,
 		SessionManager $sessionManager,
-		PasswordHasher $passwordHasher
+		PasswordHasher $passwordHasher,
+		?IRememberTokenRepository $rememberTokens = null
 	)
 	{
 		$this->_userRepository = $userRepository;
 		$this->_sessionManager = $sessionManager;
 		$this->_passwordHasher = $passwordHasher;
+		$this->_rememberTokens = $rememberTokens;
 	}
 
 	/**
@@ -151,26 +167,12 @@ class Authentication implements IAuthenticationService
 	 */
 	public function login( User $user, bool $remember = false ): void
 	{
-		// Regenerate session ID to prevent session fixation
-		$this->_sessionManager->regenerate();
+		$this->startSession( $user );
 
-		// Store user ID in session
-		$this->_sessionManager->set( 'user_id', $user->getId() );
-		$this->_sessionManager->set( 'user_role', $user->getRole() );
-		$this->_sessionManager->set( 'login_time', microtime( true ) );
-
-		// Handle remember me
 		if( $remember )
 		{
-			$this->setRememberToken( $user );
+			$this->issueRememberToken( $user );
 		}
-
-		// Emit user login event
-		\Neuron\Application\CrossCutting\Event::emit( new \Neuron\Cms\Events\UserLoginEvent(
-			$user,
-			$_SERVER['REMOTE_ADDR'] ?? 'unknown',
-			microtime( true )
-		) );
 	}
 
 	/**
@@ -181,14 +183,17 @@ class Authentication implements IAuthenticationService
 		$user = null;
 		$sessionDuration = 0.0;
 
-		// Clear remember token if exists
 		if( $this->check() )
 		{
 			$user = $this->user();
 			if( $user )
 			{
-				$user->setRememberToken( null );
-				$this->_userRepository->update( $user );
+				// Tokens not yet moved out of the users table are cleared here.
+				if( $user->getRememberToken() !== null )
+				{
+					$user->setRememberToken( null );
+					$this->_userRepository->update( $user );
+				}
 
 				// Calculate session duration
 				$loginTime = $this->_sessionManager->get( 'login_time' );
@@ -202,10 +207,12 @@ class Authentication implements IAuthenticationService
 		// Destroy session
 		$this->_sessionManager->destroy();
 
-		// Delete remember me cookie if exists
-		if( isset( $_COOKIE['remember_token'] ) )
+		// Forget this browser only; the user's other browsers stay signed in.
+		if( isset( $_COOKIE[ self::REMEMBER_COOKIE ] ) )
 		{
-			setcookie( 'remember_token', '', time() - 3600, '/', '', true, true );
+			$cookie = (string)$_COOKIE[ self::REMEMBER_COOKIE ];
+			$this->withRememberTokens( fn( IRememberTokenRepository $tokens ) => $tokens->deleteByToken( hash( 'sha256', $cookie ) ) );
+			$this->forgetRememberCookie();
 		}
 
 		// Emit user logout event
@@ -230,9 +237,9 @@ class Authentication implements IAuthenticationService
 		}
 
 		// Check remember me cookie
-		if( isset( $_COOKIE['remember_token'] ) )
+		if( isset( $_COOKIE[ self::REMEMBER_COOKIE ] ) )
 		{
-			return $this->loginUsingRememberToken( $_COOKIE['remember_token'] );
+			return $this->loginUsingRememberToken( (string)$_COOKIE[ self::REMEMBER_COOKIE ] );
 		}
 
 		return false;
@@ -288,51 +295,204 @@ class Authentication implements IAuthenticationService
 	}
 
 	/**
-	 * Set remember me token for user
+	 * Attempt to log in using remember token
+	 *
+	 * The token is not replaced on use. Several requests from one browser can
+	 * arrive at once without a session (after a deploy, or once the session
+	 * expires); replacing the token on each would leave the browser holding a
+	 * different token from the one stored, and sign it out.
 	 */
-	private function setRememberToken( User $user ): void
+	public function loginUsingRememberToken( string $token ): bool
 	{
-		// Generate secure random token
-		$token = bin2hex( random_bytes( 32 ) );
+		if( !$this->_rememberEnabled )
+		{
+			$this->forgetRememberCookie();
+			return false;
+		}
 
-		// Hash the token before storing
 		$hashedToken = hash( 'sha256', $token );
+		$remembered = $this->withRememberTokens( fn( IRememberTokenRepository $tokens ) => $tokens->findValidByToken( $hashedToken ) );
 
-		// Store hashed token in user record
-		$user->setRememberToken( $hashedToken );
-		$this->_userRepository->update( $user );
+		$user = $remembered
+			? $this->_userRepository->findById( $remembered->getUserId() )
+			: $this->findLegacyRememberedUser( $hashedToken );
 
-		// Set cookie with plain token (30 days)
+		if( !$user || !$user->isActive() )
+		{
+			// Unknown, expired or revoked: stop the browser sending it.
+			$this->forgetRememberCookie();
+			return false;
+		}
+
+		if( $remembered )
+		{
+			$this->withRememberTokens( fn( IRememberTokenRepository $tokens ) => $tokens->touch( $remembered ) );
+		}
+
+		$this->startSession( $user );
+
+		return true;
+	}
+
+	/**
+	 * Set how long a "remember me" sign-in lasts
+	 *
+	 * @param int $minutes Lifetime in minutes (auth.remember.lifetime)
+	 */
+	public function setRememberLifetime( int $minutes ): self
+	{
+		$this->_rememberLifetime = max( 1, $minutes );
+		return $this;
+	}
+
+	/**
+	 * Turn "remember me" on or off (auth.remember.enabled)
+	 *
+	 * When off, the checkbox is ignored and existing remember cookies no
+	 * longer sign anyone in.
+	 */
+	public function setRememberEnabled( bool $enabled ): self
+	{
+		$this->_rememberEnabled = $enabled;
+		return $this;
+	}
+
+	/**
+	 * Start an authenticated session for the user
+	 */
+	private function startSession( User $user ): void
+	{
+		// Regenerate session ID to prevent session fixation
+		$this->_sessionManager->regenerate();
+
+		// Store user ID in session
+		$this->_sessionManager->set( 'user_id', $user->getId() );
+		$this->_sessionManager->set( 'user_role', $user->getRole() );
+		$this->_sessionManager->set( 'login_time', microtime( true ) );
+
+		// Emit user login event
+		\Neuron\Application\CrossCutting\Event::emit( new \Neuron\Cms\Events\UserLoginEvent(
+			$user,
+			$_SERVER['REMOTE_ADDR'] ?? 'unknown',
+			microtime( true )
+		) );
+	}
+
+	/**
+	 * Give this browser its own remember me token
+	 */
+	private function issueRememberToken( User $user ): void
+	{
+		if( !$this->_rememberEnabled )
+		{
+			return;
+		}
+
+		if( $this->_rememberTokens === null )
+		{
+			Log::warning( 'Remember me requested but no remember token repository is configured.' );
+			return;
+		}
+
+		$token = bin2hex( random_bytes( 32 ) );
+		$previous = isset( $_COOKIE[ self::REMEMBER_COOKIE ] ) ? hash( 'sha256', (string)$_COOKIE[ self::REMEMBER_COOKIE ] ) : null;
+
+		$stored = $this->withRememberTokens( function( IRememberTokenRepository $tokens ) use ( $user, $token, $previous ) {
+			// Signing in again on a browser that already has a token replaces it.
+			if( $previous !== null )
+			{
+				$tokens->deleteByToken( $previous );
+			}
+
+			// Only the hash is stored; the browser keeps the plain token.
+			return $tokens->create( new RememberToken( (int)$user->getId(), hash( 'sha256', $token ), $this->_rememberLifetime ) );
+		} );
+
+		if( $stored === null )
+		{
+			return;
+		}
+
 		setcookie(
-			'remember_token',
+			self::REMEMBER_COOKIE,
 			$token,
-			time() + (30 * 24 * 60 * 60),
+			time() + $this->_rememberLifetime * 60,
 			'/',
 			'',
 			true,  // Secure
 			true   // HTTPOnly
 		);
+
+		// Keep this request consistent with the cookie the browser will send next.
+		$_COOKIE[ self::REMEMBER_COOKIE ] = $token;
 	}
 
 	/**
-	 * Attempt to log in using remember token
+	 * Find a user by a token stored before remember_tokens existed
+	 *
+	 * The token moves to remember_tokens on first use, so existing cookies keep
+	 * working through the upgrade.
 	 */
-	public function loginUsingRememberToken( string $token ): bool
+	private function findLegacyRememberedUser( string $hashedToken ): ?User
 	{
-		// Hash the token to compare with stored hash
-		$hashedToken = hash( 'sha256', $token );
-
 		$user = $this->_userRepository->findByRememberToken( $hashedToken );
 
-		if( !$user || !$user->isActive() )
+		if( !$user || $this->_rememberTokens === null )
 		{
-			return false;
+			return $user;
 		}
 
-		// Log the user in
-		$this->login( $user, true );
+		// A concurrent request may have moved it first (unique token); either way
+		// the token is only cleared from users once it is safely in remember_tokens.
+		$moved = $this->withRememberTokens( function( IRememberTokenRepository $tokens ) use ( $user, $hashedToken ) {
+			return $tokens->findValidByToken( $hashedToken )
+				?? $tokens->create( new RememberToken( (int)$user->getId(), $hashedToken, $this->_rememberLifetime ) );
+		} );
 
-		return true;
+		if( $moved !== null )
+		{
+			$user->setRememberToken( null );
+			$this->_userRepository->update( $user );
+		}
+
+		return $user;
+	}
+
+	/**
+	 * Run a remember token operation, tolerating a missing remember_tokens table
+	 *
+	 * A site that updated the package but has not run its migrations yet would
+	 * otherwise fail every sign-in. Remember me is skipped instead, and logged.
+	 *
+	 * @template T
+	 * @param callable(IRememberTokenRepository): T $operation
+	 * @return T|null Null when there is no repository or the operation failed.
+	 */
+	private function withRememberTokens( callable $operation ): mixed
+	{
+		if( $this->_rememberTokens === null )
+		{
+			return null;
+		}
+
+		try
+		{
+			return $operation( $this->_rememberTokens );
+		}
+		catch( \PDOException $e )
+		{
+			Log::error( 'Remember me unavailable (has the remember_tokens migration run?): ' . $e->getMessage() );
+			return null;
+		}
+	}
+
+	/**
+	 * Expire the remember me cookie in the browser and for this request
+	 */
+	private function forgetRememberCookie(): void
+	{
+		setcookie( self::REMEMBER_COOKIE, '', time() - 3600, '/', '', true, true );
+		unset( $_COOKIE[ self::REMEMBER_COOKIE ] );
 	}
 
 	/**
