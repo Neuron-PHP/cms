@@ -132,6 +132,27 @@ class HomeTest extends TestCase
 		$this->assertTrue( $home->lastData['RegistrationEnabled'] );
 	}
 
+	public function testBlogModeFallsBackToLandingWhenBlogFeatureIsOff(): void
+	{
+		$this->settingsMap['features']['blog'] = false;
+
+		try
+		{
+			$posts = $this->createMock( IPostRepository::class );
+			$posts->expects( $this->never() )->method( 'getPublished' );
+
+			$home = $this->home( [ IPostRepository::class => $posts ] );
+			$home->index( new Request() );
+
+			$this->assertSame( 'index', $home->lastView );
+		}
+		finally
+		{
+			// The settings mock stays in the Registry after this test.
+			unset( $this->settingsMap['features'] );
+		}
+	}
+
 	public function testLandingModeRendersMarketingView(): void
 	{
 		$this->settingsMap['homepage']['mode'] = 'landing';

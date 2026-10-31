@@ -84,4 +84,47 @@ class SitemapTest extends TestCase
 		$this->assertStringContainsString( '<lastmod>2026-02-01</lastmod>', $xml );
 		$this->assertStringNotContainsString( 'hidden', $xml );
 	}
+
+	public function testDisabledFeaturesAreLeftOut(): void
+	{
+		$page = $this->createMock( Page::class );
+		$page->method( 'getSlug' )->willReturn( 'about' );
+		$page->method( 'getUpdatedAt' )->willReturn( new DateTimeImmutable( '2026-03-01' ) );
+
+		$pages = $this->createMock( IPageRepository::class );
+		$pages->method( 'getPublished' )->willReturn( [ $page ] );
+
+		$posts = $this->createMock( IPostRepository::class );
+		$posts->expects( $this->never() )->method( 'getPublished' );
+
+		$events = $this->createMock( IEventRepository::class );
+		$events->expects( $this->never() )->method( 'all' );
+
+		$settings = $this->createMock( SettingManager::class );
+		$settings->method( 'get' )->willReturnCallback( function( $section, $key ) {
+			$values = [
+				'site' => [ 'name' => 'Test Site', 'url' => 'https://example.test' ],
+				'features' => [ 'blog' => false, 'calendar' => false, 'contact' => false ],
+			];
+
+			return $values[ $section ][ $key ] ?? null;
+		} );
+
+		$app = $this->createMock( IMvcApplication::class );
+		$app->method( 'getRouter' )->willReturn( $this->createMock( Router::class ) );
+
+		$sitemap = new Sitemap(
+			$app,
+			$settings,
+			$this->createMock( SessionManager::class ),
+			$pages,
+			$posts,
+			$events
+		);
+
+		$xml = $sitemap->document();
+
+		$this->assertSame( 2, substr_count( $xml, '<url>' ), 'only the homepage and the page' );
+		$this->assertStringContainsString( '<lastmod>2026-03-01</lastmod>', $xml );
+	}
 }

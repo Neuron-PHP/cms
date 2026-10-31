@@ -3,6 +3,7 @@
 namespace Neuron\Cms\Controllers;
 
 use Neuron\Cms\Auth\SessionManager;
+use Neuron\Cms\Features\Features;
 use Neuron\Cms\Repositories\IEventRepository;
 use Neuron\Cms\Repositories\IPageRepository;
 use Neuron\Cms\Repositories\IPostRepository;
@@ -12,7 +13,8 @@ use Neuron\Mvc\Requests\Request;
 use Neuron\Routing\Attributes\Get;
 
 /**
- * XML sitemap of published public content.
+ * XML sitemap of published public content. Areas switched off under
+ * `features` are left out.
  *
  * @package Neuron\Cms\Controllers
  */
@@ -48,11 +50,27 @@ class Sitemap extends Content
 
 	public function document(): string
 	{
+		$features = new Features( $this->_settings );
+		$blog = $features->isEnabled( Features::BLOG );
+		$calendar = $features->isEnabled( Features::CALENDAR );
+
 		$urls = [];
 		$urls[] = $this->urlNode( $this->absoluteRoute( 'home' ), '1.0', 'daily' );
-		$urls[] = $this->urlNode( $this->absoluteRoute( 'blog' ), '0.8', 'daily' );
-		$urls[] = $this->urlNode( $this->absoluteRoute( 'calendar' ), '0.7', 'weekly' );
-		$urls[] = $this->urlNode( $this->absoluteRoute( 'contact' ), '0.5', 'monthly' );
+
+		if( $blog )
+		{
+			$urls[] = $this->urlNode( $this->absoluteRoute( 'blog' ), '0.8', 'daily' );
+		}
+
+		if( $calendar )
+		{
+			$urls[] = $this->urlNode( $this->absoluteRoute( 'calendar' ), '0.7', 'weekly' );
+		}
+
+		if( $features->isEnabled( Features::CONTACT ) )
+		{
+			$urls[] = $this->urlNode( $this->absoluteRoute( 'contact' ), '0.5', 'monthly' );
+		}
 
 		foreach( $this->_pages->getPublished() as $page )
 		{
@@ -64,7 +82,7 @@ class Sitemap extends Content
 			);
 		}
 
-		foreach( $this->_posts->getPublished() as $post )
+		foreach( $blog ? $this->_posts->getPublished() : [] as $post )
 		{
 			$urls[] = $this->urlNode(
 				$this->absoluteRoute( 'blog_post', [ 'slug' => $post->getSlug() ] ),
@@ -74,7 +92,7 @@ class Sitemap extends Content
 			);
 		}
 
-		foreach( $this->_events->all() as $event )
+		foreach( $calendar ? $this->_events->all() : [] as $event )
 		{
 			if( !$event->isPublished() )
 			{
