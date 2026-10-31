@@ -5,6 +5,7 @@ namespace Neuron\Cms\Controllers\Admin;
 use Neuron\Cms\Auth\SessionManager;
 use Neuron\Cms\Controllers\Content;
 use Neuron\Cms\Enums\FlashMessageType;
+use Neuron\Cms\Features\Features;
 use Neuron\Cms\Repositories\DatabaseContactSubmissionRepository;
 use Neuron\Cms\Repositories\IContactSubmissionRepository;
 use Neuron\Core\Exceptions\NotFound;
@@ -85,6 +86,11 @@ class Dashboard extends Content
 	 */
 	private function getRecentSubmissions(): array
 	{
+		if( !( new Features( $this->_settings ) )->isEnabled( Features::CONTACT ) )
+		{
+			return [ 'items' => [], 'total' => 0 ];
+		}
+
 		try
 		{
 			$repository = $this->_submissions

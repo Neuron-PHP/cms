@@ -8,12 +8,14 @@
 
 		<h6 class="text-muted mt-4 mb-2">Content Management</h6>
 		<div class="row g-3 mb-4">
+			<?php if( cms_feature( 'blog' ) ): ?>
 			<div class="col-12 col-sm-6 col-lg-3">
 				<a href="<?= route_path('admin_posts') ?>" class="btn btn-outline-primary w-100 py-3">
 					<i class="bi bi-file-text d-block mb-2" style="font-size: 1.5rem;"></i>
 					Posts
 				</a>
 			</div>
+			<?php endif; ?>
 			<div class="col-12 col-sm-6 col-lg-3">
 				<a href="<?= route_path('admin_pages') ?>" class="btn btn-outline-primary w-100 py-3">
 					<i class="bi bi-file-earmark d-block mb-2" style="font-size: 1.5rem;"></i>
@@ -26,40 +28,50 @@
 					Media
 				</a>
 			</div>
+			<?php if( cms_feature( 'calendar' ) ): ?>
 			<div class="col-12 col-sm-6 col-lg-3">
 				<a href="<?= route_path('admin_events') ?>" class="btn btn-outline-primary w-100 py-3">
 					<i class="bi bi-calendar-event d-block mb-2" style="font-size: 1.5rem;"></i>
 					Events
 				</a>
 			</div>
+			<?php endif; ?>
+			<?php if( cms_feature( 'teams' ) ): ?>
 			<div class="col-12 col-sm-6 col-lg-3">
 				<a href="<?= route_path('admin_teams') ?>" class="btn btn-outline-primary w-100 py-3">
 					<i class="bi bi-people d-block mb-2" style="font-size: 1.5rem;"></i>
 					Teams
 				</a>
 			</div>
+			<?php endif; ?>
 		</div>
 
 		<h6 class="text-muted mt-4 mb-2">Site Builder</h6>
 		<div class="row g-3 mb-4">
+			<?php if( cms_feature( 'carousels' ) ): ?>
 			<div class="col-12 col-sm-6 col-lg-3">
 				<a href="<?= route_path('admin_carousels') ?>" class="btn btn-outline-primary w-100 py-3">
 					<i class="bi bi-collection-play d-block mb-2" style="font-size: 1.5rem;"></i>
 					Carousels
 				</a>
 			</div>
+			<?php endif; ?>
+			<?php if( cms_feature( 'testimonials' ) ): ?>
 			<div class="col-12 col-sm-6 col-lg-3">
 				<a href="<?= route_path('admin_testimonials') ?>" class="btn btn-outline-primary w-100 py-3">
 					<i class="bi bi-chat-quote d-block mb-2" style="font-size: 1.5rem;"></i>
 					Testimonials
 				</a>
 			</div>
+			<?php endif; ?>
+			<?php if( cms_feature( 'faqs' ) ): ?>
 			<div class="col-12 col-sm-6 col-lg-3">
 				<a href="<?= route_path('admin_faqs') ?>" class="btn btn-outline-primary w-100 py-3">
 					<i class="bi bi-question-circle d-block mb-2" style="font-size: 1.5rem;"></i>
 					FAQs
 				</a>
 			</div>
+			<?php endif; ?>
 			<div class="col-12 col-sm-6 col-lg-3">
 				<a href="<?= route_path('admin_menus') ?>" class="btn btn-outline-primary w-100 py-3">
 					<i class="bi bi-list d-block mb-2" style="font-size: 1.5rem;"></i>
@@ -74,8 +86,10 @@
 			</div>
 		</div>
 
+		<?php if( cms_feature( 'blog' ) || cms_feature( 'calendar' ) ): ?>
 		<h6 class="text-muted mt-4 mb-2">Organization</h6>
 		<div class="row g-3 mb-4">
+			<?php if( cms_feature( 'blog' ) ): ?>
 			<div class="col-12 col-sm-6 col-lg-3">
 				<a href="<?= route_path('admin_categories') ?>" class="btn btn-outline-secondary w-100 py-3">
 					<i class="bi bi-folder d-block mb-2" style="font-size: 1.5rem;"></i>
@@ -88,16 +102,22 @@
 					Tags
 				</a>
 			</div>
+			<?php endif; ?>
+			<?php if( cms_feature( 'calendar' ) ): ?>
 			<div class="col-12 col-sm-6 col-lg-3">
 				<a href="<?= route_path('admin_event_categories') ?>" class="btn btn-outline-secondary w-100 py-3">
 					<i class="bi bi-calendar3 d-block mb-2" style="font-size: 1.5rem;"></i>
 					Event Categories
 				</a>
 			</div>
+			<?php endif; ?>
 		</div>
+		<?php endif; ?>
 
+		<?php if( cms_feature( 'store' ) || cms_feature( 'payments' ) ): ?>
 		<h6 class="text-muted mt-4 mb-2">Commerce</h6>
 		<div class="row g-3 mb-4">
+			<?php if( cms_feature( 'store' ) ): ?>
 			<div class="col-12 col-sm-6 col-lg-3">
 				<a href="<?= route_path('admin_products') ?>" class="btn btn-outline-success w-100 py-3">
 					<i class="bi bi-box-seam d-block mb-2" style="font-size: 1.5rem;"></i>
@@ -110,6 +130,8 @@
 					Orders
 				</a>
 			</div>
+			<?php endif; ?>
+			<?php if( cms_feature( 'payments' ) ): ?>
 			<div class="col-12 col-sm-6 col-lg-3">
 				<a href="<?= route_path('admin_payments') ?>" class="btn btn-outline-success w-100 py-3">
 					<i class="bi bi-cash-coin d-block mb-2" style="font-size: 1.5rem;"></i>
@@ -122,7 +144,9 @@
 					Subscriptions
 				</a>
 			</div>
+			<?php endif; ?>
 		</div>
+		<?php endif; ?>
 
 		<h6 class="text-muted mt-4 mb-2">Users & Settings</h6>
 		<div class="row g-3 mb-4">
@@ -148,6 +172,7 @@
 			</div>
 		</div>
 
+		<?php if( cms_feature( 'contact' ) ): ?>
 		<hr>
 
 		<div class="d-flex justify-content-between align-items-center mb-3">
@@ -200,6 +225,7 @@
 					</tbody>
 				</table>
 			</div>
+		<?php endif; ?>
 		<?php endif; ?>
 
 		<hr>

@@ -26,7 +26,9 @@
 	<?php if( $canonical !== '' ): ?>
 		<link rel="canonical" href="<?= htmlspecialchars( $canonical ) ?>" />
 	<?php endif; ?>
+	<?php if( cms_feature( 'blog' ) ): ?>
 	<link rel="alternate" type="application/rss+xml" title="RSS Feed" href="<?= route_path('rss_feed') ?>">
+	<?php endif; ?>
 	<meta name="application-name" content="<?= htmlspecialchars( $siteName ?? '' ) ?>">
 
 	<?php if( $ogTitle !== '' ): ?>
@@ -85,11 +87,13 @@
 		<div class="text-center small mb-2">
 			<?php include cms_view_path( 'partials/footer-navigation.php' ); ?>
 		</div>
+		<?php if( cms_feature( 'blog' ) ): ?>
 		<div class="text-center small mb-2">
 			<a href="<?= route_path('rss_feed') ?>" class="text-decoration-none" title="Subscribe to RSS Feed">
 				<i class="bi bi-rss-fill text-warning"></i> Subscribe via RSS
 			</a>
 		</div>
+		<?php endif; ?>
 		<?php if( $appVersion ): ?>
 		<div class="text-center small">
 			<?= htmlspecialchars($appVersion) ?>

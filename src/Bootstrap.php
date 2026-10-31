@@ -9,6 +9,8 @@ use Neuron\Orm\Model;
 use Neuron\Cms\Auth\Filters\AdminAuthenticationFilter;
 use Neuron\Cms\Database\ConnectionFactory;
 use Neuron\Cms\Container\Container;
+use Neuron\Cms\Features\FeatureFilter;
+use Neuron\Cms\Features\Features;
 use Neuron\Cms\Services\Auth\Authentication;
 use Neuron\Patterns\Container\IContainer;
 use Neuron\Patterns\Registry;
@@ -167,6 +169,8 @@ function boot( string $configPath ) : Application
 		}
 	}
 
+	registerFeatureFilter( $app );
+
 	// Initialize ORM with PDO connection from settings
 	try
 	{
@@ -220,4 +224,30 @@ function registerAdminFilter( Application $app, IContainer $container ): void
 	);
 
 	$app->getRouter()->registerFilter( 'admin', $filter );
+}
+
+/**
+ * Register the global `features` route filter, which answers 404 for the
+ * routes of any CMS area switched off under `features` in configuration.
+ *
+ * @param Application $app
+ * @return void
+ */
+function registerFeatureFilter( Application $app ): void
+{
+	$features = new Features( $app->getSettingManager() );
+
+	foreach( $features->unknownKeys() as $key )
+	{
+		\Neuron\Log\Log::warning( "Unknown CMS feature '{$key}' under features in configuration; known features: " . implode( ', ', Features::names() ) );
+	}
+
+	$filter = new FeatureFilter(
+		$features,
+		static fn( array $parameters ) => $app->executeController( $parameters )
+	);
+
+	$router = $app->getRouter();
+	$router->registerFilter( 'features', $filter );
+	$router->addFilter( 'features' );
 }

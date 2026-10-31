@@ -2,6 +2,7 @@
 
 namespace Neuron\Cms\Services\Widget;
 
+use Neuron\Cms\Features\Features;
 use Neuron\Cms\Repositories\IPostRepository;
 use Neuron\Cms\Repositories\IEventRepository;
 use Neuron\Cms\Repositories\IEventCategoryRepository;
@@ -17,6 +18,7 @@ use Neuron\Cms\Services\Store\CartService;
 use Neuron\Cms\Services\Store\StoreService;
 use Neuron\Cms\Models\Post;
 use Neuron\Data\Settings\SettingManager;
+use Neuron\Log\Log;
 
 /**
  * Renders built-in widgets.
@@ -39,6 +41,7 @@ class WidgetRenderer
 	private ?ICarouselRepository $_carouselRepository = null;
 	private ?ITestimonialRepository $_testimonialRepository = null;
 	private ?IFaqRepository $_faqRepository = null;
+	private Features $_features;
 
 	public function __construct(
 		?IPostRepository $postRepository = null,
@@ -50,7 +53,8 @@ class WidgetRenderer
 		?ITeamRepository $teamRepository = null,
 		?ICarouselRepository $carouselRepository = null,
 		?ITestimonialRepository $testimonialRepository = null,
-		?IFaqRepository $faqRepository = null
+		?IFaqRepository $faqRepository = null,
+		?Features $features = null
 	)
 	{
 		$this->_postRepository = $postRepository;
@@ -63,10 +67,12 @@ class WidgetRenderer
 		$this->_carouselRepository = $carouselRepository;
 		$this->_testimonialRepository = $testimonialRepository;
 		$this->_faqRepository = $faqRepository;
+		$this->_features = $features ?? ( $settings !== null ? new Features( $settings ) : Features::current() );
 	}
 
 	/**
-	 * Render a widget by type
+	 * Render a widget by type. Widgets belonging to a CMS feature switched
+	 * off under `features` render nothing.
 	 *
 	 * @param string $widgetType Widget type name
 	 * @param array<string, mixed> $config Widget configuration/attributes
@@ -74,6 +80,12 @@ class WidgetRenderer
 	 */
 	public function render( string $widgetType, array $config ): string
 	{
+		if( !$this->_features->allowsShortcode( $widgetType ) )
+		{
+			Log::debug( "Shortcode [{$widgetType}] skipped: its CMS feature is disabled" );
+			return '';
+		}
+
 		return match( $widgetType )
 		{
 			'latest-posts' => $this->renderLatestPosts( $config ),

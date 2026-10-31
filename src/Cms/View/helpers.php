@@ -426,3 +426,20 @@ if( !function_exists( 'cms_view_path' ) )
 		return dirname( __DIR__, 3 ) . '/resources/views/' . ltrim( $relative, '/' );
 	}
 }
+
+if( !function_exists( 'cms_feature' ) )
+{
+	/**
+	 * Whether an optional CMS area (blog, calendar, store, ...) is switched
+	 * on under `features` in neuron.yaml. Missing keys count as on.
+	 *
+	 * @param string $feature One of the Neuron\Cms\Features\Features constants
+	 *
+	 * @example
+	 * <?php if( cms_feature( 'blog' ) ): ?> ... <?php endif; ?>
+	 */
+	function cms_feature( string $feature ): bool
+	{
+		return \Neuron\Cms\Features\Features::current()->isEnabled( $feature );
+	}
+}

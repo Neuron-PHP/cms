@@ -26,6 +26,40 @@ After running `composer update neuron-php/cms`, follow these steps:
 
 ---
 
+## Unreleased (feature switches)
+
+### Added
+
+- **Optional CMS areas can be switched off in `neuron.yaml`.** A new
+  `features:` section takes `true`/`false` for `blog`, `calendar`, `contact`,
+  `payments`, `store`, `teams`, `carousels`, `testimonials` and `faqs`:
+
+  ```yaml
+  features:
+    store: false
+    payments: false
+  ```
+
+  A switched-off area's public and admin URLs return 404, it disappears from
+  the admin menu and dashboard, its shortcodes render nothing, and it is left
+  out of the sitemap. Its tables and content are untouched. The payments
+  webhook stays reachable while either `payments` or `store` is on, since
+  store orders complete through it.
+
+### Upgrade notes
+
+- **Nothing changes unless you add the section.** Missing keys count as on.
+  See `config/neuron.yaml.example` after `cms:upgrade` for the full list.
+- **Customised admin layout or dashboard.** The admin Content menu is now
+  built from `Neuron\Cms\Admin\Navigation` (group `content`). If your site
+  publishes its own `layouts/admin.php` or `admin/dashboard/index.php`,
+  switched-off areas still show there until you re-publish those views or
+  apply the same change. Their URLs return 404 regardless.
+- **Typos are logged.** Unknown keys under `features:` produce a warning in
+  the application log at startup.
+
+---
+
 ## Unreleased (remember me)
 
 ### Fixed

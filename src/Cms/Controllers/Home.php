@@ -5,6 +5,7 @@ namespace Neuron\Cms\Controllers;
 use Neuron\Cms\Auth\SessionManager;
 use Neuron\Cms\Enums\ContentStatus;
 use Neuron\Cms\Enums\HomepageMode;
+use Neuron\Cms\Features\Features;
 use Neuron\Cms\Repositories\ICategoryRepository;
 use Neuron\Cms\Repositories\IPageRepository;
 use Neuron\Cms\Repositories\IPostRepository;
@@ -21,7 +22,8 @@ use Neuron\Routing\Attributes\Get;
  * Configurable public homepage.
  *
  * neuron.yaml homepage.mode:
- *   blog       — paginated published posts (default)
+ *   blog       — paginated published posts (default; landing when
+ *                features.blog is off)
  *   page       — a designated CMS page (homepage.page slug)
  *   landing    — the stock marketing landing view
  *   controller — a site controller action (homepage.controller, Class@method)
@@ -60,6 +62,12 @@ class Home extends Content
 	public function index( Request $request ): string
 	{
 		$mode = HomepageMode::fromValue( $this->_settings->get( 'homepage', 'mode' ) );
+
+		if( $mode === HomepageMode::BLOG && !( new Features( $this->_settings ) )->isEnabled( Features::BLOG ) )
+		{
+			Log::debug( 'Homepage mode is blog but the blog feature is disabled; showing the landing page' );
+			$mode = HomepageMode::LANDING;
+		}
 
 		return match( $mode )
 		{

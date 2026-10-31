@@ -3,7 +3,10 @@
 namespace Tests\Cms\Admin;
 
 use Neuron\Cms\Admin\Navigation;
+use Neuron\Cms\Features\Features;
 use Neuron\Core\Registry\RegistryKeys;
+use Neuron\Data\Settings\SettingManager;
+use Neuron\Data\Settings\Source\Memory;
 use Neuron\Mvc\Components\IComponentProvider;
 use Neuron\Mvc\Components\INavigationProvider;
 use Neuron\Mvc\IMvcApplication;
@@ -14,17 +17,22 @@ use PHPUnit\Framework\TestCase;
 
 class NavigationTest extends TestCase
 {
+	private mixed $_previousSettings;
+
 	protected function setUp(): void
 	{
 		parent::setUp();
+		$this->_previousSettings = Registry::getInstance()->get( RegistryKeys::SETTINGS );
 		Registry::getInstance()->set( RegistryKeys::APP, null );
 		Registry::getInstance()->set( RegistryKeys::MVC_COMPONENTS, null );
+		Registry::getInstance()->set( RegistryKeys::SETTINGS, null );
 	}
 
 	protected function tearDown(): void
 	{
 		Registry::getInstance()->set( RegistryKeys::APP, null );
 		Registry::getInstance()->set( RegistryKeys::MVC_COMPONENTS, null );
+		Registry::getInstance()->set( RegistryKeys::SETTINGS, $this->_previousSettings );
 		parent::tearDown();
 	}
 
@@ -71,7 +79,11 @@ class NavigationTest extends TestCase
 		$this->assertSame( [ 'Labor Board', 'Scheduled Jobs', 'Zed' ], array_column( $items, 'label' ) );
 		$this->assertSame( NavigationTestProvider::class, $items[0]['provider'] );
 		$this->assertNull( $items[1]['provider'] );
-		$this->assertSame( [], Navigation::items( 'content' ), 'items stay in their own group' );
+		$this->assertSame(
+			[],
+			array_filter( Navigation::items( Navigation::GROUP_CONTENT ), fn( array $item ) => $item['provider'] !== null ),
+			'items stay in their own group'
+		);
 	}
 
 	public function testItemsWithoutARegisteredRouteAreDropped(): void
@@ -82,6 +94,38 @@ class NavigationTest extends TestCase
 		$items = Navigation::items( Navigation::GROUP_SYSTEM );
 
 		$this->assertSame( [ 'Scheduled Jobs', 'Zed' ], array_column( $items, 'label' ) );
+	}
+
+	public function testContentGroupListsEveryAreaByDefault(): void
+	{
+		$items = Navigation::items( Navigation::GROUP_CONTENT );
+		$routes = array_column( $items, 'route' );
+
+		$this->assertSame( 'admin_posts', $routes[0] );
+		$this->assertContains( 'admin_events', $routes );
+		$this->assertContains( 'admin_products', $routes );
+		$this->assertSame( 'admin_redirects', end( $routes ) );
+		$this->assertSame( 'content', $items[0]['section'] );
+	}
+
+	public function testContentGroupLeavesOutDisabledAreas(): void
+	{
+		Registry::getInstance()->set(
+			RegistryKeys::SETTINGS,
+			new SettingManager( new Memory( [ 'features' => [ Features::BLOG => false, Features::STORE => false ] ] ) )
+		);
+
+		$routes = array_column( Navigation::items( Navigation::GROUP_CONTENT ), 'route' );
+
+		foreach( [ 'admin_posts', 'admin_categories', 'admin_tags', 'admin_products', 'admin_orders' ] as $hidden )
+		{
+			$this->assertNotContains( $hidden, $routes );
+		}
+
+		foreach( [ 'admin_pages', 'admin_media', 'admin_events', 'admin_payments', 'admin_menus', 'admin_redirects' ] as $shown )
+		{
+			$this->assertContains( $shown, $routes );
+		}
 	}
 
 	public function testBuiltInItemIsDroppedWhenItsRouteIsMissing(): void

@@ -116,6 +116,21 @@ YAML;
 		$this->assertSame( \Neuron\Cms\Auth\Filters\AdminAuthenticationFilter::DEFAULT_ROLES, $filter->getRoles() );
 	}
 
+	/**
+	 * Optional CMS areas switched off under `features` are refused by a
+	 * global filter, so it must run on every route.
+	 */
+	public function testBootRegistersGlobalFeatureFilter()
+	{
+		$app = \Neuron\Cms\boot( 'examples/config' );
+		$router = $app->getRouter();
+
+		$this->assertInstanceOf( \Neuron\Cms\Features\FeatureFilter::class, $router->getFilter( 'features' ) );
+
+		$global = new \ReflectionProperty( $router, '_filter' );
+		$this->assertContains( 'features', $global->getValue( $router ) );
+	}
+
 	public function testAdminFilterRolesComeFromSettings()
 	{
 		$configDir = sys_get_temp_dir() . '/neuron_cms_admin_roles_' . uniqid();

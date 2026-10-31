@@ -6,6 +6,9 @@ use PHPUnit\Framework\TestCase;
 use Neuron\Cms\Services\Widget\WidgetRenderer;
 use Neuron\Cms\Repositories\IPostRepository;
 use Neuron\Cms\Models\Post;
+use Neuron\Cms\Features\Features;
+use Neuron\Data\Settings\SettingManager;
+use Neuron\Data\Settings\Source\Memory;
 
 class WidgetRendererTest extends TestCase
 {
@@ -280,5 +283,25 @@ class WidgetRendererTest extends TestCase
 		$result = $renderer->render( 'faq', [ 'slug' => 'general' ] );
 
 		$this->assertStringContainsString( '<!-- FAQ widget: group not found -->', $result );
+	}
+
+	public function testShortcodeOfADisabledFeatureRendersNothing(): void
+	{
+		$repository = $this->createMock( IPostRepository::class );
+		$repository->expects( $this->never() )->method( 'getPublished' );
+
+		$features = new Features( new SettingManager( new Memory( [ 'features' => [ 'blog' => false ] ] ) ) );
+		$renderer = new WidgetRenderer( $repository, null, null, null, null, null, null, null, null, null, $features );
+
+		$this->assertSame( '', $renderer->render( 'latest-posts', [] ) );
+		$this->assertStringContainsString( 'Unknown widget', $renderer->render( 'unknown-widget', [] ) );
+	}
+
+	public function testFeaturesAreReadFromInjectedSettings(): void
+	{
+		$settings = new SettingManager( new Memory( [ 'features' => [ 'faqs' => false ] ] ) );
+		$renderer = new WidgetRenderer( null, null, null, $settings );
+
+		$this->assertSame( '', $renderer->render( 'faq', [ 'slug' => 'general' ] ) );
 	}
 }

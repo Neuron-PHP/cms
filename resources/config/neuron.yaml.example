@@ -92,6 +92,41 @@ pages:
   show_author: true  # Display the "By <author>" byline on public pages
   show_view_count: true  # Display the view counter on public pages
 
+# Features
+# Switch optional CMS areas on or off. A missing key counts as on.
+# When an area is off:
+#   - its public and admin URLs return 404
+#   - it is removed from the admin menu and dashboard
+#   - its shortcodes render nothing
+#   - it is left out of the sitemap (and the RSS links, for blog)
+# Its database tables and content are kept, so switching it back on
+# restores everything.
+#
+#   blog          posts, categories, tags, RSS, [latest-posts]
+#   calendar      events, event categories and registrations,
+#                 [calendar] [featured-event] [event-registration]
+#   contact       contact form and submissions, [contact]
+#   payments      donations/payments and subscriptions, [payment] [donation]
+#   store         products, cart and orders, [products] [product] [cart]
+#                 (uses the payments webhook, which stays available
+#                 while either payments or store is on)
+#   teams         [team]
+#   carousels     [carousel]
+#   testimonials  [testimonial]
+#   faqs          [faq]
+#
+# With blog off, homepage.mode `blog` shows the landing page instead.
+features:
+  blog: true
+  calendar: true
+  contact: true
+  payments: true
+  store: true
+  teams: true
+  carousels: true
+  testimonials: true
+  faqs: true
+
 # Homepage
 # The stock Home controller serves `/`. Site controllers must not also declare
 # a `/` route (duplicate routes fail startup); use mode `controller` instead.
