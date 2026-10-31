@@ -44,6 +44,17 @@ class CleanupExpiredTokensJobTest extends TestCase
 		);
 
 		$this->pdo->exec(
+			"CREATE TABLE remember_tokens (
+				id INTEGER PRIMARY KEY AUTOINCREMENT,
+				user_id INTEGER NOT NULL,
+				token VARCHAR(64) NOT NULL,
+				created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+				last_used_at TIMESTAMP NULL,
+				expires_at TIMESTAMP NOT NULL
+			)"
+		);
+
+		$this->pdo->exec(
 			"CREATE TABLE password_reset_tokens (
 				id INTEGER PRIMARY KEY AUTOINCREMENT,
 				email VARCHAR(255) NOT NULL,
@@ -82,6 +93,14 @@ class CleanupExpiredTokensJobTest extends TestCase
 		$stmt->execute( [ $token, '2020-01-01 00:00:00', $expiresAt ] );
 	}
 
+	private function insertRememberToken( string $token, string $expiresAt ): void
+	{
+		$stmt = $this->pdo->prepare(
+			"INSERT INTO remember_tokens (user_id, token, created_at, expires_at) VALUES (1, ?, ?, ?)"
+		);
+		$stmt->execute( [ $token, '2020-01-01 00:00:00', $expiresAt ] );
+	}
+
 	public function testGetName(): void
 	{
 		$this->assertEquals( 'cleanup_expired_tokens', ( new CleanupExpiredTokensJob() )->getName() );
@@ -96,6 +115,8 @@ class CleanupExpiredTokensJobTest extends TestCase
 		$this->insertEmailToken( 'e_valid', $future );
 		$this->insertResetToken( 'r_expired', $past );
 		$this->insertResetToken( 'r_valid', $future );
+		$this->insertRememberToken( 'm_expired', $past );
+		$this->insertRememberToken( 'm_valid', $future );
 
 		$result = ( new CleanupExpiredTokensJob() )->run();
 
@@ -106,6 +127,7 @@ class CleanupExpiredTokensJobTest extends TestCase
 
 		$this->assertEquals( [ 'e_valid' ], $emailTokens );
 		$this->assertEquals( [ 'r_valid' ], $resetTokens );
+		$this->assertEquals( [ 'm_valid' ], $this->pdo->query( "SELECT token FROM remember_tokens" )->fetchAll( PDO::FETCH_COLUMN ) );
 	}
 
 	public function testRunReturnsFalseWhenSettingsMissing(): void

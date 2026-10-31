@@ -5,6 +5,7 @@ namespace Neuron\Cms\Container;
 use Neuron\Patterns\Container\IContainer;
 use Neuron\Patterns\Container\IServiceProvider;
 use Neuron\Cms\Repositories\IUserRepository;
+use Neuron\Cms\Repositories\IRememberTokenRepository;
 use Neuron\Cms\Repositories\IPostRepository;
 use Neuron\Cms\Repositories\IPageRepository;
 use Neuron\Cms\Repositories\ICategoryRepository;
@@ -24,6 +25,7 @@ use Neuron\Cms\Repositories\IFaqRepository;
 use Neuron\Cms\Repositories\IMenuRepository;
 use Neuron\Cms\Repositories\IRedirectRepository;
 use Neuron\Cms\Repositories\DatabaseUserRepository;
+use Neuron\Cms\Repositories\DatabaseRememberTokenRepository;
 use Neuron\Cms\Repositories\DatabasePostRepository;
 use Neuron\Cms\Repositories\DatabasePageRepository;
 use Neuron\Cms\Repositories\DatabaseCategoryRepository;
@@ -52,6 +54,7 @@ use Neuron\Cms\Services\User\Updater;
 use Neuron\Cms\Services\User\Deleter;
 use Neuron\Cms\Auth\PasswordHasher;
 use Neuron\Cms\Auth\SessionManager;
+use Neuron\Cms\Services\Auth\Authentication;
 use Neuron\Cms\Services\Security\ResendVerificationThrottle;
 use Neuron\Cms\Services\Content\EditorJsRenderer;
 use Neuron\Cms\Services\Content\ShortcodeParser;
@@ -97,6 +100,7 @@ class CmsServiceProvider implements IServiceProvider
 	{
 		// Bind repository interfaces to database implementations
 		$container->bind( IUserRepository::class, DatabaseUserRepository::class );
+		$container->bind( IRememberTokenRepository::class, DatabaseRememberTokenRepository::class );
 		$container->bind( IPostRepository::class, DatabasePostRepository::class );
 		$container->bind( IPageRepository::class, DatabasePageRepository::class );
 		$container->bind( ICategoryRepository::class, DatabaseCategoryRepository::class );
@@ -156,6 +160,34 @@ class CmsServiceProvider implements IServiceProvider
 
 		// IP resolver
 		$container->bind( IIpResolver::class, DefaultIpResolver::class );
+
+		// Authentication, with "remember me" settings from auth.remember
+		$container->singleton( Authentication::class, function( $c ) {
+			$authentication = new Authentication(
+				$c->get( IUserRepository::class ),
+				$c->get( SessionManager::class ),
+				$c->get( PasswordHasher::class ),
+				$c->get( IRememberTokenRepository::class )
+			);
+
+			$settings = $c->get( SettingManager::class );
+			$remember = $settings ? $settings->get( 'auth', 'remember' ) : null;
+
+			if( is_array( $remember ) )
+			{
+				if( isset( $remember['lifetime'] ) && (int)$remember['lifetime'] > 0 )
+				{
+					$authentication->setRememberLifetime( (int)$remember['lifetime'] );
+				}
+
+				if( array_key_exists( 'enabled', $remember ) )
+				{
+					$authentication->setRememberEnabled( filter_var( $remember['enabled'], FILTER_VALIDATE_BOOLEAN ) );
+				}
+			}
+
+			return $authentication;
+		});
 	}
 
 	/**

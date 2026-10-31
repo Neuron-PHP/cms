@@ -4,13 +4,14 @@ namespace Neuron\Cms\Jobs;
 
 use Neuron\Cms\Repositories\DatabaseEmailVerificationTokenRepository;
 use Neuron\Cms\Repositories\DatabasePasswordResetTokenRepository;
+use Neuron\Cms\Repositories\DatabaseRememberTokenRepository;
 use Neuron\Log\Log;
 use Throwable;
 
 /**
- * Deletes expired email verification and password reset tokens.
+ * Deletes expired email verification, password reset and remember me tokens.
  *
- * Both token tables retain rows until they are explicitly removed; tokens are
+ * The token tables retain rows until they are explicitly removed; tokens are
  * only deleted on use, so expired but unused tokens accumulate. This job purges
  * any token whose expires_at is in the past.
  *
@@ -54,9 +55,14 @@ class CleanupExpiredTokensJob extends MaintenanceJob
 			$resetDeleted = $resetTokens->deleteExpired();
 			$total += $resetDeleted;
 
+			$rememberTokens = new DatabaseRememberTokenRepository( $settings );
+			$rememberDeleted = $rememberTokens->deleteExpired();
+			$total += $rememberDeleted;
+
 			Log::info(
-				"{$this->getName()}: removed $emailDeleted expired email verification token(s) " .
-				"and $resetDeleted expired password reset token(s)."
+				"{$this->getName()}: removed $emailDeleted expired email verification token(s), " .
+				"$resetDeleted expired password reset token(s) " .
+				"and $rememberDeleted expired remember me token(s)."
 			);
 		}
 		catch( Throwable $exception )

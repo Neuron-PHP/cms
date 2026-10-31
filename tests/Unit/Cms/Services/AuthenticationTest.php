@@ -7,6 +7,7 @@ use Neuron\Cms\Services\Auth\Authentication;
 use Neuron\Cms\Auth\SessionManager;
 use Neuron\Cms\Auth\PasswordHasher;
 use Neuron\Cms\Models\User;
+use Neuron\Cms\Repositories\DatabaseRememberTokenRepository;
 use Neuron\Cms\Repositories\DatabaseUserRepository;
 use Neuron\Data\Settings\SettingManager;
 use Neuron\Orm\Model;
@@ -22,6 +23,7 @@ class AuthenticationTest extends TestCase
 {
 	private Authentication $_authentication;
 	private DatabaseUserRepository $_userRepository;
+	private DatabaseRememberTokenRepository $_rememberTokens;
 	private SessionManager $_sessionManager;
 	private PasswordHasher $_passwordHasher;
 	private PDO $pdo;
@@ -29,7 +31,7 @@ class AuthenticationTest extends TestCase
 	public function __sleep(): array
 	{
 		// Don't serialize PDO for process isolation
-		return ['_authentication', '_userRepository', '_sessionManager', '_passwordHasher'];
+		return ['_authentication', '_userRepository', '_rememberTokens', '_sessionManager', '_passwordHasher'];
 	}
 
 	public function __wakeup(): void
@@ -63,6 +65,11 @@ class AuthenticationTest extends TestCase
 
 		// Create users table
 		$this->createUsersTable();
+		$this->createRememberTokensTable();
+
+		// Share the users repository's in-memory database
+		$this->_rememberTokens = new DatabaseRememberTokenRepository( $settings );
+		( new \ReflectionProperty( $this->_rememberTokens, '_pdo' ) )->setValue( $this->_rememberTokens, $this->pdo );
 
 		$this->_sessionManager = new SessionManager([
 			'cookie_secure' => false  // Disable HTTPS requirement for tests
@@ -72,8 +79,45 @@ class AuthenticationTest extends TestCase
 		$this->_authentication = new Authentication(
 			$this->_userRepository,
 			$this->_sessionManager,
-			$this->_passwordHasher
+			$this->_passwordHasher,
+			$this->_rememberTokens
 		);
+	}
+
+	private function createRememberTokensTable(): void
+	{
+		$this->pdo->exec( "
+			CREATE TABLE remember_tokens (
+				id INTEGER PRIMARY KEY AUTOINCREMENT,
+				user_id INTEGER NOT NULL,
+				token VARCHAR(64) NOT NULL UNIQUE,
+				created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+				last_used_at TIMESTAMP NULL,
+				expires_at TIMESTAMP NOT NULL
+			)
+		" );
+	}
+
+	/**
+	 * Hashed tokens stored for a user.
+	 *
+	 * @return list<string>
+	 */
+	private function storedTokens( int $userId ): array
+	{
+		$stmt = $this->pdo->prepare( 'SELECT token FROM remember_tokens WHERE user_id = ? ORDER BY id' );
+		$stmt->execute( [ $userId ] );
+
+		return $stmt->fetchAll( PDO::FETCH_COLUMN );
+	}
+
+	/**
+	 * Simulate a new request from the same browser with no session, as after
+	 * a deploy or once the session has expired.
+	 */
+	private function loseSession(): void
+	{
+		$_SESSION = [];
 	}
 
 	private function createUsersTable(): void
@@ -104,8 +148,9 @@ class AuthenticationTest extends TestCase
 
 	protected function tearDown(): void
 	{
-		// Clean up session
+		// Clean up session and cookies
 		$_SESSION = [];
+		unset( $_COOKIE[ Authentication::REMEMBER_COOKIE ] );
 		// In-memory database is automatically cleaned up
 	}
 
@@ -231,8 +276,14 @@ class AuthenticationTest extends TestCase
 
 		$this->_authentication->attempt('remembertest', 'TestPass123', true);
 
+		$cookie = $_COOKIE[ Authentication::REMEMBER_COOKIE ] ?? null;
+
+		$this->assertNotNull( $cookie );
+		$this->assertSame( [ hash( 'sha256', $cookie ) ], $this->storedTokens( $user->getId() ) );
+
+		// Tokens no longer live on the user record
 		$user = $this->_userRepository->findByUsername('remembertest');
-		$this->assertNotNull($user->getRememberToken());
+		$this->assertNull($user->getRememberToken());
 	}
 
 	public function testLoginWithoutRememberMe(): void
@@ -243,6 +294,8 @@ class AuthenticationTest extends TestCase
 
 		$user = $this->_userRepository->findByUsername('noremember');
 		$this->assertNull($user->getRememberToken());
+		$this->assertSame( [], $this->storedTokens( $user->getId() ) );
+		$this->assertArrayNotHasKey( Authentication::REMEMBER_COOKIE, $_COOKIE );
 	}
 
 	public function testCheckReturnsTrue(): void
@@ -286,12 +339,12 @@ class AuthenticationTest extends TestCase
 		$this->assertFalse($this->_authentication->check());
 		$this->assertNull($this->_authentication->user());
 
-		// Remember token should be removed
-		$user = $this->_userRepository->findByUsername('logouttest');
-		$this->assertNull($user->getRememberToken());
+		// This browser's remember token should be removed
+		$this->assertSame( [], $this->storedTokens( $user->getId() ) );
+		$this->assertArrayNotHasKey( Authentication::REMEMBER_COOKIE, $_COOKIE );
 	}
 
-	public function testLoginUsingRememberToken(): void
+	public function testLegacyRememberTokenStillWorksAndMovesToRememberTokens(): void
 	{
 		$user = $this->createTestUser('tokentest', 'TestPass123');
 
@@ -308,6 +361,146 @@ class AuthenticationTest extends TestCase
 
 		$this->assertTrue($result);
 		$this->assertTrue($this->_authentication->check());
+
+		// Moved: the same cookie keeps working from the new table
+		$this->assertSame( [ $hashedToken ], $this->storedTokens( $user->getId() ) );
+		$this->assertNull( $this->_userRepository->findByUsername( 'tokentest' )->getRememberToken() );
+
+		$this->loseSession();
+		$this->assertTrue( $this->_authentication->loginUsingRememberToken( $plainToken ) );
+	}
+
+	public function testRememberTokenIsNotReplacedWhenUsed(): void
+	{
+		$user = $this->createTestUser( 'stable', 'TestPass123' );
+		$this->_authentication->attempt( 'stable', 'TestPass123', true );
+		$cookie = $_COOKIE[ Authentication::REMEMBER_COOKIE ];
+
+		// Several requests without a session, as when a page fires parallel
+		// requests right after a deploy: every one must get in with the same cookie.
+		for( $i = 0; $i < 3; $i++ )
+		{
+			$this->loseSession();
+			$this->assertTrue( $this->_authentication->loginUsingRememberToken( $cookie ) );
+		}
+
+		$this->assertSame( $cookie, $_COOKIE[ Authentication::REMEMBER_COOKIE ] );
+		$this->assertSame( [ hash( 'sha256', $cookie ) ], $this->storedTokens( $user->getId() ) );
+		$this->assertNotNull( $this->_rememberTokens->findValidByToken( hash( 'sha256', $cookie ) )->getLastUsedAt() );
+	}
+
+	public function testEachBrowserKeepsItsOwnRememberToken(): void
+	{
+		$user = $this->createTestUser( 'twobrowsers', 'TestPass123' );
+
+		$this->_authentication->attempt( 'twobrowsers', 'TestPass123', true );
+		$laptop = $_COOKIE[ Authentication::REMEMBER_COOKIE ];
+
+		// A different browser: no session, no cookie
+		$this->loseSession();
+		unset( $_COOKIE[ Authentication::REMEMBER_COOKIE ] );
+		$this->_authentication->attempt( 'twobrowsers', 'TestPass123', true );
+		$phone = $_COOKIE[ Authentication::REMEMBER_COOKIE ];
+
+		$this->assertNotSame( $laptop, $phone );
+		$this->assertCount( 2, $this->storedTokens( $user->getId() ) );
+
+		// Signing out on the phone leaves the laptop signed in
+		$this->_authentication->logout();
+
+		$this->assertNull( $this->_rememberTokens->findValidByToken( hash( 'sha256', $phone ) ) );
+
+		// The laptop's next request, with its own session
+		$laptopRequest = new Authentication(
+			$this->_userRepository,
+			new SessionManager( [ 'cookie_secure' => false ] ),
+			$this->_passwordHasher,
+			$this->_rememberTokens
+		);
+		$this->assertTrue( $laptopRequest->loginUsingRememberToken( $laptop ) );
+	}
+
+	public function testSigningInAgainOnABrowserReplacesItsToken(): void
+	{
+		$user = $this->createTestUser( 'again', 'TestPass123' );
+
+		$this->_authentication->attempt( 'again', 'TestPass123', true );
+		$first = $_COOKIE[ Authentication::REMEMBER_COOKIE ];
+
+		$this->loseSession();
+		$this->_authentication->attempt( 'again', 'TestPass123', true );
+
+		$this->assertSame( [ hash( 'sha256', $_COOKIE[ Authentication::REMEMBER_COOKIE ] ) ], $this->storedTokens( $user->getId() ) );
+		$this->assertFalse( $this->_authentication->loginUsingRememberToken( $first ) );
+	}
+
+	public function testExpiredRememberTokenIsRejectedAndCookieCleared(): void
+	{
+		$user = $this->createTestUser( 'expired', 'TestPass123' );
+		$plain = bin2hex( random_bytes( 32 ) );
+		$token = new \Neuron\Cms\Models\RememberToken( $user->getId(), hash( 'sha256', $plain ) );
+		$token->setExpiresAt( new DateTimeImmutable( '-1 minute' ) );
+		$this->_rememberTokens->create( $token );
+		$_COOKIE[ Authentication::REMEMBER_COOKIE ] = $plain;
+
+		$this->assertFalse( $this->_authentication->check() );
+		$this->assertArrayNotHasKey( Authentication::REMEMBER_COOKIE, $_COOKIE );
+	}
+
+	public function testRememberTokenOfInactiveUserIsRejected(): void
+	{
+		$user = $this->createTestUser( 'inactive', 'TestPass123' );
+		$this->_authentication->attempt( 'inactive', 'TestPass123', true );
+		$cookie = $_COOKIE[ Authentication::REMEMBER_COOKIE ];
+
+		$user = $this->_userRepository->findByUsername( 'inactive' );
+		$user->setStatus( User::STATUS_INACTIVE );
+		$this->_userRepository->update( $user );
+
+		$this->loseSession();
+		$this->assertFalse( $this->_authentication->loginUsingRememberToken( $cookie ) );
+	}
+
+	public function testRememberLifetimeSetsTokenExpiry(): void
+	{
+		$user = $this->createTestUser( 'lifetime', 'TestPass123' );
+		$this->_authentication->setRememberLifetime( 60 );
+
+		$this->_authentication->attempt( 'lifetime', 'TestPass123', true );
+
+		$stored = $this->_rememberTokens->findValidByToken( hash( 'sha256', $_COOKIE[ Authentication::REMEMBER_COOKIE ] ) );
+		$minutes = ( $stored->getExpiresAt()->getTimestamp() - time() ) / 60;
+
+		$this->assertEqualsWithDelta( 60, $minutes, 1 );
+	}
+
+	public function testRememberMeCanBeDisabled(): void
+	{
+		$user = $this->createTestUser( 'disabled', 'TestPass123' );
+		$this->_authentication->attempt( 'disabled', 'TestPass123', true );
+		$cookie = $_COOKIE[ Authentication::REMEMBER_COOKIE ];
+
+		$this->_authentication->setRememberEnabled( false );
+		$this->loseSession();
+
+		$this->assertFalse( $this->_authentication->loginUsingRememberToken( $cookie ) );
+
+		// And the checkbox no longer issues tokens
+		$this->_authentication->attempt( 'disabled', 'TestPass123', true );
+		$this->assertCount( 1, $this->storedTokens( $user->getId() ) );
+	}
+
+	public function testMissingRememberTokensTableDoesNotBreakSignIn(): void
+	{
+		$this->createTestUser( 'premigration', 'TestPass123' );
+		$this->pdo->exec( 'DROP TABLE remember_tokens' );
+
+		$this->assertTrue( $this->_authentication->attempt( 'premigration', 'TestPass123', true ) );
+		$this->assertTrue( $this->_authentication->check() );
+		$this->assertArrayNotHasKey( Authentication::REMEMBER_COOKIE, $_COOKIE );
+
+		$this->_authentication->logout();
+		$this->assertFalse( $this->_authentication->check() );
 	}
 
 	public function testLoginUsingInvalidRememberToken(): void

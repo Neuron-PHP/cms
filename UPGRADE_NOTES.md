@@ -26,6 +26,42 @@ After running `composer update neuron-php/cms`, follow these steps:
 
 ---
 
+## Unreleased (remember me)
+
+### Fixed
+
+- **"Remember me" kept signing people out.** Each user had a single token in
+  `users.remember_token`, so:
+  - signing in with "remember me" on a second browser invalidated the first;
+  - signing out on any browser cleared it on all of them;
+  - the token was replaced every time the cookie restored a session. When
+    several requests arrived without a session at once (after a deploy, or
+    once the PHP session expired), the browser could end up holding a token
+    that no longer matched the stored one.
+
+  Tokens now live in a new `remember_tokens` table, one row per browser.
+  A token is no longer replaced on use, signing out removes only that
+  browser's token, and `auth.remember.lifetime` and `auth.remember.enabled`
+  are honoured (the cookie was previously fixed at 30 days).
+
+### Migration Required
+
+- `20261031000000_create_remember_tokens_table.php`. Run `cms:upgrade` and
+  then `db:migrate`. Until the migration has run, sign-in still works but
+  "remember me" is skipped and an error is logged.
+
+### Compatibility
+
+- Existing remember cookies keep working: a token still in
+  `users.remember_token` moves to `remember_tokens` the first time it is
+  used. The column is left in place.
+- `Authentication` takes an optional fourth constructor argument,
+  `IRememberTokenRepository`. The container supplies it; code that builds
+  `Authentication` by hand without it has no "remember me".
+- `CleanupExpiredTokensJob` also purges expired remember tokens.
+
+---
+
 ## Unreleased (web components)
 
 Requires `neuron-php/mvc` and `neuron-php/jobs` releases that include

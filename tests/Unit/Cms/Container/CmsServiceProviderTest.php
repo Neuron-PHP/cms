@@ -20,6 +20,9 @@ use Neuron\Cms\Repositories\DatabaseFaqRepository;
 use Neuron\Cms\Repositories\DatabaseMenuRepository;
 use Neuron\Cms\Repositories\DatabaseRedirectRepository;
 use Neuron\Cms\Repositories\DatabaseUserRepository;
+use Neuron\Cms\Repositories\DatabaseRememberTokenRepository;
+use Neuron\Cms\Repositories\IRememberTokenRepository;
+use Neuron\Cms\Services\Auth\Authentication;
 use Neuron\Cms\Repositories\ICategoryRepository;
 use Neuron\Cms\Repositories\IEventCategoryRepository;
 use Neuron\Cms\Repositories\IEventRepository;
@@ -114,6 +117,7 @@ class CmsServiceProviderTest extends TestCase
 		$this->assertInstanceOf( DatabaseFaqRepository::class, $this->container->get( IFaqRepository::class ) );
 		$this->assertInstanceOf( DatabaseMenuRepository::class, $this->container->get( IMenuRepository::class ) );
 		$this->assertInstanceOf( DatabaseRedirectRepository::class, $this->container->get( IRedirectRepository::class ) );
+		$this->assertInstanceOf( DatabaseRememberTokenRepository::class, $this->container->get( IRememberTokenRepository::class ) );
 	}
 
 	public function testRegisterBindsUserServices(): void
@@ -138,6 +142,30 @@ class CmsServiceProviderTest extends TestCase
 		$session1 = $this->container->get( SessionManager::class );
 		$session2 = $this->container->get( SessionManager::class );
 		$this->assertSame( $session1, $session2, 'SessionManager should be singleton' );
+	}
+
+	public function testAuthenticationUsesRememberTokensAndConfiguredLifetime(): void
+	{
+		$settings = $this->createMock( SettingManager::class );
+		$settings->method( 'getSection' )->willReturn( [ 'adapter' => 'sqlite', 'name' => ':memory:' ] );
+		$settings->method( 'get' )->willReturnCallback(
+			fn( $section, $key ) => $section === 'auth' && $key === 'remember' ? [ 'enabled' => false, 'lifetime' => 60 ] : null
+		);
+
+		// The provider resolves SettingManager from the Registry
+		Registry::getInstance()->set( RegistryKeys::SETTINGS, $settings );
+
+		$diContainer = new DIContainer();
+		$diContainer->set( SettingManager::class, $settings );
+		$container = new ContainerAdapter( $diContainer );
+		$this->provider->register( $container );
+
+		$authentication = $container->get( Authentication::class );
+
+		$this->assertSame( $authentication, $container->get( Authentication::class ), 'Authentication should be singleton' );
+		$this->assertInstanceOf( DatabaseRememberTokenRepository::class, ( new \ReflectionProperty( $authentication, '_rememberTokens' ) )->getValue( $authentication ) );
+		$this->assertSame( 60, ( new \ReflectionProperty( $authentication, '_rememberLifetime' ) )->getValue( $authentication ) );
+		$this->assertFalse( ( new \ReflectionProperty( $authentication, '_rememberEnabled' ) )->getValue( $authentication ) );
 	}
 
 	public function testRegisterBindsAuthServices(): void
