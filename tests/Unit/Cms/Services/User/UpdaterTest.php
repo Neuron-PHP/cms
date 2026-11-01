@@ -320,4 +320,59 @@ class UpdaterTest extends TestCase
 
 		$this->_updater->update( $dto );
 	}
+
+	/**
+	 * The admin edit form disables the username field, so the browser never
+	 * posts it. Changing only the role must keep the existing username.
+	 */
+	public function testChangesRoleWhenUsernameIsNotPosted(): void
+	{
+		$user = new User();
+		$user->setId( 2 );
+		$user->setUsername( 'member1' );
+		$user->setEmail( 'member1@example.com' );
+		$user->setRole( User::ROLE_SUBSCRIBER );
+		$user->setPasswordHash( 'existing_hash' );
+
+		$this->_mockUserRepository->method( 'findById' )->with( 2 )->willReturn( $user );
+
+		$this->_mockUserRepository
+			->expects( $this->once() )
+			->method( 'update' )
+			->with( $this->callback( fn( User $u ) =>
+				$u->getUsername() === 'member1'
+				&& $u->getEmail() === 'member1@example.com'
+				&& $u->getRole() === User::ROLE_ADMIN
+				&& $u->getPasswordHash() === 'existing_hash'
+			) );
+
+		$factory = new Factory( __DIR__ . "/../../../../../src/Cms/Dtos/users/update-user-request.yaml" );
+		$dto = $factory->create();
+		$dto->id = 2;
+		$dto->email = 'member1@example.com';
+		$dto->role = User::ROLE_ADMIN;
+
+		$this->assertSame( User::ROLE_ADMIN, $this->_updater->update( $dto )->getRole() );
+	}
+
+	public function testKeepsExistingValuesForFieldsNotProvided(): void
+	{
+		$user = new User();
+		$user->setId( 3 );
+		$user->setUsername( 'keepme' );
+		$user->setEmail( 'keep@example.com' );
+		$user->setRole( User::ROLE_EDITOR );
+
+		$this->_mockUserRepository->method( 'findById' )->willReturn( $user );
+
+		$factory = new Factory( __DIR__ . "/../../../../../src/Cms/Dtos/users/update-user-request.yaml" );
+		$dto = $factory->create();
+		$dto->id = 3;
+
+		$updated = $this->_updater->update( $dto );
+
+		$this->assertSame( 'keepme', $updated->getUsername() );
+		$this->assertSame( 'keep@example.com', $updated->getEmail() );
+		$this->assertSame( User::ROLE_EDITOR, $updated->getRole() );
+	}
 }

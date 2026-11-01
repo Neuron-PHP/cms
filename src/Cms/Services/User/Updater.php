@@ -67,9 +67,22 @@ class Updater implements IUserUpdater
 			$user->setPasswordHash( $this->_passwordHasher->hash( $password ) );
 		}
 
-		$user->setUsername( $username );
-		$user->setEmail( $email );
-		$user->setRole( $role );
+		// Only fields that were provided change. The admin edit form disables
+		// the username input, so the browser never posts it.
+		if( $username !== null && $username !== '' )
+		{
+			$user->setUsername( $username );
+		}
+
+		if( $email !== null && $email !== '' )
+		{
+			$user->setEmail( $email );
+		}
+
+		if( $role !== null && $role !== '' )
+		{
+			$user->setRole( $role );
+		}
 
 		$user->setUpdatedAt( new \DateTimeImmutable() );
 
