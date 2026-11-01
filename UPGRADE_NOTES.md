@@ -26,6 +26,25 @@ After running `composer update neuron-php/cms`, follow these steps:
 
 ---
 
+## Unreleased (homepage controller filters)
+
+### Fixed
+
+- **`homepage.mode: controller` skipped the target's route filters.** The
+  Home controller called the configured action directly, so filters on that
+  action's own route (`member`, `auth`, `admin`, ...) never ran. Pointing the
+  homepage at a member-only page let logged-out visitors in. When the action
+  has a GET route, the homepage now runs that route, filters included;
+  logged-out visitors are redirected to login exactly as on the page's own
+  URL. Actions without a route are still called directly.
+
+### Upgrade notes
+
+- No configuration changes. If you worked around this with a `'/'` rewrite in
+  `routing.yaml`, the rewrite keeps working.
+
+---
+
 ## Unreleased (feature switches)
 
 ### Added

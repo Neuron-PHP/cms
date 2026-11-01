@@ -19,6 +19,7 @@ use Neuron\Mvc\Requests\Request;
 use Neuron\Mvc\Responses\HttpResponseStatus;
 use Neuron\Patterns\Container\IContainer;
 use Neuron\Patterns\Registry;
+use Neuron\Routing\Filter;
 use Neuron\Routing\Router;
 use PHPUnit\Framework\TestCase;
 
@@ -187,6 +188,63 @@ class HomeTest extends TestCase
 		$this->assertSame( '', $home->lastView );
 	}
 
+	/**
+	 * A homepage action with its own route must go through that route so
+	 * its filters (e.g. `member`) still guard it.
+	 */
+	public function testControllerModeAppliesTheTargetRouteFilters(): void
+	{
+		$this->settingsMap['homepage']['mode'] = 'controller';
+		$this->settingsMap['homepage']['controller'] = HomepageTargetController::class . '@index';
+
+		$router = $this->routerWithTarget( new Filter( function() {
+			throw new \RuntimeException( 'login required' );
+		} ) );
+
+		$container = $this->createMock( IContainer::class );
+		$container->expects( $this->never() )->method( 'make' );
+
+		$this->expectException( \RuntimeException::class );
+		$this->expectExceptionMessage( 'login required' );
+
+		$this->home( [], $container, $router )->index( new Request() );
+	}
+
+	public function testControllerModeRunsTheTargetRouteWhenItsFiltersPass(): void
+	{
+		$this->settingsMap['homepage']['mode'] = 'controller';
+		$this->settingsMap['homepage']['controller'] = '\\' . HomepageTargetController::class . '@index';
+
+		$router = $this->routerWithTarget( new Filter( fn() => null ) );
+
+		$container = $this->createMock( IContainer::class );
+		$container->expects( $this->never() )->method( 'make' );
+
+		$result = $this->home( [], $container, $router )->index( new Request() );
+
+		$this->assertSame( 'routed to ' . HomepageTargetController::class . '@index', $result );
+	}
+
+	/**
+	 * A real router holding a parameterised and a plain GET route for the
+	 * target action, both guarded by the `gate` filter.
+	 */
+	private function routerWithTarget( Filter $gate ): Router
+	{
+		$router = new Router();
+		$router->registerFilter( 'gate', $gate );
+
+		$handler = fn( array $parameters ) => 'routed to ' . $parameters['Controller'];
+
+		foreach( [ 'target_item' => '/target/:id', 'target' => '/target' ] as $name => $path )
+		{
+			$route = $router->get( $path, $handler, 'gate', $name );
+			$route->Payload = [ 'Controller' => HomepageTargetController::class . '@index' ];
+		}
+
+		return $router;
+	}
+
 	public function testControllerModeFallsBackToLandingWhenSettingMalformed(): void
 	{
 		$this->settingsMap['homepage']['mode'] = 'controller';
@@ -215,10 +273,10 @@ class HomeTest extends TestCase
 	/**
 	 * @param array<class-string, object> $overrides
 	 */
-	private function home( array $overrides = [], ?IContainer $container = null ): TestableHome
+	private function home( array $overrides = [], ?IContainer $container = null, ?Router $router = null ): TestableHome
 	{
 		$app = $this->createMock( IMvcApplication::class );
-		$app->method( 'getRouter' )->willReturn( $this->createMock( Router::class ) );
+		$app->method( 'getRouter' )->willReturn( $router ?? $this->createMock( Router::class ) );
 		$app->method( 'hasContainer' )->willReturn( $container !== null );
 
 		if( $container )
