@@ -17,6 +17,8 @@ use Neuron\Mvc\IMvcApplication;
 use Neuron\Mvc\Requests\Request;
 use Neuron\Mvc\Responses\HttpResponseStatus;
 use Neuron\Routing\Attributes\Get;
+use Neuron\Routing\RouteMap;
+use Neuron\Routing\Router;
 
 /**
  * Configurable public homepage.
@@ -82,6 +84,11 @@ class Home extends Content
 	 * Delegate the homepage to the site controller action named by
 	 * homepage.controller ("App\Controllers\Pages@index"). Falls back to the
 	 * landing view when the setting is missing or cannot be resolved.
+	 *
+	 * When the action has a route of its own, that route is executed so its
+	 * filters (member, auth, admin, ...) apply exactly as if it had been
+	 * requested directly. Global filters have already run for `/`. An action
+	 * without a route has no filters and is called directly.
 	 */
 	private function renderController( Request $request ): string
 	{
@@ -103,7 +110,54 @@ class Home extends Content
 			return $this->renderLanding();
 		}
 
+		$router = $app->getRouter();
+		$route = $this->routeFor( $router, ltrim( $class, '\\' ) . '@' . $method );
+
+		if( $route !== null )
+		{
+			$route->Parameters = array_merge( $route->Parameters, $route->Payload );
+
+			return (string) $route->execute( $router );
+		}
+
 		return $app->getContainer()->make( $class )->$method( $request );
+	}
+
+	/**
+	 * The GET route registered for a controller action, preferring one
+	 * without path parameters since `/` cannot supply them.
+	 *
+	 * @param Router $router
+	 * @param string $controller "Class@method"
+	 * @return RouteMap|null
+	 */
+	private function routeFor( Router $router, string $controller ): ?RouteMap
+	{
+		$match = null;
+
+		foreach( $router->getAllNamedRoutes() as $info )
+		{
+			if( ( $info['method'] ?? '' ) !== 'GET' )
+			{
+				continue;
+			}
+
+			$route = $router->getRouteByName( (string) $info['name'] );
+
+			if( !$route || ltrim( (string) ( $route->Payload['Controller'] ?? '' ), '\\' ) !== $controller )
+			{
+				continue;
+			}
+
+			if( !str_contains( $route->getPath(), ':' ) )
+			{
+				return $route;
+			}
+
+			$match ??= $route;
+		}
+
+		return $match;
 	}
 
 	private function renderLanding(): string

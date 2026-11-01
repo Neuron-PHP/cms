@@ -229,7 +229,7 @@ class DatabaseEventRepository implements IEventRepository
 		// Soonest non-recurring featured event that has not yet ended.
 		$stmt = $this->_pdo->prepare(
 			"SELECT * FROM events
-			WHERE featured = 1 AND status = ? AND rrule IS NULL
+			WHERE featured = TRUE AND status = ? AND rrule IS NULL
 				AND (
 					(end_date IS NOT NULL AND end_date >= ?)
 					OR (end_date IS NULL AND start_date >= ?)
@@ -253,7 +253,7 @@ class DatabaseEventRepository implements IEventRepository
 			$now,
 			$this->horizonEnd( $now ),
 			$status,
-			' AND featured = 1',
+			' AND featured = TRUE',
 			[]
 		);
 

@@ -48,7 +48,7 @@ class DatabaseRedirectRepository implements IRedirectRepository
 	public function findActiveByFromPath( string $fromPath ): ?Redirect
 	{
 		$stmt = $this->_pdo->prepare(
-			'SELECT * FROM redirects WHERE from_path = ? AND is_active = 1 LIMIT 1'
+			'SELECT * FROM redirects WHERE from_path = ? AND is_active = TRUE LIMIT 1'
 		);
 		$stmt->execute( [ $fromPath ] );
 		$row = $stmt->fetch( PDO::FETCH_ASSOC );

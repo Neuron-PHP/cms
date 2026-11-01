@@ -87,7 +87,7 @@ class DatabaseContactSubmissionRepository implements IContactSubmissionRepositor
 	public function markDelivered( int $id ): bool
 	{
 		$stmt = $this->_pdo->prepare(
-			'UPDATE contact_submissions SET delivered = 1, delivered_at = ? WHERE id = ?'
+			'UPDATE contact_submissions SET delivered = TRUE, delivered_at = ? WHERE id = ?'
 		);
 
 		return $stmt->execute( [ date( 'Y-m-d H:i:s' ), $id ] );

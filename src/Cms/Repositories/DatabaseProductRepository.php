@@ -116,7 +116,7 @@ class DatabaseProductRepository implements IProductRepository
 	 */
 	public function allActive( ?int $limit = null ): array
 	{
-		$sql = 'SELECT * FROM products WHERE active = 1 ORDER BY sort_order ASC, name ASC';
+		$sql = 'SELECT * FROM products WHERE active = TRUE ORDER BY sort_order ASC, name ASC';
 
 		if( $limit !== null && $limit > 0 )
 		{
