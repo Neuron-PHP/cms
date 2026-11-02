@@ -386,6 +386,33 @@ class Content extends Base
 	}
 
 	/**
+	 * The member shell home URL when `member.home` is configured, else null.
+	 *
+	 * Applications built on the member shell set this to their own landing
+	 * page so login and the stock member dashboard send users there.
+	 */
+	protected function configuredMemberHome(): ?string
+	{
+		try
+		{
+			$home = trim( (string)( $this->_settings->get( 'member', 'home' ) ?? '' ) );
+		}
+		catch( \Throwable )
+		{
+			return null;
+		}
+
+		if( $home === '' )
+		{
+			return null;
+		}
+
+		$url = member_home();
+
+		return $url !== '' ? $url : null;
+	}
+
+	/**
 	 * Initialize CSRF token and store in Registry for template access.
 	 * Should be called by controllers that render forms requiring CSRF protection.
 	 *

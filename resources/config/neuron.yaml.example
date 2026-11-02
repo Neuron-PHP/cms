@@ -135,6 +135,15 @@ homepage:
   page: welcome   # CMS page slug when mode is page
   # controller: 'App\Controllers\Pages@index'  # Class@method when mode is controller
 
+# Member shell
+# The member area (layouts/member.php) is the starting point for applications
+# built on the CMS. Set `home` to your application's landing page (a URL or a
+# route name): login sends users there and /member/dashboard redirects to it.
+member:
+  registration_enabled: false
+  require_email_verification: true
+  # home: /dashboard
+
 # Blog listing
 blog:
   posts_per_page: 10

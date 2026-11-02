@@ -49,6 +49,14 @@ class Dashboard extends Content
 	#[Get('/', name: 'member')]
 	public function index( Request $request ): string
 	{
+		// Applications built on the member shell replace this page via member.home.
+		$memberHome = $this->configuredMemberHome();
+
+		if( $memberHome !== null && !in_array( rtrim( $memberHome, '/' ), [ '/member', '/member/dashboard' ], true ) )
+		{
+			$this->redirectToUrl( $memberHome );
+		}
+
 		$this->initializeCsrfToken();
 
 		return $this->view()

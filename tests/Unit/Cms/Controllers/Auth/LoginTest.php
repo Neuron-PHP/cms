@@ -135,4 +135,46 @@ class LoginTest extends TestCase
 		$this->assertFalse( $method->invoke( $this->controller, 'dashboard' ) );
 		$this->assertFalse( $method->invoke( $this->controller, 'admin/users' ) );
 	}
+
+	private function loginWithMemberHome( ?string $home ): Login
+	{
+		require_once __DIR__ . '/../../../../../src/Cms/View/helpers.php';
+
+		$source = new \Neuron\Data\Settings\Source\Memory();
+		$source->set( 'site', 'name', 'Test Site' );
+
+		if( $home !== null )
+		{
+			$source->set( 'member', 'home', $home );
+		}
+
+		$settings = new SettingManager( $source );
+		Registry::getInstance()->set( RegistryKeys::SETTINGS, $settings );
+
+		return new Login( $this->mockApp, $this->mockAuth, $settings, $this->mockSession );
+	}
+
+	public function testDefaultRedirectIsAdminDashboardWithoutMemberHome(): void
+	{
+		$login = $this->loginWithMemberHome( null );
+		$method = ( new \ReflectionClass( $login ) )->getMethod( 'defaultRedirectUrl' );
+
+		$this->assertSame( '/admin/dashboard', $method->invoke( $login ) );
+	}
+
+	public function testDefaultRedirectIsConfiguredMemberHome(): void
+	{
+		$login = $this->loginWithMemberHome( '/dashboard' );
+		$method = ( new \ReflectionClass( $login ) )->getMethod( 'defaultRedirectUrl' );
+
+		$this->assertSame( '/dashboard', $method->invoke( $login ) );
+	}
+
+	public function testDefaultRedirectIgnoresOffsiteMemberHome(): void
+	{
+		$login = $this->loginWithMemberHome( 'https://evil.example/' );
+		$method = ( new \ReflectionClass( $login ) )->getMethod( 'defaultRedirectUrl' );
+
+		$this->assertSame( '/admin/dashboard', $method->invoke( $login ) );
+	}
 }
