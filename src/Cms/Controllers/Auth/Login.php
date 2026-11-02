@@ -57,13 +57,13 @@ class Login extends Content
 		// If already logged in, redirect to the dashboard
 		if( $this->_authentication->check() )
 		{
-			$this->redirect( 'admin_dashboard' );
+			$this->redirectToUrl( $this->defaultRedirectUrl() );
 		}
 
 		$this->initializeCsrfToken();
 
-		// Get redirect parameter from URL or default to admin dashboard
-		$defaultRedirect = $this->urlFor( 'admin_dashboard', [], '/admin/dashboard' ) ?? '/admin/dashboard';
+		// Get redirect parameter from URL or default to the member home / admin dashboard
+		$defaultRedirect = $this->defaultRedirectUrl();
 		$requestedRedirect = $request->get( 'redirect', $defaultRedirect ) ?? $defaultRedirect;
 
 		// Validate and use requested redirect, fallback to default if invalid
@@ -108,7 +108,7 @@ class Login extends Content
 		}
 
 		// Successful login - redirect to intended URL or dashboard
-		$defaultRedirect = $this->urlFor( 'admin_dashboard', [], '/admin/dashboard' ) ?? '/admin/dashboard';
+		$defaultRedirect = $this->defaultRedirectUrl();
 		$requestedRedirect = $dto->redirect_url ?? $defaultRedirect;
 
 		// Validate and use requested redirect, fallback to default if invalid
@@ -138,6 +138,22 @@ class Login extends Content
 	 * @param string $url The URL to validate
 	 * @return bool True if the URL is safe, false otherwise
 	 */
+	/**
+	 * Where to send a user after login when no redirect was requested:
+	 * the configured member home (`member.home`), else the admin dashboard.
+	 */
+	private function defaultRedirectUrl(): string
+	{
+		$memberHome = $this->configuredMemberHome();
+
+		if( $memberHome !== null && $this->isValidRedirectUrl( $memberHome ) )
+		{
+			return $memberHome;
+		}
+
+		return $this->urlFor( 'admin_dashboard', [], '/admin/dashboard' ) ?? '/admin/dashboard';
+	}
+
 	private function isValidRedirectUrl( string $url ): bool
 	{
 		// Empty URLs are not valid

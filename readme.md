@@ -368,6 +368,72 @@ The CMS supports public member registration with email verification:
    - Profile management at `/member/profile`
    - Role-based access separate from admin panel
 
+### Building an Application on the Member Shell
+
+The member area is the starting point for applications built on the CMS. Its
+layout (`layouts/member.php`) is an application shell: your own pages and the
+CMS member pages (profile, dashboard) render inside it with the same
+navigation, so you extend it instead of building a parallel layout.
+
+**1. Controllers.** Extend `MemberController`. It has no route prefix or
+filters, so your pages keep their own URLs:
+
+```php
+use Neuron\Cms\Controllers\Member\MemberController;
+
+class ControlController extends MemberController
+{
+	#[Get( '/controls', name: 'controls', filters: ['auth'] )]
+	public function index( Request $request ): string
+	{
+		// resources/views/control/index.php inside layouts/member.php
+		return $this->renderPage( 'index', [ 'controls' => $controls ], 'Controls' );
+	}
+}
+```
+
+`renderPage()` injects the current user (`$User`), the CSRF token and shared
+`ViewDataProvider` data. `flash()`, `redirectToUrl()` and `currentUser()` are
+available for form handling.
+
+**2. Navigation.** Register links from an initializer. Items are a URL or a
+route name, sorted by `order`, and can be hidden per request:
+
+```php
+use Neuron\Cms\Navigation\MemberNavigation;
+use Neuron\Cms\Navigation\NavItem;
+
+MemberNavigation::instance()
+	->add( new NavItem( 'dashboard', 'Dashboard', '/dashboard', 0 ) )  // replaces the stock link
+	->add( new NavItem( 'controls', 'Controls', '/controls', 10 ) )
+	->add( new NavItem( 'team', 'Team', '/team', 50, null, fn() => is_admin() ) )
+	->addUserItem( new NavItem( 'billing', 'Billing', '/billing', 10 ) );
+```
+
+Adding an item with an existing key replaces it; `remove( $key )` drops one.
+Primary items appear in the top bar; user items appear in the account
+dropdown above Logout. Profile & Settings is registered by default.
+
+**3. Landing page.** Point login and the stock member dashboard at your app:
+
+```yaml
+member:
+  home: /dashboard   # URL or route name
+```
+
+**4. Header widgets.** Add something to the right of the navigation (an
+account or organization switcher) by creating
+`resources/views/partials/member-header-end.php`. Feed it with
+`ViewDataProvider::share()` so it works on CMS pages too.
+
+**5. Flash messages.** Use `flash( 'success' | 'error' | 'warning' | 'info', $message )`.
+The member layout renders all pending messages once, at the top of the page.
+
+**6. Look and feel.** Override the layout by placing your own
+`resources/views/layouts/member.php` in the site. Keep the navigation loop,
+`member_header_slot()` and `member_flash()` calls so registrations and
+messages still appear.
+
 ### Pages and Shortcodes
 
 Create CMS-managed pages in the admin panel (Pages → New Page); they're served at `/pages/:slug`. Page and post bodies support shortcodes that render dynamic widgets:

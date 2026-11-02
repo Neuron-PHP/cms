@@ -1,14 +1,6 @@
 <div class="container-fluid">
 	<h2 class="mb-4">My Profile</h2>
 
-	<?php if( isset( $success ) && $success ): ?>
-		<div class="alert alert-success"><?= htmlspecialchars( $success ) ?></div>
-	<?php endif; ?>
-
-	<?php if( isset( $error ) && $error ): ?>
-		<div class="alert alert-danger"><?= htmlspecialchars( $error ) ?></div>
-	<?php endif; ?>
-
 	<div class="row mb-4">
 		<div class="col-md-12">
 			<div class="card">

@@ -16,7 +16,7 @@
 <body class="pb-5">
 <nav class="navbar navbar-expand-lg navbar-dark bg-primary fixed-top" role="navigation">
 	<div class="container-fluid">
-		<a class="navbar-brand d-flex align-items-center" href="<?= route_path('member_dashboard') ?>">
+		<a class="navbar-brand d-flex align-items-center" href="<?= htmlspecialchars( member_home() ) ?>">
 			<img src="/icon.png" alt="Logo" height="28" class="me-2" />
 			<span><?= htmlspecialchars($siteName) ?> - Member Portal</span>
 		</a>
@@ -24,21 +24,35 @@
 			<span class="navbar-toggler-icon"></span>
 		</button>
 		<div class="collapse navbar-collapse" id="navbarNav">
-			<ul class="navbar-nav ms-auto">
-				<?php if( $currentUser ): ?>
-					<li class="nav-item">
-						<a class="nav-link" href="<?= route_path('member_dashboard') ?>">
-							<i class="bi bi-house-door"></i> Dashboard
-						</a>
-					</li>
+			<?php if( $currentUser ): ?>
+				<?php $currentPath = (string)( parse_url( $_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH ) ?? '/' ); ?>
+				<ul class="navbar-nav me-auto">
+					<?php foreach( member_navigation()->items() as $navItem ): ?>
+						<?php $isActive = $navItem->isActive( $currentPath ); ?>
+						<li class="nav-item">
+							<a class="nav-link<?= $isActive ? ' active' : '' ?>" href="<?= htmlspecialchars( $navItem->url() ) ?>"<?= $isActive ? ' aria-current="page"' : '' ?>>
+								<?php if( $navItem->icon ): ?><i class="bi bi-<?= htmlspecialchars( $navItem->icon ) ?>"></i> <?php endif; ?><?= htmlspecialchars( $navItem->label ) ?>
+							</a>
+						</li>
+					<?php endforeach; ?>
+				</ul>
+				<ul class="navbar-nav ms-auto align-items-lg-center">
+					<?php if( $memberHeaderSlot = member_header_slot() ): ?>
+						<li class="nav-item"><?php require $memberHeaderSlot; ?></li>
+					<?php endif; ?>
 					<li class="nav-item dropdown">
 						<button class="btn nav-link d-flex align-items-center border-0" type="button" id="userDropdown" data-bs-toggle="dropdown" aria-expanded="false">
 							<img src="<?= gravatar_url($currentUser->getEmail(), 32) ?>" class="rounded-circle" width="32" height="32" alt="<?= htmlspecialchars($currentUser->getUsername()) ?>" onerror="this.onerror=null; this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2232%22 height=%2232%22 fill=%22%23ffffff%22 viewBox=%220 0 16 16%22><circle cx=%228%22 cy=%228%22 r=%228%22 fill=%22%236c757d%22/><path d=%22M8 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm2-3a2 2 0 1 1-4 0 2 2 0 0 1 4 0zm4 8c0 1-1 1-1 1H3s-1 0-1-1 1-4 6-4 6 3 6 4zm-1-.004c-.001-.246-.154-.986-.832-1.664C11.516 10.68 10.289 10 8 10c-2.29 0-3.516.68-4.168 1.332-.678.678-.83 1.418-.832 1.664h10z%22 fill=%22%23ffffff%22/></svg>';">
 						</button>
 						<ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
 							<li><h6 class="dropdown-header"><?= htmlspecialchars($currentUser->getUsername()) ?></h6></li>
-							<li><hr class="dropdown-divider"></li>
-							<li><a class="dropdown-item" href="<?= route_path('member_profile') ?>"><i class="bi bi-person me-2"></i>Profile &amp; Settings</a></li>
+							<?php $userNavItems = member_navigation()->userItems(); ?>
+							<?php if( $userNavItems ): ?>
+								<li><hr class="dropdown-divider"></li>
+								<?php foreach( $userNavItems as $navItem ): ?>
+									<li><a class="dropdown-item" href="<?= htmlspecialchars( $navItem->url() ) ?>"><?php if( $navItem->icon ): ?><i class="bi bi-<?= htmlspecialchars( $navItem->icon ) ?> me-2"></i><?php endif; ?><?= htmlspecialchars( $navItem->label ) ?></a></li>
+								<?php endforeach; ?>
+							<?php endif; ?>
 							<li><hr class="dropdown-divider"></li>
 							<li>
 								<form method="POST" action="<?= route_path('logout') ?>" class="px-2">
@@ -48,12 +62,19 @@
 							</li>
 						</ul>
 					</li>
-				<?php endif; ?>
-			</ul>
+				</ul>
+			<?php endif; ?>
 		</div>
 	</div>
 </nav>
 <div class="container-fluid pt-5 mt-4">
+	<?php foreach( member_flash() as $flashMessage ): ?>
+		<?php $flashClass = [ 'error' => 'danger', 'success' => 'success', 'warning' => 'warning' ][ $flashMessage['type'] ] ?? 'info'; ?>
+		<div class="alert alert-<?= $flashClass ?> alert-dismissible fade show" role="alert">
+			<?= htmlspecialchars( $flashMessage['message'] ) ?>
+			<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+		</div>
+	<?php endforeach; ?>
 	<?= $content ?>
 	<hr class="mt-5">
 	<footer class="footer" role="presentation">

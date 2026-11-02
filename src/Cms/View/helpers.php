@@ -443,3 +443,135 @@ if( !function_exists( 'cms_feature' ) )
 		return \Neuron\Cms\Features\Features::current()->isEnabled( $feature );
 	}
 }
+
+if( !function_exists( 'member_navigation' ) )
+{
+	/**
+	 * The member shell navigation registry.
+	 *
+	 * @example
+	 * <?php foreach( member_navigation()->items() as $item ): ?> ... <?php endforeach; ?>
+	 */
+	function member_navigation(): \Neuron\Cms\Navigation\MemberNavigation
+	{
+		return \Neuron\Cms\Navigation\MemberNavigation::instance();
+	}
+}
+
+if( !function_exists( 'member_home' ) )
+{
+	/**
+	 * URL of the member shell home page.
+	 *
+	 * Uses `member.home` from settings (a URL or route name) and falls back
+	 * to the stock member dashboard.
+	 */
+	function member_home(): string
+	{
+		$settings = \Neuron\Patterns\Registry::getInstance()->get( \Neuron\Core\Registry\RegistryKeys::SETTINGS );
+		$home = '';
+
+		if( $settings instanceof \Neuron\Data\Settings\SettingManager )
+		{
+			try
+			{
+				$home = trim( (string)( $settings->get( 'member', 'home' ) ?? '' ) );
+			}
+			catch( \Throwable )
+			{
+				$home = '';
+			}
+		}
+
+		if( $home === '' )
+		{
+			$path = route_path( 'member_dashboard' );
+			return $path !== '' ? $path : '/member/dashboard';
+		}
+
+		if( str_starts_with( $home, '/' ) || str_contains( $home, '://' ) )
+		{
+			return $home;
+		}
+
+		$path = route_path( $home );
+		return $path !== '' ? $path : '/';
+	}
+}
+
+if( !function_exists( 'member_flash' ) )
+{
+	/**
+	 * Pull all pending flash messages for display, clearing them.
+	 *
+	 * Called by the member layout so flash messages render once, in one
+	 * place. Message values may be strings or lists of strings.
+	 *
+	 * @return array<int, array{type: string, message: string}>
+	 */
+	function member_flash(): array
+	{
+		$app = \Neuron\Patterns\Registry::getInstance()->get( 'App' );
+		$session = null;
+
+		if( $app && method_exists( $app, 'getContainer' ) )
+		{
+			try
+			{
+				$container = $app->getContainer();
+
+				if( $container->has( \Neuron\Cms\Auth\SessionManager::class ) )
+				{
+					$session = $container->get( \Neuron\Cms\Auth\SessionManager::class );
+				}
+			}
+			catch( \Throwable )
+			{
+				$session = null;
+			}
+		}
+
+		$session ??= new \Neuron\Cms\Auth\SessionManager();
+
+		if( isset( $_SESSION['_flash'] ) && !is_array( $_SESSION['_flash'] ) )
+		{
+			// A legacy plain-string flash under the flash key.
+			$pending = [ 'info' => (string)$_SESSION['_flash'] ];
+			unset( $_SESSION['_flash'] );
+		}
+		else
+		{
+			$pending = $session->getAllFlash();
+		}
+
+		$messages = [];
+
+		foreach( $pending as $type => $value )
+		{
+			foreach( (array)$value as $message )
+			{
+				if( is_scalar( $message ) && (string)$message !== '' )
+				{
+					$messages[] = [ 'type' => (string)$type, 'message' => (string)$message ];
+				}
+			}
+		}
+
+		return $messages;
+	}
+}
+
+if( !function_exists( 'member_header_slot' ) )
+{
+	/**
+	 * Absolute path of the site's member header partial, or null.
+	 *
+	 * Sites add a widget to the right of the member navigation (for example
+	 * an account or organization switcher) by providing
+	 * resources/views/partials/member-header-end.php.
+	 */
+	function member_header_slot(): ?string
+	{
+		return ( new \Neuron\Mvc\Views\ViewLocator() )->locate( 'partials/member-header-end.php' );
+	}
+}

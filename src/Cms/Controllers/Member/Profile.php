@@ -81,8 +81,6 @@ class Profile extends Content
 			->withCurrentUser()
 			->withCsrfToken()
 			->with( 'groupedTimezones', $groupedTimezones )
-			->with( 'success', $this->getSessionManager()->getFlash( 'success' ) )
-			->with( 'error', $this->getSessionManager()->getFlash( 'error' ) )
 			->render( 'edit', 'member' );
 	}
 
