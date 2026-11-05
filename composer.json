@@ -20,7 +20,7 @@
         "neuron-php/orm": "0.1.*",
         "neuron-php/dto": "0.0.*",
         "neuron-php/payments": "0.3.*",
-        "rlanvin/php-rrule": "^2.6",
+        "rlanvin/php-rrule": "^2.6 || ^3.0",
         "phpmailer/phpmailer": "^6.9 || ^7.0",
         "cloudinary/cloudinary_php": "^2.0 || ^3.0",
         "php-di/php-di": "^7.1",
