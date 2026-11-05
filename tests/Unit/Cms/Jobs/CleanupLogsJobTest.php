@@ -68,4 +68,37 @@ class CleanupLogsJobTest extends TestCase
 		$this->assertFileDoesNotExist( $oldFile );
 		$this->assertFileExists( $recentFile );
 	}
+
+	public function testMissingLogDirectoryIsNotAFailure(): void
+	{
+		rmdir( $this->logDir );
+
+		$this->assertTrue( ( new CleanupLogsJob() )->run( [] ) );
+	}
+
+	public function testNonFileDestinationSkipsWithoutDeleting(): void
+	{
+		$settings = Registry::getInstance()->get( RegistryKeys::SETTINGS );
+		$settings->set( 'logging', 'destination', '\Neuron\Log\Destination\StdOutStdErr' );
+
+		$oldFile = $this->logDir . '/app-2020-01-01.log';
+		file_put_contents( $oldFile, 'old' );
+		touch( $oldFile, time() - ( 40 * 86400 ) );
+
+		$this->assertTrue( ( new CleanupLogsJob() )->run( [ 'max_age_days' => 30 ] ) );
+		$this->assertFileExists( $oldFile );
+	}
+
+	public function testExplicitFileDestinationStillCleans(): void
+	{
+		$settings = Registry::getInstance()->get( RegistryKeys::SETTINGS );
+		$settings->set( 'logging', 'destination', '\Neuron\Log\Destination\File' );
+
+		$oldFile = $this->logDir . '/app-2020-01-01.log';
+		file_put_contents( $oldFile, 'old' );
+		touch( $oldFile, time() - ( 40 * 86400 ) );
+
+		$this->assertTrue( ( new CleanupLogsJob() )->run( [ 'max_age_days' => 30 ] ) );
+		$this->assertFileDoesNotExist( $oldFile );
+	}
 }
