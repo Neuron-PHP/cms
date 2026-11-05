@@ -2,6 +2,7 @@
 
 namespace Neuron\Cms\Jobs;
 
+use Neuron\Log\Destination\File;
 use Neuron\Log\Log;
 use Throwable;
 
@@ -38,12 +39,18 @@ class CleanupLogsJob extends MaintenanceJob
 	{
 		$maxAgeDays = max( 1, $this->intArg( $argv, 'max_age_days', 30 ) );
 
+		if( !$this->logsToFile() )
+		{
+			Log::info( "{$this->getName()}: logging destination is not a file; nothing to clean." );
+			return true;
+		}
+
 		$directory = $this->resolveLogDirectory();
 
 		if( $directory === null || !is_dir( $directory ) )
 		{
-			Log::warning( "{$this->getName()}: log directory not found; skipping." );
-			return false;
+			Log::info( "{$this->getName()}: log directory not found; nothing to clean." );
+			return true;
 		}
 
 		$cutoff = time() - ( $maxAgeDays * 86400 );
@@ -82,6 +89,26 @@ class CleanupLogsJob extends MaintenanceJob
 		Log::info( "{$this->getName()}: removed $deleted log file(s) older than $maxAgeDays day(s)." );
 
 		return true;
+	}
+
+	/**
+	 * Whether the application is configured to log to a file.
+	 *
+	 * An unset destination is treated as file logging, matching the default
+	 * logging configuration.
+	 *
+	 * @return bool
+	 */
+	private function logsToFile(): bool
+	{
+		$destination = $this->getSettings()?->get( 'logging', 'destination' );
+
+		if( !is_string( $destination ) || trim( $destination ) === '' )
+		{
+			return true;
+		}
+
+		return is_a( ltrim( trim( $destination ), '\\' ), File::class, true );
 	}
 
 	/**
