@@ -531,7 +531,9 @@ if( !function_exists( 'member_flash' ) )
 			}
 		}
 
-		$session ??= new \Neuron\Cms\Auth\SessionManager();
+		$session ??= new \Neuron\Cms\Auth\SessionManager(
+			\Neuron\Cms\Config\AuthConfig::sessionConfig( \Neuron\Cms\Config\AuthConfig::currentSettings() )
+		);
 
 		if( isset( $_SESSION['_flash'] ) && !is_array( $_SESSION['_flash'] ) )
 		{

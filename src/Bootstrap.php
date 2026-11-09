@@ -7,6 +7,7 @@ use Neuron\Mvc\Application;
 use Neuron\Mvc\IMvcApplication;
 use Neuron\Orm\Model;
 use Neuron\Cms\Auth\Filters\AdminAuthenticationFilter;
+use Neuron\Cms\Config\AuthConfig;
 use Neuron\Cms\Database\ConnectionFactory;
 use Neuron\Cms\Container\Container;
 use Neuron\Cms\Features\FeatureFilter;
@@ -54,6 +55,14 @@ function boot( string $configPath ) : Application
 	// 4. environments/{env}.secrets.yml.enc (environment secrets if exists)
 	// 5. Environment variables (highest priority)
 	$app = \Neuron\Mvc\boot( $configPath );
+
+	// config/auth.yaml (auth.* and member.*) sits underneath those layers
+	$appSettings = $app->getSettingManager();
+
+	if( $appSettings instanceof SettingManager )
+	{
+		AuthConfig::load( $appSettings, $configPath );
+	}
 
 	$packageViews = dirname( __DIR__ ) . '/resources/views';
 

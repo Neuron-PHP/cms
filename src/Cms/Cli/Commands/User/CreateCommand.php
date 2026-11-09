@@ -7,6 +7,7 @@ use Neuron\Cli\Commands\Command;
 use Neuron\Cms\Models\User;
 use Neuron\Cms\Repositories\DatabaseUserRepository;
 use Neuron\Cms\Auth\PasswordHasher;
+use Neuron\Cms\Config\AuthConfig;
 use Neuron\Patterns\Registry;
 use Neuron\Cms\Enums\UserRole;
 use Neuron\Cms\Enums\UserStatus;
@@ -57,7 +58,7 @@ class CreateCommand extends Command
 			return 1;
 		}
 
-		$hasher = new PasswordHasher();
+		$hasher = $this->createHasher();
 
 		// Get username
 		$username = $this->prompt( "Enter username: " );
@@ -162,6 +163,19 @@ class CreateCommand extends Command
 			$this->output->error( "Error creating user: " . $e->getMessage() );
 			return 1;
 		}
+	}
+
+	/**
+	 * Password hasher with the auth.passwords policy applied.
+	 *
+	 * Protected to allow overriding in tests
+	 */
+	protected function createHasher(): PasswordHasher
+	{
+		$hasher = new PasswordHasher();
+		AuthConfig::configurePasswords( $hasher, AuthConfig::cliSettings() );
+
+		return $hasher;
 	}
 
 	/**

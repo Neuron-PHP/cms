@@ -3,6 +3,7 @@
 namespace Neuron\Cms\Container\Factories;
 
 use Neuron\Cms\Auth\PasswordHasher;
+use Neuron\Cms\Config\AuthConfig;
 use Neuron\Data\Settings\SettingManager;
 use Psr\Container\ContainerInterface;
 
@@ -36,6 +37,8 @@ class PasswordHasherFactory
 		{
 			// Use defaults
 		}
+
+		AuthConfig::configurePasswords( $hasher, $settings instanceof SettingManager ? $settings : null );
 
 		return $hasher;
 	}

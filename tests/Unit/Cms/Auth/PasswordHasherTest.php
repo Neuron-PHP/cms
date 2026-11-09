@@ -125,4 +125,44 @@ class PasswordHasherTest extends TestCase
 		$this->assertTrue($this->hasher->verify($password, $hash1));
 		$this->assertTrue($this->hasher->verify($password, $hash2));
 	}
+
+	public function testDefaultAlgorithmIsArgon2idWhenAvailable(): void
+	{
+		$expected = defined( 'PASSWORD_ARGON2ID' ) ? 'argon2id' : 'bcrypt';
+
+		$this->assertSame( $expected, $this->hasher->getAlgorithm() );
+	}
+
+	public function testBcryptCanBeSelected(): void
+	{
+		$this->hasher->setAlgorithm( 'BCRYPT' );
+		$hash = $this->hasher->hash( 'TestPassword1' );
+
+		$this->assertSame( 'bcrypt', $this->hasher->getAlgorithm() );
+		$this->assertStringStartsWith( '$2y$', $hash );
+		$this->assertTrue( $this->hasher->verify( 'TestPassword1', $hash ) );
+		$this->assertFalse( $this->hasher->needsRehash( $hash ) );
+	}
+
+	public function testSwitchingAlgorithmFlagsOldHashesForRehash(): void
+	{
+		if( !defined( 'PASSWORD_ARGON2ID' ) )
+		{
+			$this->markTestSkipped( 'argon2id not available' );
+		}
+
+		$bcryptHash = ( new PasswordHasher() )->setAlgorithm( 'bcrypt' )->hash( 'TestPassword1' );
+
+		$this->hasher->setAlgorithm( 'argon2id' );
+
+		$this->assertTrue( $this->hasher->needsRehash( $bcryptHash ) );
+		$this->assertTrue( $this->hasher->verify( 'TestPassword1', $bcryptHash ), 'old hashes still verify' );
+	}
+
+	public function testUnknownAlgorithmIsRejected(): void
+	{
+		$this->expectException( \InvalidArgumentException::class );
+
+		$this->hasher->setAlgorithm( 'md5' );
+	}
 }

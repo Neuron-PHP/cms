@@ -6,6 +6,7 @@ use Neuron\Core\Registry\RegistryKeys;
 use Neuron\Cli\Commands\Command;
 use Neuron\Cms\Repositories\DatabaseUserRepository;
 use Neuron\Cms\Auth\PasswordHasher;
+use Neuron\Cms\Config\AuthConfig;
 use Neuron\Patterns\Registry;
 
 /**
@@ -55,53 +56,7 @@ class ResetPasswordCommand extends Command
 			return 1;
 		}
 
-		$hasher = new PasswordHasher();
-
-		// Load password policy from configuration
-		try
-		{
-			$settings = Registry::getInstance()->get( RegistryKeys::SETTINGS );
-
-			if( $settings )
-			{
-				// Read password policy from auth.passwords section
-				$minLength = $settings->get( 'auth', 'passwords', 'min_length' );
-				$requireUppercase = $settings->get( 'auth', 'passwords', 'require_uppercase' );
-				$requireLowercase = $settings->get( 'auth', 'passwords', 'require_lowercase' );
-				$requireNumbers = $settings->get( 'auth', 'passwords', 'require_numbers' );
-				$requireSpecialChars = $settings->get( 'auth', 'passwords', 'require_special_chars' );
-
-				// Configure hasher with policy
-				if( $minLength !== null )
-				{
-					$hasher->setMinLength( (int)$minLength );
-				}
-
-				if( $requireUppercase !== null )
-				{
-					$hasher->setRequireUppercase( (bool)$requireUppercase );
-				}
-
-				if( $requireLowercase !== null )
-				{
-					$hasher->setRequireLowercase( (bool)$requireLowercase );
-				}
-
-				if( $requireNumbers !== null )
-				{
-					$hasher->setRequireNumbers( (bool)$requireNumbers );
-				}
-
-				if( $requireSpecialChars !== null )
-				{
-					$hasher->setRequireSpecialChars( (bool)$requireSpecialChars );
-				}
-			}
-		}
-		catch( \Exception $e )
-		{
-			// Fall back to defaults on any exception
-		}
+		$hasher = $this->createHasher();
 
 		// Get username or email from options or prompt
 		$username = $this->input->getOption( 'username' );
@@ -221,6 +176,19 @@ class ResetPasswordCommand extends Command
 			$this->output->error( "Error resetting password: " . $e->getMessage() );
 			return 1;
 		}
+	}
+
+	/**
+	 * Password hasher with the auth.passwords policy applied.
+	 *
+	 * Protected to allow overriding in tests
+	 */
+	protected function createHasher(): PasswordHasher
+	{
+		$hasher = new PasswordHasher();
+		AuthConfig::configurePasswords( $hasher, AuthConfig::cliSettings() );
+
+		return $hasher;
 	}
 
 	/**

@@ -205,4 +205,57 @@ class SessionManagerTest extends TestCase
 		// After destroy, session should be empty
 		$this->assertEmpty($_SESSION);
 	}
+
+	public function testDefaultsAutoDetectSecureCookie(): void
+	{
+		unset( $_SERVER['HTTPS'] );
+		$this->assertFalse( ( new SessionManager() )->getConfig()['cookie_secure'] );
+
+		$_SERVER['HTTPS'] = 'on';
+		$this->assertTrue( ( new SessionManager() )->getConfig()['cookie_secure'] );
+		$this->assertTrue( ( new SessionManager( [ 'cookie_secure' => 'auto' ] ) )->getConfig()['cookie_secure'] );
+		$this->assertFalse( ( new SessionManager( [ 'cookie_secure' => false ] ) )->getConfig()['cookie_secure'] );
+		unset( $_SERVER['HTTPS'] );
+	}
+
+	public function testSameSiteNoneWithoutSecureFallsBackToLax(): void
+	{
+		$session = new SessionManager( [ 'cookie_secure' => false, 'cookie_samesite' => 'None' ] );
+
+		$this->assertSame( 'Lax', $session->getConfig()['cookie_samesite'] );
+
+		$secure = new SessionManager( [ 'cookie_secure' => true, 'cookie_samesite' => 'None' ] );
+
+		$this->assertSame( 'None', $secure->getConfig()['cookie_samesite'] );
+	}
+
+	public function testStartAppliesNameLifetimeAndCookieSettings(): void
+	{
+		$session = new SessionManager( [
+			'lifetime'        => 3600,
+			'cookie_name'     => 'site_session',
+			'cookie_secure'   => false,
+			'cookie_samesite' => 'Strict',
+		] );
+
+		$session->start();
+
+		$this->assertSame( 'site_session', session_name() );
+		$this->assertSame( '3600', ini_get( 'session.gc_maxlifetime' ) );
+
+		$params = session_get_cookie_params();
+		$this->assertSame( 3600, $params['lifetime'] );
+		$this->assertSame( 'Strict', $params['samesite'] );
+		$this->assertTrue( $params['httponly'] );
+	}
+
+	public function testExpireOnCloseUsesABrowserSessionCookie(): void
+	{
+		$session = new SessionManager( [ 'lifetime' => 3600, 'expire_on_close' => true, 'cookie_secure' => false ] );
+
+		$session->start();
+
+		$this->assertSame( 0, session_get_cookie_params()['lifetime'] );
+		$this->assertSame( '3600', ini_get( 'session.gc_maxlifetime' ), 'server-side lifetime still applies' );
+	}
 }

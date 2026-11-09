@@ -650,6 +650,38 @@ class AuthenticationTest extends TestCase
 		$this->assertSame($this->_authentication, $result);
 	}
 
+	public function testThrottleIsOnByDefault(): void
+	{
+		$this->assertTrue( $this->_authentication->isThrottleEnabled() );
+	}
+
+	public function testDisabledThrottleDoesNotCountOrLock(): void
+	{
+		$this->createTestUser( 'nothrottle', 'TestPass123' );
+		$this->_authentication->setThrottleEnabled( false )->setMaxLoginAttempts( 2 );
+
+		for( $i = 0; $i < 3; $i++ )
+		{
+			$this->assertFalse( $this->_authentication->attempt( 'nothrottle', 'WrongPassword' ) );
+		}
+
+		$user = $this->_userRepository->findByUsername( 'nothrottle' );
+		$this->assertSame( 0, $user->getFailedLoginAttempts() );
+		$this->assertFalse( $user->isLockedOut() );
+		$this->assertTrue( $this->_authentication->attempt( 'nothrottle', 'TestPass123' ) );
+	}
+
+	public function testDisabledThrottleIgnoresAnExistingLockout(): void
+	{
+		$user = $this->createTestUser( 'waslocked', 'TestPass123' );
+		$user->setLockedUntil( ( new DateTimeImmutable() )->modify( '+10 minutes' ) );
+		$this->_userRepository->update( $user );
+
+		$this->_authentication->setThrottleEnabled( false );
+
+		$this->assertTrue( $this->_authentication->attempt( 'waslocked', 'TestPass123' ) );
+	}
+
 	/**
 	 * Test isEditorOrHigher() returns true for admin
 	 */

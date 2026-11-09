@@ -706,9 +706,13 @@ Processes queued jobs including emails and background tasks.
 The installer creates `config/auth.yaml` with sensible defaults. You can customize:
 
 - Password requirements (min length, complexity)
-- Session timeout duration
-- Failed login attempt limits
-- Account lockout duration
+- "Remember me" (on/off, lifetime)
+- Failed login attempt limits and lockout duration (`auth.throttle`)
+- Roles allowed into the admin (`auth.admin_roles`)
+- Member registration and email verification (`member:`)
+
+The CMS loads `auth.yaml` at boot; the same keys in `neuron.yaml` or an
+environment file override it.
 
 ### Routing
 
