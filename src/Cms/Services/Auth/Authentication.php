@@ -28,6 +28,7 @@ class Authentication implements IAuthenticationService
 	private ?IRememberTokenRepository $_rememberTokens;
 	private int $_maxLoginAttempts = 5;
 	private int $_lockoutDuration = 15; // minutes
+	private bool $_throttleEnabled = true;
 	private int $_rememberLifetime = 43200; // minutes (30 days)
 	private bool $_rememberEnabled = true;
 
@@ -90,7 +91,7 @@ class Authentication implements IAuthenticationService
 		}
 
 		// Check if account is locked
-		if( $user->isLockedOut() )
+		if( $this->_throttleEnabled && $user->isLockedOut() )
 		{
 			// Emit login failed event
 			\Neuron\Application\CrossCutting\Event::emit( new \Neuron\Cms\Events\UserLoginFailedEvent(
@@ -118,14 +119,17 @@ class Authentication implements IAuthenticationService
 		// Verify password
 		if( !$this->validateCredentials( $user, $password ) )
 		{
-			// Atomically increment failed login attempts to avoid race condition
-			$newFailedAttempts = $this->_userRepository->incrementFailedLoginAttempts( $user->getId() );
-
-			// Lock account if too many failed attempts
-			if( $newFailedAttempts >= $this->_maxLoginAttempts )
+			if( $this->_throttleEnabled )
 			{
-				$lockedUntil = (new DateTimeImmutable())->add( new DateInterval( "PT{$this->_lockoutDuration}M" ) );
-				$this->_userRepository->setLockedUntil( $user->getId(), $lockedUntil );
+				// Atomically increment failed login attempts to avoid race condition
+				$newFailedAttempts = $this->_userRepository->incrementFailedLoginAttempts( $user->getId() );
+
+				// Lock account if too many failed attempts
+				if( $newFailedAttempts >= $this->_maxLoginAttempts )
+				{
+					$lockedUntil = (new DateTimeImmutable())->add( new DateInterval( "PT{$this->_lockoutDuration}M" ) );
+					$this->_userRepository->setLockedUntil( $user->getId(), $lockedUntil );
+				}
 			}
 
 			// Emit login failed event
@@ -511,6 +515,24 @@ class Authentication implements IAuthenticationService
 	{
 		$this->_lockoutDuration = $lockoutDuration;
 		return $this;
+	}
+
+	/**
+	 * Turn login throttling on or off. When off, failed logins are not
+	 * counted and existing lockouts are not enforced.
+	 */
+	public function setThrottleEnabled( bool $enabled ): self
+	{
+		$this->_throttleEnabled = $enabled;
+		return $this;
+	}
+
+	/**
+	 * Whether login throttling is on
+	 */
+	public function isThrottleEnabled(): bool
+	{
+		return $this->_throttleEnabled;
 	}
 
 	/**

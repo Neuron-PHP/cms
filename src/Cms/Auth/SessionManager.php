@@ -2,6 +2,8 @@
 
 namespace Neuron\Cms\Auth;
 
+use Neuron\Log\Log;
+
 /**
  * Session management utility.
  *
@@ -18,20 +20,52 @@ class SessionManager
 	private array $_config = [];
 
 	/**
+	 * Recognised keys:
+	 * - lifetime (int, seconds): cookie lifetime and server-side session lifetime
+	 * - expire_on_close (bool): session cookie that ends with the browser
+	 * - cookie_name (string): session cookie name (PHP default PHPSESSID)
+	 * - cookie_secure (bool|'auto'): 'auto' (default) sets it on HTTPS requests
+	 * - cookie_httponly (bool), cookie_samesite (Lax|Strict|None)
+	 * - test_mode (bool): never touch the real PHP session
+	 *
 	 * @param array<string, mixed> $config
 	 */
 	public function __construct( array $config = [] )
 	{
-		// Auto-detect if connection is secure
-		$isSecure = !empty( $_SERVER['HTTPS'] ) && $_SERVER['HTTPS'] !== 'off';
-
 		$this->_config = array_merge([
 			'lifetime' => 7200,          // 2 hours
+			'expire_on_close' => false,
+			'cookie_name' => null,
 			'cookie_httponly' => true,
-			'cookie_secure' => $isSecure, // Auto-detect HTTPS
+			'cookie_secure' => 'auto',
 			'cookie_samesite' => 'Lax',
 			'use_strict_mode' => true
 		], $config);
+
+		if( $this->_config['cookie_secure'] === 'auto' || $this->_config['cookie_secure'] === null )
+		{
+			// Auto-detect if connection is secure
+			$this->_config['cookie_secure'] = !empty( $_SERVER['HTTPS'] ) && $_SERVER['HTTPS'] !== 'off';
+		}
+
+		$this->_config['cookie_secure'] = (bool)$this->_config['cookie_secure'];
+
+		// Browsers reject SameSite=None cookies that are not also Secure
+		if( $this->_config['cookie_samesite'] === 'None' && !$this->_config['cookie_secure'] )
+		{
+			Log::warning( 'Session cookie_samesite None needs a secure cookie; using Lax.' );
+			$this->_config['cookie_samesite'] = 'Lax';
+		}
+	}
+
+	/**
+	 * The effective configuration (after 'auto' is resolved).
+	 *
+	 * @return array<string, mixed>
+	 */
+	public function getConfig(): array
+	{
+		return $this->_config;
 	}
 
 	/**
@@ -51,6 +85,20 @@ class SessionManager
 			return;
 		}
 
+		$lifetime = (int)$this->_config['lifetime'];
+		$cookieLifetime = $this->_config['expire_on_close'] ? 0 : $lifetime;
+
+		if( is_string( $this->_config['cookie_name'] ) && $this->_config['cookie_name'] !== '' )
+		{
+			session_name( $this->_config['cookie_name'] );
+		}
+
+		// Keep the server-side session as long as the cookie
+		if( $lifetime > 0 )
+		{
+			ini_set( 'session.gc_maxlifetime', (string)$lifetime );
+		}
+
 		// Configure session security
 		ini_set( 'session.cookie_httponly', $this->_config['cookie_httponly'] ? '1' : '0' );
 		ini_set( 'session.cookie_secure', $this->_config['cookie_secure'] ? '1' : '0' );
@@ -58,7 +106,7 @@ class SessionManager
 		ini_set( 'session.use_strict_mode', $this->_config['use_strict_mode'] ? '1' : '0' );
 
 		session_set_cookie_params([
-			'lifetime' => $this->_config['lifetime'],
+			'lifetime' => $cookieLifetime,
 			'path' => '/',
 			'secure' => $this->_config['cookie_secure'],
 			'httponly' => $this->_config['cookie_httponly'],

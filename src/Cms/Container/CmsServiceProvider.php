@@ -53,6 +53,7 @@ use Neuron\Cms\Services\User\Creator;
 use Neuron\Cms\Services\User\Updater;
 use Neuron\Cms\Services\User\Deleter;
 use Neuron\Cms\Auth\PasswordHasher;
+use Neuron\Cms\Config\AuthConfig;
 use Neuron\Cms\Auth\SessionManager;
 use Neuron\Cms\Services\Auth\Authentication;
 use Neuron\Cms\Services\Security\ResendVerificationThrottle;
@@ -145,12 +146,15 @@ class CmsServiceProvider implements IServiceProvider
 	{
 		// Password hasher as singleton (stateless, can be shared)
 		$container->singleton( PasswordHasher::class, function( $c ) {
-			return new PasswordHasher();
+			$hasher = new PasswordHasher();
+			AuthConfig::configurePasswords( $hasher, $c->get( SettingManager::class ) );
+
+			return $hasher;
 		});
 
 		// Session manager as singleton (manages session state)
 		$container->singleton( SessionManager::class, function( $c ) {
-			return new SessionManager();
+			return new SessionManager( AuthConfig::sessionConfig( $c->get( SettingManager::class ) ) );
 		});
 
 		// Resend verification throttle
@@ -161,7 +165,7 @@ class CmsServiceProvider implements IServiceProvider
 		// IP resolver
 		$container->bind( IIpResolver::class, DefaultIpResolver::class );
 
-		// Authentication, with "remember me" settings from auth.remember
+		// Authentication, with auth.remember and auth.throttle applied
 		$container->singleton( Authentication::class, function( $c ) {
 			$authentication = new Authentication(
 				$c->get( IUserRepository::class ),
@@ -171,20 +175,8 @@ class CmsServiceProvider implements IServiceProvider
 			);
 
 			$settings = $c->get( SettingManager::class );
-			$remember = $settings ? $settings->get( 'auth', 'remember' ) : null;
-
-			if( is_array( $remember ) )
-			{
-				if( isset( $remember['lifetime'] ) && (int)$remember['lifetime'] > 0 )
-				{
-					$authentication->setRememberLifetime( (int)$remember['lifetime'] );
-				}
-
-				if( array_key_exists( 'enabled', $remember ) )
-				{
-					$authentication->setRememberEnabled( filter_var( $remember['enabled'], FILTER_VALIDATE_BOOLEAN ) );
-				}
-			}
+			AuthConfig::configureRemember( $authentication, $settings );
+			AuthConfig::configureThrottle( $authentication, $settings );
 
 			return $authentication;
 		});

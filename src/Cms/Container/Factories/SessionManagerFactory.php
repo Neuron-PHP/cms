@@ -3,6 +3,7 @@
 namespace Neuron\Cms\Container\Factories;
 
 use Neuron\Cms\Auth\SessionManager;
+use Neuron\Cms\Config\AuthConfig;
 use Neuron\Data\Settings\SettingManager;
 use Psr\Container\ContainerInterface;
 
@@ -22,20 +23,7 @@ class SessionManagerFactory
 	public function __invoke( ContainerInterface $container ): SessionManager
 	{
 		$settings = $container->get( SettingManager::class );
-		$config = [];
-
-		try
-		{
-			$lifetime = $settings->get( 'session', 'lifetime' );
-			if( $lifetime )
-			{
-				$config['lifetime'] = (int)$lifetime;
-			}
-		}
-		catch( \Exception $e )
-		{
-			// Use defaults if settings not found
-		}
+		$config = AuthConfig::sessionConfig( $settings instanceof SettingManager ? $settings : null );
 
 		return new SessionManager( $config );
 	}

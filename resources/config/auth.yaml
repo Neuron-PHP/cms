@@ -1,10 +1,10 @@
 # Authentication Configuration
 # Configuration for the Neuron CMS authentication system
+#
+# Loaded by the CMS at boot, underneath neuron.yaml: a key set in neuron.yaml
+# or config/environments/<env>.yaml overrides the same key here.
 
 auth:
-  # Default authentication driver
-  default: session
-
   # Roles allowed into /admin. The `admin` route filter redirects anonymous
   # visitors to login and answers 403 to any signed-in user whose role is not
   # listed (subscribers). Authors are included because the Posts, Pages and
@@ -17,11 +17,11 @@ auth:
   # Session configuration
   session:
     lifetime: 120  # Session lifetime in minutes (2 hours)
-    expire_on_close: false
+    expire_on_close: false  # true: the session ends when the browser closes
     cookie_name: neuron_session
     cookie_httponly: true
-    cookie_secure: true  # Set to true for HTTPS only
-    cookie_samesite: Lax  # Lax, Strict, or None
+    cookie_secure: auto  # auto (secure on HTTPS requests), true or false
+    cookie_samesite: Lax  # Lax, Strict, or None (None needs a secure cookie)
 
   # Remember me configuration
   remember:
@@ -35,18 +35,15 @@ auth:
     require_lowercase: true
     require_numbers: true
     require_special_chars: false
-    hash_algorithm: argon2id  # argon2id or bcrypt
+    hash_algorithm: argon2id  # argon2id or bcrypt; old hashes upgrade at next login
 
-  # Login throttling (brute force protection)
+  # Login throttling (brute force protection). Failed logins are counted per
+  # account; after max_attempts the account is locked for lockout_duration.
+  # enabled: false stops counting and ignores existing lockouts.
   throttle:
     enabled: true
     max_attempts: 5  # Max failed attempts before lockout
     lockout_duration: 15  # Lockout duration in minutes
-
-  # User storage
-  storage:
-    type: file  # file or database (future)
-    path: storage/users  # Path for file-based storage
 
 # Member Portal Configuration
 member:

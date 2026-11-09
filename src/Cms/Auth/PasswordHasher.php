@@ -2,6 +2,9 @@
 
 namespace Neuron\Cms\Auth;
 
+use InvalidArgumentException;
+use Neuron\Log\Log;
+
 /**
  * Password hashing and validation utility.
  *
@@ -18,15 +21,18 @@ class PasswordHasher
 	private bool $_requireNumbers = true;
 	private bool $_requireSpecialChars = false;
 
+	public const ARGON2ID = 'argon2id';
+	public const BCRYPT = 'bcrypt';
+
+	/** Configured algorithm; null = argon2id when available, else bcrypt */
+	private ?string $_algorithm = null;
+
 	/**
-	 * Hash a password using Argon2id or Bcrypt
+	 * Hash a password with the configured algorithm
 	 */
 	public function hash( string $password ): string
 	{
-		// Use Argon2id if available, otherwise fall back to Bcrypt
-		$algorithm = defined( 'PASSWORD_ARGON2ID' ) ? PASSWORD_ARGON2ID : PASSWORD_BCRYPT;
-
-		return password_hash( $password, $algorithm );
+		return password_hash( $password, $this->resolveAlgorithm() );
 	}
 
 	/**
@@ -42,9 +48,60 @@ class PasswordHasher
 	 */
 	public function needsRehash( string $hash ): bool
 	{
-		$algorithm = defined( 'PASSWORD_ARGON2ID' ) ? PASSWORD_ARGON2ID : PASSWORD_BCRYPT;
+		return password_needs_rehash( $hash, $this->resolveAlgorithm() );
+	}
 
-		return password_needs_rehash( $hash, $algorithm );
+	/**
+	 * Choose the hash algorithm: 'argon2id' or 'bcrypt'. Existing hashes made
+	 * with the other algorithm are upgraded at the user's next login.
+	 *
+	 * @throws InvalidArgumentException For any other name
+	 */
+	public function setAlgorithm( string $algorithm ): self
+	{
+		$algorithm = strtolower( trim( $algorithm ) );
+
+		if( !in_array( $algorithm, [ self::ARGON2ID, self::BCRYPT ], true ) )
+		{
+			throw new InvalidArgumentException( "Unsupported password hash algorithm '$algorithm' (use argon2id or bcrypt)" );
+		}
+
+		$this->_algorithm = $algorithm;
+		return $this;
+	}
+
+	/**
+	 * The algorithm name in effect: argon2id or bcrypt
+	 */
+	public function getAlgorithm(): string
+	{
+		return $this->resolveAlgorithm() === PASSWORD_BCRYPT ? self::BCRYPT : self::ARGON2ID;
+	}
+
+	/**
+	 * @return string PHP password algorithm constant
+	 */
+	private function resolveAlgorithm(): string
+	{
+		$argonAvailable = defined( 'PASSWORD_ARGON2ID' );
+
+		if( $this->_algorithm === self::BCRYPT )
+		{
+			return PASSWORD_BCRYPT;
+		}
+
+		if( $this->_algorithm === self::ARGON2ID && !$argonAvailable )
+		{
+			static $warned = false;
+
+			if( !$warned )
+			{
+				Log::warning( 'hash_algorithm argon2id is not available in this PHP build; using bcrypt.' );
+				$warned = true;
+			}
+		}
+
+		return $argonAvailable ? PASSWORD_ARGON2ID : PASSWORD_BCRYPT;
 	}
 
 	/**

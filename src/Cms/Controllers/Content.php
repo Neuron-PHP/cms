@@ -4,6 +4,7 @@ namespace Neuron\Cms\Controllers;
 use Neuron\Data\Factories;
 use League\CommonMark\Exception\CommonMarkException;
 use Neuron\Cms\Auth\SessionManager;
+use Neuron\Cms\Config\AuthConfig;
 use Neuron\Core\Exceptions\NotFound;
 use Neuron\Core\Registry\RegistryKeys;
 use Neuron\Data\Objects\Version;
@@ -303,7 +304,7 @@ class Content extends Base
 		// Lazy-load if not injected (for backward compatibility)
 		if( !$this->_sessionManager )
 		{
-			$this->_sessionManager = new SessionManager();
+			$this->_sessionManager = new SessionManager( AuthConfig::sessionConfig( AuthConfig::currentSettings() ) );
 		}
 
 		if( !$this->_sessionManager->isStarted() )

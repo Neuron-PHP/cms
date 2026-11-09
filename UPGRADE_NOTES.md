@@ -26,6 +26,53 @@ After running `composer update neuron-php/cms`, follow these steps:
 
 ---
 
+## Unreleased (auth.yaml is loaded)
+
+### Fixed
+
+- **`config/auth.yaml` was never read.** Only `neuron.yaml`, the environment
+  file and the secrets reached the settings, so `auth.throttle`,
+  `auth.remember`, `auth.passwords`, `auth.admin_roles` and the `member:`
+  block in `auth.yaml` had no effect. The CMS now loads `auth.yaml` at boot,
+  underneath those layers: the same key in `neuron.yaml` or
+  `environments/<env>.yaml` still wins.
+- **`auth.throttle` is applied.** `max_attempts` and `lockout_duration` set
+  the login lockout (previously fixed at 5 and 15). `enabled: false` turns
+  lockout off.
+- **`auth.passwords` is applied** to the web password checks, and the
+  `cms:user:create` and `cms:user:reset-password` commands. The reset command
+  previously read it incorrectly.
+- **`auth.session` is applied.** `lifetime` (minutes) sets both the cookie
+  and the server-side session lifetime (`session.gc_maxlifetime`);
+  `expire_on_close`, `cookie_name`, `cookie_httponly`, `cookie_secure` and
+  `cookie_samesite` are honoured. `cookie_secure` now accepts `auto` (secure
+  on HTTPS requests, the previous behaviour). The top-level
+  `session.lifetime` (seconds) in `neuron.yaml` is still used when
+  `auth.session.lifetime` is not set.
+- **`auth.passwords.hash_algorithm` is applied** (`argon2id` or `bcrypt`).
+  Switching re-hashes each user's password at their next login.
+
+### Removed
+
+- `auth.default` and `auth.storage` were dropped from the `auth.yaml`
+  template. Nothing used them; users are always stored in the database. You
+  can delete them from your copy.
+
+### Upgrade notes
+
+- **Set `auth.session.cookie_secure` to `auto`** (or remove it) unless every
+  environment, including local development, is served over HTTPS. Older
+  `auth.yaml` copies say `true`, which now forces secure cookies and breaks
+  login over plain `http://`. Behind a TLS-terminating proxy that doesn't set
+  `HTTPS`, set `cookie_secure: true` in `environments/production.yaml`.
+- The session cookie is renamed to `cookie_name` (`neuron_session` in the
+  shipped file; it was PHP's `PHPSESSID`). Signed-in users are signed out
+  once after the upgrade; "remember me" signs them back in.
+- Review your `config/auth.yaml` before upgrading: its values now take
+  effect. Sites using the shipped values see no change, because they match
+  the built-in defaults. Check `member.registration_enabled` in particular if
+  `neuron.yaml` has no `member:` block.
+
 ## Unreleased (homepage controller filters)
 
 ### Fixed
